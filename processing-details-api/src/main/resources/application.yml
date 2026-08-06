@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: "details-api"
+  config:
+    import: "optional:file:config/config.yml"

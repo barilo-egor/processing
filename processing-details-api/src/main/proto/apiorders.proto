@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+option java_package = "tgb.cryptoexchange.grpc.generated";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+service OrdersService {
+
+  rpc CreateOrder (CreateOrderGrpc) returns (CreateOrderResponseGrpc);
+  rpc UpdateOrderStatus (UpdateOrderStatusGrpc) returns(google.protobuf.Empty);
+  rpc GetOrders (GetOrdersGrpc) returns (GetOrdersResponseGrpc);
+}
+
+message CreateOrderGrpc {
+  string id = 1;
+  int64 client_id = 2;
+  string internal_id = 3;
+  string merchant = 4;
+  string merchant_order_id = 5;
+  string merchant_order_status = 6;
+  int32 amount = 7;
+  bool enable_unique_amount = 8;
+  optional string callback_url = 9;
+}
+
+message CreateOrderResponseGrpc {
+  string id = 1;
+  int64 client_id = 2;
+  string internal_id = 3;
+  string status = 4;
+  int32 amount = 5;
+  bool enable_unique_amount = 6;
+  optional string callback_url = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message PaginationParams {
+  int32 page = 1;
+  int32 size = 2;
+  repeated string sorters = 3;
+}
+
+message GetOrdersGrpc {
+  PaginationParams pagination = 1;
+  optional string id = 2;
+  repeated int64 client_ids = 3;
+  optional string internal_id = 4;
+  repeated string statuses = 5;
+  optional int32 min_amount = 6;
+  optional int32 max_amount = 7;
+  optional google.protobuf.Timestamp created_at_from = 8;
+  optional google.protobuf.Timestamp created_at_to = 9;
+}
+
+message OrderResponse {
+  string id = 1;
+  int64 client_id = 2;
+  string internal_id = 3;
+  string status = 4;
+  int32 amount = 5;
+  google.protobuf.Timestamp created_at = 6;
+  bool enable_unique_amount = 7;
+  optional string callback_url = 8;
+}
+
+message GetOrdersResponseGrpc {
+  repeated OrderResponse orders = 1;
+  int64 total_elements = 2;
+}
+
+message UpdateOrderStatusGrpc {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string status = 2 [(buf.validate.field).string.pattern = "^[A-Z_]+$"];
+  optional int64 client_id = 3 [(buf.validate.field).int64.gt = 0];
+}
+

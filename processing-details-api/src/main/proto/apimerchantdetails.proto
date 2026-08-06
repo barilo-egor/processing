@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option java_package = "tgb.cryptoexchange.grpc.generated";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+service MerchantDetailsService {
+
+  rpc GetDetails (GetDetailsGrpc) returns (GetDetailsResponseGrpc);
+
+}
+
+message GetDetailsGrpc {
+  string request_id = 1;
+  string internal_id = 2;
+  optional string user_id = 3;
+  int32 amount = 4;
+  repeated string request_method = 5;
+}
+
+message GetDetailsResponseGrpc {
+  string request_id = 1;
+  string merchant = 2;
+  string order_id = 3;
+  string  order_status = 4;
+  DetailsGrpc details = 5;
+  int32 amount = 6;
+}
+
+message DetailsGrpc {
+  string request_method = 1;
+  string details = 2;
+  string bank = 3;
+  string operator = 4;
+}
+
