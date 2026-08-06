@@ -1,0 +1,19 @@
+plugins {
+    id 'details-api'
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':gateway-api')
+
+
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'details-api.jar'
+    destinationDirectory = file("${rootProject.layout.buildDirectory.get().asFile}/libs")
+}
+
+springBoot {
+    mainClass = 'tgb.cryptoexchange.app.AppApplication'
+}
