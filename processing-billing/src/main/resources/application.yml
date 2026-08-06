@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: "billing"
+  config:
+    import: "optional:file:config/config.yml"
