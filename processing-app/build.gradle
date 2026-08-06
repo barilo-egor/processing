@@ -4,9 +4,6 @@ plugins {
 }
 
 dependencies {
-    implementation project(':gateway-api')
-
-
 }
 
 tasks.named('bootJar') {

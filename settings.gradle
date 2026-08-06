@@ -1,6 +1,5 @@
 rootProject.name = 'processing'
 
-include 'app'
-include 'gateway-api'
-include 'clients-api'
+include 'processing-app'
+include 'processing-clients'
 include 'processing-orders'
