@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: "api-clients"
+  config:
+    import: "optional:file:config/config.yml"

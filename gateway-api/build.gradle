@@ -1,9 +1,5 @@
 plugins {
     id 'details-api'
-    id 'java'
-    id 'java-library'
-    id 'com.google.protobuf' version '0.9.6'
-    id 'idea'
 }
 
 dependencies {
@@ -34,26 +30,6 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'io.projectreactor:reactor-test'
-}
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:4.34.1"
-    }
-    plugins {
-        grpc {
-            setArtifact("io.grpc:protoc-gen-grpc-java:1.81.0")
-        }
-    }
-    generateProtoTasks {
-        all().each { task ->
-            task.plugins {
-                grpc {
-                    option 'jakarta_omit'
-                }
-            }
-        }
-    }
 }
 
 idea {

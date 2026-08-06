@@ -1,6 +1,9 @@
 plugins {
     id 'java'
+    id 'java-library'
     id 'io.spring.dependency-management'
+    id 'com.google.protobuf'
+    id 'idea'
 }
 
 group = 'tgb.cryptoexchange'
@@ -29,6 +32,30 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.34.1"
+    }
+    plugins {
+        grpc {
+            setArtifact("io.grpc:protoc-gen-grpc-java:1.81.0")
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {
+                    option 'jakarta_omit'
+                }
+            }
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
 }
 
 tasks.named('test') {

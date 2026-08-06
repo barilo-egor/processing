@@ -2,3 +2,4 @@ rootProject.name = 'processing'
 
 include 'app'
 include 'gateway-api'
+include 'clients-api'

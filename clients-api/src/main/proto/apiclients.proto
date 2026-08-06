@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+option java_package = "tgb.cryptoexchange.grpc.generated";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+/**
+ * Сервис обеспечивает регистрацию новых клиентов и получение по API-ключам.
+ */
+service ClientsService {
+  /**
+   * Метод для создания клиента.
+   * При возникновении ClientAlreadyExistsException, PasswordValidationException или FieldNotBeEmptyException
+   * возвращает gRPC-код INVALID_ARGUMENT (Код 3).
+   */
+  rpc CreateClient (CreateClientGrpc) returns (CreateClientResponseGrpc);
+  /**
+  * Метод получения клиента по апи ключу.
+  * При отсутствии клиента возвращает gRPC-код NOT_FOUND_VALUE (Код 5).
+  * При отсутствии/невалидности переданного ключа ключа возвращает gRPC-код INVALID_ARGUMENT (Код 3).
+  */
+  rpc GetClientByApiKey (GetClientByApiKeyGrpc) returns (GetClientByApiKeyResponseGrpc);
+
+  /**
+  * Метод получения клиента по его идентификатору.
+  * При отсутствии клиента возвращает gRPC-код NOT_FOUND_VALUE (Код 5).
+  */
+  rpc GetClientById (GetClientByIdGrpc) returns (GetClientByIdResponseGrpc);
+
+  /**
+  * Запрос на создание цифровой подписи данных.
+  */
+  rpc CreateSignature (CreateSignatureGrpc) returns (CreateSignatureResponseGrpc);
+}
+
+/**
+ * Сервис обработки заявок на вывод денежных средств (выплаты).
+ */
+service WithdrawalRequestService {
+  /**
+  * Метод для создания заявки на вывод.
+  */
+  rpc CreateWithdrawalRequest (CreateWithdrawalRequestGrpc) returns(google.protobuf.Empty);
+  /**
+  * Метод для обновления заявки на вывод.
+  * При пустом id возвращает gRPC-код INVALID_ARGUMENT_VALUE (Код 3).
+  * Если запись не найдена возвращает gRPC-код NOT_FOUND_VALUE (Код 5).
+  */
+  rpc UpdateWithdrawalRequest (UpdateWithdrawalRequestGrpc) returns(google.protobuf.Empty);
+}
+
+service SecurityService {
+  /**
+  * Метод выдачи публичного ключа для валидации JWT.
+  */
+  rpc GetPublicKey (google.protobuf.Empty) returns (GetPublicJWTKeyResponseGrpc);
+}
+
+message CreateClientGrpc {
+  string username = 1 [(buf.validate.field).string.min_len = 1];
+  string password = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message CreateClientResponseGrpc {
+  string username = 1;
+  string api_key = 2;
+  string secret = 3;
+  google.protobuf.Timestamp registered_at = 4;
+  string status = 5;
+  string callback_url = 6;
+}
+
+message GetClientByApiKeyGrpc {
+  string api_key = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetClientByApiKeyResponseGrpc {
+  int64 id = 1;
+  string username = 2;
+  string secret = 3;
+  string api_key_preview = 4;
+  google.protobuf.Timestamp registered_at = 5;
+  string status = 6;
+  string callback_url = 7;
+  int32 order_timeout_seconds = 8;
+}
+
+message GetClientByIdGrpc {
+  int64 id = 1 [(buf.validate.field).int64.gt = 0];
+}
+
+message GetClientByIdResponseGrpc {
+  int64 id = 1;
+  string username = 2;
+  string api_key_preview = 3;
+  google.protobuf.Timestamp registered_at = 4;
+  string status = 5;
+  string callback_url = 6;
+  int32 order_timeout_seconds = 7;
+}
+
+message CreateSignatureGrpc{
+  int64 client_id = 1 [(buf.validate.field).int64.gt = 0];
+  string data = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message CreateSignatureResponseGrpc{
+  string signature = 1;
+}
+
+message CreateWithdrawalRequestGrpc{
+  int64 client_id = 1 [(buf.validate.field).int64.gt = 0];
+  int32 amount = 2 [(buf.validate.field).int32.gt = 0];
+  string wallet = 3 [(buf.validate.field).string.min_len = 1];
+  google.protobuf.StringValue comment = 4;
+}
+
+message UpdateWithdrawalRequestGrpc{
+  google.protobuf.Int64Value id = 1;
+  google.protobuf.StringValue wallet = 2;
+  google.protobuf.StringValue comment = 3;
+}
+
+message GetPublicJWTKeyResponseGrpc{
+  string jwt_key = 1;
+}
