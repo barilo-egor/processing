@@ -132,7 +132,9 @@ class OrderServiceTest {
 
         when(orderRepository.updateStatusById(orderId, newStatus)).thenReturn(0);
 
-        assertThatThrownBy(() -> orderService.updateStatus(orderId.toString(), newStatus))
+        String id = orderId.toString();
+
+        assertThatThrownBy(() -> orderService.updateStatus(id, newStatus))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Record not found for the provided ID.");
 

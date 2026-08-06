@@ -118,7 +118,9 @@ class OrdersServiceIT extends BaseIntegrationTest {
     void shouldThrowNotFoundExceptionWhenOrderDoesNotExist() {
         UUID nonExistingId = UUID.randomUUID();
 
-        assertThatThrownBy(() -> orderService.updateStatus(nonExistingId.toString(), OrderStatus.SUCCESS))
+        String id = nonExistingId.toString();
+
+        assertThatThrownBy(() -> orderService.updateStatus(id, OrderStatus.SUCCESS))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Record not found for the provided ID.");
 

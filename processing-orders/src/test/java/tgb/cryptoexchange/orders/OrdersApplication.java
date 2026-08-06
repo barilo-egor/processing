@@ -1,8 +1,8 @@
-package tgb.cryptoexchange.clientsapi;
+package tgb.cryptoexchange.orders;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-class ClientsApiApplicationTests {
+class OrdersApplication {
 
 }
