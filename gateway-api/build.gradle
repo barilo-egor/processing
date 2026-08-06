@@ -1,5 +1,5 @@
 plugins {
-    id 'details-api'
+    id 'processing'
 }
 
 dependencies {

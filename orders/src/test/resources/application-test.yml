@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: "orders-test"
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      javax:persistence.schema-generation.database.action: none
+  kafka:
+    bootstrap-servers: ${spring.kafka.bootstrap-servers}
+    merchant-details:
+      bootstrap-servers: ${spring.kafka.bootstrap-servers}
+kafka:
+  group-id: "test-group-id"
+  topic:
+    orders:
+      receive: "test-orders-topic"
+    merchant-details:
+      callback: "test-callback-topic"
+    unknown-status:
+      receive: "test-unknown-status-topic"
+logging:
+  level:
+    org.flywaydb: DEBUG
+    org.springframework.boot.autoconfigure.flyway: DEBUG
+merchant:
+  callback:
+    success-statuses:
+      - CHARGED
+    fail-statuses:
+      - CANCEL

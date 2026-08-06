@@ -1,5 +1,5 @@
 plugins {
-    id 'details-api'
+    id 'processing'
     id 'org.springframework.boot'
 }
 
@@ -10,7 +10,7 @@ dependencies {
 }
 
 tasks.named('bootJar') {
-    archiveFileName = 'details-api.jar'
+    archiveFileName = 'processing.jar'
     destinationDirectory = file("${rootProject.layout.buildDirectory.get().asFile}/libs")
 }
 

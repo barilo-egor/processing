@@ -14,24 +14,14 @@ dependencies {
 
     implementation platform("org.springframework.grpc:spring-grpc-dependencies:1.0.3")
     implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
-    implementation "io.grpc:grpc-protobuf"
-    implementation "io.grpc:grpc-stub"
-    implementation 'com.google.protobuf:protobuf-java:4.34.1'
+
     implementation 'build.buf:protovalidate:1.2.2'
     protobuf files('build.buf:protovalidate:1.2.2')
 
-    implementation 'org.springframework.kafka:spring-kafka'
-
     implementation 'commons-codec:commons-codec:1.18.0'
-    implementation 'org.springframework.security:spring-security-crypto'
 
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-
-    implementation 'org.semver4j:semver4j:6.0.0'
-    api 'tgb.cryptoexchange:common-api:1.1.0'
+    implementation 'tgb.cryptoexchange:common-api:1.1.0'
     implementation 'tgb.cryptoexchange:commons:1.0'
-
-    implementation 'io.jsonwebtoken:jjwt:0.13.0'
 
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
 
@@ -46,13 +36,15 @@ dependencies {
     testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test"
     testImplementation 'org.springframework.grpc:spring-grpc-test'
     testImplementation 'io.grpc:grpc-testing'
+    testImplementation 'org.wiremock.integrations:wiremock-spring-boot:4.2.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation "org.testcontainers:junit-jupiter:1.21.4"
     testImplementation "org.testcontainers:kafka:1.21.4"
     testImplementation "org.testcontainers:mysql:1.21.4"
     testImplementation "org.assertj:assertj-core:3.27.7"
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
 idea {
