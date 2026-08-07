@@ -1,6 +1,5 @@
 package tgb.cryptoexchange.processingdetailsapi.service.unit;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -325,11 +325,8 @@ class ApiOrdersGrpcServiceTest {
                 .createdAt(Instant.now())
                 .build();
 
-        GetOrdersResponseGrpc expectedResponse1 = GetOrdersResponseGrpc.newBuilder().build();
-        GetOrdersResponseGrpc expectedResponse2 = GetOrdersResponseGrpc.newBuilder().build();
-
-        ListenableFuture<GetOrdersResponseGrpc> listenableFuture1 = Futures.immediateFuture(expectedResponse1);
-        ListenableFuture<GetOrdersResponseGrpc> listenableFuture2 = Futures.immediateFuture(expectedResponse2);
+        ListenableFuture<GetOrdersResponseGrpc> listenableFuture1 = Mockito.mock();
+        ListenableFuture<GetOrdersResponseGrpc> listenableFuture2 = Mockito.mock();
 
         when(ordersMapper.getOrdersByIdGrpc(externalId, clientId)).thenReturn(byIdRequest);
         when(ordersFutureStub.getOrders(byIdRequest)).thenReturn(listenableFuture1);
