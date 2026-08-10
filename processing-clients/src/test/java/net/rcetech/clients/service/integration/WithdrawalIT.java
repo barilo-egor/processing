@@ -25,9 +25,9 @@ import net.rcetech.clients.entity.WithdrawalRequest;
 import net.rcetech.clients.enums.ClientStatus;
 import net.rcetech.clients.enums.WithdrawalRequestStatus;
 import net.rcetech.clients.repository.ClientRepository;
-import tgb.cryptoexchange.grpc.generated.CreateWithdrawalRequestGrpc;
-import tgb.cryptoexchange.grpc.generated.UpdateWithdrawalRequestGrpc;
-import tgb.cryptoexchange.grpc.generated.WithdrawalRequestServiceGrpc;
+import net.rcetech.grpc.generated.CreateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.UpdateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.WithdrawalRequestServiceGrpc;
 
 import java.time.Duration;
 import java.time.Instant;

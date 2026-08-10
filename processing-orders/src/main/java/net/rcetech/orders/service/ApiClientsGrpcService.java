@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 import net.rcetech.orders.dto.ClientDTO;
 import net.rcetech.orders.exceptions.BaseException;
 import net.rcetech.orders.exceptions.UserNotFoundException;

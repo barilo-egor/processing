@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 import net.rcetech.billing.entity.Transaction;
 import net.rcetech.billing.enums.Operation;
 import net.rcetech.billing.enums.TransactionType;

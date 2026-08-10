@@ -5,7 +5,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.grpc.server.service.GrpcService;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.mapper.OrderMapper;

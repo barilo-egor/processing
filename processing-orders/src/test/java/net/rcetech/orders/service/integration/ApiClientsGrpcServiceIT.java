@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 import net.rcetech.orders.dto.ClientDTO;
 import net.rcetech.orders.exceptions.BaseException;
 import net.rcetech.orders.exceptions.UserNotFoundException;

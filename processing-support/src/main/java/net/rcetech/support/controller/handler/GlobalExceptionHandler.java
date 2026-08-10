@@ -6,7 +6,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import tgb.cryptoexchange.processingsupportusers.exceptions.*;
+import net.rcetech.processingsupportusers.exceptions.*;
 
 import java.net.URI;
 import java.time.Instant;

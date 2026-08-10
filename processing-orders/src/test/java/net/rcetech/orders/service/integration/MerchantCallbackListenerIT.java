@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import tgb.cryptoexchange.commons.enums.Merchant;
+import net.rcetech.commons.enums.Merchant;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.kafka.MerchantCallbackEvent;

@@ -4,7 +4,7 @@ import io.grpc.Channel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.GrpcChannelFactory;
-import tgb.cryptoexchange.grpc.generated.ClientsServiceGrpc;
+import net.rcetech.grpc.generated.ClientsServiceGrpc;
 
 @Configuration
 public class GrpcClientConfig {

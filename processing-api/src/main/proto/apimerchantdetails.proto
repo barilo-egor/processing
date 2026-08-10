@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option java_package = "tgb.cryptoexchange.grpc.generated";
+option java_package = "net.rcetech.grpc.generated";
 option java_multiple_files = true;
 
 import "google/protobuf/empty.proto";

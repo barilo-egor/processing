@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
-import tgb.cryptoexchange.commons.enums.Merchant;
+import net.rcetech.commons.enums.Merchant;
 
 import java.io.IOException;
 

@@ -9,8 +9,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.grpc.server.service.GrpcService;
 import org.springframework.util.FileCopyUtils;
 import net.rcetech.clients.exceptions.BaseException;
-import tgb.cryptoexchange.grpc.generated.GetPublicJWTKeyResponseGrpc;
-import tgb.cryptoexchange.grpc.generated.SecurityServiceGrpc;
+import net.rcetech.grpc.generated.GetPublicJWTKeyResponseGrpc;
+import net.rcetech.grpc.generated.SecurityServiceGrpc;
 
 import java.io.InputStreamReader;
 import java.io.Reader;

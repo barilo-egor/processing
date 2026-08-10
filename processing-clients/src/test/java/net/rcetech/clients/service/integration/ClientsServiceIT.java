@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import net.rcetech.clients.entity.Client;
 import net.rcetech.clients.enums.ClientStatus;
 import net.rcetech.clients.service.ClientCredentialsService;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 
 import java.util.Optional;
 

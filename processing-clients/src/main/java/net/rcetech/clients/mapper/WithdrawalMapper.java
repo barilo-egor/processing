@@ -4,8 +4,8 @@ import org.springframework.stereotype.Component;
 import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.entity.WithdrawalRequest;
 import net.rcetech.clients.enums.WithdrawalRequestStatus;
-import tgb.cryptoexchange.grpc.generated.CreateWithdrawalRequestGrpc;
-import tgb.cryptoexchange.grpc.generated.UpdateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.CreateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.UpdateWithdrawalRequestGrpc;
 
 @Component
 public class WithdrawalMapper {

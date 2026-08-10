@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.GeneratedKeys;
 import net.rcetech.clients.entity.Client;
-import tgb.cryptoexchange.grpc.generated.CreateClientGrpc;
-import tgb.cryptoexchange.grpc.generated.CreateClientResponseGrpc;
-import tgb.cryptoexchange.grpc.generated.GetClientByApiKeyResponseGrpc;
-import tgb.cryptoexchange.grpc.generated.GetClientByIdResponseGrpc;
+import net.rcetech.grpc.generated.CreateClientGrpc;
+import net.rcetech.grpc.generated.CreateClientResponseGrpc;
+import net.rcetech.grpc.generated.GetClientByApiKeyResponseGrpc;
+import net.rcetech.grpc.generated.GetClientByIdResponseGrpc;
 
 import java.time.Instant;
 import java.util.Objects;

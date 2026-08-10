@@ -11,7 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 import net.rcetech.orders.dto.ClientDTO;
 import net.rcetech.orders.exceptions.BaseException;
 import net.rcetech.orders.exceptions.UserNotFoundException;

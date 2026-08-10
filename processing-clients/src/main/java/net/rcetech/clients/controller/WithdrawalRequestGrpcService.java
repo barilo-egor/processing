@@ -7,9 +7,9 @@ import org.springframework.grpc.server.service.GrpcService;
 import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.mapper.WithdrawalMapper;
 import net.rcetech.clients.service.WithdrawalRequestService;
-import tgb.cryptoexchange.grpc.generated.CreateWithdrawalRequestGrpc;
-import tgb.cryptoexchange.grpc.generated.UpdateWithdrawalRequestGrpc;
-import tgb.cryptoexchange.grpc.generated.WithdrawalRequestServiceGrpc;
+import net.rcetech.grpc.generated.CreateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.UpdateWithdrawalRequestGrpc;
+import net.rcetech.grpc.generated.WithdrawalRequestServiceGrpc;
 
 @GrpcService
 @Slf4j

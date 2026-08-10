@@ -2,7 +2,7 @@ package net.rcetech.orders.mapper;
 
 import com.google.protobuf.Timestamp;
 import org.springframework.stereotype.Component;
-import tgb.cryptoexchange.grpc.generated.GetClientByIdResponseGrpc;
+import net.rcetech.grpc.generated.GetClientByIdResponseGrpc;
 import net.rcetech.orders.dto.ClientDTO;
 import net.rcetech.orders.enums.ClientStatus;
 

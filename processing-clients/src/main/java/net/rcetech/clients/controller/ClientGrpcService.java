@@ -6,7 +6,7 @@ import org.springframework.grpc.server.service.GrpcService;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.mapper.ClientMapper;
 import net.rcetech.clients.service.ClientService;
-import tgb.cryptoexchange.grpc.generated.*;
+import net.rcetech.grpc.generated.*;
 
 @GrpcService
 @Slf4j

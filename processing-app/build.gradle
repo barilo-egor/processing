@@ -12,5 +12,5 @@ tasks.named('bootJar') {
 }
 
 springBoot {
-    mainClass = 'tgb.cryptoexchange.app.AppApplication'
+    mainClass = 'net.rcetech.app.AppApplication'
 }
