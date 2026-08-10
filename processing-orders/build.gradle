@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(':processing-meta')
     implementation project(':processing-clients-api')
     implementation project(':processing-orders-api')
 
