@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.rcetech.api.controller.handler.GlobalExceptionHandler;
 import net.rcetech.clientsapi.service.ClientApi;
 import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
-import net.rcetech.grpc.generated.OrdersServiceGrpc;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import rce.tech.ordersapi.service.OrderApi;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -45,7 +45,7 @@ public abstract class BaseIntegrationTest {
     protected MerchantDetailsServiceGrpc.MerchantDetailsServiceFutureStub merchantDetailsServiceFutureStub;
 
     @MockitoBean
-    protected OrdersServiceGrpc.OrdersServiceFutureStub apiOrdersServiceFutureStub;
+    protected OrderApi orderApi;
 
     @MockitoBean
     protected ClientApi clientApi;

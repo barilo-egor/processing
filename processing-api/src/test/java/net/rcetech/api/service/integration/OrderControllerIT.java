@@ -1,26 +1,28 @@
 package net.rcetech.api.service.integration;
 
 import com.google.common.util.concurrent.Futures;
-import com.google.protobuf.Timestamp;
+import net.rcetech.api.dto.ClientByApiKeyDTO;
+import net.rcetech.api.dto.CreateOrderDTO;
+import net.rcetech.api.enums.ClientStatus;
+import net.rcetech.grpc.generated.DetailsGrpc;
+import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
-import net.rcetech.grpc.generated.*;
-import net.rcetech.api.dto.ClientByApiKeyDTO;
-import net.rcetech.api.dto.CreateOrderDTO;
-import net.rcetech.api.enums.ClientStatus;
+import rce.tech.ordersapi.dto.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class OrderControllerIT extends BaseIntegrationTest {
 
@@ -51,6 +53,8 @@ class OrderControllerIT extends BaseIntegrationTest {
     @Test
     void shouldExecuteFullEndToEndFlow_WhenRequestIsValid() throws Exception {
         String rawOrderId = UUID.randomUUID().toString();
+        UUID generatedOrderId = UUID.randomUUID();
+
         CreateOrderDTO clientRequest = CreateOrderDTO.builder()
                 .internalId(rawOrderId)
                 .amount(1000)
@@ -73,15 +77,18 @@ class OrderControllerIT extends BaseIntegrationTest {
         when(merchantDetailsServiceFutureStub.getDetails(any()))
                 .thenReturn(Futures.immediateFuture(mockDetailsResponse));
 
-        CreateOrderResponseGrpc mockOrdersResponse = CreateOrderResponseGrpc.newBuilder()
-                .setId(rawOrderId)
-                .setClientId(99L)
-                .setInternalId(rawOrderId)
-                .setStatus("CREATED")
-                .setCreatedAt(Timestamp.newBuilder().setSeconds(currentSystemTime.getEpochSecond()).setNanos(0).build())
-                .build();
-        when(apiOrdersServiceFutureStub.createOrder(any()))
-                .thenReturn(Futures.immediateFuture(mockOrdersResponse));
+        OrderResponseDTO mockOrderResponse = new OrderResponseDTO(
+                generatedOrderId,
+                99L,
+                rawOrderId,
+                "CREATED",
+                1000,
+                true,
+                null,
+                currentSystemTime
+        );
+        when(orderApi.createOrder(any(CreateOrderRequestDTO.class)))
+                .thenReturn(mockOrderResponse);
 
         try (MockedStatic<Instant> mockedInstant = Mockito.mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedInstant.when(Instant::now).thenReturn(currentSystemTime);
@@ -201,7 +208,8 @@ class OrderControllerIT extends BaseIntegrationTest {
 
     @Test
     void shouldReturnOrder_WhenGetOrderByIdIsSuccessful() throws Exception {
-        String orderId = "12345";
+        UUID orderUuid = UUID.randomUUID();
+        String orderId = orderUuid.toString();
         Instant currentSystemTime = Instant.now();
 
         String method = "GET";
@@ -212,17 +220,20 @@ class OrderControllerIT extends BaseIntegrationTest {
         String dataToSign = String.format("%s|%s|%s|%s", method, path, timestamp, content);
         String validSignature = calculateHmacSha256(dataToSign);
 
-        GetOrdersResponseGrpc mockOrdersResponse = GetOrdersResponseGrpc.newBuilder()
-                .setTotalElements(1L)
-                .addOrders(OrderResponse.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setInternalId("merchant-internal-id-555")
-                        .setStatus("PAID")
-                        .build())
-                .build();
+        OrderResponseDTO mockOrder = new OrderResponseDTO(
+                orderUuid,
+                99L,
+                "merchant-internal-id-555",
+                "PAID",
+                1000,
+                false,
+                null,
+                currentSystemTime
+        );
+        OrdersPageResponseDTO mockPageResponse = new OrdersPageResponseDTO(List.of(mockOrder), 1L);
 
-        when(apiOrdersServiceFutureStub.getOrders(any()))
-                .thenReturn(Futures.immediateFuture(mockOrdersResponse));
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(mockPageResponse);
 
         try (MockedStatic<Instant> mockedInstant = Mockito.mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedInstant.when(Instant::now).thenReturn(currentSystemTime);
@@ -255,26 +266,31 @@ class OrderControllerIT extends BaseIntegrationTest {
         String dataToSign = String.format("%s|%s|%s|%s", method, path, timestamp, content);
         String validSignature = calculateHmacSha256(dataToSign);
 
-        GetOrdersResponseGrpc mockOrdersPageResponse = GetOrdersResponseGrpc.newBuilder()
-                .setTotalElements(2L)
-                .addOrders(OrderResponse.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setInternalId("internal-paged-id-1")
-                        .setStatus("CREATED")
-                        .setCreatedAt(Timestamp.newBuilder().setSeconds(currentSystemTime.getEpochSecond()).setNanos(0)
-                                .build())
-                        .build())
-                .addOrders(OrderResponse.newBuilder()
-                        .setId(UUID.randomUUID().toString())
-                        .setInternalId("internal-paged-id-2")
-                        .setStatus("PAID")
-                        .setCreatedAt(Timestamp.newBuilder().setSeconds(currentSystemTime.getEpochSecond()).setNanos(0)
-                                .build())
-                        .build())
-                .build();
+        OrderResponseDTO mockOrder1 = new OrderResponseDTO(
+                UUID.randomUUID(),
+                99L,
+                "internal-paged-id-1",
+                "CREATED",
+                1000,
+                false,
+                null,
+                currentSystemTime
+        );
+        OrderResponseDTO mockOrder2 = new OrderResponseDTO(
+                UUID.randomUUID(),
+                99L,
+                "internal-paged-id-2",
+                "PAID",
+                2000,
+                false,
+                null,
+                currentSystemTime
+        );
 
-        when(apiOrdersServiceFutureStub.getOrders(any(GetOrdersGrpc.class)))
-                .thenReturn(Futures.immediateFuture(mockOrdersPageResponse));
+        OrdersPageResponseDTO mockPageResponse = new OrdersPageResponseDTO(List.of(mockOrder1, mockOrder2), 2L);
+
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(mockPageResponse);
 
         try (MockedStatic<Instant> mockedInstant = Mockito.mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedInstant.when(Instant::now).thenReturn(currentSystemTime);
@@ -300,21 +316,21 @@ class OrderControllerIT extends BaseIntegrationTest {
                     .jsonPath("$[1].internalId").isEqualTo("internal-paged-id-2")
                     .jsonPath("$[1].status").isEqualTo("PAID");
 
-            org.mockito.ArgumentCaptor<GetOrdersGrpc> requestCaptor = org.mockito.ArgumentCaptor.forClass(
-                    GetOrdersGrpc.class);
-            Mockito.verify(apiOrdersServiceFutureStub).getOrders(requestCaptor.capture());
+            ArgumentCaptor<GetOrdersFilterDTO> filterCaptor = ArgumentCaptor.forClass(GetOrdersFilterDTO.class);
+            verify(orderApi).getOrders(filterCaptor.capture());
 
-            GetOrdersGrpc actualGrpcRequest = requestCaptor.getValue();
-            assertThat(actualGrpcRequest.getClientIdsList()).contains(99L);
-            assertThat(actualGrpcRequest.getPagination().getPage()).isEqualTo(1);
-            assertThat(actualGrpcRequest.getPagination().getSize()).isEqualTo(15);
-            assertThat(actualGrpcRequest.getPagination().getSortersList()).contains("createdAt,desc");
+            GetOrdersFilterDTO actualFilter = filterCaptor.getValue();
+            assertThat(actualFilter.clientIds()).contains(99L);
+            assertThat(actualFilter.pagination().page()).isEqualTo(1);
+            assertThat(actualFilter.pagination().size()).isEqualTo(15);
+            assertThat(actualFilter.pagination().sorters()).contains("createdAt,desc");
         }
     }
 
     @Test
     void shouldCancelOrder_WhenRequestIsValid() throws Exception {
-        String orderId = "98765";
+        UUID orderUuid = UUID.randomUUID();
+        String orderId = orderUuid.toString();
         Instant currentSystemTime = Instant.now();
 
         String method = "PATCH";
@@ -325,22 +341,22 @@ class OrderControllerIT extends BaseIntegrationTest {
         String dataToSign = String.format("%s|%s|%s|%s", method, path, timestamp, content);
         String validSignature = calculateHmacSha256(dataToSign);
 
-        com.google.protobuf.Empty emptyResponse = com.google.protobuf.Empty.getDefaultInstance();
-        when(apiOrdersServiceFutureStub.updateOrderStatus(any(UpdateOrderStatusGrpc.class)))
-                .thenReturn(com.google.common.util.concurrent.Futures.immediateFuture(emptyResponse));
+        doNothing().when(orderApi).updateOrderStatus(any(UpdateOrderStatusRequestDTO.class));
 
-        GetOrdersResponseGrpc mockOrdersResponse =
-                GetOrdersResponseGrpc.newBuilder()
-                        .setTotalElements(1L)
-                        .addOrders(OrderResponse.newBuilder()
-                                .setId(UUID.randomUUID().toString())
-                                .setInternalId("merchant-internal-id-555")
-                                .setStatus("CANCELED")
-                                .build())
-                        .build();
+        OrderResponseDTO mockCanceledOrder = new OrderResponseDTO(
+                orderUuid,
+                99L,
+                "merchant-internal-id-555",
+                "CANCELED",
+                1000,
+                false,
+                null,
+                currentSystemTime
+        );
+        OrdersPageResponseDTO mockPageResponse = new OrdersPageResponseDTO(List.of(mockCanceledOrder), 1L);
 
-        when(apiOrdersServiceFutureStub.getOrders(any(GetOrdersGrpc.class)))
-                .thenReturn(com.google.common.util.concurrent.Futures.immediateFuture(mockOrdersResponse));
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(mockPageResponse);
 
         webTestClient.patch()
                 .uri("/orders/" + orderId)
@@ -361,9 +377,15 @@ class OrderControllerIT extends BaseIntegrationTest {
                     Instant created = Instant.parse(json.get("createdAt").toString());
                     Instant expires = Instant.parse(json.get("expiresAt").toString());
 
-                    org.assertj.core.api.Assertions.assertThat(expires)
-                            .isEqualTo(created.plusSeconds(180));
+                    assertThat(expires).isEqualTo(created.plusSeconds(180));
                 });
+
+        ArgumentCaptor<UpdateOrderStatusRequestDTO> statusCaptor = ArgumentCaptor.forClass(
+                UpdateOrderStatusRequestDTO.class);
+        verify(orderApi).updateOrderStatus(statusCaptor.capture());
+        assertThat(statusCaptor.getValue().id()).isEqualTo(orderUuid);
+        assertThat(statusCaptor.getValue().status()).isEqualTo("CANCELED");
+        assertThat(statusCaptor.getValue().clientId()).isEqualTo(99L);
     }
 
 }

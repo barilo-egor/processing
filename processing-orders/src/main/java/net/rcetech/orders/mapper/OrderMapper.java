@@ -1,42 +1,37 @@
 package net.rcetech.orders.mapper;
 
-import com.google.protobuf.Timestamp;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-import tgb.cryptoexchange.commons.enums.Merchant;
-import net.rcetech.grpc.generated.CreateOrderGrpc;
-import net.rcetech.grpc.generated.CreateOrderResponseGrpc;
-import net.rcetech.grpc.generated.GetOrdersGrpc;
-import net.rcetech.grpc.generated.OrderResponse;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import rce.tech.ordersapi.dto.CreateOrderRequestDTO;
+import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
+import rce.tech.ordersapi.dto.OrderResponseDTO;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Component
 public class OrderMapper {
 
-    public OrderDTO toDTO(CreateOrderGrpc order) {
+    public OrderDTO toDTO(CreateOrderRequestDTO request) {
         return OrderDTO.builder()
-                .id(UUID.fromString(order.getId()))
-                .clientId(order.getClientId())
-                .internalId(order.getInternalId())
-                .merchant(Merchant.valueOf(order.getMerchant()))
-                .merchantOrderId(order.getMerchantOrderId())
-                .merchantOrderStatus(order.getMerchantOrderStatus())
-                .amount(order.getAmount())
-                .enableUniqueAmount(order.getEnableUniqueAmount())
-                .callbackUrl(order.hasCallbackUrl() ? order.getCallbackUrl() : null)
+                .id(request.id())
+                .clientId(request.clientId())
+                .internalId(request.internalId())
+                .merchant(Merchant.valueOf(request.merchant()))
+                .merchantOrderId(request.merchantOrderId())
+                .merchantOrderStatus(request.merchantOrderStatus())
+                .amount(request.amount())
+                .enableUniqueAmount(request.enableUniqueAmount())
+                .callbackUrl(request.callbackUrl())
                 .build();
     }
 
@@ -53,93 +48,66 @@ public class OrderMapper {
                 .build();
     }
 
-    public CreateOrderResponseGrpc createOrderResponseGrpc(OrderDTO orderDTO) {
-        CreateOrderResponseGrpc.Builder builder = CreateOrderResponseGrpc.newBuilder()
-                .setId(Objects.nonNull(orderDTO.getId()) ? orderDTO.getId().toString() : StringUtils.EMPTY)
-                .setClientId(Objects.nonNull(orderDTO.getClientId()) ? orderDTO.getClientId() : 0)
-                .setInternalId(Objects.requireNonNullElse(orderDTO.getInternalId(), StringUtils.EMPTY))
-                .setStatus(Objects.nonNull(orderDTO.getStatus()) ? orderDTO.getStatus().name() : StringUtils.EMPTY)
-                .setAmount(Objects.nonNull(orderDTO.getAmount()) ? orderDTO.getAmount() : 0)
-                .setEnableUniqueAmount(
-                        Objects.nonNull(orderDTO.getEnableUniqueAmount()) && orderDTO.getEnableUniqueAmount())
-                .setCallbackUrl(Objects.requireNonNullElse(orderDTO.getCallbackUrl(), StringUtils.EMPTY));
-        if (Objects.nonNull(orderDTO.getCreatedAt())) {
-            builder.setCreatedAt(instantToTimestamp(orderDTO.getCreatedAt()));
-        }
-        return builder.build();
+    public OrderResponseDTO toOrderResponseDTO(OrderDTO orderDTO) {
+        return new OrderResponseDTO(
+                orderDTO.getId(),
+                orderDTO.getClientId(),
+                orderDTO.getInternalId(),
+                Objects.nonNull(orderDTO.getStatus()) ? orderDTO.getStatus().name() : null,
+                orderDTO.getAmount(),
+                Boolean.TRUE.equals(orderDTO.getEnableUniqueAmount()),
+                orderDTO.getCallbackUrl(),
+                orderDTO.getCreatedAt()
+        );
     }
 
-    public Specification<Order> buildFindSpecification(GetOrdersGrpc request) {
+    public Specification<Order> buildFindSpecification(GetOrdersFilterDTO filter) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            addIdentifiersPredicates(request, root, criteriaBuilder, predicates);
-            addAmountPredicates(request, root, criteriaBuilder, predicates);
-            addDatePredicates(request, root, criteriaBuilder, predicates);
+            addIdentifiersPredicates(filter, root, criteriaBuilder, predicates);
+            addAmountPredicates(filter, root, criteriaBuilder, predicates);
+            addDatePredicates(filter, root, criteriaBuilder, predicates);
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    private void addIdentifiersPredicates(GetOrdersGrpc request, Root<Order> root, CriteriaBuilder cb,
+    private void addIdentifiersPredicates(GetOrdersFilterDTO filter, Root<Order> root, CriteriaBuilder cb,
             List<Predicate> predicates) {
-        if (request.hasId()) {
-            predicates.add(cb.equal(root.get("id"), UUID.fromString(request.getId())));
+        if (filter.id() != null) {
+            predicates.add(cb.equal(root.get("id"), filter.id()));
         }
-        if (!CollectionUtils.isEmpty(request.getClientIdsList())) {
-            predicates.add(root.get("clientId").in(request.getClientIdsList()));
+        if (!CollectionUtils.isEmpty(filter.clientIds())) {
+            predicates.add(root.get("clientId").in(filter.clientIds()));
         }
-        if (request.hasInternalId()) {
-            predicates.add(cb.equal(root.get("internalId"), request.getInternalId()));
+        if (filter.internalId() != null) {
+            predicates.add(cb.equal(root.get("internalId"), filter.internalId()));
         }
-        if (!CollectionUtils.isEmpty(request.getStatusesList())) {
-            List<OrderStatus> statuses = request.getStatusesList().stream().map(OrderStatus::valueOf).toList();
+        if (!CollectionUtils.isEmpty(filter.statuses())) {
+            List<OrderStatus> statuses = filter.statuses().stream()
+                    .map(OrderStatus::valueOf)
+                    .toList();
             predicates.add(root.get("status").in(statuses));
         }
     }
 
-    private void addAmountPredicates(GetOrdersGrpc request, Root<Order> root, CriteriaBuilder cb,
+    private void addAmountPredicates(GetOrdersFilterDTO filter, Root<Order> root, CriteriaBuilder cb,
             List<Predicate> predicates) {
-        if (request.hasMinAmount()) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), request.getMinAmount()));
+        if (filter.minAmount() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), filter.minAmount()));
         }
-        if (request.hasMaxAmount()) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("amount"), request.getMaxAmount()));
+        if (filter.maxAmount() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("amount"), filter.maxAmount()));
         }
     }
 
-    private void addDatePredicates(GetOrdersGrpc request, Root<Order> root, CriteriaBuilder cb,
+    private void addDatePredicates(GetOrdersFilterDTO filter, Root<Order> root, CriteriaBuilder cb,
             List<Predicate> predicates) {
-        if (request.hasCreatedAtFrom()) {
-            Instant from = Instant.ofEpochSecond(request.getCreatedAtFrom().getSeconds(),
-                    request.getCreatedAtFrom().getNanos());
-            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+        if (filter.createdAtFrom() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), filter.createdAtFrom()));
         }
-        if (request.hasCreatedAtTo()) {
-            Instant to = Instant.ofEpochSecond(request.getCreatedAtTo().getSeconds(),
-                    request.getCreatedAtTo().getNanos());
-            predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), to));
+        if (filter.createdAtTo() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), filter.createdAtTo()));
         }
-    }
-
-    public OrderResponse toOrderResponse(OrderDTO orderDTO) {
-        OrderResponse.Builder builder = OrderResponse.newBuilder()
-                .setId(orderDTO.getId().toString())
-                .setClientId(orderDTO.getClientId())
-                .setInternalId(orderDTO.getInternalId())
-                .setStatus(orderDTO.getStatus().name())
-                .setAmount(orderDTO.getAmount())
-                .setEnableUniqueAmount(orderDTO.getEnableUniqueAmount())
-                .setCreatedAt(instantToTimestamp(orderDTO.getCreatedAt()));
-        if (StringUtils.isNotBlank(orderDTO.getCallbackUrl())) {
-            builder.setCallbackUrl(orderDTO.getCallbackUrl());
-        }
-        return builder.build();
-    }
-
-    private Timestamp instantToTimestamp(Instant instant) {
-        return Timestamp.newBuilder()
-                .setSeconds(instant.getEpochSecond())
-                .setNanos(instant.getNano())
-                .build();
     }
 
 }

@@ -3,21 +3,21 @@ package net.rcetech.orders.service.integration;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import net.rcetech.clientsapi.service.ClientApi;
-import net.rcetech.grpc.generated.GetOrdersGrpc;
-import net.rcetech.grpc.generated.GetOrdersResponseGrpc;
-import net.rcetech.grpc.generated.OrdersServiceGrpc;
-import net.rcetech.grpc.generated.PaginationParams;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.exceptions.NotFoundException;
 import net.rcetech.orders.service.OrderService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.ApplicationEvents;
+import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
+import rce.tech.ordersapi.dto.OrderResponseDTO;
+import rce.tech.ordersapi.dto.OrdersPageResponseDTO;
+import rce.tech.ordersapi.dto.PaginationParamsDTO;
+import rce.tech.ordersapi.service.OrderApi;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -35,18 +35,14 @@ class OrdersServiceIT extends BaseIntegrationTest {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private OrderApi ordersApi;
+
     @MockitoBean
     private ClientApi clientApi;
 
     @Autowired
     private ApplicationEvents applicationEvents;
-
-    private OrdersServiceGrpc.OrdersServiceBlockingStub blockingStub;
-
-    @BeforeEach
-    void initStub() {
-        blockingStub = OrdersServiceGrpc.newBlockingStub(channel);
-    }
 
     @Test
     @DisplayName("Успешное создание заказа с валидными данными")
@@ -147,31 +143,34 @@ class OrdersServiceIT extends BaseIntegrationTest {
 
         orderRepository.saveAllAndFlush(List.of(order1, order2, order3, otherOrder));
 
-        GetOrdersGrpc request = GetOrdersGrpc.newBuilder()
-                .setPagination(PaginationParams.newBuilder()
-                        .setPage(0)
-                        .setSize(2)
-                        .addSorters("amount,desc")
-                        .build())
-                .addClientIds(targetClientId)
-                .build();
+        GetOrdersFilterDTO filter = new GetOrdersFilterDTO(
+                new PaginationParamsDTO(0, 2, List.of("amount,desc")),
+                null,
+                List.of(targetClientId),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
 
-        GetOrdersResponseGrpc response = blockingStub.getOrders(request);
+        OrdersPageResponseDTO response = ordersApi.getOrders(filter);
         assertThat(response).isNotNull();
-        assertThat(response.getTotalElements()).isEqualTo(3);
-        assertThat(response.getOrdersCount()).isEqualTo(2);
+        assertThat(response.totalElements()).isEqualTo(3);
+        assertThat(response.orders()).hasSize(2);
 
-        var firstResult = response.getOrders(0);
-        var secondResult = response.getOrders(1);
+        var firstResult = response.orders().get(0);
+        var secondResult = response.orders().get(1);
 
-        assertThat(UUID.fromString(firstResult.getId())).isEqualTo(order2.getId());
-        assertThat(firstResult.getAmount()).isEqualTo(5000);
+        assertThat(firstResult.id()).isEqualTo(order2.getId());
+        assertThat(firstResult.amount()).isEqualTo(5000);
 
-        assertThat(UUID.fromString(secondResult.getId())).isEqualTo(order3.getId());
-        assertThat(secondResult.getAmount()).isEqualTo(3000);
+        assertThat(secondResult.id()).isEqualTo(order3.getId());
+        assertThat(secondResult.amount()).isEqualTo(3000);
 
-        boolean containsOtherClient = response.getOrdersList().stream()
-                .anyMatch(o -> otherClientId.equals(o.getClientId()));
+        boolean containsOtherClient = response.orders().stream()
+                .anyMatch(o -> otherClientId.equals(o.clientId()));
         assertThat(containsOtherClient).isFalse();
     }
 
@@ -181,16 +180,23 @@ class OrdersServiceIT extends BaseIntegrationTest {
         Order order = createOrder(500L, 100, Instant.now());
         orderRepository.saveAndFlush(order);
 
-        GetOrdersGrpc request = GetOrdersGrpc.newBuilder()
-                .setPagination(PaginationParams.newBuilder().setPage(0).setSize(10).build())
-                .addClientIds(999L)
-                .build();
+        GetOrdersFilterDTO filter = new GetOrdersFilterDTO(
+                new PaginationParamsDTO(0, 10, List.of()),
+                null,
+                List.of(999L),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
 
-        GetOrdersResponseGrpc response = blockingStub.getOrders(request);
+        OrdersPageResponseDTO response = ordersApi.getOrders(filter);
 
         assertThat(response).isNotNull();
-        assertThat(response.getTotalElements()).isZero();
-        assertThat(response.getOrdersCount()).isZero();
+        assertThat(response.totalElements()).isZero();
+        assertThat(response.orders()).isEmpty();
     }
 
     @Test
@@ -204,18 +210,26 @@ class OrdersServiceIT extends BaseIntegrationTest {
 
         orderRepository.saveAllAndFlush(List.of(order1, order2, order3));
 
-        GetOrdersGrpc request = GetOrdersGrpc.newBuilder()
-                .addClientIds(300L)
-                .build();
+        GetOrdersFilterDTO filter = new GetOrdersFilterDTO(
+                new PaginationParamsDTO(0, 20, List.of()),
+                null,
+                List.of(300L),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
 
-        GetOrdersResponseGrpc response = blockingStub.getOrders(request);
+        OrdersPageResponseDTO response = ordersApi.getOrders(filter);
 
         assertThat(response).isNotNull();
-        assertThat(response.getTotalElements()).isEqualTo(3);
-        assertThat(response.getOrdersCount()).isEqualTo(3);
+        assertThat(response.totalElements()).isEqualTo(3);
+        assertThat(response.orders()).hasSize(3);
 
-        List<UUID> returnedIds = response.getOrdersList().stream()
-                .map(o -> UUID.fromString(o.getId()))
+        List<UUID> returnedIds = response.orders().stream()
+                .map(OrderResponseDTO::id)
                 .toList();
 
         assertThat(returnedIds).containsExactlyInAnyOrderElementsOf(returnedIds);

@@ -4,12 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.junit.jupiter.api.AfterEach;
+import net.rcetech.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.grpc.test.autoconfigure.LocalGrpcPort;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,10 +21,9 @@ import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.InjectWireMock;
-import net.rcetech.orders.repository.OrderRepository;
 
 @ActiveProfiles("test")
-@SpringBootTest(properties = "spring.grpc.server.port=0")
+@SpringBootTest
 @RecordApplicationEvents
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(WireMockConfiguration.class)
@@ -55,11 +51,6 @@ public abstract class BaseIntegrationTest {
 
     protected WireMock wireMockClient;
 
-    @LocalGrpcPort
-    protected int port;
-
-    protected ManagedChannel channel;
-
     @Autowired
     protected OrderRepository orderRepository;
 
@@ -85,22 +76,8 @@ public abstract class BaseIntegrationTest {
     }
 
     @BeforeEach
-    void initChannel() {
-        channel = ManagedChannelBuilder.forAddress("localhost", port)
-                .usePlaintext()
-                .build();
-    }
-
-    @BeforeEach
     void clearDatabase() {
         orderRepository.deleteAllInBatch();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (channel != null) {
-            channel.shutdownNow();
-        }
     }
 
 }

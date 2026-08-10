@@ -4,6 +4,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import net.rcetech.api.dto.*;
+import net.rcetech.api.enums.ClientStatus;
+import net.rcetech.api.enums.RequestMethod;
+import net.rcetech.api.mapper.DetailsMapper;
+import net.rcetech.api.mapper.OrdersMapper;
+import net.rcetech.api.service.ApiMerchantDetailsGrpcService;
+import net.rcetech.api.service.OrderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,22 +21,20 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import net.rcetech.api.enums.ClientStatus;
-import net.rcetech.api.enums.RequestMethod;
-import net.rcetech.api.mapper.DetailsMapper;
-import net.rcetech.api.mapper.OrdersMapper;
-import net.rcetech.api.service.ApiMerchantDetailsGrpcService;
-import net.rcetech.api.service.ApiOrdersGrpcService;
-import net.rcetech.api.service.OrderService;
+import rce.tech.ordersapi.dto.CreateOrderRequestDTO;
+import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
+import rce.tech.ordersapi.dto.OrdersPageResponseDTO;
+import rce.tech.ordersapi.dto.UpdateOrderStatusRequestDTO;
+import rce.tech.ordersapi.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -45,7 +49,7 @@ class OrderServiceTest {
     private OrdersMapper ordersMapper;
 
     @Mock
-    private ApiOrdersGrpcService apiOrdersGrpcService;
+    private OrderApi orderApi;
 
     @InjectMocks
     private OrderService orderService;
@@ -73,9 +77,9 @@ class OrderServiceTest {
 
     private ApiDetailsResponseDTO detailsResponseDTO;
 
-    private ApiOrdersCreateRequestDTO ordersCreateRequestDTO;
+    private CreateOrderRequestDTO createOrderRequestDTO;
 
-    private ApiOrdersResponseDTO ordersResponseDTO;
+    private rce.tech.ordersapi.dto.OrderResponseDTO orderResponseDTO;
 
     private Instant now;
 
@@ -125,28 +129,28 @@ class OrderServiceTest {
                         .build())
                 .build();
 
-        ordersCreateRequestDTO = ApiOrdersCreateRequestDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .merchant("Merchant LLC")
-                .merchantOrderId("merchant-order-456")
-                .merchantOrderStatus("PENDING")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .callbackUrl("https://callback.url")
-                .build();
+        createOrderRequestDTO = new CreateOrderRequestDTO(
+                orderId,
+                1L,
+                "internal-123",
+                "Merchant LLC",
+                "merchant-order-456",
+                "PENDING",
+                1000,
+                true,
+                "https://callback.url"
+        );
 
-        ordersResponseDTO = ApiOrdersResponseDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .status("CREATED")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .callbackUrl("https://callback.url")
-                .createdAt(now)
-                .build();
+        orderResponseDTO = new rce.tech.ordersapi.dto.OrderResponseDTO(
+                orderId,
+                1L,
+                "internal-123",
+                "CREATED",
+                1000,
+                true,
+                "https://callback.url",
+                now
+        );
     }
 
     @AfterEach
@@ -162,8 +166,8 @@ class OrderServiceTest {
         when(detailsMapper.orderToRequestDTO(createOrderDTO)).thenReturn(apiDetailsRequestDTO);
         when(detailsGrpcService.getDetails(apiDetailsRequestDTO, clientDTO)).thenReturn(detailsResponseDTO);
         when(ordersMapper.createRequestDTO(orderId, createOrderDTO, detailsResponseDTO, clientDTO))
-                .thenReturn(ordersCreateRequestDTO);
-        when(apiOrdersGrpcService.createOrder(ordersCreateRequestDTO)).thenReturn(ordersResponseDTO);
+                .thenReturn(createOrderRequestDTO);
+        when(orderApi.createOrder(createOrderRequestDTO)).thenReturn(orderResponseDTO);
 
         timerMock.when(() -> Timer.start(meterRegistry)).thenReturn(sample);
         doReturn(timer).when(meterRegistry).timer(anyString(), any(String[].class));
@@ -188,13 +192,12 @@ class OrderServiceTest {
         verify(detailsMapper).orderToRequestDTO(createOrderDTO);
         verify(detailsGrpcService).getDetails(apiDetailsRequestDTO, clientDTO);
         verify(ordersMapper).createRequestDTO(orderId, createOrderDTO, detailsResponseDTO, clientDTO);
-        verify(apiOrdersGrpcService).createOrder(ordersCreateRequestDTO);
+        verify(orderApi).createOrder(createOrderRequestDTO);
 
         verify(meterRegistry, times(1)).timer(
                 eq(DETAILS_REQUEST),
                 any(String[].class)
         );
-
     }
 
     @Test
@@ -229,28 +232,28 @@ class OrderServiceTest {
                         .build())
                 .build();
 
-        var ordersCreateRequestDTOWithoutUnique = ApiOrdersCreateRequestDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .merchant("Merchant LLC")
-                .merchantOrderId("merchant-order-456")
-                .merchantOrderStatus("PENDING")
-                .amount(1000)
-                .enableUniqueAmount(false)
-                .callbackUrl("https://callback.url")
-                .build();
+        var createOrderRequestDTOWithoutUnique = new CreateOrderRequestDTO(
+                orderId,
+                1L,
+                "internal-123",
+                "Merchant LLC",
+                "merchant-order-456",
+                "PENDING",
+                1000,
+                false,
+                "https://callback.url"
+        );
 
-        var ordersResponseDTOWithoutUnique = ApiOrdersResponseDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .status("CREATED")
-                .amount(1000)
-                .enableUniqueAmount(false)
-                .callbackUrl("https://callback.url")
-                .createdAt(now)
-                .build();
+        var orderResponseDTOWithoutUnique = new rce.tech.ordersapi.dto.OrderResponseDTO(
+                orderId,
+                1L,
+                "internal-123",
+                "CREATED",
+                1000,
+                false,
+                "https://callback.url",
+                now
+        );
 
         when(detailsMapper.orderToRequestDTO(createOrderDTOWithoutUnique)).thenReturn(
                 apiDetailsRequestDTOWithoutUnique);
@@ -258,9 +261,9 @@ class OrderServiceTest {
                 detailsResponseDTOWithoutUnique);
         when(ordersMapper.createRequestDTO(orderId, createOrderDTOWithoutUnique, detailsResponseDTOWithoutUnique,
                 clientDTO))
-                .thenReturn(ordersCreateRequestDTOWithoutUnique);
-        when(apiOrdersGrpcService.createOrder(ordersCreateRequestDTOWithoutUnique)).thenReturn(
-                ordersResponseDTOWithoutUnique);
+                .thenReturn(createOrderRequestDTOWithoutUnique);
+        when(orderApi.createOrder(createOrderRequestDTOWithoutUnique)).thenReturn(
+                orderResponseDTOWithoutUnique);
 
         timerMock.when(() -> Timer.start(meterRegistry)).thenReturn(sample);
         doReturn(timer).when(meterRegistry).timer(anyString(), any(String[].class));
@@ -281,7 +284,7 @@ class OrderServiceTest {
         verify(detailsGrpcService).getDetails(apiDetailsRequestDTOWithoutUnique, clientDTO);
         verify(ordersMapper).createRequestDTO(orderId, createOrderDTOWithoutUnique, detailsResponseDTOWithoutUnique,
                 clientDTO);
-        verify(apiOrdersGrpcService).createOrder(ordersCreateRequestDTOWithoutUnique);
+        verify(orderApi).createOrder(createOrderRequestDTOWithoutUnique);
     }
 
     @Test
@@ -304,16 +307,17 @@ class OrderServiceTest {
                 });
 
         verifyNoInteractions(detailsGrpcService);
-        verifyNoInteractions(apiOrdersGrpcService);
+        verifyNoInteractions(orderApi);
         verifyNoInteractions(detailsMapper);
         verifyNoInteractions(ordersMapper);
     }
 
     @Test
     void shouldFindOrderById() {
-        var id = "order-123";
+        var id = orderId.toString();
 
-        when(apiOrdersGrpcService.getOrders(id, clientDTO.getClientId())).thenReturn(ordersResponseDTO);
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(new OrdersPageResponseDTO(List.of(orderResponseDTO), 1L));
 
         var result = orderService.findOrder(id, clientOrderTimeout, clientDTO);
 
@@ -328,7 +332,10 @@ class OrderServiceTest {
                     assertThat(dto.getDetails()).isNull();
                 });
 
-        verify(apiOrdersGrpcService).getOrders(id, clientDTO.getClientId());
+        verify(orderApi).getOrders(argThat(filter ->
+                filter.id().equals(orderId) &&
+                        filter.clientIds().contains(clientDTO.getClientId())
+        ));
     }
 
     @Test
@@ -338,29 +345,14 @@ class OrderServiceTest {
         var orderId2 = UUID.randomUUID();
         var now2 = Instant.now().plusSeconds(60);
 
-        var orderResponse1 = ApiOrdersResponseDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .status("CREATED")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .createdAt(now)
-                .build();
+        var orderResponse1 = new rce.tech.ordersapi.dto.OrderResponseDTO(
+                orderId, 1L, "internal-123", "CREATED", 1000, true, null, now);
 
-        var orderResponse2 = ApiOrdersResponseDTO.builder()
-                .id(orderId2)
-                .clientId(1L)
-                .internalId("internal-456")
-                .status("PENDING")
-                .amount(500)
-                .enableUniqueAmount(false)
-                .createdAt(now2)
-                .build();
+        var orderResponse2 = new rce.tech.ordersapi.dto.OrderResponseDTO(
+                orderId2, 1L, "internal-456", "PENDING", 500, false, null, now2);
 
-        var orderList = List.of(orderResponse1, orderResponse2);
-
-        when(apiOrdersGrpcService.findOrders(clientDTO.getClientId(), pageable)).thenReturn(orderList);
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(new OrdersPageResponseDTO(List.of(orderResponse1, orderResponse2), 2L));
 
         var result = orderService.findOrders(clientOrderTimeout, clientDTO, pageable);
 
@@ -381,24 +373,24 @@ class OrderServiceTest {
                     assertThat(list.get(1).getExpiresAt()).isEqualTo(now2.plusSeconds(clientOrderTimeout));
                 });
 
-        verify(apiOrdersGrpcService).findOrders(clientDTO.getClientId(), pageable);
+        verify(orderApi).getOrders(argThat(filter ->
+                filter.clientIds().contains(clientDTO.getClientId()) &&
+                        filter.pagination().page() == 0 &&
+                        filter.pagination().size() == 10 &&
+                        filter.pagination().sorters().contains("createdAt,desc")
+        ));
     }
 
     @Test
     void shouldCancelOrder() {
-        var id = "order-123";
+        var id = orderId.toString();
 
-        var canceledOrderResponse = ApiOrdersResponseDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .status("CANCELED")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .createdAt(now)
-                .build();
+        var canceledOrderResponse = new rce.tech.ordersapi.dto.OrderResponseDTO(
+                orderId, 1L, "internal-123", "CANCELED", 1000, true, "https://callback.url", now);
 
-        when(apiOrdersGrpcService.getOrders(id, clientDTO.getClientId())).thenReturn(canceledOrderResponse);
+        doNothing().when(orderApi).updateOrderStatus(any(UpdateOrderStatusRequestDTO.class));
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(new OrdersPageResponseDTO(List.of(canceledOrderResponse), 1L));
 
         var result = orderService.cancelOrder(id, clientOrderTimeout, clientDTO);
 
@@ -412,37 +404,31 @@ class OrderServiceTest {
                     assertThat(dto.getExpiresAt()).isEqualTo(now.plusSeconds(clientOrderTimeout));
                 });
 
-        verify(apiOrdersGrpcService).cancelOrder(id, clientDTO.getClientId());
-        verify(apiOrdersGrpcService).getOrders(id, clientDTO.getClientId());
+        verify(orderApi).updateOrderStatus(
+                eq(new UpdateOrderStatusRequestDTO(orderId, "CANCELED", clientDTO.getClientId())));
+        verify(orderApi).getOrders(any(GetOrdersFilterDTO.class));
     }
 
     @Test
     void shouldFindOrdersWithEmptyResult() {
         var pageable = PageRequest.of(0, 10);
 
-        when(apiOrdersGrpcService.findOrders(clientDTO.getClientId(), pageable)).thenReturn(List.of());
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(new OrdersPageResponseDTO(List.of(), 0L));
 
         var result = orderService.findOrders(clientOrderTimeout, clientDTO, pageable);
 
         assertThat(result).isEmpty();
 
-        verify(apiOrdersGrpcService).findOrders(clientDTO.getClientId(), pageable);
+        verify(orderApi).getOrders(any(GetOrdersFilterDTO.class));
     }
 
     @Test
     void shouldHandleNullDetailsInFindOrder() {
-        var id = "order-123";
-        var ordersResponseWithoutDetails = ApiOrdersResponseDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .status("CREATED")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .createdAt(now)
-                .build();
+        var id = orderId.toString();
 
-        when(apiOrdersGrpcService.getOrders(id, clientDTO.getClientId())).thenReturn(ordersResponseWithoutDetails);
+        when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
+                .thenReturn(new OrdersPageResponseDTO(List.of(orderResponseDTO), 1L));
 
         var result = orderService.findOrder(id, clientOrderTimeout, clientDTO);
 
@@ -461,8 +447,8 @@ class OrderServiceTest {
         when(detailsMapper.orderToRequestDTO(createOrderDTO)).thenReturn(apiDetailsRequestDTO);
         when(detailsGrpcService.getDetails(apiDetailsRequestDTO, clientDTO)).thenReturn(detailsResponseDTO);
         when(ordersMapper.createRequestDTO(orderId, createOrderDTO, detailsResponseDTO, clientDTO))
-                .thenReturn(ordersCreateRequestDTO);
-        when(apiOrdersGrpcService.createOrder(ordersCreateRequestDTO)).thenReturn(ordersResponseDTO);
+                .thenReturn(createOrderRequestDTO);
+        when(orderApi.createOrder(createOrderRequestDTO)).thenReturn(orderResponseDTO);
 
         timerMock.when(() -> Timer.start(meterRegistry)).thenReturn(sample);
         doReturn(timer).when(meterRegistry).timer(anyString(), any(String[].class));
@@ -480,8 +466,8 @@ class OrderServiceTest {
         when(detailsMapper.orderToRequestDTO(createOrderDTO)).thenReturn(apiDetailsRequestDTO);
         when(detailsGrpcService.getDetails(apiDetailsRequestDTO, clientDTO)).thenReturn(detailsResponseDTO);
         when(ordersMapper.createRequestDTO(orderId, createOrderDTO, detailsResponseDTO, clientDTO))
-                .thenReturn(ordersCreateRequestDTO);
-        when(apiOrdersGrpcService.createOrder(ordersCreateRequestDTO)).thenReturn(ordersResponseDTO);
+                .thenReturn(createOrderRequestDTO);
+        when(orderApi.createOrder(createOrderRequestDTO)).thenReturn(orderResponseDTO);
 
         timerMock.when(() -> Timer.start(meterRegistry)).thenReturn(sample);
         doReturn(timer).when(meterRegistry).timer(anyString(), any(String[].class));
@@ -489,11 +475,11 @@ class OrderServiceTest {
 
         orderService.createOrder(createOrderDTO, clientDTO, clientOrderTimeout);
 
-        var inOrder = inOrder(detailsMapper, detailsGrpcService, ordersMapper, apiOrdersGrpcService);
+        var inOrder = inOrder(detailsMapper, detailsGrpcService, ordersMapper, orderApi);
         inOrder.verify(detailsMapper).orderToRequestDTO(createOrderDTO);
         inOrder.verify(detailsGrpcService).getDetails(apiDetailsRequestDTO, clientDTO);
         inOrder.verify(ordersMapper).createRequestDTO(orderId, createOrderDTO, detailsResponseDTO, clientDTO);
-        inOrder.verify(apiOrdersGrpcService).createOrder(ordersCreateRequestDTO);
+        inOrder.verify(orderApi).createOrder(createOrderRequestDTO);
     }
 
     @Test
@@ -507,23 +493,24 @@ class OrderServiceTest {
                 .userId("user-123")
                 .build();
 
-        var ordersCreateWithoutCallback = ApiOrdersCreateRequestDTO.builder()
-                .id(orderId)
-                .clientId(1L)
-                .internalId("internal-123")
-                .merchant("Merchant LLC")
-                .merchantOrderId("merchant-order-456")
-                .merchantOrderStatus("PENDING")
-                .amount(1000)
-                .enableUniqueAmount(true)
-                .callbackUrl(null)
-                .build();
+        var createOrderRequestWithoutCallback = new CreateOrderRequestDTO(
+                orderId,
+                1L,
+                "internal-123",
+                "Merchant LLC",
+                "merchant-order-456",
+                "PENDING",
+                1000,
+                true,
+                null
+        );
 
         when(detailsMapper.orderToRequestDTO(createOrderWithoutCallback)).thenReturn(apiDetailsRequestDTO);
         when(detailsGrpcService.getDetails(apiDetailsRequestDTO, clientDTO)).thenReturn(detailsResponseDTO);
         when(ordersMapper.createRequestDTO(orderId, createOrderWithoutCallback, detailsResponseDTO, clientDTO))
-                .thenReturn(ordersCreateWithoutCallback);
-        when(apiOrdersGrpcService.createOrder(ordersCreateWithoutCallback)).thenReturn(ordersResponseDTO);
+                .thenReturn(createOrderRequestWithoutCallback);
+        when(orderApi.createOrder(createOrderRequestWithoutCallback)).thenReturn(orderResponseDTO);
+
         timerMock.when(() -> Timer.start(meterRegistry)).thenReturn(sample);
         doReturn(timer).when(meterRegistry).timer(anyString(), any(String[].class));
         when(sample.stop(any(Timer.class))).thenReturn(100L);
@@ -534,7 +521,7 @@ class OrderServiceTest {
         assertThat(result.getInternalId()).isEqualTo("internal-123");
 
         verify(ordersMapper).createRequestDTO(orderId, createOrderWithoutCallback, detailsResponseDTO, clientDTO);
-        verify(apiOrdersGrpcService).createOrder(ordersCreateWithoutCallback);
+        verify(orderApi).createOrder(createOrderRequestWithoutCallback);
     }
 
 }

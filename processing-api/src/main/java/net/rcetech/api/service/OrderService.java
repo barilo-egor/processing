@@ -3,12 +3,16 @@ package net.rcetech.api.service;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.dto.*;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import net.rcetech.api.constants.Metrics;
+import net.rcetech.api.dto.*;
+import net.rcetech.api.dto.OrderResponseDTO;
+import net.rcetech.api.exceptions.OrderNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.api.mapper.OrdersMapper;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import rce.tech.ordersapi.dto.*;
+import rce.tech.ordersapi.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,16 +30,16 @@ public class OrderService {
 
     private final OrdersMapper ordersMapper;
 
-    private final ApiOrdersGrpcService apiOrdersGrpcService;
+    private final OrderApi orderApi;
 
     private final MeterRegistry meterRegistry;
 
     public OrderService(ApiMerchantDetailsGrpcService detailsGrpcService, DetailsMapper detailsMapper,
-            OrdersMapper ordersMapper, ApiOrdersGrpcService apiOrdersGrpcService, MeterRegistry meterRegistry) {
+            OrdersMapper ordersMapper, OrderApi orderApi, MeterRegistry meterRegistry) {
         this.detailsGrpcService = detailsGrpcService;
         this.detailsMapper = detailsMapper;
         this.ordersMapper = ordersMapper;
-        this.apiOrdersGrpcService = apiOrdersGrpcService;
+        this.orderApi = orderApi;
         this.meterRegistry = meterRegistry;
     }
 
@@ -51,7 +55,7 @@ public class OrderService {
      * @return {@link OrderResponseDTO} с полными деталями и статусом созданного заказа.
      */
     public OrderResponseDTO createOrder(CreateOrderDTO clientRequest, ClientByApiKeyDTO client,
-                                        Integer clientOrderTimeout) {
+            Integer clientOrderTimeout) {
         ApiDetailsRequestDTO apiDetailsRequestDTO = detailsMapper.orderToRequestDTO(clientRequest);
         UUID orderId = apiDetailsRequestDTO.getInternalId();
 
@@ -61,18 +65,19 @@ public class OrderService {
         log.debug("Для клиентского запроса {} найдены реквизиты в merchant-details {}", clientRequest,
                 detailsResponseDTO);
 
-        ApiOrdersCreateRequestDTO requestOrder = ordersMapper.createRequestDTO(orderId, clientRequest,
+        CreateOrderRequestDTO requestOrder = ordersMapper.createRequestDTO(orderId, clientRequest,
                 detailsResponseDTO, client);
-        ApiOrdersResponseDTO orderResponseDTO = apiOrdersGrpcService.createOrder(requestOrder);
+        rce.tech.ordersapi.dto.OrderResponseDTO orderResponseDTO = orderApi.createOrder(requestOrder);
+
         log.debug("Для клиентского запроса {} создан order в api-orders {}", clientRequest, orderResponseDTO);
 
-        Instant expiresAt = orderResponseDTO.getCreatedAt().plusSeconds(clientOrderTimeout);
+        Instant expiresAt = orderResponseDTO.createdAt().plusSeconds(clientOrderTimeout);
         OrderResponseDTO responseDTO = OrderResponseDTO.builder()
                 .id(orderId)
                 .internalId(clientRequest.getInternalId())
                 .details(detailsResponseDTO.getDetails())
-                .status(orderResponseDTO.getStatus())
-                .createdAt(orderResponseDTO.getCreatedAt())
+                .status(orderResponseDTO.status())
+                .createdAt(orderResponseDTO.createdAt())
                 .expiresAt(expiresAt)
                 .build();
         log.debug("Для клиентского запроса {} сформирован ответ {}", clientRequest, responseDTO);
@@ -115,15 +120,26 @@ public class OrderService {
      * @return {@link OrderResponseDTO} с деталями и актуальным статусом найденного заказа.
      */
     public OrderResponseDTO findOrder(String id, Integer clientOrderTimeout, ClientByApiKeyDTO client) {
-        ApiOrdersResponseDTO orderDTO = apiOrdersGrpcService.getOrders(id, client.getClientId());
-        Instant createdAt = orderDTO.getCreatedAt();
+        GetOrdersFilterDTO filter = GetOrdersFilterDTO.builder()
+                .pagination(new PaginationParamsDTO(0, 1, List.of()))
+                .id(UUID.fromString(id))
+                .clientIds(List.of(client.getClientId()))
+                .build();
+
+        OrdersPageResponseDTO pageResponse = orderApi.getOrders(filter);
+        rce.tech.ordersapi.dto.OrderResponseDTO order = pageResponse.orders().stream()
+                .findFirst()
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
+
+        Instant createdAt = order.createdAt();
         Instant expiresAt = createdAt.plusSeconds(clientOrderTimeout);
+
         return OrderResponseDTO.builder()
-                .id(orderDTO.getId())
-                .internalId(orderDTO.getInternalId())
+                .id(order.id())
+                .internalId(order.internalId())
                 //                у ордера их нет, не описано до конца
                 //                .details(orderDTO.get)
-                .status(orderDTO.getStatus())
+                .status(order.status())
                 .createdAt(createdAt)
                 .expiresAt(expiresAt)
                 .build();
@@ -138,16 +154,27 @@ public class OrderService {
      * @return список {@link OrderResponseDTO} с актуальными статусами и временем жизни.
      */
     public List<OrderResponseDTO> findOrders(Integer clientOrderTimeout, ClientByApiKeyDTO client, Pageable pageable) {
-        List<ApiOrdersResponseDTO> orderDTO = apiOrdersGrpcService.findOrders(client.getClientId(), pageable);
-        return orderDTO.stream().map(dto -> {
-            Instant createdAt = dto.getCreatedAt();
-            Instant expiresAt = createdAt.plusSeconds(clientOrderTimeout);
+        List<String> sorters = pageable.getSort().stream()
+                .map(order -> order.getProperty() + "," + order.getDirection().name().toLowerCase())
+                .toList();
+
+        GetOrdersFilterDTO filter = GetOrdersFilterDTO.builder()
+                .pagination(new PaginationParamsDTO(pageable.getPageNumber(), pageable.getPageSize(), sorters))
+                .clientIds(List.of(client.getClientId()))
+                .build();
+
+        OrdersPageResponseDTO pageResponse = orderApi.getOrders(filter);
+
+        return pageResponse.orders().stream().map(dto -> {
+            Instant createdAt = dto.createdAt();
+            Instant expiresAt = createdAt != null ? createdAt.plusSeconds(clientOrderTimeout) : null;
+
             return OrderResponseDTO.builder()
-                    .id(dto.getId())
-                    .internalId(dto.getInternalId())
+                    .id(dto.id())
+                    .internalId(dto.internalId())
                     //                у ордера их нет, не описано до конца
                     //                .details(orderDTO.get)
-                    .status(dto.getStatus())
+                    .status(dto.status())
                     .createdAt(createdAt)
                     .expiresAt(expiresAt)
                     .build();
@@ -163,7 +190,14 @@ public class OrderService {
      * @return {@link OrderResponseDTO} с актуальным статусом CANCELED.
      */
     public OrderResponseDTO cancelOrder(String id, Integer clientOrderTimeout, ClientByApiKeyDTO client) {
-        apiOrdersGrpcService.cancelOrder(id, client.getClientId());
+        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO(
+                UUID.fromString(id),
+                "CANCELED",
+                client.getClientId()
+        );
+
+        orderApi.updateOrderStatus(request);
+
         return findOrder(id, clientOrderTimeout, client);
     }
 
