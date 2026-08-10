@@ -1,0 +1,18 @@
+package net.rcetech.support.exceptions;
+
+import lombok.Getter;
+
+@Getter
+public class BaseException extends RuntimeException {
+
+    private final String field;
+
+    private final String description;
+
+    public BaseException(String message) {
+        super(message);
+        this.field = null;
+        this.description = null;
+    }
+
+}
