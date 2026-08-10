@@ -3,9 +3,9 @@ package net.rcetech.clients.mapper;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.GeneratedKeys;
 import net.rcetech.clients.entity.Client;
-import net.rcetech.clientsapi.dto.ClientResponseDTO;
-import net.rcetech.clientsapi.dto.CreateClientDTO;
-import net.rcetech.clientsapi.dto.CreateClientResponseDTO;
+import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.CreateClientDTO;
+import net.rcetech.meta.clients.dto.CreateClientResponseDTO;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -6,6 +6,7 @@ import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.enums.ClientStatus;
 import net.rcetech.grpc.generated.DetailsGrpc;
 import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
+import net.rcetech.meta.orders.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -13,7 +14,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
-import rce.tech.ordersapi.dto.*;
 
 import java.time.Instant;
 import java.util.List;

@@ -1,6 +1,6 @@
 package net.rcetech.clients.service.integration;
 
-import net.rcetech.clientsapi.service.SecurityApi;
+import net.rcetech.meta.clients.service.SecurityApi;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

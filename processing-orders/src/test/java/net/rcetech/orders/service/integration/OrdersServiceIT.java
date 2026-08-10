@@ -2,7 +2,7 @@ package net.rcetech.orders.service.integration;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.meta.clients.service.ClientApi;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.ApplicationEvents;
-import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
-import rce.tech.ordersapi.dto.OrderResponseDTO;
-import rce.tech.ordersapi.dto.OrdersPageResponseDTO;
-import rce.tech.ordersapi.dto.PaginationParamsDTO;
-import rce.tech.ordersapi.service.OrderApi;
+import net.rcetech.meta.orders.dto.GetOrdersFilterDTO;
+import net.rcetech.meta.orders.dto.OrderResponseDTO;
+import net.rcetech.meta.orders.dto.OrdersPageResponseDTO;
+import net.rcetech.meta.orders.dto.PaginationParamsDTO;
+import net.rcetech.meta.orders.service.OrderApi;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;

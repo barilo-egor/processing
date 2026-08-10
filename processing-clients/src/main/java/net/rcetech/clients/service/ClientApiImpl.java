@@ -3,11 +3,11 @@ package net.rcetech.clients.service;
 import lombok.RequiredArgsConstructor;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.mapper.ClientMapper;
-import net.rcetech.clientsapi.dto.ClientResponseDTO;
-import net.rcetech.clientsapi.dto.CreateClientDTO;
-import net.rcetech.clientsapi.dto.CreateClientResponseDTO;
-import net.rcetech.clientsapi.dto.CreateSignatureDTO;
-import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.CreateClientDTO;
+import net.rcetech.meta.clients.dto.CreateClientResponseDTO;
+import net.rcetech.meta.clients.dto.CreateSignatureDTO;
+import net.rcetech.meta.clients.service.ClientApi;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 

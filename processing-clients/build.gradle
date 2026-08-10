@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation project(':processing-meta')
-    implementation project(':processing-clients-api')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

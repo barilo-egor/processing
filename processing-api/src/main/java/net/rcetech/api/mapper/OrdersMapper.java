@@ -6,7 +6,7 @@ import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.exceptions.EnableUniqueAmountException;
 import org.springframework.stereotype.Component;
-import rce.tech.ordersapi.dto.CreateOrderRequestDTO;
+import net.rcetech.meta.orders.dto.CreateOrderRequestDTO;
 
 import java.util.Objects;
 import java.util.UUID;

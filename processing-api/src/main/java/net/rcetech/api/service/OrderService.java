@@ -5,14 +5,14 @@ import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.constants.Metrics;
 import net.rcetech.api.dto.*;
-import net.rcetech.api.dto.OrderResponseDTO;
 import net.rcetech.api.exceptions.OrderNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.api.mapper.OrdersMapper;
+import net.rcetech.meta.orders.dto.*;
+import net.rcetech.api.dto.OrderResponseDTO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import rce.tech.ordersapi.dto.*;
-import rce.tech.ordersapi.service.OrderApi;
+import net.rcetech.meta.orders.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;
@@ -67,7 +67,7 @@ public class OrderService {
 
         CreateOrderRequestDTO requestOrder = ordersMapper.createRequestDTO(orderId, clientRequest,
                 detailsResponseDTO, client);
-        rce.tech.ordersapi.dto.OrderResponseDTO orderResponseDTO = orderApi.createOrder(requestOrder);
+        net.rcetech.meta.orders.dto.OrderResponseDTO orderResponseDTO = orderApi.createOrder(requestOrder);
 
         log.debug("Для клиентского запроса {} создан order в api-orders {}", clientRequest, orderResponseDTO);
 
@@ -127,7 +127,7 @@ public class OrderService {
                 .build();
 
         OrdersPageResponseDTO pageResponse = orderApi.getOrders(filter);
-        rce.tech.ordersapi.dto.OrderResponseDTO order = pageResponse.orders().stream()
+        net.rcetech.meta.orders.dto.OrderResponseDTO order = pageResponse.orders().stream()
                 .findFirst()
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
 

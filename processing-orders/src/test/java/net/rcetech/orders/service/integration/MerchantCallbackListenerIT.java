@@ -1,6 +1,6 @@
 package net.rcetech.orders.service.integration;
 
-import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.meta.clients.service.ClientApi;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.kafka.MerchantCallbackEvent;

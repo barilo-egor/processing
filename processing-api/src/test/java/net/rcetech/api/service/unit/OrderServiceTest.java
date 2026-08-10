@@ -21,11 +21,11 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import rce.tech.ordersapi.dto.CreateOrderRequestDTO;
-import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
-import rce.tech.ordersapi.dto.OrdersPageResponseDTO;
-import rce.tech.ordersapi.dto.UpdateOrderStatusRequestDTO;
-import rce.tech.ordersapi.service.OrderApi;
+import net.rcetech.meta.orders.dto.CreateOrderRequestDTO;
+import net.rcetech.meta.orders.dto.GetOrdersFilterDTO;
+import net.rcetech.meta.orders.dto.OrdersPageResponseDTO;
+import net.rcetech.meta.orders.dto.UpdateOrderStatusRequestDTO;
+import net.rcetech.meta.orders.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;
@@ -79,7 +79,7 @@ class OrderServiceTest {
 
     private CreateOrderRequestDTO createOrderRequestDTO;
 
-    private rce.tech.ordersapi.dto.OrderResponseDTO orderResponseDTO;
+    private net.rcetech.meta.orders.dto.OrderResponseDTO orderResponseDTO;
 
     private Instant now;
 
@@ -141,7 +141,7 @@ class OrderServiceTest {
                 "https://callback.url"
         );
 
-        orderResponseDTO = new rce.tech.ordersapi.dto.OrderResponseDTO(
+        orderResponseDTO = new net.rcetech.meta.orders.dto.OrderResponseDTO(
                 orderId,
                 1L,
                 "internal-123",
@@ -244,7 +244,7 @@ class OrderServiceTest {
                 "https://callback.url"
         );
 
-        var orderResponseDTOWithoutUnique = new rce.tech.ordersapi.dto.OrderResponseDTO(
+        var orderResponseDTOWithoutUnique = new net.rcetech.meta.orders.dto.OrderResponseDTO(
                 orderId,
                 1L,
                 "internal-123",
@@ -345,10 +345,10 @@ class OrderServiceTest {
         var orderId2 = UUID.randomUUID();
         var now2 = Instant.now().plusSeconds(60);
 
-        var orderResponse1 = new rce.tech.ordersapi.dto.OrderResponseDTO(
+        var orderResponse1 = new net.rcetech.meta.orders.dto.OrderResponseDTO(
                 orderId, 1L, "internal-123", "CREATED", 1000, true, null, now);
 
-        var orderResponse2 = new rce.tech.ordersapi.dto.OrderResponseDTO(
+        var orderResponse2 = new net.rcetech.meta.orders.dto.OrderResponseDTO(
                 orderId2, 1L, "internal-456", "PENDING", 500, false, null, now2);
 
         when(orderApi.getOrders(any(GetOrdersFilterDTO.class)))
@@ -385,7 +385,7 @@ class OrderServiceTest {
     void shouldCancelOrder() {
         var id = orderId.toString();
 
-        var canceledOrderResponse = new rce.tech.ordersapi.dto.OrderResponseDTO(
+        var canceledOrderResponse = new net.rcetech.meta.orders.dto.OrderResponseDTO(
                 orderId, 1L, "internal-123", "CANCELED", 1000, true, "https://callback.url", now);
 
         doNothing().when(orderApi).updateOrderStatus(any(UpdateOrderStatusRequestDTO.class));

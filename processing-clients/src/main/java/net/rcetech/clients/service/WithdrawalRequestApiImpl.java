@@ -3,9 +3,9 @@ package net.rcetech.clients.service;
 import lombok.RequiredArgsConstructor;
 import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.mapper.WithdrawalMapper;
-import net.rcetech.clientsapi.dto.CreateWithdrawalRequestDTO;
-import net.rcetech.clientsapi.dto.UpdateWithdrawalRequestDTO;
-import net.rcetech.clientsapi.service.WithdrawalRequestApi;
+import net.rcetech.meta.clients.dto.CreateWithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.UpdateWithdrawalRequestDTO;
+import net.rcetech.meta.clients.service.WithdrawalRequestApi;
 import org.springframework.stereotype.Service;
 
 @Service

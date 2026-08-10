@@ -9,9 +9,9 @@ import net.rcetech.orders.enums.OrderStatus;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import rce.tech.ordersapi.dto.CreateOrderRequestDTO;
-import rce.tech.ordersapi.dto.GetOrdersFilterDTO;
-import rce.tech.ordersapi.dto.OrderResponseDTO;
+import net.rcetech.meta.orders.dto.CreateOrderRequestDTO;
+import net.rcetech.meta.orders.dto.GetOrdersFilterDTO;
+import net.rcetech.meta.orders.dto.OrderResponseDTO;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.ArrayList;
