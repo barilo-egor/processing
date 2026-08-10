@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-    api project(':processing-clients-api')
-    api project(':processing-orders-api')
+    implementation project(':processing-clients-api')
+    implementation project(':processing-orders-api')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
