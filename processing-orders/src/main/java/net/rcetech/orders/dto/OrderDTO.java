@@ -3,7 +3,7 @@ package net.rcetech.orders.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import net.rcetech.orders.entity.Order;
-import net.rcetech.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.Merchant;
 import net.rcetech.orders.enums.OrderStatus;
 
 import java.time.Instant;

@@ -8,7 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import net.rcetech.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.Merchant;
 import net.rcetech.grpc.generated.CreateOrderGrpc;
 import net.rcetech.grpc.generated.CreateOrderResponseGrpc;
 import net.rcetech.grpc.generated.GetOrdersGrpc;

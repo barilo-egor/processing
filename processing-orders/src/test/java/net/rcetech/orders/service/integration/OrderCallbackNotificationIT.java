@@ -6,7 +6,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
-import net.rcetech.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.Merchant;
 import net.rcetech.orders.dto.ClientDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;

@@ -11,7 +11,7 @@ import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.GeneratedKeys;
 import net.rcetech.clients.entity.Client;
 import net.rcetech.clients.enums.ClientStatus;
-import net.rcetech.clientsapi.exceptions.*;
+import net.rcetech.clients.exceptions.*;
 import net.rcetech.clients.mapper.ClientMapper;
 import net.rcetech.clients.repository.ClientRepository;
 

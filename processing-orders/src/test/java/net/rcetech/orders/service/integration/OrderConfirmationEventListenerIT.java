@@ -15,7 +15,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import net.rcetech.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.Merchant;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.kafka.OrderConfirmationEvent;

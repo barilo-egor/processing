@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
-import net.rcetech.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.Merchant;
 import net.rcetech.grpc.generated.GetOrdersGrpc;
 import net.rcetech.grpc.generated.GetOrdersResponseGrpc;
 import net.rcetech.grpc.generated.OrdersServiceGrpc;
