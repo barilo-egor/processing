@@ -1,14 +1,9 @@
 package net.rcetech.clients.exceptions;
 
-import com.google.rpc.Code;
 import lombok.Getter;
-
-import static com.google.rpc.Code.NOT_FOUND;
 
 @Getter
 public class UserNotFoundException extends RuntimeException implements CustomException {
-
-    private final Code errorCode;
 
     private final String field;
 
@@ -16,7 +11,6 @@ public class UserNotFoundException extends RuntimeException implements CustomExc
 
     public UserNotFoundException() {
         super("User not found.");
-        this.errorCode = NOT_FOUND;
         this.field = null;
         this.description = null;
     }

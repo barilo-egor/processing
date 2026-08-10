@@ -1,14 +1,9 @@
 package net.rcetech.clients.exceptions;
 
-import com.google.rpc.Code;
 import lombok.Getter;
-
-import static com.google.rpc.Code.INVALID_ARGUMENT;
 
 @Getter
 public class UnauthorizedException extends RuntimeException implements CustomException {
-
-    private final Code errorCode;
 
     private final String field;
 
@@ -16,7 +11,6 @@ public class UnauthorizedException extends RuntimeException implements CustomExc
 
     public UnauthorizedException(String message) {
         super(message);
-        this.errorCode = INVALID_ARGUMENT;
         this.field = null;
         this.description = null;
     }

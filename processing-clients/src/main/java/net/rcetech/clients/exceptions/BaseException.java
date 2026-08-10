@@ -1,14 +1,9 @@
 package net.rcetech.clients.exceptions;
 
-import com.google.rpc.Code;
 import lombok.Getter;
-
-import static com.google.rpc.Code.INTERNAL;
 
 @Getter
 public class BaseException extends RuntimeException implements CustomException {
-
-    private final Code errorCode;
 
     private final String field;
 
@@ -16,7 +11,6 @@ public class BaseException extends RuntimeException implements CustomException {
 
     public BaseException(String message) {
         super(message);
-        this.errorCode = INTERNAL;
         this.field = null;
         this.description = null;
     }

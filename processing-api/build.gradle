@@ -1,7 +1,7 @@
 plugins {
     id 'processing'
-    id 'idea'
     id 'com.google.protobuf'
+    id 'idea'
 }
 
 dependencies {
@@ -14,6 +14,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
@@ -33,5 +34,25 @@ idea {
 
         sourceDirs += generatedProtoDir
         generatedSourceDirs += generatedProtoDir
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.34.1"
+    }
+    plugins {
+        grpc {
+            setArtifact("io.grpc:protoc-gen-grpc-java:1.81.0")
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {
+                    option 'jakarta_omit'
+                }
+            }
+        }
     }
 }
