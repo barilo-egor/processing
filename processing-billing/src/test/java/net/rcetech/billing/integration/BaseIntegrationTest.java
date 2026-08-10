@@ -1,13 +1,11 @@
 package net.rcetech.billing.integration;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.junit.jupiter.api.AfterEach;
+import net.rcetech.billing.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.grpc.test.autoconfigure.LocalGrpcPort;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -16,13 +14,13 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
-import net.rcetech.billing.repository.TransactionRepository;
 
 @ActiveProfiles("test")
-@SpringBootTest(properties = "spring.grpc.server.port=0")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @RecordApplicationEvents
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
+@AutoConfigureMockMvc
 public abstract class BaseIntegrationTest {
 
     @SuppressWarnings("resource")
@@ -40,11 +38,6 @@ public abstract class BaseIntegrationTest {
     @Autowired
     protected TransactionRepository transactionRepository;
 
-    @LocalGrpcPort
-    protected int port;
-
-    protected ManagedChannel channel;
-
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", mysql::getJdbcUrl);
@@ -55,22 +48,8 @@ public abstract class BaseIntegrationTest {
     }
 
     @BeforeEach
-    void initChannel() {
-        channel = ManagedChannelBuilder.forAddress("localhost", port)
-                .usePlaintext()
-                .build();
-    }
-
-    @BeforeEach
     void clearDatabase() {
         transactionRepository.deleteAllInBatch();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (channel != null) {
-            channel.shutdownNow();
-        }
     }
 
 }

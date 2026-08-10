@@ -45,6 +45,9 @@ dependencies {
     testImplementation "org.testcontainers:mysql:1.21.4"
     testImplementation "org.assertj:assertj-core:3.27.7"
     testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
 }
 
 idea {

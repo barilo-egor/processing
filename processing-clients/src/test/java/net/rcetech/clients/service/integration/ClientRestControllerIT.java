@@ -2,16 +2,16 @@ package net.rcetech.clients.service.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import net.rcetech.clients.dto.AuthRequest;
+import net.rcetech.clients.dto.ClientDTO;
+import net.rcetech.clients.entity.ClientRefreshToken;
+import net.rcetech.clients.service.ClientService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import net.rcetech.clients.dto.AuthRequest;
-import net.rcetech.clients.dto.ClientDTO;
-import net.rcetech.clients.entity.ClientRefreshToken;
-import net.rcetech.clients.service.ClientService;
 
 import java.time.Instant;
 import java.util.List;
