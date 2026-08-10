@@ -2,7 +2,7 @@ package net.rcetech.orders.service.integration;
 
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.service.OrderService;

@@ -1,4 +1,4 @@
-package net.rcetech.meta.clients.service;
+package net.rcetech.clients.service;
 
 import jakarta.validation.Valid;
 import net.rcetech.meta.clients.dto.CreateWithdrawalRequestDTO;

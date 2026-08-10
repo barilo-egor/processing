@@ -1,4 +1,4 @@
-package net.rcetech.meta.clients.service;
+package net.rcetech.clients.service;
 
 public interface SecurityApi {
 

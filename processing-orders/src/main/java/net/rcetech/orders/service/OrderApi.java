@@ -1,4 +1,4 @@
-package net.rcetech.meta.orders.service;
+package net.rcetech.orders.service;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

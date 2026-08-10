@@ -5,7 +5,7 @@ import net.rcetech.api.enums.ClientStatus;
 import net.rcetech.api.exceptions.BaseException;
 import net.rcetech.api.service.ClientAuthService;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

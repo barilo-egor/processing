@@ -9,7 +9,7 @@ import net.rcetech.clients.exceptions.NotFoundException;
 import net.rcetech.clients.repository.ClientRepository;
 import net.rcetech.meta.clients.dto.CreateWithdrawalRequestDTO;
 import net.rcetech.meta.clients.dto.UpdateWithdrawalRequestDTO;
-import net.rcetech.meta.clients.service.WithdrawalRequestApi;
+import net.rcetech.clients.service.WithdrawalRequestApi;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;

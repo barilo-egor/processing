@@ -7,7 +7,6 @@ import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateClientDTO;
 import net.rcetech.meta.clients.dto.CreateClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
-import net.rcetech.meta.clients.service.ClientApi;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 

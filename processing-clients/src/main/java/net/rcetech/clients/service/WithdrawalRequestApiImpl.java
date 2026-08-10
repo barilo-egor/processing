@@ -5,7 +5,6 @@ import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.mapper.WithdrawalMapper;
 import net.rcetech.meta.clients.dto.CreateWithdrawalRequestDTO;
 import net.rcetech.meta.clients.dto.UpdateWithdrawalRequestDTO;
-import net.rcetech.meta.clients.service.WithdrawalRequestApi;
 import org.springframework.stereotype.Service;
 
 @Service

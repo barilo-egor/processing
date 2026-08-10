@@ -3,7 +3,7 @@ package net.rcetech.orders.service.unit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.service.CallbackSender;
 import org.junit.jupiter.api.BeforeEach;

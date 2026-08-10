@@ -25,7 +25,7 @@ import net.rcetech.meta.orders.dto.CreateOrderRequestDTO;
 import net.rcetech.meta.orders.dto.GetOrdersFilterDTO;
 import net.rcetech.meta.orders.dto.OrdersPageResponseDTO;
 import net.rcetech.meta.orders.dto.UpdateOrderStatusRequestDTO;
-import net.rcetech.meta.orders.service.OrderApi;
+import net.rcetech.orders.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;

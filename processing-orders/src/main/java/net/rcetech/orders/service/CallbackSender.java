@@ -3,7 +3,7 @@ package net.rcetech.orders.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.exceptions.BaseException;

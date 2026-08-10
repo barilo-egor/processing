@@ -2,7 +2,7 @@ package net.rcetech.orders.service.integration;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import net.rcetech.orders.dto.OrderDTO;
 import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
@@ -17,7 +17,7 @@ import net.rcetech.meta.orders.dto.GetOrdersFilterDTO;
 import net.rcetech.meta.orders.dto.OrderResponseDTO;
 import net.rcetech.meta.orders.dto.OrdersPageResponseDTO;
 import net.rcetech.meta.orders.dto.PaginationParamsDTO;
-import net.rcetech.meta.orders.service.OrderApi;
+import net.rcetech.orders.service.OrderApi;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;

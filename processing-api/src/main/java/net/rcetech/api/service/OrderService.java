@@ -12,7 +12,7 @@ import net.rcetech.meta.orders.dto.*;
 import net.rcetech.api.dto.OrderResponseDTO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import net.rcetech.meta.orders.service.OrderApi;
+import net.rcetech.orders.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;

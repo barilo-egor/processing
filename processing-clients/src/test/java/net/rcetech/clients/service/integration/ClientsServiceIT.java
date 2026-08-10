@@ -9,7 +9,7 @@ import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateClientDTO;
 import net.rcetech.meta.clients.dto.CreateClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
-import net.rcetech.meta.clients.service.ClientApi;
+import net.rcetech.clients.service.ClientApi;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
