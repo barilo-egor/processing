@@ -1,24 +1,36 @@
 package net.rcetech.clients.mapper;
 
-import org.springframework.stereotype.Component;
 import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.entity.WithdrawalRequest;
 import net.rcetech.clients.enums.WithdrawalRequestStatus;
-import net.rcetech.grpc.generated.CreateWithdrawalRequestGrpc;
-import net.rcetech.grpc.generated.UpdateWithdrawalRequestGrpc;
+import net.rcetech.clientsapi.dto.CreateWithdrawalRequestDTO;
+import net.rcetech.clientsapi.dto.UpdateWithdrawalRequestDTO;
+import org.springframework.stereotype.Component;
 
 @Component
 public class WithdrawalMapper {
 
-    public WithdrawalRequestDTO createWithdrawalRequestGrpcToDTO(CreateWithdrawalRequestGrpc requestGrpc) {
-        WithdrawalRequestDTO.WithdrawalRequestDTOBuilder builder = WithdrawalRequestDTO.builder()
-                .clientId(requestGrpc.getClientId())
-                .amount(requestGrpc.getAmount())
-                .wallet(requestGrpc.getWallet());
-        if (requestGrpc.hasComment()) {
-            builder.comment(requestGrpc.getComment().getValue());
+    public WithdrawalRequestDTO toInternalDto(CreateWithdrawalRequestDTO dto) {
+        if (dto == null) {
+            return null;
         }
-        return builder.build();
+        return WithdrawalRequestDTO.builder()
+                .clientId(dto.clientId())
+                .amount(dto.amount())
+                .wallet(dto.wallet())
+                .comment(dto.comment())
+                .build();
+    }
+
+    public WithdrawalRequestDTO toInternalDto(UpdateWithdrawalRequestDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        return WithdrawalRequestDTO.builder()
+                .id(dto.id())
+                .wallet(dto.wallet())
+                .comment(dto.comment())
+                .build();
     }
 
     public WithdrawalRequest requestDTOToEntity(WithdrawalRequestDTO requestDTO) {
@@ -41,17 +53,6 @@ public class WithdrawalMapper {
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .build();
-    }
-
-    public WithdrawalRequestDTO updateWithdrawalRequestGrpcToDTO(UpdateWithdrawalRequestGrpc requestGrpc) {
-        WithdrawalRequestDTO.WithdrawalRequestDTOBuilder builder = WithdrawalRequestDTO.builder();
-        if (requestGrpc.hasComment()) {
-            builder.comment(requestGrpc.getComment().getValue());
-        }
-        if (requestGrpc.hasWallet()) {
-            builder.wallet(requestGrpc.getWallet().getValue());
-        }
-        return builder.build();
     }
 
 }

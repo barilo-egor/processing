@@ -1,0 +1,47 @@
+package net.rcetech.clients.service;
+
+import lombok.RequiredArgsConstructor;
+import net.rcetech.clients.dto.ClientDTO;
+import net.rcetech.clients.mapper.ClientMapper;
+import net.rcetech.clientsapi.dto.ClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateClientDTO;
+import net.rcetech.clientsapi.dto.CreateClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateSignatureDTO;
+import net.rcetech.clientsapi.service.ClientApi;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
+
+@Service
+@Validated
+@RequiredArgsConstructor
+public class ClientApiImpl implements ClientApi {
+
+    private final ClientService clientService;
+
+    private final ClientMapper mapper;
+
+    @Override
+    public CreateClientResponseDTO createClient(CreateClientDTO dto) {
+        ClientDTO internalDto = mapper.toInternalDto(dto);
+        ClientDTO createdClientDto = clientService.create(internalDto);
+        return mapper.toCreateClientResponseDTO(createdClientDto);
+    }
+
+    @Override
+    public ClientResponseDTO getClientByApiKey(String apiKey) {
+        ClientDTO internalDto = clientService.getClientByApiKey(apiKey);
+        return mapper.toClientResponseDTO(internalDto);
+    }
+
+    @Override
+    public ClientResponseDTO getClientById(Long id) {
+        ClientDTO internalDto = clientService.getClientById(id);
+        return mapper.toClientResponseDTO(internalDto);
+    }
+
+    @Override
+    public String createSignature(CreateSignatureDTO dto) {
+        return clientService.createSignature(dto.clientId(), dto.data());
+    }
+
+}

@@ -1,6 +1,11 @@
 package net.rcetech.orders.service.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.rcetech.clientsapi.dto.ClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateSignatureDTO;
+import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.orders.dto.OrderDTO;
+import net.rcetech.orders.service.CallbackSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,11 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import net.rcetech.orders.dto.ClientDTO;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.service.ApiClientsGrpcService;
-import net.rcetech.orders.service.CallbackSender;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +29,7 @@ import static org.mockito.Mockito.*;
 class CallbackSenderTest {
 
     @Mock
-    private ApiClientsGrpcService apiClientsGrpcService;
+    private ClientApi clientApi;
 
     @Mock
     private WebClient webClient;
@@ -53,7 +55,7 @@ class CallbackSenderTest {
         WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
         when(webClientBuilder.build()).thenReturn(webClient);
 
-        callbackSender = new CallbackSender(objectMapper, apiClientsGrpcService, webClientBuilder);
+        callbackSender = new CallbackSender(objectMapper, clientApi, webClientBuilder);
     }
 
     @Test
@@ -64,20 +66,16 @@ class CallbackSenderTest {
         orderDTO.setClientId(1L);
         orderDTO.setCallbackUrl("http://example.com");
 
-        String expectedSignature = "valid-grpc-signature";
+        String expectedSignature = "valid-signature-string";
 
-        when(apiClientsGrpcService.createSignature(eq(1L), anyString()))
-                .thenReturn(Mono.just(expectedSignature));
+        when(clientApi.createSignature(any(CreateSignatureDTO.class)))
+                .thenReturn(expectedSignature);
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
-        when(requestBodyUriSpec.uri(ArgumentMatchers.anyString())).thenReturn(requestBodySpec);
         doReturn(requestHeadersSpec).when(requestBodySpec).bodyValue(ArgumentMatchers.any());
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-
         when(responseSpec.toBodilessEntity()).thenReturn(Mono.just(ResponseEntity.ok().build()));
 
         callbackSender.handleCreatedEvent(orderDTO);
@@ -86,11 +84,13 @@ class CallbackSenderTest {
         verify(requestBodySpec).header("Signature", expectedSignature);
         verify(requestBodySpec).header(eq("X-Timestamp"), anyString());
         verify(requestBodySpec).bodyValue(orderDTO);
-        ArgumentCaptor<String> dataToSignCaptor = ArgumentCaptor.forClass(String.class);
-        verify(apiClientsGrpcService).createSignature(eq(1L), dataToSignCaptor.capture());
 
-        String actualDataToSign = dataToSignCaptor.getValue();
-        assertThat(actualDataToSign).startsWith("POST|/|");
+        ArgumentCaptor<CreateSignatureDTO> signatureDtoCaptor = ArgumentCaptor.forClass(CreateSignatureDTO.class);
+        verify(clientApi).createSignature(signatureDtoCaptor.capture());
+
+        CreateSignatureDTO capturedDto = signatureDtoCaptor.getValue();
+        assertThat(capturedDto.clientId()).isEqualTo(1L);
+        assertThat(capturedDto.data()).startsWith("POST|/|");
     }
 
     @Test
@@ -101,13 +101,21 @@ class CallbackSenderTest {
         orderDTO.setClientId(2L);
         orderDTO.setCallbackUrl("");
 
-        ClientDTO mockClientDto = new ClientDTO();
-        mockClientDto.setCallbackUrl(" ");
-        when(apiClientsGrpcService.getClientById(2L)).thenReturn(Mono.just(mockClientDto));
+        ClientResponseDTO mockClientDto = new ClientResponseDTO(
+                2L,
+                "test_user",
+                "secret",
+                "preview",
+                Instant.now(),
+                "ACTIVE",
+                " ",
+                300
+        );
+        when(clientApi.getClientById(2L)).thenReturn(mockClientDto);
 
         callbackSender.handleCreatedEvent(orderDTO);
 
-        verify(apiClientsGrpcService, never()).createSignature(anyLong(), anyString());
+        verify(clientApi, never()).createSignature(any());
         verify(webClient, never()).post();
     }
 

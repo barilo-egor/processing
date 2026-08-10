@@ -3,11 +3,10 @@ plugins {
 }
 
 dependencies {
-    api project(':processing-clients-api')
-
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
@@ -55,13 +54,4 @@ dependencies {
     testImplementation "org.testcontainers:kafka:1.21.4"
     testImplementation "org.testcontainers:mysql:1.21.4"
     testImplementation "org.assertj:assertj-core:3.27.7"
-}
-
-idea {
-    module {
-        def generatedProtoDir = file("${projectDir}/build/generated/source/proto/main/java")
-
-        sourceDirs += generatedProtoDir
-        generatedSourceDirs += generatedProtoDir
-    }
 }

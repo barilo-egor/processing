@@ -1,17 +1,19 @@
 package net.rcetech.clients.service.integration;
 
-import com.google.protobuf.Int64Value;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.StringValue;
-import com.google.rpc.BadRequest;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
+import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.clients.entity.Client;
+import net.rcetech.clients.entity.WithdrawalRequest;
+import net.rcetech.clients.enums.ClientStatus;
+import net.rcetech.clients.enums.WithdrawalRequestStatus;
+import net.rcetech.clients.exceptions.NotFoundException;
+import net.rcetech.clients.repository.ClientRepository;
+import net.rcetech.clientsapi.dto.CreateWithdrawalRequestDTO;
+import net.rcetech.clientsapi.dto.UpdateWithdrawalRequestDTO;
+import net.rcetech.clientsapi.service.WithdrawalRequestApi;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,15 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.entity.Client;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.enums.ClientStatus;
-import net.rcetech.clients.enums.WithdrawalRequestStatus;
-import net.rcetech.clients.repository.ClientRepository;
-import net.rcetech.grpc.generated.CreateWithdrawalRequestGrpc;
-import net.rcetech.grpc.generated.UpdateWithdrawalRequestGrpc;
-import net.rcetech.grpc.generated.WithdrawalRequestServiceGrpc;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -35,8 +28,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WithdrawalIT extends BaseIntegrationTest {
 
@@ -49,12 +41,8 @@ class WithdrawalIT extends BaseIntegrationTest {
     @Value("${kafka.topic.api-clients.receive}")
     private String kafkaTopic;
 
-    private WithdrawalRequestServiceGrpc.WithdrawalRequestServiceBlockingStub blockingStub;
-
-    @BeforeEach
-    void setup() {
-        blockingStub = WithdrawalRequestServiceGrpc.newBlockingStub(channel);
-    }
+    @Autowired
+    private WithdrawalRequestApi withdrawalRequestApi;
 
     @Test
     @DisplayName("Создание заявки: успех при существующем клиенте")
@@ -72,14 +60,14 @@ class WithdrawalIT extends BaseIntegrationTest {
 
         Long existingClientId = client.getId();
 
-        var request = CreateWithdrawalRequestGrpc.newBuilder()
-                .setClientId(existingClientId)
-                .setAmount(1000)
-                .setWallet("TGB-WALLET-777")
-                .setComment(StringValue.of("Urgent cashout"))
-                .build();
+        CreateWithdrawalRequestDTO request = new CreateWithdrawalRequestDTO(
+                existingClientId,
+                1000,
+                "TGB-WALLET-777",
+                "Urgent cashout"
+        );
 
-        blockingStub.createWithdrawalRequest(request);
+        withdrawalRequestApi.createWithdrawalRequest(request);
 
         var savedRequest = withdrawalRequestRepository.findAll().getFirst();
         assertThat(savedRequest.getClientId()).isEqualTo(existingClientId);
@@ -94,14 +82,14 @@ class WithdrawalIT extends BaseIntegrationTest {
                 .apiKey("key").apiKeyPreview("pre").secret("sec").registeredAt(Instant.now()).orderTimeoutSeconds(900)
                 .build());
 
-        var request = CreateWithdrawalRequestGrpc.newBuilder()
-                .setClientId(client.getId())
-                .setAmount(5000)
-                .setWallet("WALLET-123")
-                .setComment(StringValue.of("Check Kafka"))
-                .build();
+        CreateWithdrawalRequestDTO request = new CreateWithdrawalRequestDTO(
+                client.getId(),
+                5000,
+                "WALLET-123",
+                "Check Kafka"
+        );
 
-        blockingStub.createWithdrawalRequest(request);
+        withdrawalRequestApi.createWithdrawalRequest(request);
 
         var dbRequest = withdrawalRequestRepository.findAll().stream()
                 .filter(r -> r.getClientId().equals(client.getId()))
@@ -159,13 +147,13 @@ class WithdrawalIT extends BaseIntegrationTest {
         String newWallet = "NEW_WALLET_ADDRESS_123";
         String newComment = "Updated by admin";
 
-        var request = UpdateWithdrawalRequestGrpc.newBuilder()
-                .setId(Int64Value.of(original.getId()))
-                .setWallet(StringValue.of(newWallet))
-                .setComment(StringValue.of(newComment))
-                .build();
+        UpdateWithdrawalRequestDTO request = new UpdateWithdrawalRequestDTO(
+                original.getId(),
+                newWallet,
+                newComment
+        );
 
-        blockingStub.updateWithdrawalRequest(request);
+        withdrawalRequestApi.updateWithdrawalRequest(request);
 
         WithdrawalRequest updated = withdrawalRequestRepository.findById(original.getId())
                 .orElseThrow(() -> new AssertionError("Заявка не найдена после обновления"));
@@ -177,7 +165,7 @@ class WithdrawalIT extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("Передача пустых StringValue должна очищать поля")
+    @DisplayName("Передача пустых строк должна очищать поля")
     void updateWithdrawal_EmptyValues_ShouldUpdateAsEmpty() {
         Client client = clientRepository.save(
                 Client.builder().username("clear_user").password("p").status(ClientStatus.ACTIVE)
@@ -188,13 +176,13 @@ class WithdrawalIT extends BaseIntegrationTest {
                 .clientId(client.getId()).amount(500).wallet("TO_BE_EMPTY").comment("TO_BE_EMPTY")
                 .status(WithdrawalRequestStatus.NEW).build());
 
-        var request = UpdateWithdrawalRequestGrpc.newBuilder()
-                .setId(Int64Value.of(original.getId()))
-                .setWallet(StringValue.of(""))
-                .setComment(StringValue.of(""))
-                .build();
+        UpdateWithdrawalRequestDTO request = new UpdateWithdrawalRequestDTO(
+                original.getId(),
+                "",
+                ""
+        );
 
-        blockingStub.updateWithdrawalRequest(request);
+        withdrawalRequestApi.updateWithdrawalRequest(request);
 
         WithdrawalRequest updated = withdrawalRequestRepository.findById(original.getId()).get();
         assertThat(updated.getWallet()).isEmpty();
@@ -204,29 +192,13 @@ class WithdrawalIT extends BaseIntegrationTest {
     @Test
     @DisplayName("Ошибка при несуществующем ID")
     void updateWithdrawal_NotFound_ThrowsException() {
-        var request = UpdateWithdrawalRequestGrpc.newBuilder()
-                .setId(Int64Value.of(999999L))
-                .setWallet(StringValue.of("ANY"))
-                .setComment(StringValue.of("ANY"))
-                .build();
+        UpdateWithdrawalRequestDTO request = new UpdateWithdrawalRequestDTO(
+                999999L,
+                "ANY",
+                "ANY"
+        );
 
-        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> {
-            blockingStub.updateWithdrawalRequest(request);
-        });
-
-        assertThat(exception.getStatus().getCode()).isEqualTo(Status.Code.NOT_FOUND);
-
-        com.google.rpc.Status status = StatusProto.fromThrowable(exception);
-        BadRequest badRequest = null;
-        try {
-            badRequest = status.getDetails(0).unpack(BadRequest.class);
-        } catch (InvalidProtocolBufferException e) {
-            fail("Не удалось распаковать детали ошибки");
-        }
-
-        assertThat(badRequest.getFieldViolations(0).getField()).isEqualTo("999999");
-        assertThat(badRequest.getFieldViolations(0).getDescription()).isEqualTo(
-                "Record not found for the provided ID.");
+        assertThrows(NotFoundException.class, () -> withdrawalRequestApi.updateWithdrawalRequest(request));
     }
 
 }

@@ -2,12 +2,7 @@ package net.rcetech.orders.service.integration;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.event.ApplicationEvents;
-import tgb.cryptoexchange.commons.enums.Merchant;
+import net.rcetech.clientsapi.service.ClientApi;
 import net.rcetech.grpc.generated.GetOrdersGrpc;
 import net.rcetech.grpc.generated.GetOrdersResponseGrpc;
 import net.rcetech.grpc.generated.OrdersServiceGrpc;
@@ -17,6 +12,13 @@ import net.rcetech.orders.entity.Order;
 import net.rcetech.orders.enums.OrderStatus;
 import net.rcetech.orders.exceptions.NotFoundException;
 import net.rcetech.orders.service.OrderService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +34,9 @@ class OrdersServiceIT extends BaseIntegrationTest {
 
     @Autowired
     private OrderService orderService;
+
+    @MockitoBean
+    private ClientApi clientApi;
 
     @Autowired
     private ApplicationEvents applicationEvents;

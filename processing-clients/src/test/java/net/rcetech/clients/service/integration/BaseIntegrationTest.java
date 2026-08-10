@@ -1,11 +1,10 @@
 package net.rcetech.clients.service.integration;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.junit.jupiter.api.AfterEach;
+import net.rcetech.clients.repository.ClientRefreshTokenRepository;
+import net.rcetech.clients.repository.ClientRepository;
+import net.rcetech.clients.repository.WithdrawalRequestRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.grpc.test.autoconfigure.LocalGrpcPort;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,12 +15,9 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
-import net.rcetech.clients.repository.ClientRefreshTokenRepository;
-import net.rcetech.clients.repository.ClientRepository;
-import net.rcetech.clients.repository.WithdrawalRequestRepository;
 
 @ActiveProfiles("test")
-@SpringBootTest(properties = "spring.grpc.server.port=0")
+@SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 public abstract class BaseIntegrationTest {
@@ -37,11 +33,6 @@ public abstract class BaseIntegrationTest {
         mysql.start();
         kafka.start();
     }
-
-    @LocalGrpcPort
-    protected int port;
-
-    protected ManagedChannel channel;
 
     @Autowired
     protected ClientRepository clientRepository;
@@ -62,25 +53,11 @@ public abstract class BaseIntegrationTest {
     }
 
     @BeforeEach
-    void initChannel() {
-        channel = ManagedChannelBuilder.forAddress("localhost", port)
-                .usePlaintext()
-                .build();
-    }
-
-    @BeforeEach
     @Transactional
     void clearDatabase() {
         tokenRepository.deleteAllInBatch();
         withdrawalRequestRepository.deleteAllInBatch();
         clientRepository.deleteAllInBatch();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (channel != null) {
-            channel.shutdownNow();
-        }
     }
 
 }

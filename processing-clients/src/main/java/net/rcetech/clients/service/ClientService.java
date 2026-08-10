@@ -2,10 +2,6 @@ package net.rcetech.clients.service;
 
 import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.exceptions.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import net.rcetech.clients.constants.Metrics;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.GeneratedKeys;
@@ -14,6 +10,9 @@ import net.rcetech.clients.enums.ClientStatus;
 import net.rcetech.clients.exceptions.*;
 import net.rcetech.clients.mapper.ClientMapper;
 import net.rcetech.clients.repository.ClientRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j

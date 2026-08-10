@@ -1,165 +1,106 @@
 package net.rcetech.clients.service.integration;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.rpc.BadRequest;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
-import org.junit.jupiter.api.BeforeEach;
+import net.rcetech.clients.entity.Client;
+import net.rcetech.clients.enums.ClientStatus;
+import net.rcetech.clients.exceptions.ClientAlreadyExistsException;
+import net.rcetech.clients.exceptions.PasswordValidationException;
+import net.rcetech.clients.service.ClientCredentialsService;
+import net.rcetech.clientsapi.dto.ClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateClientDTO;
+import net.rcetech.clientsapi.dto.CreateClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateSignatureDTO;
+import net.rcetech.clientsapi.service.ClientApi;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import net.rcetech.clients.entity.Client;
-import net.rcetech.clients.enums.ClientStatus;
-import net.rcetech.clients.service.ClientCredentialsService;
-import net.rcetech.grpc.generated.*;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ClientsServiceIT extends BaseIntegrationTest {
 
     @Autowired
     private ClientCredentialsService clientCredentialsService;
 
-    private ClientsServiceGrpc.ClientsServiceBlockingStub blockingStub;
-
-    @BeforeEach
-    void setup() {
-        blockingStub = ClientsServiceGrpc.newBlockingStub(channel);
-    }
+    @Autowired
+    private ClientApi clientApi;
 
     @Test
     @DisplayName("Создание клиента")
     void createClient_Success() {
-        CreateClientGrpc request = CreateClientGrpc.newBuilder()
-                .setUsername("iron_man")
-                .setPassword("StrongPassword123!")
-                .build();
+        CreateClientDTO request = new CreateClientDTO("iron_man", "StrongPassword123!");
 
-        CreateClientResponseGrpc response = blockingStub.createClient(request);
+        CreateClientResponseDTO response = clientApi.createClient(request);
 
-        assertNotNull(response.getApiKey());
+        assertThat(response.apiKey()).isNotBlank();
 
         Optional<Client> savedClient = clientRepository.findByUsername("iron_man");
-        assertTrue(savedClient.isPresent());
-        assertEquals(ClientStatus.ACTIVE, savedClient.get().getStatus());
-        assertNotEquals("StrongPassword123!", savedClient.get().getPassword());
+        assertThat(savedClient).isPresent();
+        assertThat(savedClient.get().getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(savedClient.get().getPassword()).isNotEqualTo("StrongPassword123!");
     }
 
     @Test
     @DisplayName("Ошибка создания: пользователь с таким username уже существует")
     void createClient_DuplicateUsername_ThrowsAlreadyExists() {
         String username = "unique_user";
-        var firstRequest = CreateClientGrpc.newBuilder()
-                .setUsername(username)
-                .setPassword("Password123!")
-                .build();
+        CreateClientDTO firstRequest = new CreateClientDTO(username, "Password123!");
+        CreateClientDTO secondRequest = new CreateClientDTO(username, "AnotherPass123!");
 
-        blockingStub.createClient(firstRequest);
+        clientApi.createClient(firstRequest);
 
-        var secondRequest = CreateClientGrpc.newBuilder()
-                .setUsername(username)
-                .setPassword("AnotherPass123!")
-                .build();
-
-        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> {
-            blockingStub.createClient(secondRequest);
-        });
-
-        assertThat(exception.getStatus().getCode()).isEqualTo(Status.Code.INVALID_ARGUMENT);
-
-        com.google.rpc.Status status = StatusProto.fromThrowable(exception);
-        BadRequest badRequest = null;
-        try {
-            badRequest = status.getDetails(0).unpack(BadRequest.class);
-        } catch (InvalidProtocolBufferException e) {
-            fail("Не удалось распаковать детали ошибки");
-        }
-
-        assertThat(badRequest.getFieldViolations(0).getField()).isEqualTo("username");
-        assertThat(badRequest.getFieldViolations(0).getDescription()).isEqualTo("Username is already taken.");
+        assertThrows(ClientAlreadyExistsException.class, () -> clientApi.createClient(secondRequest));
 
         long count = clientRepository.count();
         assertThat(count).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("Валидация пароля: должен вернуть структурированную ошибку INVALID_ARGUMENT")
+    @DisplayName("Валидация пароля: должен выбросить исключение валидации")
     void createClient_InvalidPassword_ReturnsDetailedError() {
-        var request = CreateClientGrpc.newBuilder()
-                .setUsername("test_user")
-                .setPassword("123")
-                .build();
+        CreateClientDTO request = new CreateClientDTO("test_user", "123");
 
-        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> {
-            blockingStub.createClient(request);
-        });
+        PasswordValidationException exception = assertThrows(
+                PasswordValidationException.class,
+                () -> clientApi.createClient(request)
+        );
 
-        assertThat(exception.getStatus().getCode()).isEqualTo(Status.Code.INVALID_ARGUMENT);
-
-        com.google.rpc.Status status = StatusProto.fromThrowable(exception);
-        BadRequest badRequest = null;
-
-        for (com.google.protobuf.Any any : status.getDetailsList()) {
-            if (any.is(BadRequest.class)) {
-                try {
-                    badRequest = any.unpack(BadRequest.class);
-                } catch (InvalidProtocolBufferException e) {
-                    fail("Не удалось распаковать BadRequest");
-                }
-            }
-        }
-
-        assertThat(badRequest).isNotNull();
-        assertThat(badRequest.getFieldViolations(0).getField()).isEqualTo("password");
-        assertThat(badRequest.getFieldViolations(0).getDescription()).contains("at least 8 characters");
+        assertThat(exception.getDescription()).contains("at least 8 characters");
     }
 
     @Test
     @DisplayName("Создание клиента: проверка шифрования сгенерированного secret")
     void createClient_checkSecretEncryption() {
-        var request = CreateClientGrpc.newBuilder()
-                .setUsername("crypto_user")
-                .setPassword("AnotherPass123!")
-                .build();
+        CreateClientDTO request = new CreateClientDTO("crypto_user", "AnotherPass123!");
 
-        var response = blockingStub.createClient(request);
+        CreateClientResponseDTO response = clientApi.createClient(request);
 
-        var savedClient = clientRepository.findByUsername("crypto_user")
-                .orElseThrow();
+        Client savedClient = clientRepository.findByUsername("crypto_user").orElseThrow();
 
-        assertThat(response.getSecret()).isNotEqualTo(savedClient.getSecret());
+        assertThat(response.secret()).isNotEqualTo(savedClient.getSecret());
 
         String decryptedSecretFromDb = clientCredentialsService.decryptAesGcm(savedClient.getSecret());
 
-        assertThat(response.getSecret()).isEqualTo(decryptedSecretFromDb);
-        assertThat(response.getSecret()).hasSizeGreaterThan(40);
+        assertThat(response.secret()).isEqualTo(decryptedSecretFromDb);
+        assertThat(response.secret()).hasSizeGreaterThan(40);
     }
 
     @Test
     @DisplayName("Cоздание клиента и получение по API Key")
     void createClient_getClientByApiKey() {
-        var createRequest = CreateClientGrpc.newBuilder()
-                .setUsername("e2e_user")
-                .setPassword("StrongPassword123!")
-                .build();
+        CreateClientDTO createRequest = new CreateClientDTO("e2e_user", "StrongPassword123!");
 
-        var createResponse = blockingStub.createClient(createRequest);
-        String apiKey = createResponse.getApiKey();
-        String secretFromCreate = createResponse.getSecret();
+        CreateClientResponseDTO createResponse = clientApi.createClient(createRequest);
+        String apiKey = createResponse.apiKey();
+        String secretFromCreate = createResponse.secret();
 
-        var getRequest = GetClientByApiKeyGrpc.newBuilder()
-                .setApiKey(apiKey)
-                .build();
+        ClientResponseDTO getResponse = clientApi.getClientByApiKey(apiKey);
 
-        var getResponse = blockingStub.getClientByApiKey(getRequest);
-
-        assertThat(getResponse.getUsername()).isEqualTo("e2e_user");
-        assertThat(getResponse.getSecret()).isEqualTo(secretFromCreate);
-        assertThat(getResponse.getStatus()).isEqualTo("ACTIVE");
+        assertThat(getResponse.username()).isEqualTo("e2e_user");
+        assertThat(getResponse.secret()).isEqualTo(secretFromCreate);
+        assertThat(getResponse.status()).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -174,16 +115,13 @@ class ClientsServiceIT extends BaseIntegrationTest {
                 .status(ClientStatus.ACTIVE)
                 .build());
 
-        var getRequest = GetClientByIdGrpc.newBuilder()
-                .setId(client.getId())
-                .build();
+        ClientResponseDTO getResponse = clientApi.getClientById(client.getId());
 
-        var getResponse = blockingStub.getClientById(getRequest);
-        assertThat(getResponse.getUsername()).isEqualTo(client.getUsername());
+        assertThat(getResponse.username()).isEqualTo(client.getUsername());
     }
 
     @Test
-    @DisplayName("Создание hmac256 подписи: успешный сценарий через gRPC")
+    @DisplayName("Создание hmac256 подписи: успешный сценарий")
     void success_createSignature() {
         Client client = clientRepository.save(Client.builder()
                 .username("test1")
@@ -195,20 +133,15 @@ class ClientsServiceIT extends BaseIntegrationTest {
                 .build());
 
         String testData = "test_data";
-        var getRequest = CreateSignatureGrpc.newBuilder()
-                .setClientId(client.getId())
-                .setData(testData)
-                .build();
-
+        CreateSignatureDTO request = new CreateSignatureDTO(client.getId(), testData);
         String expectedHexSignature = "1108acad9bad25bfc7100fce7d515934b020de6d1ad51ac7be8844432afa7366";
 
-        var getResponse = blockingStub.createSignature(getRequest);
+        String signature = clientApi.createSignature(request);
 
-        assertThat(getResponse).isNotNull();
-        assertThat(getResponse.getSignature())
+        assertThat(signature)
                 .isNotBlank()
-                .isEqualTo(expectedHexSignature);
-        assertThat(getResponse.getSignature()).hasSize(64);
+                .isEqualTo(expectedHexSignature)
+                .hasSize(64);
     }
 
 }

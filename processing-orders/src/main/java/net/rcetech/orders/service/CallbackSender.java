@@ -2,15 +2,17 @@ package net.rcetech.orders.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.clientsapi.dto.CreateSignatureDTO;
+import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.orders.dto.OrderDTO;
+import net.rcetech.orders.entity.Order;
+import net.rcetech.orders.exceptions.BaseException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.exceptions.BaseException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -21,14 +23,14 @@ public class CallbackSender {
 
     private final ObjectMapper objectMapper;
 
-    private final ApiClientsGrpcService apiClientsGrpcService;
+    private final ClientApi clientApi;
 
     private final WebClient webClient;
 
-    public CallbackSender(ObjectMapper objectMapper, ApiClientsGrpcService apiClientsGrpcService,
+    public CallbackSender(ObjectMapper objectMapper, ClientApi clientApi,
             WebClient.Builder webClientBuilder) {
         this.objectMapper = objectMapper;
-        this.apiClientsGrpcService = apiClientsGrpcService;
+        this.clientApi = clientApi;
         this.webClient = webClientBuilder.build();
     }
 
@@ -49,12 +51,13 @@ public class CallbackSender {
 
     private void executePostOrderStatusUpdate(OrderDTO orderDTO) {
         Mono<String> callbackUrlMono = StringUtils.isBlank(orderDTO.getCallbackUrl())
-                ? apiClientsGrpcService.getClientById(orderDTO.getClientId())
+                ? Mono.fromSupplier(() -> clientApi.getClientById(orderDTO.getClientId()))
                 .map(clientDto -> {
-                    orderDTO.setCallbackUrl(clientDto.getCallbackUrl());
-                    return clientDto.getCallbackUrl();
+                    orderDTO.setCallbackUrl(clientDto.callbackUrl());
+                    return clientDto.callbackUrl();
                 })
                 : Mono.just(orderDTO.getCallbackUrl());
+
         callbackUrlMono.flatMap(callbackUrl -> {
                     if (StringUtils.isBlank(callbackUrl)) {
                         log.warn("Пропущена отправка callback: URL пуст для order {}", orderDTO.getId());
@@ -73,24 +76,25 @@ public class CallbackSender {
     }
 
     private Mono<String> requestClientSignature(OrderDTO orderDTO, String callbackUrl, long timestamp) {
-        try {
-            URI uri = URI.create(callbackUrl);
-            String requestPath = uri.getRawPath();
-            if (requestPath == null || requestPath.isEmpty()) {
-                requestPath = "/";
+        return Mono.fromSupplier(() -> {
+            try {
+                URI uri = URI.create(callbackUrl);
+                String requestPath = uri.getRawPath();
+                if (requestPath == null || requestPath.isEmpty()) {
+                    requestPath = "/";
+                }
+
+                String httpMethod = "POST";
+                String content = objectMapper.writeValueAsString(orderDTO);
+                String dataToSign = "%s|%s|%d|%s".formatted(httpMethod, requestPath, timestamp, content);
+                log.debug("Сформирована строка для подписи: {}", dataToSign);
+
+                return clientApi.createSignature(new CreateSignatureDTO(orderDTO.getClientId(), dataToSign));
+            } catch (Exception e) {
+                log.error("Ошибка при подготовке данных или формировании подписи", e);
+                throw new BaseException("Failed to prepare signature data: " + e.getMessage());
             }
-
-            String httpMethod = "POST";
-
-            String content = objectMapper.writeValueAsString(orderDTO);
-            String dataToSign = "%s|%s|%d|%s".formatted(httpMethod, requestPath, timestamp, content);
-            log.debug("Сформирована строка для gRPC подписи: {}", dataToSign);
-            return apiClientsGrpcService.createSignature(orderDTO.getClientId(), dataToSign);
-
-        } catch (Exception e) {
-            log.error("Ошибка при подготовке данных для gRPC подписи", e);
-            return Mono.error(new BaseException("Failed to prepare signature data: " + e.getMessage()));
-        }
+        });
     }
 
     private Mono<Void> sendPostOrderStatusUpdate(OrderDTO orderDTO, String signature, long timestamp) {

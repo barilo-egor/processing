@@ -1,24 +1,26 @@
 package net.rcetech.orders.service.integration;
 
+import net.rcetech.clientsapi.dto.ClientResponseDTO;
+import net.rcetech.clientsapi.dto.CreateSignatureDTO;
+import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.orders.entity.Order;
+import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.orders.service.OrderService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import reactor.core.publisher.Mono;
 import tgb.cryptoexchange.commons.enums.Merchant;
-import net.rcetech.orders.dto.ClientDTO;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
-import net.rcetech.orders.service.ApiClientsGrpcService;
-import net.rcetech.orders.service.OrderService;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 
 class OrderCallbackNotificationIT extends BaseIntegrationTest {
 
@@ -26,10 +28,10 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
     private OrderService orderService;
 
     @MockitoBean
-    private ApiClientsGrpcService apiClientsGrpcService;
+    private ClientApi clientApi;
 
     @Test
-    @DisplayName("Успешный полный цикл: получение URL через gRPC -> подпись через gRPC -> отправка по WebClient")
+    @DisplayName("Успешный полный цикл: получение URL через ClientApi -> подпись через ClientApi -> отправка по WebClient")
     void shouldExecuteFullCallbackPipelineSuccessfully() {
         UUID orderId = UUID.randomUUID();
         Long clientId = 999L;
@@ -37,14 +39,22 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
         String fullCallbackUrl = "http://localhost:" + wireMockServer.port() + callbackPath;
         String mockSignature = "mocked-secure-digital-signature-12345";
 
-        ClientDTO mockClientDto = new ClientDTO();
-        mockClientDto.setCallbackUrl(fullCallbackUrl);
+        ClientResponseDTO mockClientDto = new ClientResponseDTO(
+                clientId,
+                "test_user",
+                "secret",
+                "preview",
+                Instant.now(),
+                "ACTIVE",
+                fullCallbackUrl,
+                300
+        );
 
-        Mockito.when(apiClientsGrpcService.getClientById(clientId))
-                .thenReturn(Mono.just(mockClientDto));
+        Mockito.when(clientApi.getClientById(clientId))
+                .thenReturn(mockClientDto);
 
-        Mockito.when(apiClientsGrpcService.createSignature(eq(clientId), anyString()))
-                .thenReturn(Mono.just(mockSignature));
+        Mockito.when(clientApi.createSignature(any(CreateSignatureDTO.class)))
+                .thenReturn(mockSignature);
 
         wireMockClient.register(post(urlEqualTo(callbackPath))
                 .willReturn(aResponse()
@@ -73,22 +83,23 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
                 .withRequestBody(containing("5000"))
         ));
 
-        Mockito.verify(apiClientsGrpcService, Mockito.times(1)).getClientById(clientId);
-        Mockito.verify(apiClientsGrpcService, Mockito.times(1))
-                .createSignature(eq(clientId), Mockito.contains("POST|" + callbackPath));
+        Mockito.verify(clientApi, Mockito.times(1)).getClientById(clientId);
+        Mockito.verify(clientApi, Mockito.times(1))
+                .createSignature(
+                        argThat(dto -> dto.clientId().equals(clientId) && dto.data().contains("POST|" + callbackPath)));
     }
 
     @Test
     @DisplayName("Пропуск вызова getClientById, если callbackUrl уже заполнен в самом order")
-    void shouldSkipGrpcClientFetchIfCallbackUrlIsAlreadyPresent() {
+    void shouldSkipClientFetchIfCallbackUrlIsAlreadyPresent() {
         UUID orderId = UUID.randomUUID();
         Long clientId = 888L;
         String callbackPath = "/api/v2/direct-callback";
         String fullCallbackUrl = "http://localhost:" + wireMockServer.port() + callbackPath;
         String mockSignature = "direct-signature";
 
-        Mockito.when(apiClientsGrpcService.createSignature(eq(clientId), anyString()))
-                .thenReturn(Mono.just(mockSignature));
+        Mockito.when(clientApi.createSignature(any(CreateSignatureDTO.class)))
+                .thenReturn(mockSignature);
 
         wireMockClient.register(post(urlEqualTo(callbackPath)).willReturn(aResponse().withStatus(200)));
 
@@ -111,13 +122,12 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
                 .withHeader("Signature", equalTo(mockSignature))
         ));
 
-        Mockito.verify(apiClientsGrpcService, Mockito.never()).getClientById(anyLong());
+        Mockito.verify(clientApi, Mockito.never()).getClientById(anyLong());
     }
 
     @Test
     @DisplayName("Обработка ошибки: сервер клиента вернул 500 Internal Server Error")
     void shouldHandleHttp500ErrorGracefully() {
-        // Arrange
         UUID orderId = UUID.randomUUID();
         Long clientId = 111L;
         String callbackPath = "/api/v1/error-callback";
@@ -125,8 +135,8 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
         String fullCallbackUrl = "http://localhost:" + wireMockServer.port() + callbackPath;
         String mockSignature = "error-test-signature";
 
-        Mockito.when(apiClientsGrpcService.createSignature(eq(clientId), anyString()))
-                .thenReturn(Mono.just(mockSignature));
+        Mockito.when(clientApi.createSignature(any(CreateSignatureDTO.class)))
+                .thenReturn(mockSignature);
 
         wireMockClient.register(post(urlEqualTo(callbackPath))
                 .willReturn(aResponse()
@@ -178,7 +188,7 @@ class OrderCallbackNotificationIT extends BaseIntegrationTest {
 
         await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> verify(0, postRequestedFor(anyUrl())));
 
-        Mockito.verify(apiClientsGrpcService, Mockito.never()).createSignature(eq(clientId), anyString());
+        Mockito.verify(clientApi, Mockito.never()).createSignature(any(CreateSignatureDTO.class));
     }
 
 }

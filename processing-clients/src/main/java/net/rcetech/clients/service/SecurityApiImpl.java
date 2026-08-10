@@ -1,30 +1,27 @@
-package net.rcetech.clients.controller;
+package net.rcetech.clients.service;
 
-import com.google.protobuf.Empty;
-import io.grpc.stub.StreamObserver;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.clients.exceptions.BaseException;
+import net.rcetech.clientsapi.service.SecurityApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.grpc.server.service.GrpcService;
+import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
-import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.grpc.generated.GetPublicJWTKeyResponseGrpc;
-import net.rcetech.grpc.generated.SecurityServiceGrpc;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
-@GrpcService
 @Slf4j
-public class SecurityGrpcService extends SecurityServiceGrpc.SecurityServiceImplBase {
+@Service
+public class SecurityApiImpl implements SecurityApi {
 
     private final Resource jwtPublicKeyResource;
 
     private String jwtPublicKeyString;
 
-    public SecurityGrpcService(@Value("${secrets.jwt.public}") Resource jwtPublicKeyResource) {
+    public SecurityApiImpl(@Value("${secrets.jwt.public}") Resource jwtPublicKeyResource) {
         this.jwtPublicKeyResource = jwtPublicKeyResource;
     }
 
@@ -40,9 +37,8 @@ public class SecurityGrpcService extends SecurityServiceGrpc.SecurityServiceImpl
     }
 
     @Override
-    public void getPublicKey(Empty request, StreamObserver<GetPublicJWTKeyResponseGrpc> responseObserver) {
-        responseObserver.onNext(GetPublicJWTKeyResponseGrpc.newBuilder().setJwtKey(jwtPublicKeyString).build());
-        responseObserver.onCompleted();
+    public String getPublicKey() {
+        return jwtPublicKeyString;
     }
 
 }

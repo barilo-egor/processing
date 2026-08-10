@@ -1,17 +1,19 @@
 package net.rcetech.orders.service.integration;
 
+import net.rcetech.clientsapi.service.ClientApi;
+import net.rcetech.orders.entity.Order;
+import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.orders.kafka.MerchantCallbackEvent;
+import net.rcetech.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import tgb.cryptoexchange.commons.enums.Merchant;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
-import net.rcetech.orders.kafka.MerchantCallbackEvent;
-import net.rcetech.orders.repository.OrderRepository;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -35,6 +37,9 @@ class MerchantCallbackListenerIT extends BaseIntegrationTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @MockitoBean
+    private ClientApi clientApi;
 
     @MockitoSpyBean
     private KafkaTemplate<String, MerchantCallbackEvent> kafkaTemplateUnknownStatus;
