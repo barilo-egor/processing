@@ -1,0 +1,43 @@
+package net.rcetech.processingdetailsapi.enums;
+
+public enum RequestMethod {
+
+    C2C,
+    SBP,
+    QR,
+    CARD,
+    SIM,
+    MOBILE,
+    TO_CARD,
+    CROSS_BORDER,
+    MOBILE_TOP_UP,
+    SBP_QR,
+    BANK_CARD,
+    PHONE,
+    SBER_ACCOUNT,
+    ALFA_ALFA,
+    P2P_PHONE,
+    P2P_CARD,
+    OZON_OZON,
+    TRANSGRAN_SBP,
+    ANY_QR,
+    NSPK,
+    SBER_QR,
+    OZON_QR,
+    ALFA_QR,
+    GAZPROM_QR,
+    PSBPAY,
+    YANDEX_TIPS,
+    BEELINE,
+    TRANS_SBP,
+    TRIANGLE,
+    PSB,
+    ALFA,
+    GAZ_PROM,
+    OZON,
+    TRANSGRAN_PHONE,
+    VTB_QR,
+    OTP_QR,
+    PSB_QR
+
+}
