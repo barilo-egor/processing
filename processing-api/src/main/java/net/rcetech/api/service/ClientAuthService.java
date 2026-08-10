@@ -1,11 +1,14 @@
 package net.rcetech.api.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.dto.ClientByApiKeyDTO;
+import net.rcetech.api.enums.ClientStatus;
+import net.rcetech.api.exceptions.BaseException;
+import net.rcetech.clientsapi.dto.ClientResponseDTO;
+import net.rcetech.clientsapi.service.ClientApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import net.rcetech.api.dto.ClientByApiKeyDTO;
-import net.rcetech.api.exceptions.BaseException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -19,16 +22,16 @@ public class ClientAuthService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private final ApiClientsGrpcService apiClientsGrpcService;
+    private final ClientApi clientApi;
 
     private final Long cacheTtl;
 
     public ClientAuthService(RedisTemplate<String, Object> redisTemplate,
             @Value("${cache.ttl.client-get-seconds}") Long cacheTtl,
-            ApiClientsGrpcService apiClientsGrpcService) {
+            ClientApi clientApi) {
         this.redisTemplate = redisTemplate;
         this.cacheTtl = cacheTtl;
-        this.apiClientsGrpcService = apiClientsGrpcService;
+        this.clientApi = clientApi;
     }
 
     /**
@@ -47,12 +50,22 @@ public class ClientAuthService {
         if (cachedClient != null) {
             return cachedClient;
         }
-        ClientByApiKeyDTO client = apiClientsGrpcService.getClientByApiKey(keyHash);
+        ClientResponseDTO client = clientApi.getClientByApiKey(keyHash);
         if (client == null) {
             return null;
         }
-        redisTemplate.opsForValue().set(cacheKey, client, Duration.ofSeconds(cacheTtl));
-        return client;
+        ClientByApiKeyDTO clientByApiKeyDTO = ClientByApiKeyDTO.builder()
+                .clientId(client.id())
+                .username(client.username())
+                .secret(client.secret())
+                .apiKeyPreview(client.apiKeyPreview())
+                .registeredAt(client.registeredAt())
+                .status(ClientStatus.valueOf(client.status()))
+                .callbackUrl(client.callbackUrl())
+                .orderTimeoutSeconds(client.orderTimeoutSeconds())
+                .build();
+        redisTemplate.opsForValue().set(cacheKey, clientByApiKeyDTO, Duration.ofSeconds(cacheTtl));
+        return clientByApiKeyDTO;
     }
 
     private String sha256(String input) {

@@ -10,8 +10,6 @@ spring:
   grpc:
     client:
       channels:
-        api-clients:
-          address: "localhost:${spring.grpc.server.port}"
         api-merchant-details:
           address: "localhost:${spring.grpc.server.port}"
         api-orders:
