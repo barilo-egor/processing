@@ -14,19 +14,19 @@ import net.rcetech.clients.dto.WithdrawalRequestDTO;
 @Profile({ "!kafka-disabled" })
 public class WithdrawalEventListener {
 
-    private final KafkaTemplate<String, WithdrawalRequestDTO> kafkaTemplate;
+    private final KafkaTemplate<String, WithdrawalRequestDTO> withdrawalRequestKafkaTemplate;
 
     private final String receiveTopicName;
 
-    public WithdrawalEventListener(KafkaTemplate<String, WithdrawalRequestDTO> kafkaTemplate,
+    public WithdrawalEventListener(KafkaTemplate<String, WithdrawalRequestDTO> withdrawalRequestKafkaTemplate,
             @Value("${kafka.topic.api-clients.receive}") String receiveTopicName) {
-        this.kafkaTemplate = kafkaTemplate;
+        this.withdrawalRequestKafkaTemplate = withdrawalRequestKafkaTemplate;
         this.receiveTopicName = receiveTopicName;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCreatedEvent(WithdrawalRequestDTO event) {
-        kafkaTemplate.send(receiveTopicName, event);
+        withdrawalRequestKafkaTemplate.send(receiveTopicName, event);
     }
 
 }

@@ -1,10 +1,10 @@
 package net.rcetech.orders.kafka;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.serialization.Serializer;
 import net.rcetech.orders.exceptions.BodyMappingException;
+import org.apache.kafka.common.serialization.Serializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 public class UnknownStatusSerializer implements Serializer<MerchantCallbackEvent> {
@@ -22,7 +22,7 @@ public class UnknownStatusSerializer implements Serializer<MerchantCallbackEvent
                 return new byte[0];
             }
             return objectMapper.writeValueAsBytes(merchantCallbackEvent);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Ошибка сериализации объекта для отправки в топик {}: {}", topic, merchantCallbackEvent);
             throw new BodyMappingException("Error occurred while mapping orderConfirmationEvent", e);
         }

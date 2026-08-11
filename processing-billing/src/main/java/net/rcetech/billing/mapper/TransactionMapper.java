@@ -1,14 +1,11 @@
 package net.rcetech.billing.mapper;
 
-import com.google.protobuf.Timestamp;
 import net.rcetech.billing.dto.CreateTransactionRequest;
 import net.rcetech.billing.dto.TransactionDTO;
 import net.rcetech.billing.entity.Transaction;
 import net.rcetech.billing.enums.Operation;
 import net.rcetech.billing.enums.TransactionType;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
 
 @Component
 public class TransactionMapper {
@@ -35,13 +32,6 @@ public class TransactionMapper {
                 .operation(transactionDTO.getOperation())
                 .type(transactionDTO.getType())
                 .comment(transactionDTO.getComment())
-                .build();
-    }
-
-    private Timestamp instantToTimestamp(Instant instant) {
-        return Timestamp.newBuilder()
-                .setSeconds(instant.getEpochSecond())
-                .setNanos(instant.getNano())
                 .build();
     }
 

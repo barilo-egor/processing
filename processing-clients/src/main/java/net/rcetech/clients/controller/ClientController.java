@@ -14,26 +14,26 @@ import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.TokenPair;
 import net.rcetech.clients.exceptions.ClientAlreadyExistsException;
 import net.rcetech.clients.exceptions.UnauthorizedException;
-import net.rcetech.clients.service.AuthenticationManagerService;
+import net.rcetech.clients.service.ClientsAuthenticationManagerService;
 import net.rcetech.clients.service.ClientService;
-import net.rcetech.clients.service.CookieService;
+import net.rcetech.clients.service.ClientsCookieService;
 
 @RestController
 @Slf4j
 @RequestMapping("/api-clients")
 public class ClientController {
 
-    private final CookieService cookieService;
+    private final ClientsCookieService clientsCookieService;
 
     private final ClientService clientService;
 
-    private final AuthenticationManagerService authService;
+    private final ClientsAuthenticationManagerService authService;
 
-    public ClientController(ClientService clientService, AuthenticationManagerService authService,
-            CookieService cookieService) {
+    public ClientController(ClientService clientService, ClientsAuthenticationManagerService authService,
+            ClientsCookieService clientsCookieService) {
         this.clientService = clientService;
         this.authService = authService;
-        this.cookieService = cookieService;
+        this.clientsCookieService = clientsCookieService;
     }
 
     /**
@@ -66,7 +66,7 @@ public class ClientController {
         TokenPair tokens = authService.authenticate(authRequest);
 
         response.addHeader(HttpHeaders.SET_COOKIE,
-                cookieService.createRefreshTokenCookie(tokens.refreshToken()).toString());
+                clientsCookieService.createRefreshTokenCookie(tokens.refreshToken()).toString());
         return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
     }
 

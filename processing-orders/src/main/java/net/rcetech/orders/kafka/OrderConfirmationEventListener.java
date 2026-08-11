@@ -19,15 +19,15 @@ import net.rcetech.orders.enums.TransactionType;
 @Profile({ "!kafka-disabled" })
 public class OrderConfirmationEventListener {
 
-    private final KafkaTemplate<String, OrderConfirmationEvent> kafkaTemplate;
+    private final KafkaTemplate<String, OrderConfirmationEvent> orderConfirmationEventKafkaTemplate;
 
     private final String receiveTopicName;
 
     private final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
-    public OrderConfirmationEventListener(KafkaTemplate<String, OrderConfirmationEvent> kafkaTemplate,
+    public OrderConfirmationEventListener(KafkaTemplate<String, OrderConfirmationEvent> orderConfirmationEventKafkaTemplate,
             @Value("${kafka.topic.orders.receive}") String receiveTopicName) {
-        this.kafkaTemplate = kafkaTemplate;
+        this.orderConfirmationEventKafkaTemplate = orderConfirmationEventKafkaTemplate;
         this.receiveTopicName = receiveTopicName;
     }
 
@@ -44,7 +44,7 @@ public class OrderConfirmationEventListener {
     public void handleCreatedEvent(OrderDTO orderDTO) {
         if (OrderStatus.SUCCESS.equals(orderDTO.getStatus())) {
             log.info("Транзакция успешно закоммичена. Пост-логика отправки kafka для заказа {}", orderDTO.getId());
-            kafkaTemplate.send(receiveTopicName, new OrderConfirmationEvent(
+            orderConfirmationEventKafkaTemplate.send(receiveTopicName, new OrderConfirmationEvent(
                     generator.generate(),
                     orderDTO.getClientId(),
                     orderDTO.getAmount(),

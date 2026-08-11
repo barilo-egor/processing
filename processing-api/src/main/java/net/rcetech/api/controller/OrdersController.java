@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.dto.OrderResponseDTO;
-import net.rcetech.api.service.OrderService;
+import net.rcetech.api.service.OrderInteractionService;
 
 import java.util.List;
 
@@ -19,10 +19,10 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrdersController {
 
-    private final OrderService orderService;
+    private final OrderInteractionService orderInteractionService;
 
-    public OrdersController(OrderService orderService) {
-        this.orderService = orderService;
+    public OrdersController(OrderInteractionService orderInteractionService) {
+        this.orderInteractionService = orderInteractionService;
     }
 
     /**
@@ -46,9 +46,9 @@ public class OrdersController {
             @RequestAttribute("authenticatedClient") ClientByApiKeyDTO client) {
         if (Boolean.parseBoolean(isTestOrder)) {
             log.info("Получен тестовый запрос (X-Test-Order = true) для клиента {}.", client);
-            return orderService.testOrder(clientRequest, clientOrderTimeout);
+            return orderInteractionService.testOrder(clientRequest, clientOrderTimeout);
         }
-        return orderService.createOrder(clientRequest, client, clientOrderTimeout);
+        return orderInteractionService.createOrder(clientRequest, client, clientOrderTimeout);
     }
 
     /**
@@ -69,7 +69,7 @@ public class OrdersController {
     public OrderResponseDTO getOrder(@PathVariable String id,
             @RequestHeader(value = "X-Order-Timeout") Integer clientOrderTimeout,
             @RequestAttribute("authenticatedClient") ClientByApiKeyDTO client) {
-        return orderService.findOrder(id, clientOrderTimeout, client);
+        return orderInteractionService.findOrder(id, clientOrderTimeout, client);
     }
 
     /**
@@ -89,7 +89,7 @@ public class OrdersController {
     public List<OrderResponseDTO> findOrders(@RequestHeader(value = "X-Order-Timeout") Integer clientOrderTimeout,
             @RequestAttribute("authenticatedClient") ClientByApiKeyDTO client,
             @PageableDefault(size = 25) Pageable pageable) {
-        return orderService.findOrders(clientOrderTimeout, client, pageable);
+        return orderInteractionService.findOrders(clientOrderTimeout, client, pageable);
     }
 
     /**
@@ -110,7 +110,7 @@ public class OrdersController {
     public OrderResponseDTO cancelOrder(@PathVariable String id,
             @RequestHeader(value = "X-Order-Timeout") Integer clientOrderTimeout,
             @RequestAttribute("authenticatedClient") ClientByApiKeyDTO client) {
-        return orderService.cancelOrder(id, clientOrderTimeout, client);
+        return orderInteractionService.cancelOrder(id, clientOrderTimeout, client);
     }
 
 }

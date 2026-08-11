@@ -1,6 +1,6 @@
 package net.rcetech.billing.kafka;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
 import net.rcetech.billing.dto.TransactionDTO;

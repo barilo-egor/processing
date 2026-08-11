@@ -1,6 +1,6 @@
 package net.rcetech.billing.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import net.rcetech.billing.dto.CreateTransactionRequest;

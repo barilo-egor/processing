@@ -26,6 +26,9 @@ dependencyManagement {
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

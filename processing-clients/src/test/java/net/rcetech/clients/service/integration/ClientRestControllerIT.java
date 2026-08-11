@@ -1,6 +1,6 @@
 package net.rcetech.clients.service.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import net.rcetech.clients.dto.AuthRequest;
 import net.rcetech.clients.dto.ClientDTO;

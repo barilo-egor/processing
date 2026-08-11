@@ -1,6 +1,6 @@
 package net.rcetech.orders.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
 import net.rcetech.clients.service.ClientApi;

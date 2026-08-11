@@ -1,11 +1,11 @@
 package net.rcetech.clients.kafka;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.serialization.Serializer;
 import net.rcetech.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.exceptions.BodyMappingException;
+import org.apache.kafka.common.serialization.Serializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 public class WithdrawalRequestReceiveEventSerializer implements Serializer<WithdrawalRequestDTO> {
@@ -23,7 +23,7 @@ public class WithdrawalRequestReceiveEventSerializer implements Serializer<Withd
                 return new byte[0];
             }
             return objectMapper.writeValueAsBytes(withdrawalRequestReceiveEvent);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Ошибка сериализации объекта для отправки в топик {}: {}", topic, withdrawalRequestReceiveEvent);
             throw new BodyMappingException("Error occurred while mapping withdrawalRequest", e);
         }

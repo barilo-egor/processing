@@ -14,8 +14,8 @@ import net.rcetech.support.dto.TokenPair;
 import net.rcetech.support.dto.UserDTO;
 import net.rcetech.support.exceptions.UnauthorizedException;
 import net.rcetech.support.exceptions.UserAlreadyExistsException;
-import net.rcetech.support.service.AuthenticationManagerService;
-import net.rcetech.support.service.CookieService;
+import net.rcetech.support.service.SupportAuthenticationManagerService;
+import net.rcetech.support.service.SupportCookieService;
 import net.rcetech.support.service.UserService;
 
 @RestController
@@ -23,17 +23,17 @@ import net.rcetech.support.service.UserService;
 @RequestMapping("/support-users")
 public class SupportUsersController {
 
-    private final CookieService cookieService;
+    private final SupportCookieService supportCookieService;
 
     private final UserService userService;
 
-    private final AuthenticationManagerService authService;
+    private final SupportAuthenticationManagerService authService;
 
-    public SupportUsersController(UserService userService, AuthenticationManagerService authService,
-            CookieService cookieService) {
+    public SupportUsersController(UserService userService, SupportAuthenticationManagerService authService,
+            SupportCookieService supportCookieService) {
         this.userService = userService;
         this.authService = authService;
-        this.cookieService = cookieService;
+        this.supportCookieService = supportCookieService;
     }
 
     /**
@@ -65,7 +65,7 @@ public class SupportUsersController {
         TokenPair tokens = authService.authenticate(authRequest);
 
         response.addHeader(HttpHeaders.SET_COOKIE,
-                cookieService.createRefreshTokenCookie(tokens.refreshToken()).toString());
+                supportCookieService.createRefreshTokenCookie(tokens.refreshToken()).toString());
         return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
     }
 
