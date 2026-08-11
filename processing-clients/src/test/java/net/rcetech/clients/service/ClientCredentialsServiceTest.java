@@ -1,4 +1,4 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,7 +11,6 @@ import net.rcetech.clients.dto.GeneratedKeys;
 import net.rcetech.clients.entity.Client;
 import net.rcetech.clients.exceptions.BaseException;
 import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
-import net.rcetech.clients.service.ClientCredentialsService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

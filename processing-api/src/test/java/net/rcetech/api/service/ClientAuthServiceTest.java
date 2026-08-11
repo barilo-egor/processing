@@ -1,9 +1,8 @@
-package net.rcetech.api.service.unit;
+package net.rcetech.api.service;
 
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.enums.ClientStatus;
 import net.rcetech.api.exceptions.BaseException;
-import net.rcetech.api.service.ClientAuthService;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.clients.service.ClientApi;
 import org.junit.jupiter.api.BeforeEach;

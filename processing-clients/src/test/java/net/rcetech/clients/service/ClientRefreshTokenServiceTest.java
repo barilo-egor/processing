@@ -1,4 +1,4 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import net.rcetech.clients.dto.ClientRefreshTokenDTO;
 import net.rcetech.clients.entity.ClientRefreshToken;
 import net.rcetech.clients.repository.ClientRefreshTokenRepository;
-import net.rcetech.clients.service.ClientRefreshTokenService;
 
 import java.time.Instant;
 import java.util.Optional;

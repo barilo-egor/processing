@@ -1,4 +1,4 @@
-package net.rcetech.billing.unit;
+package net.rcetech.billing.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import net.rcetech.billing.dto.TransactionDTO;
 import net.rcetech.billing.entity.Transaction;
 import net.rcetech.billing.mapper.TransactionMapper;
 import net.rcetech.billing.repository.TransactionRepository;
-import net.rcetech.billing.service.TransactionService;
 
 import java.util.List;
 import java.util.UUID;

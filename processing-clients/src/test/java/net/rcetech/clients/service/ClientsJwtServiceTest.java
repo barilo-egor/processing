@@ -1,4 +1,4 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -13,7 +13,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.util.ReflectionTestUtils;
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.clients.service.ClientsJwtService;
 
 import java.io.IOException;
 import java.security.KeyPair;

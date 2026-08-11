@@ -1,4 +1,4 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
 import net.rcetech.clients.exceptions.NotFoundException;
 import net.rcetech.clients.mapper.WithdrawalMapper;
 import net.rcetech.clients.repository.WithdrawalRequestRepository;
-import net.rcetech.clients.service.WithdrawalRequestService;
 
 import java.util.Optional;
 

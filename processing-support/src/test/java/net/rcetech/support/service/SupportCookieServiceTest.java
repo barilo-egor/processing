@@ -1,4 +1,4 @@
-package net.rcetech.support.service.unit;
+package net.rcetech.support.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseCookie;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.support.service.SupportCookieService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;

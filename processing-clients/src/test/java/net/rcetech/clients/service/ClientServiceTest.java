@@ -1,4 +1,4 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import net.rcetech.clients.exceptions.*;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +15,8 @@ import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.dto.GeneratedKeys;
 import net.rcetech.clients.entity.Client;
 import net.rcetech.clients.enums.ClientStatus;
-import net.rcetech.clients.exceptions.*;
 import net.rcetech.clients.mapper.ClientMapper;
 import net.rcetech.clients.repository.ClientRepository;
-import net.rcetech.clients.service.ClientCredentialsService;
-import net.rcetech.clients.service.ClientService;
 
 import java.util.Optional;
 

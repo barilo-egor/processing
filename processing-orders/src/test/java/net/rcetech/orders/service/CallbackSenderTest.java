@@ -1,11 +1,10 @@
-package net.rcetech.orders.service.unit;
+package net.rcetech.orders.service;
 
 import tools.jackson.databind.ObjectMapper;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
 import net.rcetech.clients.service.ClientApi;
 import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.service.CallbackSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package net.rcetech.api.service.unit;
+package net.rcetech.api.service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.rpc.Code;
@@ -25,7 +25,6 @@ import net.rcetech.api.enums.RequestMethod;
 import net.rcetech.api.exceptions.BaseException;
 import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
-import net.rcetech.api.service.ApiMerchantDetailsGrpcService;
 
 import java.util.Set;
 import java.util.UUID;

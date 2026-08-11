@@ -1,4 +1,4 @@
-package net.rcetech.support.service.unit;
+package net.rcetech.support.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,10 +12,6 @@ import net.rcetech.support.dto.TokenPair;
 import net.rcetech.support.dto.UserDTO;
 import net.rcetech.support.dto.UserRefreshTokenDTO;
 import net.rcetech.support.exceptions.UnauthorizedException;
-import net.rcetech.support.service.SupportAuthenticationManagerService;
-import net.rcetech.support.service.SupportJwtService;
-import net.rcetech.support.service.UserRefreshTokenService;
-import net.rcetech.support.service.UserService;
 
 import java.time.Instant;
 import java.util.Optional;

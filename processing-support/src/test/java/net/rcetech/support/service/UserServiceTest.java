@@ -1,4 +1,4 @@
-package net.rcetech.support.service.unit;
+package net.rcetech.support.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,6 @@ import net.rcetech.support.exceptions.UserAlreadyExistsException;
 import net.rcetech.support.exceptions.UserNotFoundException;
 import net.rcetech.support.mapper.UserMapper;
 import net.rcetech.support.repository.UserRepository;
-import net.rcetech.support.service.UserService;
 
 import java.util.Optional;
 

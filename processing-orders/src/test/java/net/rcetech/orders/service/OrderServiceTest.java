@@ -1,4 +1,4 @@
-package net.rcetech.orders.service.unit;
+package net.rcetech.orders.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,6 @@ import net.rcetech.orders.exceptions.AlreadyExistsException;
 import net.rcetech.orders.exceptions.NotFoundException;
 import net.rcetech.orders.mapper.OrderMapper;
 import net.rcetech.orders.repository.OrderRepository;
-import net.rcetech.orders.service.OrderService;
 
 import java.util.Collections;
 import java.util.List;

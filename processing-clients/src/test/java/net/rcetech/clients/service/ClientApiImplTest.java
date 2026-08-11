@@ -1,10 +1,8 @@
-package net.rcetech.clients.service.unit;
+package net.rcetech.clients.service;
 
 import net.rcetech.clients.dto.ClientDTO;
 import net.rcetech.clients.exceptions.UserNotFoundException;
 import net.rcetech.clients.mapper.ClientMapper;
-import net.rcetech.clients.service.ClientApiImpl;
-import net.rcetech.clients.service.ClientService;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
 import org.junit.jupiter.api.DisplayName;

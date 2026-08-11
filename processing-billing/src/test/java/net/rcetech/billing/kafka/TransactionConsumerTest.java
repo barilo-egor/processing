@@ -1,4 +1,4 @@
-package net.rcetech.billing.unit;
+package net.rcetech.billing.kafka;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,7 +7,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import net.rcetech.billing.dto.TransactionDTO;
-import net.rcetech.billing.kafka.TransactionConsumer;
 import net.rcetech.billing.service.TransactionService;
 
 import java.util.UUID;
