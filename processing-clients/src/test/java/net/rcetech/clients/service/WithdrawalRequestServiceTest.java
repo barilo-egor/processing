@@ -1,5 +1,11 @@
 package net.rcetech.clients.service;
 
+import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.clients.entity.WithdrawalRequest;
+import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
+import net.rcetech.clients.exceptions.NotFoundException;
+import net.rcetech.clients.mapper.WithdrawalMapper;
+import net.rcetech.clients.repository.WithdrawalRequestRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,18 +13,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
-import net.rcetech.clients.exceptions.NotFoundException;
-import net.rcetech.clients.mapper.WithdrawalMapper;
-import net.rcetech.clients.repository.WithdrawalRequestRepository;
 
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
