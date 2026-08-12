@@ -1,5 +1,5 @@
 spring:
   application:
-    name: "details-api-gateway"
+    name: "processing"
   config:
     import: "optional:file:config/config.yml"
