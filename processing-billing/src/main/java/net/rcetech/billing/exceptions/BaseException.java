@@ -3,7 +3,7 @@ package net.rcetech.billing.exceptions;
 import lombok.Getter;
 
 @Getter
-public class BaseException extends RuntimeException implements CustomException {
+public class BaseException extends RuntimeException {
 
     private final String field;
 

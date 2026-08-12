@@ -3,7 +3,7 @@ package net.rcetech.meta.orders.exception;
 import lombok.Getter;
 
 @Getter
-public class AlreadyExistsException extends RuntimeException implements CustomException {
+public class AlreadyExistsException extends RuntimeException {
 
     private final String field;
 

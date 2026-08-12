@@ -3,7 +3,7 @@ package net.rcetech.meta.orders.exception;
 import lombok.Getter;
 
 @Getter
-public class NotFoundException extends RuntimeException implements CustomException {
+public class NotFoundException extends RuntimeException {
     private final String field;
 
     private final String description;

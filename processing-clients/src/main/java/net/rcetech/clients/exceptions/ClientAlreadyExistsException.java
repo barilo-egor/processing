@@ -3,7 +3,7 @@ package net.rcetech.clients.exceptions;
 import lombok.Getter;
 
 @Getter
-public class ClientAlreadyExistsException extends RuntimeException implements net.rcetech.meta.CustomException {
+public class ClientAlreadyExistsException extends RuntimeException {
 
     private final String field;
 

@@ -3,7 +3,7 @@ package net.rcetech.clients.exceptions;
 import lombok.Getter;
 
 @Getter
-public class PasswordValidationException extends RuntimeException implements net.rcetech.meta.CustomException {
+public class PasswordValidationException extends RuntimeException {
 
     private final String field;
 
