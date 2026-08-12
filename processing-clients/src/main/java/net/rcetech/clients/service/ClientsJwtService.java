@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import net.rcetech.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.ClientDTO;
 import net.rcetech.clients.exceptions.BaseException;
 
 import java.security.KeyFactory;
@@ -16,6 +16,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.Date;
 
+// TODO grewgh "java.time" classes should be used for dates and times
 @Service
 @Slf4j
 public class ClientsJwtService {

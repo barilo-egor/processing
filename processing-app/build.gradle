@@ -4,6 +4,11 @@ plugins {
 }
 
 dependencies {
+    implementation project(':processing-api')
+    implementation project(':processing-billing')
+    implementation project(':processing-clients')
+    implementation project(':processing-orders')
+    implementation project(':processing-support')
 }
 
 tasks.named('bootJar') {

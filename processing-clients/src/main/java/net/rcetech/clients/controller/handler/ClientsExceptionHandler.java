@@ -1,6 +1,7 @@
 package net.rcetech.clients.controller.handler;
 
 import net.rcetech.clients.exceptions.*;
+import net.rcetech.meta.clients.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;

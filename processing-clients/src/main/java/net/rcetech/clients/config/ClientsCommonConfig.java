@@ -2,7 +2,7 @@ package net.rcetech.clients.config;
 
 import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.core.instrument.MeterRegistry;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.kafka.WithdrawalReceiveProducerListener;
 import net.rcetech.clients.kafka.WithdrawalRequestReceiveEventSerializer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -15,8 +15,6 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;

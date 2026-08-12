@@ -1,18 +1,18 @@
-package net.rcetech.clients.entity;
+package net.rcetech.domain.model.clients;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.clients.enums.WithdrawalRequestStatus;
+import net.rcetech.meta.clients.WithdrawalRequestStatus;
 
 import java.time.Instant;
 
 @Entity
 @Data
 @Builder
-@Table(name = "widthdrawal_request")
+@Table(name = "withdrawal_request")
 @AllArgsConstructor
 @NoArgsConstructor
 public class WithdrawalRequest {

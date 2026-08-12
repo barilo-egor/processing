@@ -1,8 +1,8 @@
-package net.rcetech.clients.repository;
+package net.rcetech.domain.repository.clients;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import net.rcetech.clients.entity.Client;
+import net.rcetech.domain.model.clients.Client;
 
 import java.util.Optional;
 
@@ -13,7 +13,5 @@ public interface ClientRepository extends JpaRepository<Client, Long>, JpaSpecif
     Optional<Client> findByApiKey(String apiKey);
 
     Optional<Client> findByUsername(String username);
-
-    Optional<Client> findClientById(Long id);
 
 }

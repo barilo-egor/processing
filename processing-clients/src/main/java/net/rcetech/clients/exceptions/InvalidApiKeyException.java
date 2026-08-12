@@ -3,7 +3,7 @@ package net.rcetech.clients.exceptions;
 import lombok.Getter;
 
 @Getter
-public class InvalidApiKeyException extends RuntimeException implements CustomException {
+public class InvalidApiKeyException extends RuntimeException implements net.rcetech.meta.CustomException {
 
     private final String field;
 

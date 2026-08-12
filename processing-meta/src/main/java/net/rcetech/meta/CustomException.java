@@ -1,4 +1,4 @@
-package net.rcetech.clients.exceptions;
+package net.rcetech.meta;
 
 public interface CustomException {
 

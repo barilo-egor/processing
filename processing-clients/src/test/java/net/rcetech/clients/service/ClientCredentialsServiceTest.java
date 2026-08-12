@@ -7,10 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.clients.dto.GeneratedKeys;
-import net.rcetech.clients.entity.Client;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
+import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

@@ -1,4 +1,4 @@
-package net.rcetech.clients.entity;
+package net.rcetech.domain.model.clients;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "client_refresh_tokens")
+@Table(name = "client_refresh_token")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

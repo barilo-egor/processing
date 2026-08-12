@@ -1,11 +1,11 @@
 package net.rcetech.clients.service;
 
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
-import net.rcetech.clients.exceptions.NotFoundException;
-import net.rcetech.clients.mapper.WithdrawalMapper;
-import net.rcetech.clients.repository.WithdrawalRequestRepository;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.domain.model.clients.WithdrawalRequest;
+import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
+import net.rcetech.meta.clients.exception.NotFoundException;
+import net.rcetech.domain.mapper.client.WithdrawalMapper;
+import net.rcetech.domain.repository.clients.WithdrawalRequestRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +32,7 @@ class WithdrawalRequestServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private WithdrawalRequestService withdrawalRequestService;
+    private net.rcetech.domain.service.clients.WithdrawalRequestService withdrawalRequestService;
 
     @Test
     @DisplayName("Сохранение заявки публикует событие, если eventPublisher доступен")
@@ -55,7 +55,7 @@ class WithdrawalRequestServiceTest {
     @Test
     @DisplayName("Сохранение заявки не падает, если eventPublisher равен null")
     void should_saveWithdrawalRequestWithoutPublishing_when_eventPublisherIsNull() {
-        WithdrawalRequestService serviceWithoutPublisher = new WithdrawalRequestService(
+        net.rcetech.domain.service.clients.WithdrawalRequestService serviceWithoutPublisher = new net.rcetech.domain.service.clients.WithdrawalRequestService(
                 withdrawalRequestRepository, mapper, null
         );
 

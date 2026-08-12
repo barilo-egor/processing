@@ -1,16 +1,16 @@
-package net.rcetech.clients.service;
+package net.rcetech.domain.service.clients;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.mapper.client.WithdrawalMapper;
+import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
+import net.rcetech.meta.clients.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
-import net.rcetech.clients.exceptions.NotFoundException;
-import net.rcetech.clients.mapper.WithdrawalMapper;
-import net.rcetech.clients.repository.WithdrawalRequestRepository;
+import net.rcetech.domain.model.clients.WithdrawalRequest;
+import net.rcetech.domain.repository.clients.WithdrawalRequestRepository;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 
 @Service
 @Slf4j
@@ -37,7 +37,7 @@ public class WithdrawalRequestService {
      *
      * @param withdrawalRequest DTO с данными заявки на вывод средств
      */
-    public void saveWithdrawalRequest(WithdrawalRequestDTO withdrawalRequest) {
+    public void saveWithdrawalRequest(net.rcetech.meta.clients.dto.WithdrawalRequestDTO withdrawalRequest) {
         WithdrawalRequest saved = withdrawalRequestRepository.save(mapper.requestDTOToEntity(withdrawalRequest));
         WithdrawalRequestDTO dto = mapper.entityToDTO(saved);
         if (eventPublisher != null) {
@@ -55,7 +55,7 @@ public class WithdrawalRequestService {
      * @throws FieldNotBeEmptyException если переданный идентификатор {@code id} равен {@code null}
      * @throws NotFoundException        если заявка с указанным {@code id} не найдена в системе
      */
-    public void updateWithdrawalRequest(Long id, WithdrawalRequestDTO withdrawalRequestDTO) {
+    public void updateWithdrawalRequest(Long id, net.rcetech.meta.clients.dto.WithdrawalRequestDTO withdrawalRequestDTO) {
         if (id == null) {
             throw new FieldNotBeEmptyException("id");
         }

@@ -1,7 +1,7 @@
 package net.rcetech.clients.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 import net.rcetech.clients.exceptions.BodyMappingException;
 import org.apache.kafka.common.serialization.Serializer;
 import tools.jackson.core.JacksonException;

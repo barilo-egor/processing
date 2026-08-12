@@ -1,4 +1,4 @@
-package net.rcetech.clients.dto;
+package net.rcetech.meta.clients.dto;
 
 /**
  * Результат аутентификации пользователя в системе.

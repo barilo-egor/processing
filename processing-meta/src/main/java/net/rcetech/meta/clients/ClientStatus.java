@@ -1,4 +1,4 @@
-package net.rcetech.clients.enums;
+package net.rcetech.meta.clients;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

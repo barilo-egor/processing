@@ -1,10 +1,10 @@
-package net.rcetech.clients.repository;
+package net.rcetech.domain.repository.clients;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import net.rcetech.clients.entity.ClientRefreshToken;
+import net.rcetech.domain.model.clients.ClientRefreshToken;
 
 import java.util.UUID;
 

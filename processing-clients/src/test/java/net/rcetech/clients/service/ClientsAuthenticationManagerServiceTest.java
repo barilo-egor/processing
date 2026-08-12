@@ -7,10 +7,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import net.rcetech.clients.dto.AuthRequest;
-import net.rcetech.clients.dto.ClientDTO;
-import net.rcetech.clients.dto.ClientRefreshTokenDTO;
-import net.rcetech.clients.dto.TokenPair;
+import net.rcetech.meta.clients.dto.AuthRequest;
+import net.rcetech.meta.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.ClientRefreshTokenDTO;
+import net.rcetech.meta.clients.dto.TokenPair;
 import net.rcetech.clients.exceptions.UnauthorizedException;
 
 import java.time.Instant;
@@ -24,13 +24,13 @@ import static org.mockito.Mockito.when;
 class ClientsAuthenticationManagerServiceTest {
 
     @Mock
-    private ClientService clientService;
+    private ClientProcessService clientProcessService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private ClientRefreshTokenService tokenService;
+    private net.rcetech.domain.service.clients.ClientRefreshTokenService tokenService;
 
     @Mock
     private ClientsJwtService clientsJwtService;
@@ -44,7 +44,7 @@ class ClientsAuthenticationManagerServiceTest {
         AuthRequest request = new AuthRequest("user", "correct_pass", null);
         ClientDTO client = ClientDTO.builder().id(1L).username("user").password("encoded_pass").build();
 
-        when(clientService.getClientByUsername("user")).thenReturn(client);
+        when(clientProcessService.getClientByUsername("user")).thenReturn(client);
         when(passwordEncoder.matches("correct_pass", "encoded_pass")).thenReturn(true);
         when(clientsJwtService.generateAccessToken(client)).thenReturn("access_token");
         when(tokenService.createRefreshToken(1L)).thenReturn("refresh_token");
@@ -62,7 +62,7 @@ class ClientsAuthenticationManagerServiceTest {
         AuthRequest request = new AuthRequest("user", "wrong_pass", null);
         ClientDTO client = ClientDTO.builder().username("user").password("encoded_pass").build();
 
-        when(clientService.getClientByUsername("user")).thenReturn(client);
+        when(clientProcessService.getClientByUsername("user")).thenReturn(client);
         when(passwordEncoder.matches("wrong_pass", "encoded_pass")).thenReturn(false);
 
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () ->
@@ -81,7 +81,7 @@ class ClientsAuthenticationManagerServiceTest {
         ClientDTO client = ClientDTO.builder().id(1L).username("user").password("encoded_pass").build();
 
         when(tokenService.findByToken("valid_token")).thenReturn(Optional.of(dbToken));
-        when(clientService.getClientById(1L)).thenReturn(client);
+        when(clientProcessService.getClientById(1L)).thenReturn(client);
         when(clientsJwtService.generateAccessToken(client)).thenReturn("new_access");
         when(tokenService.createRefreshToken(1L)).thenReturn("new_refresh");
 

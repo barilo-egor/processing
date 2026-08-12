@@ -1,9 +1,9 @@
-package net.rcetech.clients.exceptions;
+package net.rcetech.meta.clients.exception;
 
 import lombok.Getter;
 
 @Getter
-public class NotFoundException extends RuntimeException implements CustomException {
+public class NotFoundException extends RuntimeException implements net.rcetech.meta.CustomException {
 
     private final String field;
 

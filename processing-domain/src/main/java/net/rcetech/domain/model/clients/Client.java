@@ -1,18 +1,18 @@
-package net.rcetech.clients.entity;
+package net.rcetech.domain.model.clients;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.clients.enums.ClientStatus;
+import net.rcetech.meta.clients.ClientStatus;
 
 import java.time.Instant;
 
 @Entity
 @Data
 @Builder
-@Table(name = "clients")
+@Table(name = "client")
 @AllArgsConstructor
 @NoArgsConstructor
 public class Client {

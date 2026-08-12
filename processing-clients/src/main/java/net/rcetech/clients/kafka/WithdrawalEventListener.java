@@ -7,7 +7,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 
 @Component
 @Slf4j

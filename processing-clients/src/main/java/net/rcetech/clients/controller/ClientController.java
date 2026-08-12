@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import net.rcetech.clients.dto.AuthRequest;
-import net.rcetech.clients.dto.AuthResponse;
-import net.rcetech.clients.dto.ClientDTO;
-import net.rcetech.clients.dto.TokenPair;
+import net.rcetech.meta.clients.dto.AuthRequest;
+import net.rcetech.meta.clients.dto.AuthResponse;
+import net.rcetech.meta.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.TokenPair;
 import net.rcetech.clients.exceptions.ClientAlreadyExistsException;
 import net.rcetech.clients.exceptions.UnauthorizedException;
 import net.rcetech.clients.service.ClientsAuthenticationManagerService;
-import net.rcetech.clients.service.ClientService;
+import net.rcetech.clients.service.ClientProcessService;
 import net.rcetech.clients.service.ClientsCookieService;
 
 @RestController
@@ -25,13 +25,13 @@ public class ClientController {
 
     private final ClientsCookieService clientsCookieService;
 
-    private final ClientService clientService;
+    private final ClientProcessService clientProcessService;
 
     private final ClientsAuthenticationManagerService authService;
 
-    public ClientController(ClientService clientService, ClientsAuthenticationManagerService authService,
-            ClientsCookieService clientsCookieService) {
-        this.clientService = clientService;
+    public ClientController(ClientProcessService clientProcessService, ClientsAuthenticationManagerService authService,
+                            ClientsCookieService clientsCookieService) {
+        this.clientProcessService = clientProcessService;
         this.authService = authService;
         this.clientsCookieService = clientsCookieService;
     }
@@ -45,7 +45,7 @@ public class ClientController {
      */
     @PostMapping("/clients")
     public ResponseEntity<ClientDTO> createClient(@RequestBody ClientDTO request) {
-        ClientDTO savedClient = clientService.create(request);
+        ClientDTO savedClient = clientProcessService.create(request);
         return ResponseEntity.ok().body(savedClient);
     }
 

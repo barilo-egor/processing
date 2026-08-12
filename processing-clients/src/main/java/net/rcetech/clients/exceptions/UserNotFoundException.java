@@ -3,7 +3,7 @@ package net.rcetech.clients.exceptions;
 import lombok.Getter;
 
 @Getter
-public class UserNotFoundException extends RuntimeException implements CustomException {
+public class UserNotFoundException extends RuntimeException implements net.rcetech.meta.CustomException {
 
     private final String field;
 

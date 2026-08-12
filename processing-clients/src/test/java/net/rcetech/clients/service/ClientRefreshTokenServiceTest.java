@@ -8,9 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.clients.dto.ClientRefreshTokenDTO;
-import net.rcetech.clients.entity.ClientRefreshToken;
-import net.rcetech.clients.repository.ClientRefreshTokenRepository;
+import net.rcetech.meta.clients.dto.ClientRefreshTokenDTO;
+import net.rcetech.domain.model.clients.ClientRefreshToken;
+import net.rcetech.domain.repository.clients.ClientRefreshTokenRepository;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -26,7 +26,7 @@ class ClientRefreshTokenServiceTest {
     private ClientRefreshTokenRepository tokenRepository;
 
     @InjectMocks
-    private ClientRefreshTokenService tokenService;
+    private net.rcetech.domain.service.clients.ClientRefreshTokenService tokenService;
 
     @Test
     @DisplayName("Создание токена удаляет старые токены и сохраняет новый")

@@ -1,10 +1,9 @@
-package net.rcetech.clients.mapper;
-
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.enums.WithdrawalRequestStatus;
+package net.rcetech.domain.mapper.client;
+import net.rcetech.domain.model.clients.WithdrawalRequest;
+import net.rcetech.meta.clients.WithdrawalRequestStatus;
 import net.rcetech.meta.clients.dto.CreateWithdrawalRequestDTO;
 import net.rcetech.meta.clients.dto.UpdateWithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 import org.springframework.stereotype.Component;
 
 @Component

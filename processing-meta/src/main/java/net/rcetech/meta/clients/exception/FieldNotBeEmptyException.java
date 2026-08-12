@@ -1,6 +1,7 @@
-package net.rcetech.clients.exceptions;
+package net.rcetech.meta.clients.exception;
 
 import lombok.Getter;
+import net.rcetech.meta.CustomException;
 
 @Getter
 public class FieldNotBeEmptyException extends RuntimeException implements CustomException {

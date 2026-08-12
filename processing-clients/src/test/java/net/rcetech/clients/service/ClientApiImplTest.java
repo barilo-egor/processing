@@ -1,8 +1,8 @@
 package net.rcetech.clients.service;
 
-import net.rcetech.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.ClientDTO;
 import net.rcetech.clients.exceptions.UserNotFoundException;
-import net.rcetech.clients.mapper.ClientMapper;
+import net.rcetech.domain.mapper.client.ClientMapper;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.CreateSignatureDTO;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 class ClientApiImplTest {
 
     @Mock
-    private ClientService clientService;
+    private ClientProcessService clientProcessService;
 
     @Mock
     private ClientMapper clientMapper;
@@ -39,7 +39,7 @@ class ClientApiImplTest {
                 Instant.now(), "ACTIVE", "http://callback", 300
         );
 
-        when(clientService.getClientById(clientId)).thenReturn(internalDto);
+        when(clientProcessService.getClientById(clientId)).thenReturn(internalDto);
         when(clientMapper.toClientResponseDTO(internalDto)).thenReturn(expectedResponse);
 
         ClientResponseDTO actualResponse = clientApi.getClientById(clientId);
@@ -47,7 +47,7 @@ class ClientApiImplTest {
         assertNotNull(actualResponse);
         assertEquals(expectedResponse, actualResponse);
 
-        verify(clientService, times(1)).getClientById(clientId);
+        verify(clientProcessService, times(1)).getClientById(clientId);
         verify(clientMapper, times(1)).toClientResponseDTO(internalDto);
     }
 
@@ -55,11 +55,11 @@ class ClientApiImplTest {
     @DisplayName("getClientById: Выброс UserNotFoundException, если клиент не найден")
     void getClientById_NotFound() {
         long clientId = 404L;
-        when(clientService.getClientById(clientId)).thenThrow(new UserNotFoundException());
+        when(clientProcessService.getClientById(clientId)).thenThrow(new UserNotFoundException());
 
         assertThrows(UserNotFoundException.class, () -> clientApi.getClientById(clientId));
 
-        verify(clientService, times(1)).getClientById(clientId);
+        verify(clientProcessService, times(1)).getClientById(clientId);
         verifyNoInteractions(clientMapper);
     }
 
@@ -71,14 +71,14 @@ class ClientApiImplTest {
         String expectedSignature = "signature_hash_string";
         CreateSignatureDTO requestDto = new CreateSignatureDTO(clientId, rawData);
 
-        when(clientService.createSignature(clientId, rawData)).thenReturn(expectedSignature);
+        when(clientProcessService.createSignature(clientId, rawData)).thenReturn(expectedSignature);
 
         String actualSignature = clientApi.createSignature(requestDto);
 
         assertNotNull(actualSignature);
         assertEquals(expectedSignature, actualSignature);
 
-        verify(clientService, times(1)).createSignature(clientId, rawData);
+        verify(clientProcessService, times(1)).createSignature(clientId, rawData);
     }
 
     @Test
@@ -88,11 +88,11 @@ class ClientApiImplTest {
         String rawData = "data";
         CreateSignatureDTO requestDto = new CreateSignatureDTO(clientId, rawData);
 
-        when(clientService.createSignature(clientId, rawData)).thenThrow(new UserNotFoundException());
+        when(clientProcessService.createSignature(clientId, rawData)).thenThrow(new UserNotFoundException());
 
         assertThrows(UserNotFoundException.class, () -> clientApi.createSignature(requestDto));
 
-        verify(clientService, times(1)).createSignature(clientId, rawData);
+        verify(clientProcessService, times(1)).createSignature(clientId, rawData);
     }
 
 }

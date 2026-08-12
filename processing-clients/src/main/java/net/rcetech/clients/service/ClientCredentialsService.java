@@ -3,10 +3,10 @@ package net.rcetech.clients.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import net.rcetech.clients.dto.GeneratedKeys;
-import net.rcetech.clients.entity.Client;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.clients.exceptions.FieldNotBeEmptyException;
+import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;

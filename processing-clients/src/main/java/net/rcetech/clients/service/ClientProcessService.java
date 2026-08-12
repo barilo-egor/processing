@@ -3,13 +3,14 @@ package net.rcetech.clients.service;
 import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.clients.constants.Metrics;
-import net.rcetech.clients.dto.ClientDTO;
-import net.rcetech.clients.dto.GeneratedKeys;
-import net.rcetech.clients.entity.Client;
-import net.rcetech.clients.enums.ClientStatus;
+import net.rcetech.meta.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.clients.exceptions.*;
-import net.rcetech.clients.mapper.ClientMapper;
-import net.rcetech.clients.repository.ClientRepository;
+import net.rcetech.domain.mapper.client.ClientMapper;
+import net.rcetech.meta.clients.exception.NotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,22 +18,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @Transactional
-public class ClientService {
+public class ClientProcessService {
 
     private static final String STRENGTH_REGEX =
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
 
     private final PasswordEncoder passwordEncoder;
 
-    private final ClientRepository clientRepository;
+    private final ClientService clientService;
 
     private final ClientCredentialsService clientCredentialsService;
 
     private final ClientMapper clientMapper;
 
-    public ClientService(ClientRepository clientRepository, ClientCredentialsService clientCredentialsService,
-            ClientMapper clientMapper, PasswordEncoder passwordEncoder) {
-        this.clientRepository = clientRepository;
+    public ClientProcessService(ClientService clientService, ClientCredentialsService clientCredentialsService,
+                                ClientMapper clientMapper, PasswordEncoder passwordEncoder) {
+        this.clientService = clientService;
         this.clientCredentialsService = clientCredentialsService;
         this.clientMapper = clientMapper;
         this.passwordEncoder = passwordEncoder;
@@ -51,14 +52,17 @@ public class ClientService {
     @Timed(value = Metrics.CLIENT_CREATE, description = "Метрики запросов на создание client.")
     public ClientDTO create(ClientDTO clientDTO) {
         log.debug("Запрос на создание client: username {}", clientDTO.getUsername());
-        if (clientRepository.existsByUsername(clientDTO.getUsername())) {
+        if (clientService.existsByUsername(clientDTO.getUsername())) {
             throw new ClientAlreadyExistsException();
         }
         final String encryptedPassword = validateAndHashPassword(clientDTO.getPassword());
-        Client client = Client.builder().username(clientDTO.getUsername()).password(encryptedPassword).build();
+        Client client = Client.builder()
+                .username(clientDTO.getUsername())
+                .password(encryptedPassword)
+                .build();
         GeneratedKeys generatedKeys = clientCredentialsService.generateApiSecret(client);
         client.setStatus(ClientStatus.ACTIVE);
-        client = clientRepository.save(client);
+        client = clientService.save(client);
         log.debug("Создан клиент client: {}", clientDTO);
         return clientMapper.createdClientToDTO(client, generatedKeys);
     }
@@ -86,7 +90,7 @@ public class ClientService {
             throw new InvalidApiKeyException();
         }
 
-        Client client = clientRepository.findByApiKey(hashedApiKey)
+        Client client = clientService.findByApiKey(hashedApiKey)
                 .orElseThrow(UserNotFoundException::new);
         log.debug("Найден client: id {}, apiKey {}", client.getId(), client.getApiKey());
         String decryptedSecret = clientCredentialsService.decryptAesGcm(client.getSecret());
@@ -102,7 +106,7 @@ public class ClientService {
      */
     public ClientDTO getClientByUsername(String username) {
         log.debug("Запрос client: username {}", username);
-        Client client = clientRepository.findByUsername(username)
+        Client client = clientService.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(username));
         return clientMapper.clientToDTO(client);
     }
@@ -116,7 +120,7 @@ public class ClientService {
      */
     public ClientDTO getClientById(Long id) {
         log.debug("Запрос client: id {}", id);
-        Client client = clientRepository.findClientById(id)
+        Client client = clientService.findById(id)
                 .orElseThrow(UserNotFoundException::new);
         return clientMapper.clientToDTO(client);
     }

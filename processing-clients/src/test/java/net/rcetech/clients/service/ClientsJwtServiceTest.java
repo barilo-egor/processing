@@ -11,7 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.ClientDTO;
 import net.rcetech.clients.exceptions.BaseException;
 
 import java.io.IOException;

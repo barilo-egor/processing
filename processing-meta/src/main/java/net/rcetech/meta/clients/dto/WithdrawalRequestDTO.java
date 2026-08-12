@@ -1,17 +1,13 @@
-package net.rcetech.clients.dto;
+package net.rcetech.meta.clients.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.clients.entity.WithdrawalRequest;
-import net.rcetech.clients.enums.WithdrawalRequestStatus;
+import net.rcetech.meta.clients.WithdrawalRequestStatus;
 
 import java.time.Instant;
 
-/**
- * @see WithdrawalRequest
- */
 @Data
 @Builder
 @NoArgsConstructor

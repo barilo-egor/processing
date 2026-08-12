@@ -7,7 +7,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.support.ProducerListener;
 import org.springframework.stereotype.Service;
-import net.rcetech.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
 
 @Slf4j
 @Service

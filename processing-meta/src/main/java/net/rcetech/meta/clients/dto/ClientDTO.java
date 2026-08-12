@@ -1,14 +1,10 @@
-package net.rcetech.clients.dto;
+package net.rcetech.meta.clients.dto;
 
 import lombok.*;
-import net.rcetech.clients.entity.Client;
-import net.rcetech.clients.enums.ClientStatus;
+import net.rcetech.meta.clients.ClientStatus;
 
 import java.time.Instant;
 
-/**
- * @see Client
- */
 @Builder
 @Data
 @AllArgsConstructor

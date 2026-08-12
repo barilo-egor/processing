@@ -1,6 +1,8 @@
 package net.rcetech.clients.service;
 
 import net.rcetech.clients.exceptions.*;
+import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.clients.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,12 +13,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import net.rcetech.clients.dto.ClientDTO;
-import net.rcetech.clients.dto.GeneratedKeys;
-import net.rcetech.clients.entity.Client;
-import net.rcetech.clients.enums.ClientStatus;
-import net.rcetech.clients.mapper.ClientMapper;
-import net.rcetech.clients.repository.ClientRepository;
+import net.rcetech.meta.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.domain.model.clients.Client;
+import net.rcetech.meta.clients.ClientStatus;
+import net.rcetech.domain.mapper.client.ClientMapper;
 
 import java.util.Optional;
 
@@ -24,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ClientServiceTest {
+class ClientProcessServiceTest {
 
     @Mock
-    private ClientRepository clientRepository;
+    private ClientService clientService;
 
     @Mock
     private ClientCredentialsService clientCredentialsService;
@@ -39,7 +40,7 @@ class ClientServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private ClientService clientService;
+    private ClientProcessService clientProcessService;
 
     @Test
     @DisplayName("Создание клиента при валидных данных")
@@ -49,19 +50,19 @@ class ClientServiceTest {
         GeneratedKeys generatedKeys = new GeneratedKeys("apiKey", "secret");
         ClientDTO expectedDto = ClientDTO.builder().username("new_user").password(null).build();
 
-        when(clientRepository.existsByUsername("new_user")).thenReturn(false);
+        when(clientService.existsByUsername("new_user")).thenReturn(false);
         when(passwordEncoder.encode("Valid123!")).thenReturn("encoded_pass");
-        when(clientRepository.save(any(Client.class))).thenReturn(savedClient);
+        when(clientService.save(any(Client.class))).thenReturn(savedClient);
         when(clientCredentialsService.generateApiSecret(any(Client.class))).thenReturn(generatedKeys);
         when(clientMapper.createdClientToDTO(savedClient, generatedKeys)).thenReturn(expectedDto);
 
-        ClientDTO result = clientService.create(inputDto);
+        ClientDTO result = clientProcessService.create(inputDto);
 
         assertNotNull(result);
         assertEquals("new_user", result.getUsername());
 
         ArgumentCaptor<Client> clientCaptor = ArgumentCaptor.forClass(Client.class);
-        verify(clientRepository).save(clientCaptor.capture());
+        verify(clientService).save(clientCaptor.capture());
         Client capturedClient = clientCaptor.getValue();
         assertEquals(ClientStatus.ACTIVE, capturedClient.getStatus());
         assertEquals("encoded_pass", capturedClient.getPassword());
@@ -71,10 +72,10 @@ class ClientServiceTest {
     @DisplayName("Создание клиента падает с исключением, если имя пользователя уже занято")
     void should_throwClientAlreadyExistsException_when_usernameIsTaken() {
         ClientDTO inputDto = ClientDTO.builder().username("existing_user").password("Valid123!").build();
-        when(clientRepository.existsByUsername("existing_user")).thenReturn(true);
+        when(clientService.existsByUsername("existing_user")).thenReturn(true);
 
-        assertThrows(ClientAlreadyExistsException.class, () -> clientService.create(inputDto));
-        verify(clientRepository, never()).save(any());
+        assertThrows(ClientAlreadyExistsException.class, () -> clientProcessService.create(inputDto));
+        verify(clientService, never()).save(any());
     }
 
     @ParameterizedTest
@@ -88,9 +89,9 @@ class ClientServiceTest {
     @DisplayName("Создание клиента падает с исключением при невалидном формате пароля")
     void should_throwPasswordValidationException_when_passwordDoesNotMatchRegex(String invalidPassword) {
         ClientDTO inputDto = ClientDTO.builder().username("user").password(invalidPassword).build();
-        when(clientRepository.existsByUsername("user")).thenReturn(false);
+        when(clientService.existsByUsername("user")).thenReturn(false);
 
-        assertThrows(PasswordValidationException.class, () -> clientService.create(inputDto));
+        assertThrows(PasswordValidationException.class, () -> clientProcessService.create(inputDto));
         verifyNoInteractions(passwordEncoder, clientCredentialsService);
     }
 
@@ -103,11 +104,11 @@ class ClientServiceTest {
         ClientDTO expectedDto = ClientDTO.builder().build();
 
         when(clientCredentialsService.hashSha256(rawApiKey)).thenReturn(hashedKey);
-        when(clientRepository.findByApiKey(hashedKey)).thenReturn(Optional.of(client));
+        when(clientService.findByApiKey(hashedKey)).thenReturn(Optional.of(client));
         when(clientCredentialsService.decryptAesGcm("encrypted_secret")).thenReturn("decrypted_secret");
         when(clientMapper.getClientByApiKeyDTO(client, "decrypted_secret")).thenReturn(expectedDto);
 
-        ClientDTO result = clientService.getClientByApiKey(rawApiKey);
+        ClientDTO result = clientProcessService.getClientByApiKey(rawApiKey);
 
         assertNotNull(result);
     }
@@ -116,10 +117,10 @@ class ClientServiceTest {
     @ValueSource(strings = { "", "   " })
     @DisplayName("Получение клиента по API-ключу падает, если ключ пустой или равен null")
     void should_throwInvalidApiKeyException_when_apiKeyIsNullOrEmpty(String invalidKey) {
-        assertThrows(InvalidApiKeyException.class, () -> clientService.getClientByApiKey(invalidKey));
-        assertThrows(InvalidApiKeyException.class, () -> clientService.getClientByApiKey(null));
+        assertThrows(InvalidApiKeyException.class, () -> clientProcessService.getClientByApiKey(invalidKey));
+        assertThrows(InvalidApiKeyException.class, () -> clientProcessService.getClientByApiKey(null));
 
-        verifyNoInteractions(clientRepository);
+        verifyNoInteractions(clientService);
     }
 
     @Test
@@ -128,9 +129,9 @@ class ClientServiceTest {
         String rawApiKey = "unknown_key";
         String hashedKey = "hashed_unknown_key";
         when(clientCredentialsService.hashSha256(rawApiKey)).thenReturn(hashedKey);
-        when(clientRepository.findByApiKey(hashedKey)).thenReturn(Optional.empty());
+        when(clientService.findByApiKey(hashedKey)).thenReturn(Optional.empty());
 
-        assertThrows(UserNotFoundException.class, () -> clientService.getClientByApiKey(rawApiKey));
+        assertThrows(UserNotFoundException.class, () -> clientProcessService.getClientByApiKey(rawApiKey));
     }
 
     @Test
@@ -140,10 +141,10 @@ class ClientServiceTest {
         Client client = Client.builder().username(username).build();
         ClientDTO expectedDto = ClientDTO.builder().username(username).password(null).build();
 
-        when(clientRepository.findByUsername(username)).thenReturn(Optional.of(client));
+        when(clientService.findByUsername(username)).thenReturn(Optional.of(client));
         when(clientMapper.clientToDTO(client)).thenReturn(expectedDto);
 
-        ClientDTO result = clientService.getClientByUsername(username);
+        ClientDTO result = clientProcessService.getClientByUsername(username);
 
         assertNotNull(result);
         assertEquals(username, result.getUsername());
@@ -153,9 +154,9 @@ class ClientServiceTest {
     @DisplayName("Получение клиента по имени пользователя падает, если он не найден")
     void should_throwNotFoundException_when_usernameDoesNotExist() {
         String username = "missing_user";
-        when(clientRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(clientService.findByUsername(username)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> clientService.getClientByUsername(username));
+        assertThrows(NotFoundException.class, () -> clientProcessService.getClientByUsername(username));
     }
 
 }
