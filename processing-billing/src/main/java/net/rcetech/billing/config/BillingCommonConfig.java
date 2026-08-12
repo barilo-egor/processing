@@ -1,6 +1,6 @@
 package net.rcetech.billing.config;
 
-import net.rcetech.billing.dto.TransactionDTO;
+import net.rcetech.meta.billing.dto.TransactionDTO;
 import net.rcetech.billing.kafka.TransactionEventDeserializer;
 import net.rcetech.meta.KafkaLogErrorHandler;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

@@ -1,18 +1,18 @@
-package net.rcetech.billing.entity;
+package net.rcetech.domain.model.billing;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.billing.enums.Operation;
-import net.rcetech.billing.enums.TransactionType;
+import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionType;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "transaction")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -34,17 +34,29 @@ public class Transaction {
     @Column(nullable = false)
     private Integer amount;
 
+    /**
+     * Тип операции
+     */
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Operation operation;
 
+    /**
+     * Тип транзакции
+     */
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TransactionType type;
 
+    /**
+     * Комментарий
+     */
     @Column
     private String comment;
 
+    /**
+     * Временная метка создания транзакции
+     */
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

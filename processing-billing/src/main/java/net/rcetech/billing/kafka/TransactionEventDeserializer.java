@@ -3,7 +3,7 @@ package net.rcetech.billing.kafka;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
-import net.rcetech.billing.dto.TransactionDTO;
+import net.rcetech.meta.billing.dto.TransactionDTO;
 import net.rcetech.billing.exceptions.BaseException;
 
 import java.nio.charset.StandardCharsets;

@@ -4,8 +4,8 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.experimental.UtilityClass;
-import net.rcetech.billing.dto.GetTransactionsRequest;
-import net.rcetech.billing.entity.Transaction;
+import net.rcetech.meta.billing.dto.GetTransactionsRequest;
+import net.rcetech.domain.model.billing.Transaction;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;

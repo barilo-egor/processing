@@ -1,18 +1,14 @@
-package net.rcetech.billing.dto;
+package net.rcetech.meta.billing.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import net.rcetech.billing.entity.Transaction;
-import net.rcetech.billing.enums.Operation;
-import net.rcetech.billing.enums.TransactionType;
+import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionType;
 
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * @see Transaction
- */
 @Data
 @Builder
 @NoArgsConstructor

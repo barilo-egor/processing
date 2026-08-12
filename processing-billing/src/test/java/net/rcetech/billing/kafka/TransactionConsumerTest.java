@@ -6,8 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import net.rcetech.billing.dto.TransactionDTO;
-import net.rcetech.billing.service.TransactionService;
+import net.rcetech.meta.billing.dto.TransactionDTO;
+import net.rcetech.domain.service.billing.TransactionService;
 
 import java.util.UUID;
 

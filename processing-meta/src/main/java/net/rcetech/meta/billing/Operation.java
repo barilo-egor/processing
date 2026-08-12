@@ -1,4 +1,4 @@
-package net.rcetech.billing.enums;
+package net.rcetech.meta.billing;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

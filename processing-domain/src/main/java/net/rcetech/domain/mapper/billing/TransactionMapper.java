@@ -1,10 +1,10 @@
-package net.rcetech.billing.mapper;
+package net.rcetech.domain.mapper.billing;
 
-import net.rcetech.billing.dto.CreateTransactionRequest;
-import net.rcetech.billing.dto.TransactionDTO;
-import net.rcetech.billing.entity.Transaction;
-import net.rcetech.billing.enums.Operation;
-import net.rcetech.billing.enums.TransactionType;
+import net.rcetech.meta.billing.dto.CreateTransactionRequest;
+import net.rcetech.meta.billing.dto.TransactionDTO;
+import net.rcetech.domain.model.billing.Transaction;
+import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionType;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -8,8 +8,8 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
-import net.rcetech.billing.dto.TransactionDTO;
-import net.rcetech.billing.service.TransactionService;
+import net.rcetech.meta.billing.dto.TransactionDTO;
+import net.rcetech.domain.service.billing.TransactionService;
 
 @Slf4j
 @Service

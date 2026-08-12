@@ -1,4 +1,4 @@
-package net.rcetech.billing.dto;
+package net.rcetech.meta.billing.dto;
 
 import lombok.Builder;
 
