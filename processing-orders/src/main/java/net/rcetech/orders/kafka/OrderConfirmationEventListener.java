@@ -3,6 +3,7 @@ package net.rcetech.orders.kafka;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.meta.billing.Operation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -10,9 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import net.rcetech.meta.orders.dto.OrderDTO;
-import net.rcetech.meta.orders.Operation;
 import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.meta.orders.TransactionType;
+import net.rcetech.meta.billing.TransactionType;
 
 @Component
 @Slf4j

@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.meta.orders.ClientStatus;
+import net.rcetech.meta.clients.ClientStatus;
 
 import java.time.Instant;
 

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.meta.orders.Operation;
-import net.rcetech.meta.orders.TransactionType;
+import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionType;
 
 import java.util.Objects;
 import java.util.UUID;
