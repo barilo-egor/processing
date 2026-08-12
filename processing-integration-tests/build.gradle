@@ -4,37 +4,5 @@ plugins {
 }
 
 dependencies {
-    implementation project(':processing-meta')
-    implementation project(':processing-clients')
-    implementation project(':processing-orders')
-    implementation project(':processing-billing')
-    implementation project(':processing-api')
-    implementation project(':processing-support')
     implementation project(':processing-app')
-
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//    implementation 'com.mysql:mysql-connector-j'
-
-    implementation platform('org.springframework.grpc:spring-grpc-dependencies:1.0.3')
-    implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
-    implementation 'build.buf:protovalidate:1.2.2'
-    protobuf files('build.buf:protovalidate:1.2.2')
-
-    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-//    testImplementation 'org.springframework.boot:spring-boot-starter-flyway'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-
-//    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
-//    testImplementation 'org.testcontainers:kafka:1.21.4'
-//    testImplementation 'org.testcontainers:mysql:1.21.4'
-
-    testImplementation 'org.assertj:assertj-core:3.27.7'
-    testImplementation 'io.projectreactor:reactor-test'
-//    testImplementation 'org.flywaydb:flyway-mysql'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
 }
