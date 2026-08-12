@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':processing-meta')
+    implementation project(':processing-domain')
     implementation project(':processing-clients')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
