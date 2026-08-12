@@ -7,7 +7,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
-public class UnknownStatusSerializer implements Serializer<MerchantCallbackEvent> {
+public class UnknownStatusSerializer implements Serializer<net.rcetech.meta.orders.MerchantCallbackEvent> {
 
     private final ObjectMapper objectMapper;
 
@@ -16,7 +16,7 @@ public class UnknownStatusSerializer implements Serializer<MerchantCallbackEvent
     }
 
     @Override
-    public byte[] serialize(String topic, MerchantCallbackEvent merchantCallbackEvent) {
+    public byte[] serialize(String topic, net.rcetech.meta.orders.MerchantCallbackEvent merchantCallbackEvent) {
         try {
             if (merchantCallbackEvent == null) {
                 return new byte[0];

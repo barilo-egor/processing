@@ -1,4 +1,4 @@
-package net.rcetech.orders.kafka;
+package net.rcetech.meta.orders;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;

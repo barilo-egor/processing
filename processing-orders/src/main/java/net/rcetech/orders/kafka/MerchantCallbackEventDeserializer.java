@@ -8,7 +8,7 @@ import net.rcetech.orders.exceptions.BaseException;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
-public class MerchantCallbackEventDeserializer implements Deserializer<MerchantCallbackEvent> {
+public class MerchantCallbackEventDeserializer implements Deserializer<net.rcetech.meta.orders.MerchantCallbackEvent> {
 
     private final ObjectMapper objectMapper;
 
@@ -17,11 +17,11 @@ public class MerchantCallbackEventDeserializer implements Deserializer<MerchantC
     }
 
     @Override
-    public MerchantCallbackEvent deserialize(String topic, byte[] data) {
+    public net.rcetech.meta.orders.MerchantCallbackEvent deserialize(String topic, byte[] data) {
         try {
             if (data == null)
                 return null;
-            return objectMapper.readValue(data, MerchantCallbackEvent.class);
+            return objectMapper.readValue(data, net.rcetech.meta.orders.MerchantCallbackEvent.class);
         } catch (Exception e) {
             throw new BaseException(
                     "Error occurred while deserializer value: " + new String(data, StandardCharsets.UTF_8));

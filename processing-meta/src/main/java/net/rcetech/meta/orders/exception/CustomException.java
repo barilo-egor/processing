@@ -1,4 +1,4 @@
-package net.rcetech.orders.exceptions;
+package net.rcetech.meta.orders.exception;
 
 public interface CustomException {
 

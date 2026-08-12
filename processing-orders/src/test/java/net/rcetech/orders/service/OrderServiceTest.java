@@ -15,8 +15,8 @@ import org.springframework.data.jpa.domain.Specification;
 import net.rcetech.meta.orders.dto.OrderDTO;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.orders.exceptions.AlreadyExistsException;
-import net.rcetech.orders.exceptions.NotFoundException;
+import net.rcetech.meta.orders.exception.AlreadyExistsException;
+import net.rcetech.meta.orders.exception.NotFoundException;
 import net.rcetech.domain.mapper.orders.OrderMapper;
 import net.rcetech.domain.repository.orders.OrderRepository;
 

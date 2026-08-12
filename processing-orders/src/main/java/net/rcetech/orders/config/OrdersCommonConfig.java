@@ -15,10 +15,8 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.util.backoff.FixedBackOff;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import tools.jackson.databind.ObjectMapper;
@@ -67,7 +65,7 @@ public class OrdersCommonConfig {
 
     @Bean
     @Profile("!kafka-disabled")
-    public ConsumerFactory<String, MerchantCallbackEvent> merchantCallbackEventConsumerFactory(
+    public ConsumerFactory<String, net.rcetech.meta.orders.MerchantCallbackEvent> merchantCallbackEventConsumerFactory(
             @Value("${spring.kafka.merchant-details.bootstrap-servers}") String bootstrapServers,
             ObjectMapper objectMapper) {
         Map<String, Object> props = new HashMap<>();
@@ -81,10 +79,10 @@ public class OrdersCommonConfig {
 
     @Bean
     @Profile("!kafka-disabled")
-    public ConcurrentKafkaListenerContainerFactory<String, MerchantCallbackEvent> merchantCallbackKafkaListenerContainerFactory(
+    public ConcurrentKafkaListenerContainerFactory<String, net.rcetech.meta.orders.MerchantCallbackEvent> merchantCallbackKafkaListenerContainerFactory(
             @Value("${spring.kafka.merchant-details.bootstrap-servers}") String bootstrapServers,
             ObjectMapper objectMapper, KafkaLogErrorHandler kafkaLogErrorHandler) {
-        ConcurrentKafkaListenerContainerFactory<String, MerchantCallbackEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<String, net.rcetech.meta.orders.MerchantCallbackEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setCommonErrorHandler(kafkaLogErrorHandler);
         factory.setConsumerFactory(merchantCallbackEventConsumerFactory(bootstrapServers, objectMapper));

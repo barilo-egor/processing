@@ -4,13 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.mapper.orders.OrderMapper;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.MerchantStatusRecognizer;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.dto.OrderDTO;
-import net.rcetech.orders.exceptions.AlreadyExistsException;
-import net.rcetech.orders.exceptions.NotFoundException;
-import net.rcetech.orders.kafka.MerchantCallbackEvent;
-import net.rcetech.orders.utils.PageableUtils;
+import net.rcetech.domain.util.PageableUtils;
+import net.rcetech.meta.orders.exception.NotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,12 +48,12 @@ public class OrderService {
      *
      * @param orderDTO данные для создания нового order
      * @return {@link OrderDTO} созданного order с заполненным идентификатором и временем создания
-     * @throws AlreadyExistsException если order с переданным {@code internalId} уже зарегистрирован в базе данных
+     * @throws net.rcetech.meta.orders.exception.AlreadyExistsException если order с переданным {@code internalId} уже зарегистрирован в базе данных
      */
     public OrderDTO create(OrderDTO orderDTO) {
         log.debug("Запрос на создание order: {}", orderDTO);
         if (orderRepository.existsByInternalId(orderDTO.getInternalId())) {
-            throw new AlreadyExistsException(orderDTO.getInternalId());
+            throw new net.rcetech.meta.orders.exception.AlreadyExistsException(orderDTO.getInternalId());
         }
         Order order = Order.builder()
                 .id(orderDTO.getId())

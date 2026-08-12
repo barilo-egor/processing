@@ -1,6 +1,7 @@
 package net.rcetech.orders.exceptions;
 
 import lombok.Getter;
+import net.rcetech.meta.orders.exception.CustomException;
 
 @Getter
 public class UserNotFoundException extends RuntimeException implements CustomException {
