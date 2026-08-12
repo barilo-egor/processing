@@ -1,5 +1,6 @@
 package net.rcetech.support.service;
 
+import net.rcetech.domain.service.support.UserRefreshTokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,9 +9,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.support.dto.UserRefreshTokenDTO;
-import net.rcetech.support.entity.RefreshToken;
-import net.rcetech.support.repository.UserRefreshTokenRepository;
+import net.rcetech.meta.support.dto.UserRefreshTokenDTO;
+import net.rcetech.domain.model.support.RefreshToken;
+import net.rcetech.domain.repository.support.UserRefreshTokenRepository;
 
 import java.time.Instant;
 import java.util.Optional;

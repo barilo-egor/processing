@@ -8,15 +8,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import net.rcetech.support.dto.UserDTO;
-import net.rcetech.support.entity.SupportUser;
-import net.rcetech.support.enums.UserRole;
-import net.rcetech.support.exceptions.NotFoundException;
-import net.rcetech.support.exceptions.PasswordValidationException;
-import net.rcetech.support.exceptions.UserAlreadyExistsException;
-import net.rcetech.support.exceptions.UserNotFoundException;
-import net.rcetech.support.mapper.UserMapper;
-import net.rcetech.support.repository.UserRepository;
+import net.rcetech.meta.support.dto.UserDTO;
+import net.rcetech.domain.model.support.SupportUser;
+import net.rcetech.meta.support.UserRole;
+import net.rcetech.meta.support.exception.NotFoundException;
+import net.rcetech.meta.support.exception.PasswordValidationException;
+import net.rcetech.meta.support.exception.UserAlreadyExistsException;
+import net.rcetech.meta.support.exception.UserNotFoundException;
+import net.rcetech.domain.mapper.support.UserMapper;
+import net.rcetech.domain.repository.support.UserRepository;
 
 import java.util.Optional;
 
@@ -36,7 +36,7 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UserService userService;
+    private net.rcetech.domain.service.support.UserService userService;
 
     private UserDTO testDto;
 

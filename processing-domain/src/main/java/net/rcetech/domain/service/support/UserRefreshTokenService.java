@@ -1,14 +1,14 @@
-package net.rcetech.support.service;
+package net.rcetech.domain.service.support;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.meta.support.dto.UserRefreshTokenDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import net.rcetech.support.dto.UserRefreshTokenDTO;
-import net.rcetech.support.entity.RefreshToken;
-import net.rcetech.support.repository.UserRefreshTokenRepository;
+import net.rcetech.domain.model.support.RefreshToken;
+import net.rcetech.domain.repository.support.UserRefreshTokenRepository;
 
 import java.time.Instant;
 import java.util.Optional;

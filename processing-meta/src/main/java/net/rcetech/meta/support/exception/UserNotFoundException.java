@@ -1,4 +1,4 @@
-package net.rcetech.support.exceptions;
+package net.rcetech.meta.support.exception;
 
 import lombok.Getter;
 

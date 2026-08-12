@@ -1,8 +1,8 @@
-package net.rcetech.support.mapper;
+package net.rcetech.domain.mapper.support;
 
 import org.springframework.stereotype.Component;
-import net.rcetech.support.dto.UserDTO;
-import net.rcetech.support.entity.SupportUser;
+import net.rcetech.meta.support.dto.UserDTO;
+import net.rcetech.domain.model.support.SupportUser;
 
 @Component
 public class UserMapper {

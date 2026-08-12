@@ -1,8 +1,8 @@
-package net.rcetech.support.repository;
+package net.rcetech.domain.repository.support;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import net.rcetech.support.entity.SupportUser;
+import net.rcetech.domain.model.support.SupportUser;
 
 import java.util.Optional;
 

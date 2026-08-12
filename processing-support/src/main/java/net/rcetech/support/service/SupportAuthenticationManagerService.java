@@ -1,12 +1,13 @@
 package net.rcetech.support.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.support.UserRefreshTokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import net.rcetech.support.dto.AuthRequest;
 import net.rcetech.support.dto.TokenPair;
-import net.rcetech.support.dto.UserDTO;
-import net.rcetech.support.dto.UserRefreshTokenDTO;
+import net.rcetech.meta.support.dto.UserDTO;
+import net.rcetech.meta.support.dto.UserRefreshTokenDTO;
 import net.rcetech.support.exceptions.UnauthorizedException;
 
 import java.time.Instant;
@@ -17,13 +18,13 @@ public class SupportAuthenticationManagerService {
 
     private final SupportJwtService supportJwtService;
 
-    private final UserService userService;
+    private final net.rcetech.domain.service.support.UserService userService;
 
     private final UserRefreshTokenService tokenService;
 
     private final PasswordEncoder passwordEncoder;
 
-    public SupportAuthenticationManagerService(SupportJwtService supportJwtService, UserService userService,
+    public SupportAuthenticationManagerService(SupportJwtService supportJwtService, net.rcetech.domain.service.support.UserService userService,
                                                UserRefreshTokenService tokenService, PasswordEncoder passwordEncoder) {
         this.supportJwtService = supportJwtService;
         this.userService = userService;

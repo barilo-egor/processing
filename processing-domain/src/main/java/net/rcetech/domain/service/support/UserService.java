@@ -1,17 +1,17 @@
-package net.rcetech.support.service;
+package net.rcetech.domain.service.support;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.mapper.support.UserMapper;
+import net.rcetech.meta.support.exception.NotFoundException;
+import net.rcetech.meta.support.exception.PasswordValidationException;
+import net.rcetech.meta.support.exception.UserAlreadyExistsException;
+import net.rcetech.meta.support.exception.UserNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import net.rcetech.support.dto.UserDTO;
-import net.rcetech.support.entity.SupportUser;
-import net.rcetech.support.exceptions.NotFoundException;
-import net.rcetech.support.exceptions.PasswordValidationException;
-import net.rcetech.support.exceptions.UserAlreadyExistsException;
-import net.rcetech.support.exceptions.UserNotFoundException;
-import net.rcetech.support.mapper.UserMapper;
-import net.rcetech.support.repository.UserRepository;
+import net.rcetech.domain.model.support.SupportUser;
+import net.rcetech.domain.repository.support.UserRepository;
+import net.rcetech.meta.support.dto.UserDTO;
 
 @Service
 @Slf4j
@@ -58,7 +58,7 @@ public class UserService {
      * Возвращает данные пользователя по его username.
      *
      * @param username имя пользователя для поиска
-     * @return {@link UserDTO} с данными найденного клиента
+     * @return {@link net.rcetech.meta.support.dto.UserDTO} с данными найденного клиента
      * @throws NotFoundException если клиент с указанным username не найден в системе
      */
     public UserDTO getUserByUsername(String username) {
@@ -72,7 +72,7 @@ public class UserService {
      * Возвращает данные пользователя по его ID.
      *
      * @param id уникальный идентификатор пользователя
-     * @return {@link UserDTO} с данными найденного пользователя
+     * @return {@link net.rcetech.meta.support.dto.UserDTO} с данными найденного пользователя
      * @throws UserNotFoundException если пользователь с указанным ID не найден в системе
      */
     public UserDTO getUserById(Long id) {

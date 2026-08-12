@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import net.rcetech.support.dto.UserDTO;
+import net.rcetech.meta.support.dto.UserDTO;
 import net.rcetech.support.exceptions.BaseException;
 
 import java.security.KeyFactory;

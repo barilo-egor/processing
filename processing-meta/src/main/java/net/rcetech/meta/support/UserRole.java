@@ -1,4 +1,4 @@
-package net.rcetech.support.enums;
+package net.rcetech.meta.support;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

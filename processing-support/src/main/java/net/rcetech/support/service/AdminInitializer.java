@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import net.rcetech.support.entity.SupportUser;
-import net.rcetech.support.enums.UserRole;
-import net.rcetech.support.repository.UserRepository;
+import net.rcetech.domain.model.support.SupportUser;
+import net.rcetech.meta.support.UserRole;
+import net.rcetech.domain.repository.support.UserRepository;
 import net.rcetech.support.util.PasswordGenerator;
 
 @Component
@@ -15,9 +15,9 @@ public class AdminInitializer {
 
     private final UserRepository userRepository;
 
-    private final UserService userService;
+    private final net.rcetech.domain.service.support.UserService userService;
 
-    public AdminInitializer(UserRepository userRepository, UserService userService) {
+    public AdminInitializer(UserRepository userRepository, net.rcetech.domain.service.support.UserService userService) {
         this.userRepository = userRepository;
         this.userService = userService;
     }

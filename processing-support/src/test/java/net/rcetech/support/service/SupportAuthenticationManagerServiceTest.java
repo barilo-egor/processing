@@ -1,5 +1,6 @@
 package net.rcetech.support.service;
 
+import net.rcetech.domain.service.support.UserRefreshTokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import net.rcetech.support.dto.AuthRequest;
 import net.rcetech.support.dto.TokenPair;
-import net.rcetech.support.dto.UserDTO;
-import net.rcetech.support.dto.UserRefreshTokenDTO;
+import net.rcetech.meta.support.dto.UserDTO;
+import net.rcetech.meta.support.dto.UserRefreshTokenDTO;
 import net.rcetech.support.exceptions.UnauthorizedException;
 
 import java.time.Instant;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 class SupportAuthenticationManagerServiceTest {
 
     @Mock
-    private UserService userService;
+    private net.rcetech.domain.service.support.UserService userService;
 
     @Mock
     private PasswordEncoder passwordEncoder;

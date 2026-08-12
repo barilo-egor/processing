@@ -1,14 +1,10 @@
-package net.rcetech.support.dto;
+package net.rcetech.meta.support.dto;
 
 import lombok.Builder;
 import lombok.Data;
-import net.rcetech.support.entity.RefreshToken;
 
 import java.time.Instant;
 
-/**
- * @see RefreshToken
- */
 @Data
 @Builder
 public class UserRefreshTokenDTO {

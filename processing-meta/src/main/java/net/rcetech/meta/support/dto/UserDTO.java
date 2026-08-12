@@ -1,12 +1,8 @@
-package net.rcetech.support.dto;
+package net.rcetech.meta.support.dto;
 
 import lombok.*;
-import net.rcetech.support.entity.SupportUser;
-import net.rcetech.support.enums.UserRole;
+import net.rcetech.meta.support.UserRole;
 
-/**
- * @see SupportUser
- */
 @Data
 @Builder
 @AllArgsConstructor

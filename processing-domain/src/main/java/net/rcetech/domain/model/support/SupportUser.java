@@ -1,11 +1,11 @@
-package net.rcetech.support.entity;
+package net.rcetech.domain.model.support;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.support.enums.UserRole;
+import net.rcetech.meta.support.UserRole;
 
 import java.time.Instant;
 

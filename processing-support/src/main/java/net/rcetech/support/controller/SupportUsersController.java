@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 import net.rcetech.support.dto.AuthRequest;
 import net.rcetech.support.dto.AuthResponse;
 import net.rcetech.support.dto.TokenPair;
-import net.rcetech.support.dto.UserDTO;
+import net.rcetech.meta.support.dto.UserDTO;
 import net.rcetech.support.exceptions.UnauthorizedException;
-import net.rcetech.support.exceptions.UserAlreadyExistsException;
+import net.rcetech.meta.support.exception.UserAlreadyExistsException;
 import net.rcetech.support.service.SupportAuthenticationManagerService;
 import net.rcetech.support.service.SupportCookieService;
-import net.rcetech.support.service.UserService;
+import net.rcetech.domain.service.support.UserService;
 
 @RestController
 @Slf4j

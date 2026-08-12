@@ -1,4 +1,4 @@
-package net.rcetech.support.entity;
+package net.rcetech.domain.model.support;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
