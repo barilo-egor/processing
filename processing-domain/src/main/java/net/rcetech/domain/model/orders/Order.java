@@ -1,4 +1,4 @@
-package net.rcetech.orders.entity;
+package net.rcetech.domain.model.orders;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import tgb.cryptoexchange.commons.enums.Merchant;
-import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.meta.orders.OrderStatus;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +37,9 @@ public class Order {
     @Column(nullable = false, unique = true)
     private String internalId;
 
+    /**
+     * Статус ордера
+     */
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

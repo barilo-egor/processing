@@ -1,17 +1,13 @@
-package net.rcetech.orders.dto;
+package net.rcetech.meta.orders.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
-import net.rcetech.orders.entity.Order;
+import net.rcetech.meta.orders.OrderStatus;
 import tgb.cryptoexchange.commons.enums.Merchant;
-import net.rcetech.orders.enums.OrderStatus;
 
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * @see Order
- */
 @Data
 @Builder
 @NoArgsConstructor

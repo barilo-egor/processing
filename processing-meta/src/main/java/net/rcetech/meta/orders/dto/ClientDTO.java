@@ -1,10 +1,10 @@
-package net.rcetech.orders.dto;
+package net.rcetech.meta.orders.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.orders.enums.ClientStatus;
+import net.rcetech.meta.orders.ClientStatus;
 
 import java.time.Instant;
 

@@ -5,8 +5,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.service.OrderService;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.domain.service.orders.OrderService;
 
 import java.util.Objects;
 import java.util.Optional;

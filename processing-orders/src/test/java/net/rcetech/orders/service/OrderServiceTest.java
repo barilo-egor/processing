@@ -12,13 +12,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.orders.exceptions.AlreadyExistsException;
 import net.rcetech.orders.exceptions.NotFoundException;
-import net.rcetech.orders.mapper.OrderMapper;
-import net.rcetech.orders.repository.OrderRepository;
+import net.rcetech.domain.mapper.orders.OrderMapper;
+import net.rcetech.domain.repository.orders.OrderRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +42,7 @@ class OrderServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private OrderService orderService;
+    private net.rcetech.domain.service.orders.OrderService orderService;
 
     @Mock
     private Specification<Order> mockSpec;

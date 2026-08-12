@@ -9,10 +9,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.enums.Operation;
-import net.rcetech.orders.enums.OrderStatus;
-import net.rcetech.orders.enums.TransactionType;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.meta.orders.Operation;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.TransactionType;
 
 @Component
 @Slf4j

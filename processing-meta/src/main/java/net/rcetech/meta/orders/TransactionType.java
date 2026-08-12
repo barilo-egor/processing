@@ -1,4 +1,4 @@
-package net.rcetech.orders.enums;
+package net.rcetech.meta.orders;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

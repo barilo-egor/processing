@@ -1,11 +1,11 @@
-package net.rcetech.orders.mapper;
+package net.rcetech.domain.mapper.orders;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;

@@ -1,4 +1,4 @@
-package net.rcetech.orders.repository;
+package net.rcetech.domain.repository.orders;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.meta.orders.OrderStatus;
 
 import java.util.Optional;
 import java.util.UUID;

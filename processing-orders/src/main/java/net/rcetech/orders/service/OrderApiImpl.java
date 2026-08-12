@@ -2,9 +2,9 @@ package net.rcetech.orders.service;
 
 import lombok.RequiredArgsConstructor;
 import net.rcetech.meta.orders.dto.*;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.enums.OrderStatus;
-import net.rcetech.orders.mapper.OrderMapper;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.domain.mapper.orders.OrderMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ public class OrderApiImpl implements OrderApi {
 
     private final OrderMapper orderMapper;
 
-    private final OrderService orderService;
+    private final net.rcetech.domain.service.orders.OrderService orderService;
 
     @Override
     public OrderResponseDTO createOrder(CreateOrderRequestDTO request) {

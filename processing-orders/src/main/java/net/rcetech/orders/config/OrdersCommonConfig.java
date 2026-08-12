@@ -67,30 +67,6 @@ public class OrdersCommonConfig {
 
     @Bean
     @Profile("!kafka-disabled")
-    public ProducerFactory<String, MerchantCallbackEvent> unknownStatusProducerFactory(
-            KafkaProperties kafkaProperties, ObjectMapper objectMapper) {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
-        return new DefaultKafkaProducerFactory<>(
-                configProps,
-                new StringSerializer(),
-                new UnknownStatusSerializer(objectMapper)
-        );
-    }
-
-    @Bean
-    @Profile("!kafka-disabled")
-    public KafkaTemplate<String, MerchantCallbackEvent> kafkaTemplateUnknownStatus(
-            UnknownStatusProducerListener unknownStatusProducerListener,
-            KafkaProperties kafkaProperties, ObjectMapper objectMapper) {
-        KafkaTemplate<String, MerchantCallbackEvent> kafkaTemplate = new KafkaTemplate<>(
-                unknownStatusProducerFactory(kafkaProperties, objectMapper));
-        kafkaTemplate.setProducerListener(unknownStatusProducerListener);
-        return kafkaTemplate;
-    }
-
-    @Bean
-    @Profile("!kafka-disabled")
     public ConsumerFactory<String, MerchantCallbackEvent> merchantCallbackEventConsumerFactory(
             @Value("${spring.kafka.merchant-details.bootstrap-servers}") String bootstrapServers,
             ObjectMapper objectMapper) {

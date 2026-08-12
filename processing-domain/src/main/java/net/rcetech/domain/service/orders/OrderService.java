@@ -1,23 +1,22 @@
-package net.rcetech.orders.service;
+package net.rcetech.domain.service.orders;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.mapper.orders.OrderMapper;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.meta.orders.MerchantStatusRecognizer;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.dto.OrderDTO;
+import net.rcetech.orders.exceptions.AlreadyExistsException;
+import net.rcetech.orders.exceptions.NotFoundException;
+import net.rcetech.orders.kafka.MerchantCallbackEvent;
+import net.rcetech.orders.utils.PageableUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import net.rcetech.orders.config.MerchantStatusProperties;
-import net.rcetech.orders.dto.OrderDTO;
-import net.rcetech.orders.entity.Order;
-import net.rcetech.orders.enums.OrderStatus;
-import net.rcetech.orders.exceptions.AlreadyExistsException;
-import net.rcetech.orders.exceptions.NotFoundException;
-import net.rcetech.orders.kafka.MerchantCallbackEvent;
-import net.rcetech.orders.kafka.MerchantUnknownStatusService;
-import net.rcetech.orders.mapper.OrderMapper;
-import net.rcetech.orders.repository.OrderRepository;
-import net.rcetech.orders.utils.PageableUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,18 +34,14 @@ public class OrderService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    private final MerchantStatusProperties merchantStatusProperties;
-
-    private final MerchantUnknownStatusService merchantUnknownStatusService;
+    private final MerchantStatusRecognizer statusRecognizer;
 
     public OrderService(OrderRepository orderRepository, OrderMapper orderMapper,
-            ApplicationEventPublisher eventPublisher, MerchantStatusProperties merchantStatusProperties,
-            MerchantUnknownStatusService merchantUnknownStatusService) {
+            ApplicationEventPublisher eventPublisher, MerchantStatusRecognizer statusRecognizer) {
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
         this.eventPublisher = eventPublisher;
-        this.merchantStatusProperties = merchantStatusProperties;
-        this.merchantUnknownStatusService = merchantUnknownStatusService;
+        this.statusRecognizer = statusRecognizer;
     }
 
     /**
@@ -120,12 +115,10 @@ public class OrderService {
      */
     public void updateStatusByMerchantStatus(UUID id, MerchantCallbackEvent event) {
         log.debug("Запрос на обновление статуса order от merchantCallback, id={}, merchantCallback={}", id, event);
-        if (merchantStatusProperties.isSuccess(event.getStatus())) {
+        if (statusRecognizer.isSuccess(event.getStatus())) {
             updateStatus(id.toString(), OrderStatus.SUCCESS);
-        } else if (merchantStatusProperties.isFail(event.getStatus())) {
+        } else if (statusRecognizer.isFail(event.getStatus())) {
             updateStatus(id.toString(), OrderStatus.TIMEOUT);
-        } else {
-            merchantUnknownStatusService.sendUnknownStatusCallback(event);
         }
         orderRepository.updateMerchantOrderStatusById(id, event.getStatus());
     }
