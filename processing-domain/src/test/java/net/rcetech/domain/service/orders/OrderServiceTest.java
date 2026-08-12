@@ -1,4 +1,4 @@
-package net.rcetech.orders.service;
+package net.rcetech.domain.service.orders;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
