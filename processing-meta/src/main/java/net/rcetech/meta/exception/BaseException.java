@@ -1,4 +1,4 @@
-package net.rcetech.api.exceptions;
+package net.rcetech.meta.exception;
 
 import lombok.Getter;
 
@@ -9,4 +9,7 @@ public class BaseException extends RuntimeException {
         super(message);
     }
 
+    public BaseException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

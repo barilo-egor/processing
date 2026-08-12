@@ -6,7 +6,7 @@ import net.rcetech.meta.clients.dto.CreateSignatureDTO;
 import net.rcetech.clients.service.ClientApi;
 import net.rcetech.meta.orders.dto.OrderDTO;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.orders.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

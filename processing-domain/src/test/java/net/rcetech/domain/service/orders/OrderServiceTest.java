@@ -1,5 +1,11 @@
 package net.rcetech.domain.service.orders;
 
+import net.rcetech.domain.mapper.orders.OrderMapper;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.dto.OrderDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,13 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import net.rcetech.meta.orders.dto.OrderDTO;
-import net.rcetech.domain.model.orders.Order;
-import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.meta.orders.exception.AlreadyExistsException;
-import net.rcetech.meta.orders.exception.NotFoundException;
-import net.rcetech.domain.mapper.orders.OrderMapper;
-import net.rcetech.domain.repository.orders.OrderRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -87,7 +86,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("Выброс AlreadyExistsException, если internalId уже зарегистрирован")
+    @DisplayName("Выброс BaseException, если internalId уже зарегистрирован")
     void create_ThrowsAlreadyExistsException() {
         OrderDTO inputDto = new OrderDTO();
         inputDto.setInternalId("duplicate-id");
@@ -95,7 +94,7 @@ class OrderServiceTest {
         when(orderRepository.existsByInternalId("duplicate-id")).thenReturn(true);
 
         assertThatThrownBy(() -> orderService.create(inputDto))
-                .isInstanceOf(AlreadyExistsException.class)
+                .isInstanceOf(BaseException.class)
                 .hasMessageContaining("Bad request.");
 
         verify(orderRepository, never()).save(any(Order.class));
@@ -134,7 +133,7 @@ class OrderServiceTest {
         String id = orderId.toString();
 
         assertThatThrownBy(() -> orderService.updateStatus(id, newStatus))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(BaseException.class)
                 .hasMessageContaining("Record not found for the provided ID.");
 
         verify(eventPublisher, never()).publishEvent(any());

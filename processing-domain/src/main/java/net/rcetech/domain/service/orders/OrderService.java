@@ -4,12 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.mapper.orders.OrderMapper;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.domain.util.PageableUtils;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.MerchantStatusRecognizer;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.dto.OrderDTO;
-import net.rcetech.domain.util.PageableUtils;
-import net.rcetech.meta.orders.exception.NotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,12 +48,12 @@ public class OrderService {
      *
      * @param orderDTO данные для создания нового order
      * @return {@link OrderDTO} созданного order с заполненным идентификатором и временем создания
-     * @throws net.rcetech.meta.orders.exception.AlreadyExistsException если order с переданным {@code internalId} уже зарегистрирован в базе данных
+     * @throws BaseException если order с переданным {@code internalId} уже зарегистрирован в базе данных
      */
     public OrderDTO create(OrderDTO orderDTO) {
         log.debug("Запрос на создание order: {}", orderDTO);
         if (orderRepository.existsByInternalId(orderDTO.getInternalId())) {
-            throw new net.rcetech.meta.orders.exception.AlreadyExistsException(orderDTO.getInternalId());
+            throw new BaseException("Запись с ");
         }
         Order order = Order.builder()
                 .id(orderDTO.getId())
@@ -83,7 +83,7 @@ public class OrderService {
      * @param id        уникальный идентификатор или internalId order
      * @param clientId  идентификатор клиента в api-clients
      * @param newStatus новый устанавливаемый статус
-     * @throws NotFoundException если order с указанным {@code id} не найден в базе данных
+     * @throws BaseException если order с указанным {@code id} не найден в базе данных
      */
     public void updateStatus(String id, Long clientId, OrderStatus newStatus) {
         log.debug("Запрос на обновление статуса order, id={}, newStatus={}", id, newStatus);
@@ -94,7 +94,7 @@ public class OrderService {
             result = Objects.isNull(clientId) ? orderRepository.updateStatusByInternalId(id, newStatus) :
                     orderRepository.updateStatusByInternalIdAndClientId(id, clientId, newStatus);
             if (result == 0) {
-                throw new NotFoundException(id);
+                throw new BaseException("Запись с id=" + id + ", clientId=" + clientId + " не найдена.");
             }
             Order order = orderRepository.getOrdersByInternalId(id);
             maybeOrderId = order.getId();

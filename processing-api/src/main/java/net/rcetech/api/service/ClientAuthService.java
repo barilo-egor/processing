@@ -3,7 +3,8 @@ package net.rcetech.api.service;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.enums.ClientStatus;
-import net.rcetech.api.exceptions.BaseException;
+import net.rcetech.api.exceptions.InvalidApiKeyException;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.clients.service.ClientApi;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,7 +75,7 @@ public class ClientAuthService {
             byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new BaseException("SHA-256 algorithm not available");
+            throw new InvalidApiKeyException("SHA-256 algorithm not available");
         }
     }
 

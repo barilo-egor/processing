@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import net.rcetech.meta.support.dto.UserDTO;
 import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.meta.support.UserRole;
-import net.rcetech.meta.support.exception.NotFoundException;
+import net.rcetech.meta.exception.NotFoundException;
 import net.rcetech.meta.support.exception.PasswordValidationException;
 import net.rcetech.meta.support.exception.UserAlreadyExistsException;
 import net.rcetech.meta.support.exception.UserNotFoundException;

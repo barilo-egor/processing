@@ -2,7 +2,7 @@ package net.rcetech.clients.service;
 
 import net.rcetech.clients.exceptions.*;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.meta.clients.exception.NotFoundException;
+import net.rcetech.meta.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,12 +1,12 @@
 package net.rcetech.clients.service;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.model.clients.Client;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.meta.exception.BaseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import net.rcetech.meta.clients.dto.GeneratedKeys;
-import net.rcetech.domain.model.clients.Client;
-import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -159,13 +159,9 @@ public class ClientCredentialsService {
      * @param data   исходные данные для подписания
      * @param secret секретный ключ клиента
      * @return строковое представление подписи в шестнадцатеричном формате (Hex)
-     * @throws FieldNotBeEmptyException если data или secret равны null
      * @throws BaseException            при критических ошибках инициализации алгоритма
      */
-    public String generateHmacSha256(String data, String secret) {
-        if (data == null || secret == null) {
-            throw new FieldNotBeEmptyException("Data and secret");
-        }
+    public String generateHmacSha256(@NonNull String data, @NonNull String secret) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKey = new SecretKeySpec(

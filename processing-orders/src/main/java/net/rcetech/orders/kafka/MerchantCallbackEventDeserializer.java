@@ -3,7 +3,7 @@ package net.rcetech.orders.kafka;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
-import net.rcetech.orders.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 
 import java.nio.charset.StandardCharsets;
 

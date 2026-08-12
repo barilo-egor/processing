@@ -2,7 +2,7 @@ package net.rcetech.clients.service;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;

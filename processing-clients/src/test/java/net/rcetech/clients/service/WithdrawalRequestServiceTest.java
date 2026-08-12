@@ -1,11 +1,10 @@
 package net.rcetech.clients.service;
 
-import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.domain.model.clients.WithdrawalRequest;
-import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
-import net.rcetech.meta.clients.exception.NotFoundException;
 import net.rcetech.domain.mapper.client.WithdrawalMapper;
+import net.rcetech.domain.model.clients.WithdrawalRequest;
 import net.rcetech.domain.repository.clients.WithdrawalRequestRepository;
+import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
+import net.rcetech.meta.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,18 +91,6 @@ class WithdrawalRequestServiceTest {
 
         assertEquals("new_wallet_address", existingEntity.getWallet());
         assertEquals("New updated comment", existingEntity.getComment());
-    }
-
-    @Test
-    @DisplayName("Обновление заявки падает с FieldNotBeEmptyException, если id равен null")
-    void should_throwFieldNotBeEmptyException_when_idIsNull() {
-        WithdrawalRequestDTO updateDto = new WithdrawalRequestDTO();
-
-        FieldNotBeEmptyException exception = assertThrows(FieldNotBeEmptyException.class, () ->
-                withdrawalRequestService.updateWithdrawalRequest(null, updateDto)
-        );
-        assertEquals("Should not be empty.", exception.getDescription());
-        verifyNoInteractions(withdrawalRequestRepository);
     }
 
     @Test

@@ -1,8 +1,10 @@
 package net.rcetech.support.controller.handler;
 
-import net.rcetech.meta.support.exception.NotFoundException;
+import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.NotFoundException;
 import net.rcetech.meta.support.exception.PasswordValidationException;
 import net.rcetech.meta.support.exception.UserAlreadyExistsException;
+import net.rcetech.meta.support.exception.UserNotFoundException;
 import net.rcetech.support.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -58,7 +60,7 @@ public class SupportExceptionHandler extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(net.rcetech.meta.support.exception.UserNotFoundException.class)
+    @ExceptionHandler(UserNotFoundException.class)
     public ProblemDetail handleUserNotFound(NotFoundException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problemDetail.setTitle(ex.getMessage());

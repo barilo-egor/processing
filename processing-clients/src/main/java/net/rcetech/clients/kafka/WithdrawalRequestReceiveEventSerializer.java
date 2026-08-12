@@ -2,7 +2,7 @@ package net.rcetech.clients.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.clients.dto.WithdrawalRequestDTO;
-import net.rcetech.clients.exceptions.BodyMappingException;
+import net.rcetech.meta.exception.BaseException;
 import org.apache.kafka.common.serialization.Serializer;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -25,7 +25,7 @@ public class WithdrawalRequestReceiveEventSerializer implements Serializer<Withd
             return objectMapper.writeValueAsBytes(withdrawalRequestReceiveEvent);
         } catch (JacksonException e) {
             log.error("Ошибка сериализации объекта для отправки в топик {}: {}", topic, withdrawalRequestReceiveEvent);
-            throw new BodyMappingException("Error occurred while mapping withdrawalRequest", e);
+            throw new BaseException("Error occurred while mapping withdrawalRequest", e);
         }
     }
 

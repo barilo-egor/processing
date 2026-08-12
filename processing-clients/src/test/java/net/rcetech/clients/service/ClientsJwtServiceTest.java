@@ -12,7 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.test.util.ReflectionTestUtils;
 import net.rcetech.meta.clients.dto.ClientDTO;
-import net.rcetech.clients.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 
 import java.io.IOException;
 import java.security.KeyPair;

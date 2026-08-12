@@ -22,7 +22,7 @@ import net.rcetech.api.dto.ApiDetailsResponseDTO;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.dto.DetailsDTO;
 import net.rcetech.api.enums.RequestMethod;
-import net.rcetech.api.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
 

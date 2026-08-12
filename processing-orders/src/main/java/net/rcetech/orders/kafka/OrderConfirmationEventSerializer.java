@@ -1,7 +1,7 @@
 package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.orders.exceptions.BodyMappingException;
+import net.rcetech.meta.exception.BaseException;
 import org.apache.kafka.common.serialization.Serializer;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -24,7 +24,7 @@ public class OrderConfirmationEventSerializer implements Serializer<OrderConfirm
             return objectMapper.writeValueAsBytes(orderConfirmationEvent);
         } catch (JacksonException e) {
             log.error("Ошибка сериализации объекта для отправки в топик {}: {}", topic, orderConfirmationEvent);
-            throw new BodyMappingException("Error occurred while mapping orderConfirmationEvent", e);
+            throw new BaseException("Error occurred while mapping orderConfirmationEvent", e);
         }
     }
 

@@ -13,8 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import net.rcetech.api.dto.ClientApiErrorResponse;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.enums.ClientStatus;
-import net.rcetech.api.exceptions.BaseException;
-import net.rcetech.api.exceptions.ClientNotFoundException;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.api.exceptions.InvalidApiKeyException;
 import net.rcetech.api.service.ClientAuthService;
 
@@ -70,7 +69,7 @@ public class ApiSignatureFilter extends OncePerRequestFilter {
                         HttpStatus.UNAUTHORIZED.getReasonPhrase());
                 return;
             }
-        } catch (ClientNotFoundException | InvalidApiKeyException ex) {
+        } catch (InvalidApiKeyException ex) {
             log.warn("Authentication failed due to client status: {}", ex.getMessage());
             sendJsonError(response, HttpStatus.UNAUTHORIZED, HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                     HttpStatus.UNAUTHORIZED.getReasonPhrase());

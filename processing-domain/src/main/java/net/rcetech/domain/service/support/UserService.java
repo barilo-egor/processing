@@ -2,7 +2,7 @@ package net.rcetech.domain.service.support;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.mapper.support.UserMapper;
-import net.rcetech.meta.support.exception.NotFoundException;
+import net.rcetech.meta.exception.NotFoundException;
 import net.rcetech.meta.support.exception.PasswordValidationException;
 import net.rcetech.meta.support.exception.UserAlreadyExistsException;
 import net.rcetech.meta.support.exception.UserNotFoundException;

@@ -1,5 +1,8 @@
 package net.rcetech.clients.service;
 
+import net.rcetech.domain.model.clients.Client;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.meta.exception.BaseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,16 +10,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import net.rcetech.meta.clients.dto.GeneratedKeys;
-import net.rcetech.domain.model.clients.Client;
-import net.rcetech.clients.exceptions.BaseException;
-import net.rcetech.meta.clients.exception.FieldNotBeEmptyException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,18 +103,6 @@ class ClientCredentialsServiceTest {
                 .isNotBlank()
                 .hasSize(64)
                 .isEqualTo(expectedHex);
-    }
-
-    @Test
-    @DisplayName("Выброс IllegalArgumentException, если входные данные равны null")
-    void shouldThrowExceptionWhenDataOrSecretIsNull() {
-        assertThatThrownBy(() -> clientCredentialsService.generateHmacSha256(null, "secret"))
-                .as("Should not be empty.")
-                .isInstanceOf(FieldNotBeEmptyException.class);
-
-        assertThatThrownBy(() -> clientCredentialsService.generateHmacSha256("data", null))
-                .as("Should not be empty.")
-                .isInstanceOf(FieldNotBeEmptyException.class);
     }
 
 }

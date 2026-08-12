@@ -13,7 +13,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import net.rcetech.api.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.api.exceptions.EnableUniqueAmountException;
 import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
 import net.rcetech.api.exceptions.OrderNotFoundException;

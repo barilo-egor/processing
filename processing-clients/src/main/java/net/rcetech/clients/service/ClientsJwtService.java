@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import net.rcetech.meta.clients.dto.ClientDTO;
-import net.rcetech.clients.exceptions.BaseException;
+import net.rcetech.meta.exception.BaseException;
 
 import java.security.KeyFactory;
 import java.security.PrivateKey;
