@@ -1,14 +1,12 @@
 package net.rcetech.meta.orders;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
 import tgb.cryptoexchange.commons.enums.Merchant;
-
-import java.io.IOException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -27,10 +25,14 @@ public class MerchantCallbackEvent {
     @JsonDeserialize(using = MerchantDeserializer.class)
     private Merchant merchant;
 
-    public static class MerchantDeserializer extends JsonDeserializer<Merchant> {
+    public static class MerchantDeserializer extends StdDeserializer<Merchant> {
+
+        public MerchantDeserializer(Class<?> vc) {
+            super(vc);
+        }
 
         @Override
-        public Merchant deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public Merchant deserialize(JsonParser p, DeserializationContext ctxt) {
             try {
                 return Merchant.valueOf(p.getText());
             } catch (IllegalArgumentException e) {
