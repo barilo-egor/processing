@@ -1,4 +1,4 @@
-package net.rcetech.api.controller.handler;
+package net.rcetech.api.controller.v1.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.BadRequest;

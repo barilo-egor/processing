@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import net.rcetech.api.controller.handler.ApiExceptionHandler;
+import net.rcetech.api.controller.v1.handler.ApiExceptionHandler;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.api.exceptions.OrderNotFoundException;
 

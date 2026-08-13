@@ -1,4 +1,4 @@
-package net.rcetech.api.controller;
+package net.rcetech.api.controller.v1;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/v1/orders")
 public class OrdersController {
 
     private final OrderInteractionService orderInteractionService;
