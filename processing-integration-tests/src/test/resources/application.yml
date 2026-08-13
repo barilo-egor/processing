@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: "details-api-test"
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problem-details:
+      enabled: true
+cache:
+  ttl:
+    client-get-seconds: 3600
+secrets:
+  master-key: masterKeyMasterKeyMasterKeyMasterKeyMasterKey
