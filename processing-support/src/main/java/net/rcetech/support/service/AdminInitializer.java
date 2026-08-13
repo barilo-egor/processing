@@ -1,6 +1,7 @@
 package net.rcetech.support.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.support.UserService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,7 @@ public class AdminInitializer {
 
     private final UserRepository userRepository;
 
-    private final net.rcetech.domain.service.support.UserService userService;
+    private final UserService userService;
 
     public AdminInitializer(UserRepository userRepository, net.rcetech.domain.service.support.UserService userService) {
         this.userRepository = userRepository;
