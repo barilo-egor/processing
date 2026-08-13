@@ -56,6 +56,7 @@ public class TransactionService {
      *
      * @param transactionDTO данные сохраняемой transaction
      */
+    // TODO добавить синхронизацию для check and act
     public void save(TransactionDTO transactionDTO) {
         log.debug("Вызов save для transaction: {}", transactionDTO);
         if (transactionRepository.existsById(transactionDTO.getId())) {
