@@ -1,6 +1,7 @@
 package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.meta.orders.MerchantCallbackEvent;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -27,13 +28,13 @@ public class MerchantCallbackConsumer {
      * Валидирует поля события, обновляет статус заказа или перенаправляет
      * событие в очередь неизвестных статусов.
      *
-     * @param consumerRecord запись из Kafka, содержащая событие {@link net.rcetech.meta.orders.MerchantCallbackEvent}
+     * @param consumerRecord запись из Kafka, содержащая событие {@link MerchantCallbackEvent}
      */
     @KafkaListener(topics = "${kafka.topic.merchant-details.callback}", groupId = "${kafka.group-id}",
             containerFactory = "merchantCallbackKafkaListenerContainerFactory")
-    public void callback(ConsumerRecord<String, net.rcetech.meta.orders.MerchantCallbackEvent> consumerRecord) {
+    public void callback(ConsumerRecord<String, MerchantCallbackEvent> consumerRecord) {
         log.trace("Получен callback мерчанта. Key={}, value={}", consumerRecord.key(), consumerRecord.value());
-        net.rcetech.meta.orders.MerchantCallbackEvent event = consumerRecord.value();
+        MerchantCallbackEvent event = consumerRecord.value();
         if (Objects.isNull(event.getMerchantOrderId())
                 || Objects.isNull(event.getMerchant())
                 || Objects.isNull(event.getStatus())

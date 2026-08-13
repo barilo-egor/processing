@@ -7,8 +7,23 @@ spring:
   mvc:
     problem-details:
       enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
 cache:
   ttl:
     client-get-seconds: 3600
 secrets:
-  master-key: masterKeyMasterKeyMasterKeyMasterKeyMasterKey
+  master-key: 'masterKeyMasterKeyMasterKeyMasterKeyMasterKey'
+  jwt:
+    private: 'classpath:private_key.pem'
+    public: 'classpath:public_key.pem'
+    ttl-seconds: 3600
+    version: 1
+    refresh-ttl-seconds: 1209600
+kafka:
+  group-id: 'processing'
+  topic:
+    merchant-details:
+      callback: 'merchant-details-callback-v1'
+  bootstrap-servers:
