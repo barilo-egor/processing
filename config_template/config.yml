@@ -1,44 +1,16 @@
-spring:
-  grpc:
-    client:
-      channels:
-        api-clients:
-          address: ""
-  cloud:
-    gateway:
-      httpclient:
-        connect-timeout: 2000
-        response-timeout: 5000
-      server:
-        webflux:
-          routes:
-            - id: clients-login-route
-              uri: https://api-clients-service
-              predicates:
-                - Path=/api-clients/login
-
-            - id: clients-secured-route
-              uri: https://api-clients-service
-              predicates:
-                - Path=/api-clients/**
-              filters:
-                - JwtAuthFilter
-
-            - id: billing-secured-route
-              uri: https://billing-service
-              predicates:
-                - Path=/billing/**
-              filters:
-                - JwtAuthFilter
-
-            - id: orders-secured-route
-              uri: https://orders-service
-              predicates:
-                - Path=/orders/**
-              filters:
-                - JwtAuthFilter
-
-            - id: details-api-route
-              uri: https://details-api-service
-              predicates:
-                - Path=/api/**
+cache:
+  ttl:
+    client-get-seconds:
+secrets:
+  master-key: # мастер ключ 32 байта, для генерации можно использовать openssl rand -base64 32
+  jwt:
+    private:  # путь к файлу приватного ключа
+    public: # путь к фалу публичного ключа
+    ttl-seconds:
+    version:
+    refresh-ttl-seconds:
+kafka:
+  group-id:
+  topic:
+    merchant-details:
+      callback:
