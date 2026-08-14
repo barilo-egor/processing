@@ -7,9 +7,24 @@ spring:
   mvc:
     problem-details:
       enabled: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations:
+      - "classpath:database/migration"
   jpa:
     hibernate:
       ddl-auto: validate
+#  Проперти для автоматической генерации схемы хибернейтом
+#  jpa:
+#    properties:
+#      jakarta:
+#        persistence:
+#          schema-generation:
+#            scripts:
+#              action: create
+#              create-target: src/main/resources/schema.sql
 cache:
   ttl:
     client-get-seconds: 3600

@@ -9,6 +9,7 @@ dependencies {
     implementation project(':processing-clients')
     implementation project(':processing-orders')
     implementation project(':processing-support')
+    implementation project(':processing-domain')
 }
 
 tasks.named('bootJar') {
@@ -17,5 +18,5 @@ tasks.named('bootJar') {
 }
 
 springBoot {
-    mainClass = 'net.rcetech.app.AppApplication'
+    mainClass = 'net.rcetech.Application'
 }

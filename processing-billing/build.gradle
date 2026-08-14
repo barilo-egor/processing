@@ -22,3 +22,7 @@ dependencies {
 
     testImplementation 'jakarta.servlet:jakarta.servlet-api'
 }
+
+bootJar {
+    enabled = false
+}

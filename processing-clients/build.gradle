@@ -25,3 +25,7 @@ dependencies {
 
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 }
+
+bootJar {
+    enabled = false
+}

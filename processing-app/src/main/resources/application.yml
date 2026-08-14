@@ -2,4 +2,4 @@ spring:
   application:
     name: "processing"
   config:
-    import: "optional:file:config/config.yml"
+    import: 'file:config/config.yml'
