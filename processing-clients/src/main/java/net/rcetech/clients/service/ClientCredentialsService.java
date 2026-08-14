@@ -125,7 +125,7 @@ public class ClientCredentialsService {
             secureRandom.nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            SecretKeySpec keySpec = new SecretKeySpec(masterKey.getBytes(StandardCharsets.UTF_8), "AES");
+            SecretKeySpec keySpec = new SecretKeySpec(Base64.getDecoder().decode(masterKey), "AES");
             GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv);
 
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
@@ -137,7 +137,7 @@ public class ClientCredentialsService {
             return Base64.getEncoder().encodeToString(byteBuffer.array());
         } catch (Exception e) {
             log.error("Encryption operation failed. Check master key configuration.");
-            throw new BaseException("Encryption error");
+            throw new BaseException("Encryption error", e);
         }
     }
 

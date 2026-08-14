@@ -20,7 +20,7 @@ import net.rcetech.clients.service.ClientsCookieService;
 
 @RestController
 @Slf4j
-@RequestMapping("/api-clients")
+@RequestMapping("/clients")
 public class ClientController {
 
     private final ClientsCookieService clientsCookieService;
@@ -43,7 +43,7 @@ public class ClientController {
      * @return {@link ResponseEntity} со статусом 200 (OK) и телом, содержащим данные созданного клиента.
      * @throws ClientAlreadyExistsException, PasswordValidationException со статусом 400 (Bad Request).
      */
-    @PostMapping("/clients")
+    @PostMapping
     public ResponseEntity<ClientDTO> createClient(@RequestBody ClientDTO request) {
         ClientDTO savedClient = clientProcessService.create(request);
         return ResponseEntity.ok().body(savedClient);

@@ -3,3 +3,9 @@ spring:
     name: "processing"
   config:
     import: 'file:config/config.yml'
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problem-details:
+      enabled: true

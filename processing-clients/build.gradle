@@ -14,7 +14,7 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
 
     implementation 'commons-codec:commons-codec:1.18.0'
-    implementation 'org.springframework.security:spring-security-crypto'
+//    implementation 'org.springframework.security:spring-security-crypto'
 
     implementation 'org.semver4j:semver4j:6.0.0'
     implementation 'tgb.cryptoexchange:common-api:1.1.0'

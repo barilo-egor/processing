@@ -1,7 +1,8 @@
 package net.rcetech.clients.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import net.rcetech.domain.service.clients.ClientRefreshTokenService;
+import org.apache.commons.codec.binary.StringUtils;
 import org.springframework.stereotype.Service;
 import net.rcetech.meta.clients.dto.AuthRequest;
 import net.rcetech.meta.clients.dto.ClientDTO;
@@ -19,16 +20,13 @@ public class ClientsAuthenticationManagerService {
 
     private final ClientProcessService clientProcessService;
 
-    private final net.rcetech.domain.service.clients.ClientRefreshTokenService tokenService;
-
-    private final PasswordEncoder passwordEncoder;
+    private final ClientRefreshTokenService tokenService;
 
     public ClientsAuthenticationManagerService(ClientsJwtService clientsJwtService, ClientProcessService clientProcessService,
-                                               net.rcetech.domain.service.clients.ClientRefreshTokenService tokenService, PasswordEncoder passwordEncoder) {
+                                               ClientRefreshTokenService tokenService) {
         this.clientsJwtService = clientsJwtService;
         this.clientProcessService = clientProcessService;
         this.tokenService = tokenService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -44,7 +42,7 @@ public class ClientsAuthenticationManagerService {
         if (request.password() != null) {
             log.info("Попытка аутентификации по паролю для username: '{}'", request.username());
             clientDTO = clientProcessService.getClientByUsername(request.username());
-            if (!passwordEncoder.matches(request.password(), clientDTO.getPassword())) {
+            if (!StringUtils.equals(request.password(), clientDTO.getPassword())) { // TODO вернут PasswordEncoder
                 log.warn("Authentication failed: invalid password for username: '{}'", request.username());
                 throw new UnauthorizedException("Invalid password");
             }

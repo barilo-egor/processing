@@ -6,7 +6,6 @@ import net.rcetech.meta.exception.NotFoundException;
 import net.rcetech.meta.support.exception.PasswordValidationException;
 import net.rcetech.meta.support.exception.UserAlreadyExistsException;
 import net.rcetech.meta.support.exception.UserNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import net.rcetech.domain.model.support.SupportUser;
@@ -20,15 +19,11 @@ public class UserService {
 
     private static final String STRENGTH_REGEX =
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
-
-    private final PasswordEncoder passwordEncoder;
-
     private final UserRepository userRepository;
 
     private final UserMapper userMapper;
 
-    public UserService(PasswordEncoder passwordEncoder, UserRepository userRepository, UserMapper userMapper) {
-        this.passwordEncoder = passwordEncoder;
+    public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
     }
@@ -93,7 +88,8 @@ public class UserService {
         if (password == null || !password.matches(STRENGTH_REGEX)) {
             throw new PasswordValidationException();
         }
-        return passwordEncoder.encode(password);
+        return password;
+//        return passwordEncoder.encode(password);
     }
 
 }

@@ -3,16 +3,18 @@ package net.rcetech.clients.service;
 import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.clients.constants.Metrics;
-import net.rcetech.meta.clients.dto.ClientDTO;
-import net.rcetech.meta.clients.dto.GeneratedKeys;
+import net.rcetech.clients.exceptions.ClientAlreadyExistsException;
+import net.rcetech.clients.exceptions.InvalidApiKeyException;
+import net.rcetech.clients.exceptions.PasswordValidationException;
+import net.rcetech.clients.exceptions.UserNotFoundException;
+import net.rcetech.domain.mapper.client.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
-import net.rcetech.clients.exceptions.*;
-import net.rcetech.domain.mapper.client.ClientMapper;
-import net.rcetech.meta.exception.NotFoundException;
+import net.rcetech.meta.clients.dto.ClientDTO;
+import net.rcetech.meta.clients.dto.GeneratedKeys;
 import net.rcetech.meta.exception.BaseException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import net.rcetech.meta.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,8 +26,6 @@ public class ClientProcessService {
     private static final String STRENGTH_REGEX =
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
 
-    private final PasswordEncoder passwordEncoder;
-
     private final ClientService clientService;
 
     private final ClientCredentialsService clientCredentialsService;
@@ -33,11 +33,10 @@ public class ClientProcessService {
     private final ClientMapper clientMapper;
 
     public ClientProcessService(ClientService clientService, ClientCredentialsService clientCredentialsService,
-                                ClientMapper clientMapper, PasswordEncoder passwordEncoder) {
+                                ClientMapper clientMapper) {
         this.clientService = clientService;
         this.clientCredentialsService = clientCredentialsService;
         this.clientMapper = clientMapper;
-        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -130,7 +129,7 @@ public class ClientProcessService {
         if (password == null || !password.matches(STRENGTH_REGEX)) {
             throw new PasswordValidationException();
         }
-        return passwordEncoder.encode(password);
+        return password;
     }
 
     /**

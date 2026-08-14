@@ -2,13 +2,14 @@ package net.rcetech.support.service;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.support.UserRefreshTokenService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import net.rcetech.support.dto.AuthRequest;
-import net.rcetech.support.dto.TokenPair;
+import net.rcetech.domain.service.support.UserService;
 import net.rcetech.meta.support.dto.UserDTO;
 import net.rcetech.meta.support.dto.UserRefreshTokenDTO;
+import net.rcetech.support.dto.AuthRequest;
+import net.rcetech.support.dto.TokenPair;
 import net.rcetech.support.exceptions.UnauthorizedException;
+import org.apache.commons.codec.binary.StringUtils;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
@@ -18,18 +19,15 @@ public class SupportAuthenticationManagerService {
 
     private final SupportJwtService supportJwtService;
 
-    private final net.rcetech.domain.service.support.UserService userService;
+    private final UserService userService;
 
     private final UserRefreshTokenService tokenService;
 
-    private final PasswordEncoder passwordEncoder;
-
-    public SupportAuthenticationManagerService(SupportJwtService supportJwtService, net.rcetech.domain.service.support.UserService userService,
-                                               UserRefreshTokenService tokenService, PasswordEncoder passwordEncoder) {
+    public SupportAuthenticationManagerService(SupportJwtService supportJwtService, UserService userService,
+                                               UserRefreshTokenService tokenService) {
         this.supportJwtService = supportJwtService;
         this.userService = userService;
         this.tokenService = tokenService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -45,7 +43,7 @@ public class SupportAuthenticationManagerService {
         if (request.password() != null) {
             log.info("Попытка аутентификации по паролю для username: '{}'", request.username());
             userDTO = userService.getUserByUsername(request.username());
-            if (!passwordEncoder.matches(request.password(), userDTO.getPassword())) {
+            if (!StringUtils.equals(request.password(), userDTO.getPassword())) { // TODO вернуть PasswordEncoder
                 log.warn("Authentication failed: invalid password for username: '{}'", request.username());
                 throw new UnauthorizedException("Invalid password");
             }
