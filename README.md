@@ -6,3 +6,19 @@
 <ul>
   <li>Допускает значения для <code>spring.jpa.hibernate.ddl-auto</code> отличные от <code>validate</code>.</li>
 </ul>
+
+<hr>
+<h1>Gradle tasks</h1>
+<ul>
+    <li>
+        <code>processingStartUp</code> - запускает инфраструктуру и приложение в докер контейнерах. Необходимы docker и docker compose.
+ Также необходима директория <code>config</code> с конфигурационным файлом <code>config.yml</code> в ней. После первого запуска необходимо 
+создать реалм и клиента в keycloak, а также добавить реквизиты для входа клиента в конфигурацию и перезапустить контейнер processing.<br>
+    </li>
+    <li>
+        <code>processingShutdown</code> - останавливает докер контейнеры, запущенные задачей <code>processingStartUp</code>.
+    </li>
+    <li>
+        <code>processingRedeployJar</code> - переподкидывает конфигурацию и jar архив приложения и перезапускает контейнер.
+    </li>
+</ul>

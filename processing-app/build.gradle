@@ -10,6 +10,9 @@ dependencies {
     implementation project(':processing-orders')
     implementation project(':processing-support')
     implementation project(':processing-domain')
+
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 tasks.named('bootJar') {
@@ -19,4 +22,59 @@ tasks.named('bootJar') {
 
 springBoot {
     mainClass = 'net.rcetech.Application'
+}
+
+tasks.register('processingStartUp', Exec) {
+    workingDir file("${project.rootDir}/docker")
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'up', '-d', '--build'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'up', '-d', '--build'
+    }
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir')
+}
+
+tasks.register('processingShutdown', Exec) {
+    workingDir file("${project.rootDir}/docker")
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'down'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'down'
+    }
+}
+
+tasks.register('processingRedeployJar', Exec) {
+    workingDir file("${project.rootDir}/docker")
+
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'up', '-d', '--no-deps', '--force-recreate', 'processing'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'up', '-d', '--no-deps', '--force-recreate', 'processing'
+    }
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir')
+}
+
+tasks.named("bootJar") {
+    mustRunAfter("clean")
+}
+
+tasks.register('copyJarToDockerDir', Copy) {
+    from(new File(rootDir, 'build/libs/'))
+    include('processing.jar')
+    into(new File(rootDir, 'docker/mount/processing'))
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mustRunAfter('bootJar')
+}
+
+tasks.register('copyConfigToDockerDir', Copy) {
+    from(rootDir)
+    include('config/**')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(new File(rootDir, 'docker/mount/processing'))
 }

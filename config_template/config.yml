@@ -1,11 +1,35 @@
+spring:
+  datasource:
+    username:
+    password:
+    url:
+    driver-class-name: "com.mysql.cj.jdbc.Driver"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+      client:
+        registration:
+          keycloak-bff:
+            provider: keycloak-provider
+            client-id:
+            client-secret:
+            authorization-grant-type: authorization_code
+            scope: openid,profile
+        provider:
+          keycloak-provider:
+            issuer-uri:
+  kafka:
+    bootstrap-servers:
 cache:
   ttl:
-    client-get-seconds:
+    client-get-seconds: 3600
 secrets:
-  master-key: # мастер ключ 32 байта, для генерации можно использовать openssl rand -base64 32
+  master-key:
   jwt:
-    private:  # путь к файлу приватного ключа
-    public: # путь к фалу публичного ключа
+    private:
+    public:
     ttl-seconds:
     version:
     refresh-ttl-seconds:

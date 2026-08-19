@@ -2,7 +2,7 @@ spring:
   application:
     name: "processing"
   config:
-    import: 'file:config/config.yml'
+    import: 'file:config/config.yml,classpath:application-domain.yml'
   threads:
     virtual:
       enabled: true

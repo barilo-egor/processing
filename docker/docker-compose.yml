@@ -1,0 +1,91 @@
+networks:
+  processing:
+    driver: bridge
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_container
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: processing
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./mount/mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - processing
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka_container
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      TZ: "Europe/Moscow"
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - processing
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak_container
+    command: start-dev --health-enabled=true
+    ports:
+      - "8081:8081"
+      - "8080:8080"
+      - "5005:5005"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 8081
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./mount/keycloak:/opt/keycloak/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --head -fsS http://localhost:8081/health/ready | echo $?" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - processing
+  processing:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: processing
+    network_mode: "service:keycloak"
+    volumes:
+      - ./mount/processing:/processing
+    working_dir: /processing
+    command: java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar processing.jar
+    environment:
+      TZ: "Europe/Moscow"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
