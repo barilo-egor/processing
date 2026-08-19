@@ -53,7 +53,7 @@ public class OrderService {
     public OrderDTO create(OrderDTO orderDTO) {
         log.debug("Запрос на создание order: {}", orderDTO);
         if (orderRepository.existsByInternalId(orderDTO.getInternalId())) {
-            throw new BaseException("Запись с ");
+            throw new BaseException("Запись с internalId=" + orderDTO.getInternalId() + " не найдена.");
         }
         Order order = Order.builder()
                 .id(orderDTO.getId())

@@ -95,7 +95,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.create(inputDto))
                 .isInstanceOf(BaseException.class)
-                .hasMessageContaining("Bad request.");
+                .hasMessageContaining("Запись с internalId=duplicate-id не найдена.");
 
         verify(orderRepository, never()).save(any(Order.class));
 
@@ -134,7 +134,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.updateStatus(id, newStatus))
                 .isInstanceOf(BaseException.class)
-                .hasMessageContaining("Record not found for the provided ID.");
+                .hasMessageContaining("Запись с id=" + id + ", clientId=null не найдена.");
 
         verify(eventPublisher, never()).publishEvent(any());
         verify(orderRepository, never()).getOrdersById(any());
