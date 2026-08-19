@@ -44,12 +44,10 @@ public class ClientMapper {
                 .build();
     }
 
-    public ClientDTO createdClientToDTO(Client client, GeneratedKeys generatedKeys) {
+    public ClientDTO createdClientToDTO(Client client) {
         return ClientDTO.builder()
                 .id(client.getId())
                 .username(client.getUsername())
-                .apiKey(generatedKeys.key())
-                .secret(generatedKeys.secret())
                 .registeredAt(client.getRegisteredAt())
                 .status(client.getStatus())
                 .callbackUrl(client.getCallbackUrl())
@@ -60,9 +58,6 @@ public class ClientMapper {
         return ClientDTO.builder()
                 .id(client.getId())
                 .username(client.getUsername())
-                .password(client.getPassword())
-                .apiKey(client.getApiKey())
-                .apiKeyPreview(client.getApiKeyPreview())
                 .secret(decryptedSecret)
                 .registeredAt(client.getRegisteredAt())
                 .status(client.getStatus())
@@ -75,9 +70,6 @@ public class ClientMapper {
         return ClientDTO.builder()
                 .id(client.getId())
                 .username(client.getUsername())
-                .password(client.getPassword())
-                .apiKey(client.getApiKey())
-                .apiKeyPreview(client.getApiKeyPreview())
                 .secret(client.getSecret())
                 .registeredAt(client.getRegisteredAt())
                 .status(client.getStatus())

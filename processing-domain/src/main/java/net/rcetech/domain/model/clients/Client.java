@@ -31,24 +31,6 @@ public class Client {
     private String username;
 
     /**
-     * Хэш пароля.
-     */
-    @Column(nullable = false)
-    private String password;
-
-    /**
-     * SHA-256 хэш апи ключа.
-     */
-    @Column(name = "api_key", nullable = false)
-    private String apiKey;
-
-    /**
-     * Префикс, первые четыре символа ключа после префикса, а также последние четыре символа контрольной суммы.
-     */
-    @Column(name = "api_key_preview", nullable = false)
-    private String apiKeyPreview;
-
-    /**
      * Секретный ключ для проверки и генерации подписи.
      */
     @Column(nullable = false)

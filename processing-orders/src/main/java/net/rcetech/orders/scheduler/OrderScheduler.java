@@ -1,11 +1,11 @@
 package net.rcetech.orders.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
-import net.rcetech.clients.service.ClientApi;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -21,20 +22,17 @@ public class OrderScheduler {
 
     private final OrderService orderService;
 
-    private final ClientApi clientApi;
+    private final ClientService clientService;
 
-    public OrderScheduler(OrderService orderService, ClientApi clientApi) {
+    public OrderScheduler(OrderService orderService, ClientService clientService) {
         this.orderService = orderService;
-        this.clientApi = clientApi;
+        this.clientService = clientService;
     }
 
     /**
      * Периодическая проверка и перевод в статус {@link OrderStatus#TIMEOUT}
      * всех ордеров со статусом {@link OrderStatus#NEW}, у которых истекло время ожидания.
      * <p>
-     * Метод ежесекундно выбирает ордеры, запрашивает
-     * индивидуальные настройки таймаута для каждого клиента через внешний gRPC-сервис
-     * и обновляет статус просроченных сущностей.
      */
     @Scheduled(fixedDelay = 1000)
     public void checkOrdersTimeout() {
@@ -44,11 +42,12 @@ public class OrderScheduler {
         Instant now = Instant.now();
         for (Order order : orderList) {
             try {
-                ClientResponseDTO clientDTO = clientApi.getClientById(order.getClientId());
-                if (clientDTO == null || clientDTO.orderTimeoutSeconds() == null) {
+                Optional<Client> maybeClient = clientService.findById(order.getClientId());
+                if (maybeClient.isEmpty() || maybeClient.get().getOrderTimeoutSeconds() == null) {
                     continue;
                 }
-                Instant timeoutExpirationTime = order.getCreatedAt().plusSeconds(clientDTO.orderTimeoutSeconds());
+                Client client = maybeClient.get();
+                Instant timeoutExpirationTime = order.getCreatedAt().plusSeconds(client.getOrderTimeoutSeconds());
                 if (timeoutExpirationTime.isBefore(now)) {
                     orderService.updateStatus(order.getId().toString(), OrderStatus.TIMEOUT);
                 }
