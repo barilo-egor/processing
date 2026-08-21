@@ -1,6 +1,7 @@
 package net.rcetech.clients.controller;
 
 import net.rcetech.clients.config.ClientsSecurityConfig;
+import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
@@ -17,6 +18,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,7 +38,7 @@ class ClientControllerTest {
     private MockMvc mockMvc;
 
     @ParameterizedTest
-    @DisplayName("Сериализация объекта должна пройти без ошибок.")
+    @DisplayName("Сериализация объекта должна пройти без ошибок, должен быть вызван метод сервиса.")
     @ValueSource(strings = {"login_event.json", "login_error_event.json", "refresh_token_event.json",
             "login_event_with_unknown_field.json"})
     @WithMockUser(roles = {"WEBHOOK_CLIENT"})
@@ -46,5 +49,6 @@ class ClientControllerTest {
                         .header("Content-Type", "application/json")
                         .content(json))
                 .andExpect(status().isCreated());
+        verify(keycloakEventService).handle(any(KeycloakEvent.class));
     }
 }
