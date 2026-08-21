@@ -78,3 +78,9 @@ tasks.register('copyConfigToDockerDir', Copy) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     into(new File(rootDir, 'docker/mount/processing'))
 }
+
+tasks.register('copyPluginsToDockerMountDir', Copy) {
+    from(new File(rootDir, 'docker'))
+    include('keycloak-webhook-provider-core.jar', 'keycloak-webhook-provider-http.jar')
+    into(new File(rootDir, 'docker/mount/keycloak_plugins'))
+}

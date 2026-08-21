@@ -47,3 +47,8 @@ logging:
     org.apache.kafka: WARN
     com.zaxxer.hikari: WARN
     net.rcetech: DEBUG
+processing:
+  keycloak:
+    webhook:
+      username: 'webhook_user'
+      password: '{noop}webhook_password'

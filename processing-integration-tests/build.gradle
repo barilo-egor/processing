@@ -8,6 +8,7 @@ dependencies {
 
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.testcontainers:testcontainers-kafka'
+    testImplementation 'com.github.dasniko:testcontainers-keycloak:3.5.0'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
 
@@ -15,6 +16,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 bootJar {

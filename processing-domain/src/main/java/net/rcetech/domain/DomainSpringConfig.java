@@ -4,6 +4,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+import java.util.Arrays;
+
 @Configuration
 public class DomainSpringConfig {
 
@@ -16,8 +18,8 @@ public class DomainSpringConfig {
     @PostConstruct
     public void init() {
         String hbm2ddl = env.getProperty("spring.jpa.hibernate.ddl-auto");
-        String profile = env.getProperty("spring.profiles.active");
-        if (!"dev".equals(profile) && !"validate".equals(hbm2ddl)) {
+        String[] profile = env.getActiveProfiles();
+        if (Arrays.stream(profile).noneMatch("dev"::equals) && !"validate".equals(hbm2ddl)) {
             throw new IllegalStateException(
                     "Свойство spring.jpa.hibernate.ddl-auto вне профиля dev может быть установлено только в режим validate."
             );

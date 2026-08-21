@@ -2,15 +2,14 @@ package net.rcetech.api.controller.v1;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.config.security.ApiSignatureFilter;
-import net.rcetech.api.exceptions.OrderNotFoundException;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.web.bind.annotation.*;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.dto.OrderResponseDTO;
+import net.rcetech.api.exceptions.OrderNotFoundException;
 import net.rcetech.api.service.OrderInteractionService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -36,7 +35,6 @@ public class OrdersController {
      * @param isTestOrder        необязательный флаг для переключения в режим локального тестирования.
      * @param clientOrderTimeout максимальное время жизни заказа в секундах, формируется в gateway.
      * @param client             авторизованный клиент, автоматически извлеченный
-     *                           {@link ApiSignatureFilter}.
      * @return {@link OrderResponseDTO} с деталями созданного или симулированного заказа.
      */
     @PostMapping
@@ -61,7 +59,6 @@ public class OrdersController {
      * @param id                 системный или внешний идентификатор заказа.
      * @param clientOrderTimeout максимальное время жизни заказа в секундах.
      * @param client             авторизованный клиент, автоматически извлеченный
-     *                           {@link ApiSignatureFilter}.
      * @return {@link OrderResponseDTO} с актуальным статусом и деталями заказа.
      * @throws OrderNotFoundException если заказ не найден ни по одному из идентификаторов.
      */
@@ -81,7 +78,6 @@ public class OrdersController {
      *
      * @param clientOrderTimeout максимальное время жизни заказа в секундах для расчета срока экспирации.
      * @param client             авторизованный клиент, автоматически извлеченный
-     *                           {@link ApiSignatureFilter}.
      * @param pageable           параметры пагинации и сортировки (по умолчанию размер страницы — 25).
      * @return список {@link OrderResponseDTO}, мапируемый на выходе в JSON-массив.
      */
@@ -102,7 +98,6 @@ public class OrdersController {
      * @param id                 идентификатор отменяемого заказа.
      * @param clientOrderTimeout максимальное время жизни заказа в секундах для перерасчета срока экспирации.
      * @param client             авторизованный клиент, автоматически извлеченный
-     *                           {@link ApiSignatureFilter}.
      * @return {@link OrderResponseDTO} с обновленным статусом заказа.
      * @throws OrderNotFoundException если отменяемый заказ не найден в системе.
      */

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import net.rcetech.meta.clients.ClientStatus;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -21,8 +22,7 @@ public class Client {
      * Идентификатор пользователя.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     /**
      * Уникальное имя пользователя.
@@ -31,15 +31,9 @@ public class Client {
     private String username;
 
     /**
-     * Секретный ключ для проверки и генерации подписи.
-     */
-    @Column(nullable = false)
-    private String secret;
-
-    /**
      * Дата регистрации.
      */
-    @Column(name = "registered_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant registeredAt;
 
     /**
@@ -52,14 +46,14 @@ public class Client {
     /**
      * Адрес для отправки уведомлений о смене статусов ордера.
      */
-    @Column(name = "callback_url")
+    @Column
     private String callbackUrl;
 
     /**
      * Количество секунд, после которого сделки клиента считаются истекшими.
      */
     @Builder.Default
-    @Column(name = "order_timeout_seconds", nullable = false)
+    @Column(nullable = false)
     private Integer orderTimeoutSeconds = 900;
 
     @PrePersist

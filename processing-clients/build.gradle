@@ -10,10 +10,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.security:spring-security-oauth2-core'
+    testImplementation 'org.springframework.security:spring-security-oauth2-client'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
-
-    implementation 'org.springframework.kafka:spring-kafka'
 
     implementation 'commons-codec:commons-codec:1.18.0'
     implementation 'org.semver4j:semver4j:6.0.0'

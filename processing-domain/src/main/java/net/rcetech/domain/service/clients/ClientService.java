@@ -23,10 +23,6 @@ public class ClientService {
         return clientRepository.findByUsername(username);
     }
 
-    public Optional<Client> findByApiKey(String apiKey) {
-        return clientRepository.findByApiKey(apiKey);
-    }
-
     public Client save(Client client) {
         return clientRepository.save(client);
     }

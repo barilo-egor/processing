@@ -1,0 +1,18 @@
+{
+  "type": "REFRESH_TOKEN",
+  "realmId": "844e420f-8c1a-48db-a4d1-b9170da0a2b6",
+  "id": "7fa12b9d-4c3e-4512-b883-91cfae5631aa",
+  "time": 1787261955000,
+  "clientId": "processing",
+  "userId": "ea2c489d-1a95-4f42-b810-7dce5622ffbd",
+  "ipAddress": "192.168.65.1",
+  "error": null,
+  "details": {
+    "token_id": "0df8cb23-718a-4d76-8ea8-4bd8cb3d2ff9",
+    "refresh_token_type": "Refresh",
+    "refresh_token_id": "a4b5c6d7-e8f9-01a2-b3c4-d5e6f7a8b9c0",
+    "client_auth_method": "client_secret_post"
+  },
+  "resourcePath": null,
+  "representation": null
+}

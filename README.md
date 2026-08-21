@@ -22,3 +22,6 @@
         <code>processingRedeployJar</code> - переподкидывает конфигурацию и jar архив приложения и перезапускает контейнер.
     </li>
 </ul>
+<hr>
+<h1>Метрики для Prometheus</h1>
+Ключи метрик с описанием доступны в классе <code>net.rcetech.meta.MetricsConstants</code>.
