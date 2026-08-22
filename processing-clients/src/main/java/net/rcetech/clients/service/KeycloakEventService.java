@@ -42,12 +42,13 @@ public class KeycloakEventService {
     }
 
     public void handle(KeycloakEvent event) {
-        if (keycloakEventHandlers.containsKey(event.type())) {
+        KeycloakEventHandler keycloakEventHandler = keycloakEventHandlers.get(event.type());
+        if (Objects.nonNull(keycloakEventHandler)) {
             keycloakEventExecutor.execute(() -> {
                 try {
-                    keycloakEventHandlers.get(event.type()).handle(event);
+                    keycloakEventHandler.handle(event);
                 } catch (Exception e) {
-                    log.error("Ошибка при попытке обработки keycloak ивента({}): {}", event, e.getMessage());
+                    log.error("Ошибка при попытке обработки keycloak ивента({}): {}", event, e.getMessage(), e);
                     meterRegistry.counter(MetricsConstants.KEYCLOAK_EVENT_HANDLE_ERROR, MetricsConstants.Tags.TYPE, event.type().name());
                 }
             });
