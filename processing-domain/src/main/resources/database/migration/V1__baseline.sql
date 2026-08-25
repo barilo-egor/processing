@@ -1,23 +1,12 @@
 create table client
 (
     order_timeout_seconds integer      not null,
-    id                    bigint       not null auto_increment,
     registered_at         datetime(6) not null,
-    api_key               varchar(255) not null,
-    api_key_preview       varchar(255) not null,
+    id                    binary(16) not null,
     callback_url          varchar(255),
-    password              varchar(255) not null,
-    secret                varchar(255) not null,
     username              varchar(255) not null,
     status                enum ('ACTIVE','BLOCKED') not null,
     primary key (id)
-) engine=InnoDB;
-create table client_refresh_token
-(
-    client_id  bigint not null,
-    expires_at datetime(6) not null,
-    token      binary(16) not null,
-    primary key (token)
 ) engine=InnoDB;
 create table orders
 (
@@ -74,8 +63,6 @@ create table withdrawal_request
 ) engine=InnoDB;
 alter table client
     add constraint UKah5c1ribskm746956okm9283n unique (username);
-alter table client_refresh_token
-    add constraint UKna8e6kv7wdc2ad35da01a0a8 unique (client_id);
 alter table orders
     add constraint UK7wx49wvedrow2xjb08sr1r7yb unique (internal_id);
 alter table support_users

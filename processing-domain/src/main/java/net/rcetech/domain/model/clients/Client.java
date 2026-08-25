@@ -2,21 +2,20 @@ package net.rcetech.domain.model.clients;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.rcetech.meta.clients.ClientStatus;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Data
-@Builder
 @Table(name = "client")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Client {
+public class Client implements Persistable<UUID> {
 
     /**
      * Идентификатор пользователя.
@@ -52,15 +51,20 @@ public class Client {
     /**
      * Количество секунд, после которого сделки клиента считаются истекшими.
      */
-    @Builder.Default
     @Column(nullable = false)
     private Integer orderTimeoutSeconds = 900;
 
-    @PrePersist
-    protected void onCreate() {
-        if (registeredAt == null) {
-            registeredAt = Instant.now();
-        }
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 
+    @PostPersist
+    @PostLoad
+    void markNotNew() {
+        this.isNew = false;
+    }
 }

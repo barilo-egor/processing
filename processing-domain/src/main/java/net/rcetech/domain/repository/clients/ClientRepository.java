@@ -11,5 +11,4 @@ public interface ClientRepository extends JpaRepository<Client, Long>, JpaSpecif
     boolean existsByUsername(String username);
 
     Optional<Client> findByUsername(String username);
-
 }
