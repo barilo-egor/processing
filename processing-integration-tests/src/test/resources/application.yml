@@ -28,14 +28,6 @@ spring:
 cache:
   ttl:
     client-get-seconds: 3600
-secrets:
-  master-key: 'Q2u+FXa+LiAc/oMIkwyBtjE08daif15zaDFK0xpTRBE='
-  jwt:
-    private: 'classpath:private_key.pem'
-    public: 'classpath:public_key.pem'
-    ttl-seconds: 3600
-    version: 1
-    refresh-ttl-seconds: 1209600
 kafka:
   group-id: 'processing'
   topic:

@@ -25,14 +25,6 @@ spring:
 cache:
   ttl:
     client-get-seconds: 3600
-secrets:
-  master-key:
-  jwt:
-    private:
-    public:
-    ttl-seconds:
-    version:
-    refresh-ttl-seconds:
 kafka:
   group-id:
   topic:
