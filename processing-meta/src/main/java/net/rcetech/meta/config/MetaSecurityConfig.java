@@ -4,14 +4,19 @@ import net.rcetech.meta.SpringSecurityConfigurer;
 import net.rcetech.meta.user.KeycloakRoleConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
+@Profile("!disable-security")
 public class MetaSecurityConfig {
 
     @Bean
@@ -25,6 +30,7 @@ public class MetaSecurityConfig {
         http.oauth2Login(oAuth2 ->
                 oAuth2.defaultSuccessUrl("/dashboard")
         );
+        http.csrf(CsrfConfigurer::spa);
         return http.build();
     }
 

@@ -1,19 +1,27 @@
 package net.rcetech.domain.service.clients;
 
+import jakarta.persistence.EntityManager;
+import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.UpdateClientDTO;
+import net.rcetech.meta.exception.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +43,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 class ClientServiceTest {
 
+    @TestConfiguration
+    static class Configuration {
+        @Bean
+        public ClientMapper clientMapper() {
+            return Mappers.getMapper(ClientMapper.class);
+        }
+    }
+
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
 
@@ -48,11 +64,17 @@ class ClientServiceTest {
     @Autowired
     private ClientRepository clientRepository;
 
+    @Autowired
+    private ClientMapper clientMapper;
+
+    @Autowired
+    private EntityManager entityManager;
+
     private ClientService clientService;
 
     @BeforeEach
     void setUp() {
-        clientService = new ClientService(clientRepository);
+        clientService = new ClientService(clientRepository, clientMapper);
     }
 
     @ParameterizedTest
@@ -71,10 +93,10 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         ClientFilter clientFilter = new ClientFilter(id, null, null, null, null);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(id, actual.getContent().getFirst().getId())
+                () -> assertEquals(id, actual.getContent().getFirst().id())
         );
     }
 
@@ -94,10 +116,10 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         ClientFilter clientFilter = new ClientFilter(null, username, null, null, null);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(username, actual.getContent().getFirst().getUsername())
+                () -> assertEquals(username, actual.getContent().getFirst().username())
         );
     }
 
@@ -109,7 +131,7 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        Page<ClientProjection> actual = clientService.findAll(
+        Page<ClientResponseDTO> actual = clientService.findAll(
                 new ClientFilter(null, "  ", null, null, null),
                 Pageable.ofSize(10)
         );
@@ -143,10 +165,10 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, clientStatus, null, null);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
-                () -> assertTrue(actual.getContent().stream().allMatch(c -> clientStatus.equals(c.getStatus())))
+                () -> assertTrue(actual.getContent().stream().allMatch(c -> clientStatus.equals(c.status())))
         );
     }
 
@@ -173,11 +195,11 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, from, null);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.getRegisteredAt().compareTo(from) >= 0
+                        c -> c.registeredAt().compareTo(from) >= 0
                 ))
         );
     }
@@ -205,11 +227,11 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, null, to);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.getRegisteredAt().compareTo(to) < 0
+                        c -> c.registeredAt().compareTo(to) < 0
                 ))
         );
     }
@@ -242,11 +264,11 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, from, to);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.getRegisteredAt().compareTo(from) >= 0 && c.getRegisteredAt().compareTo(to) < 0
+                        c -> c.registeredAt().compareTo(from) >= 0 && c.registeredAt().compareTo(to) < 0
                 ))
         );
     }
@@ -259,19 +281,19 @@ class ClientServiceTest {
         client.setId(clientId);
         fillRequiredFields(client);
         clientRepository.save(client);
-        for  (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             Client dummy = new Client();
             fillRequiredFields(dummy);
             clientRepository.save(dummy);
         }
-        Page<ClientProjection> actual = clientService.findAll(
+        Page<ClientResponseDTO> actual = clientService.findAll(
                 new ClientFilter(client.getId(), client.getUsername(), client.getStatus(), client.getRegisteredAt(),
                         client.getRegisteredAt().plusMillis(1)),
                 Pageable.ofSize(10)
         );
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(client.getId(), actual.getContent().getFirst().getId())
+                () -> assertEquals(client.getId(), actual.getContent().getFirst().id())
         );
     }
 
@@ -303,7 +325,7 @@ class ClientServiceTest {
     @ParameterizedTest
     @DisplayName("Метод должен вернуть страницу соответственно указанным параметрам размера страницы и номера.")
     void findAll_shouldReturnPage(int allClientsSize, int pageSize, int pageNumber) {
-        Pageable pageable =  PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Order.asc("registeredAt")));
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Order.asc("registeredAt")));
         for (int i = 0; i < allClientsSize; i++) {
             Client client = new Client();
             client.setUsername("test_" + i);
@@ -311,12 +333,12 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        Page<ClientProjection> actual = clientService.findAll(new ClientFilter(null, null, null, null, null), pageable);
+        Page<ClientResponseDTO> actual = clientService.findAll(new ClientFilter(null, null, null, null, null), pageable);
         assertEquals(allClientsSize, actual.getTotalElements());
         int fromIndex = pageNumber * pageSize;
-        for (ClientProjection c : actual.getContent()) {
+        for (ClientResponseDTO c : actual.getContent()) {
             String expectedUsername = "test_" + fromIndex;
-            assertEquals(expectedUsername, c.getUsername());
+            assertEquals(expectedUsername, c.username());
             fromIndex++;
         }
     }
@@ -329,7 +351,70 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        Page<ClientProjection> actual = clientService.findAll(null, Pageable.ofSize(10));
+        Page<ClientResponseDTO> actual = clientService.findAll(null, Pageable.ofSize(10));
         assertEquals(10, actual.getTotalElements());
+    }
+
+    @ValueSource(strings = {
+            "185975b3-094a-43fb-a1a5-7128c39b39ab",
+            "c44cc597-7142-4636-b5f6-799d352fd631"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен выбросить исключение, если клиент по переданному id не найден.")
+    void update_shouldThrowBadRequestIfClientNotFound(UUID id) {
+        for (int i = 0; i < 5; i++) {
+            clientRepository.save(getDummyClient());
+        }
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null);
+        assertThrows(BadRequestException.class,
+                () -> clientService.update(id, updateClientDTO));
+    }
+
+    @Test
+    @DisplayName("Метод не должен обновлять поля, если в DTO они null.")
+    void update_shouldNotUpdateFieldsIfNull() {
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null);
+        Client client = new Client();
+        UUID clientId = UUID.randomUUID();
+        client.setId(clientId);
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        clientService.update(clientId, updateClientDTO);
+        Client updated = clientRepository.findById(clientId).orElseThrow(IllegalStateException::new);
+        assertAll(
+                () -> assertNotNull(updated.getStatus()),
+                () -> assertNotNull(updated.getOrderTimeoutSeconds())
+        );
+    }
+
+    @CsvSource("""
+            BLOCKED,500
+            ACTIVE,1200         
+            """)
+    @ParameterizedTest
+    @DisplayName("Метод должен обновить все переданные поля.")
+    void update_shouldUpdateClient(ClientStatus status, Integer orderTimeoutSeconds) {
+        assertNotEquals(Client.DEFAULT_ORDER_TIMEOUT, orderTimeoutSeconds,
+                "Для теста нужно отличное от дефолтного значение времени таймаута ордера.");
+        UUID id = UUID.randomUUID();
+        Client client = new Client();
+        client.setId(id);
+        for (ClientStatus clientStatus : ClientStatus.values()) {
+            if (!clientStatus.equals(status)) {
+                client.setStatus(clientStatus);
+                break;
+            }
+        }
+        assertNotNull(client.getStatus(),
+                "Необходим установленный статус клиента, отличный от полученного в параметре.");
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(status, orderTimeoutSeconds);
+        clientService.update(id, updateClientDTO);
+        Client updated = clientRepository.findById(id).orElseThrow(IllegalStateException::new);
+        assertAll(
+                () -> assertEquals(status, updated.getStatus()),
+                () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds())
+        );
     }
 }

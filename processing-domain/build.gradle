@@ -17,6 +17,9 @@ dependencies {
 
     annotationProcessor 'org.hibernate.orm:hibernate-processor'
 
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.testcontainers:junit-jupiter'

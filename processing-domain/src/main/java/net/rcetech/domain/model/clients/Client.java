@@ -17,6 +17,8 @@ import java.util.UUID;
 @NoArgsConstructor
 public class Client implements Persistable<UUID> {
 
+    public static final Integer DEFAULT_ORDER_TIMEOUT = 900;
+
     /**
      * Идентификатор пользователя.
      */
@@ -52,7 +54,7 @@ public class Client implements Persistable<UUID> {
      * Количество секунд, после которого сделки клиента считаются истекшими.
      */
     @Column(nullable = false)
-    private Integer orderTimeoutSeconds = 900;
+    private Integer orderTimeoutSeconds = DEFAULT_ORDER_TIMEOUT;
 
     @Transient
     private boolean isNew = true;

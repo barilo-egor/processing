@@ -6,7 +6,7 @@ import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import org.jspecify.annotations.NonNull;
@@ -81,7 +81,7 @@ class ClientControllerTest {
     @Test
     @WithMockUser
     void getClients_shouldReturnEmptyArray() throws Exception {
-        Page<ClientProjection> page = new PageImpl<>(new ArrayList<>());
+        Page<ClientResponseDTO> page = new PageImpl<>(new ArrayList<>());
         when(clientService.findAll(any(), any())).thenReturn(page);
         mockMvc.perform(get("/client")
                         .queryParam("username", "test"))
@@ -99,23 +99,23 @@ class ClientControllerTest {
     @ValueSource(ints = {1, 5})
     @WithMockUser
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
-        List<ClientProjection> clientProjections = new ArrayList<>();
+        List<ClientResponseDTO> clients = new ArrayList<>();
         for (int i = 0; i < clientsSize; i++) {
-            ClientProjection clientProjection = getClientProjection(i);
-            clientProjections.add(clientProjection);
+            ClientResponseDTO client = getClient(i);
+            clients.add(client);
         }
-        Page<ClientProjection> page = new PageImpl<>(
-                clientProjections, PageRequest.of(0, 100), clientProjections.size()
+        Page<ClientResponseDTO> page = new PageImpl<>(
+                clients, PageRequest.of(0, 100), clients.size()
         );
         when(clientService.findAll(any(), any())).thenReturn(page);
         ResultActions resultActions = mockMvc.perform(get("/client"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
-        for (ClientProjection clientProjection : clientProjections) {
-            resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(clientProjection.getId().toString()));
-            resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(clientProjection.getUsername()));
-            resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(clientProjection.getRegisteredAt().toEpochMilli()));
+        for (ClientResponseDTO client : clients) {
+            resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(client.id().toString()));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(client.username()));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(client.registeredAt().toEpochMilli()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].status").value("ACTIVE"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].callbackUrl").value("https://example.com/callback"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].orderTimeoutSeconds").value(900));
@@ -123,41 +123,9 @@ class ClientControllerTest {
         }
     }
 
-    private static @NonNull ClientProjection getClientProjection(int i) {
-        final int clientNumber = i;
-        UUID uuid = UUID.randomUUID();
-        Instant now = Instant.now();
-        return new ClientProjection() {
-            @Override
-            public UUID getId() {
-                return uuid;
-            }
-
-            @Override
-            public String getUsername() {
-                return "test" + clientNumber;
-            }
-
-            @Override
-            public Instant getRegisteredAt() {
-                return now;
-            }
-
-            @Override
-            public ClientStatus getStatus() {
-                return ClientStatus.ACTIVE;
-            }
-
-            @Override
-            public String getCallbackUrl() {
-                return "https://example.com/callback";
-            }
-
-            @Override
-            public Integer getOrderTimeoutSeconds() {
-                return 900;
-            }
-        };
+    private static @NonNull ClientResponseDTO getClient(int i) {
+        return new ClientResponseDTO(UUID.randomUUID(), "test" + i, Instant.now(),
+                ClientStatus.ACTIVE, "https://example.com/callback", 900);
     }
 
     @CsvSource("""
