@@ -3,6 +3,7 @@ package net.rcetech.clients.controller;
 import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
+import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -15,10 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
@@ -51,6 +55,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ClientControllerTest {
 
+    @TestConfiguration
+    static class Configuration {
+
+        @Bean
+        public ClientMapper clientMapper() {
+            return Mappers.getMapper(ClientMapper.class);
+        }
+    }
+
     @MockitoBean
     private KeycloakEventService keycloakEventService;
 
@@ -59,6 +72,9 @@ class ClientControllerTest {
 
     @MockitoBean
     private ClientService clientService;
+
+    @Autowired
+    private ClientMapper clientMapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,7 +87,7 @@ class ClientControllerTest {
     void event_shouldSerializeJson(String fileName) throws Exception {
         String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
         mockMvc.perform(
-                        post("/client/event/")
+                        post("/api/private/client/event/")
                                 .header("Content-Type", "application/json")
                                 .content(json))
                 .andExpect(status().isCreated());
@@ -83,7 +99,7 @@ class ClientControllerTest {
     void getClients_shouldReturnEmptyArray() throws Exception {
         Page<ClientResponseDTO> page = new PageImpl<>(new ArrayList<>());
         when(clientService.findAll(any(), any())).thenReturn(page);
-        mockMvc.perform(get("/client")
+        mockMvc.perform(get("/api/private/client")
                         .queryParam("username", "test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -108,7 +124,7 @@ class ClientControllerTest {
                 clients, PageRequest.of(0, 100), clients.size()
         );
         when(clientService.findAll(any(), any())).thenReturn(page);
-        ResultActions resultActions = mockMvc.perform(get("/client"))
+        ResultActions resultActions = mockMvc.perform(get("/api/private/client"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
@@ -139,7 +155,7 @@ class ClientControllerTest {
         when(clientService.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         ArgumentCaptor<ClientFilter> filterCaptor = ArgumentCaptor.forClass(ClientFilter.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        mockMvc.perform(get("/client")
+        mockMvc.perform(get("/api/private/client")
                 .queryParam("id", id)
                 .queryParam("username", username)
                 .queryParam("status", status)

@@ -15,6 +15,9 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-oauth2-core'
     testImplementation 'org.springframework.security:spring-security-oauth2-client'
 
+    // TODO Вынести версию
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
     implementation 'commons-codec:commons-codec:1.18.0'

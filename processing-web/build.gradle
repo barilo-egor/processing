@@ -1,0 +1,13 @@
+plugins {
+    id 'processing'
+}
+
+dependencies {
+    implementation project(':processing-meta')
+    implementation project(':processing-domain')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'tgb.cryptoexchange:common-api:1.1.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+}

@@ -6,6 +6,11 @@
 <ul>
   <li>Допускает значения для <code>spring.jpa.hibernate.ddl-auto</code> отличные от <code>validate</code>.</li>
 </ul>
+<hr>
+<h1>Словарь констант</h1>
+Доступен по адресу <code>/api/private/dictionary</code>. Для добавления нового значения необходимо 
+создать реализацию интерфейса <code>net.rcetech.meta.DictionaryField</code> и поместить ее в spring контекст.
+
 
 <hr>
 <h1>Gradle tasks</h1>

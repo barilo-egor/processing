@@ -3,7 +3,7 @@ package net.rcetech.api.dto;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
-import net.rcetech.api.enums.ClientStatus;
+import net.rcetech.meta.clients.ClientStatus;
 
 import java.time.Instant;
 

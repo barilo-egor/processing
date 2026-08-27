@@ -5,6 +5,7 @@ import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
@@ -19,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @Slf4j
-@RequestMapping("/client")
+@RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
 public class ClientController {
 
     private final KeycloakEventService keycloakEventService;

@@ -61,7 +61,7 @@ services:
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-      WEBHOOK_HTTP_BASE_PATH: 'http://localhost:8080/client/event'
+      WEBHOOK_HTTP_BASE_PATH: 'http://localhost:8080/api/private/client/event'
       WEBHOOK_HTTP_AUTH_USERNAME: "webhook_user"
       WEBHOOK_HTTP_AUTH_PASSWORD: "webhook_password"
       TZ: "Europe/Moscow"

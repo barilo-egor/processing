@@ -10,6 +10,7 @@ dependencies {
     implementation project(':processing-orders')
     implementation project(':processing-support')
     implementation project(':processing-domain')
+    implementation project(':processing-web')
 
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
