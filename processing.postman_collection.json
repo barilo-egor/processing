@@ -1,0 +1,570 @@
+{
+  "info": {
+    "_postman_id": "d0ec435a-a357-4e72-8b93-f37d93e5f98b",
+    "name": "processing",
+    "description": "Авторизация приложения настроена по паттерну BFF и протоколу OAuth 2.0. Для выполнения авторизованных запросов необходимо войти в аккаунт через браузер и скопировать куки `JSESSIONID` в куки постмана, а также добавлять заголовок `X-XSRF-TOKEN` со значнием из куки `XSRF-TOKEN`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54996925"
+  },
+  "item": [
+    {
+      "name": "clients",
+      "item": [
+        {
+          "name": "Получение клиентов",
+          "protocolProfileBehavior": {
+            "followRedirects": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "client"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "UUID идентификатор клиента."
+                },
+                {
+                  "key": "username",
+                  "value": "",
+                  "description": "Логин клиента."
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Статус клиента."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "Время, от которого(включительно) пользователь зарегистрирован. UNIX время в милисекундах."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "Время, до которого пользователь зарегистрирован. UNIX время в милисекундах."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "description": "Номер страницы пагинации."
+                },
+                {
+                  "key": "size",
+                  "value": "",
+                  "description": "Количество элементов на странице для пагинаци."
+                }
+              ]
+            },
+            "description": "Метод для поиска клиентов.\n\nПринимает параметры для фильтрации:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **id** | `string` | UUID идентификатор клиента. | Format: `uuid` |\n| **username** | `string` | Логин клиента. | — |\n| **status** | `string` | Статус клиента. | — |\n| **from** | `integer` | Время, от которого (включительно) пользователь зарегистрирован. | UNIX timestamp (в миллисекундах) |\n| **to** | `integer` | Время, до которого пользователь зарегистрирован. | UNIX timestamp (в миллисекундах) |\n| **page** | `integer` | Номер страницы пагинации. | Minimum: `0` |\n| **size** | `integer` | Количество элементов на странице для пагинации. | Minimum: `1` |"
+          },
+          "response": [
+            {
+              "name": "Клиенты отсутствуют",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client"
+                  ],
+                  "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "description": "UUID идентификатор клиента."
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "description": "Логин клиента."
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "Статус клиента."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "description": "Время, от которого(включительно) пользователь зарегистрирован. UNIX время в милисекундах."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "description": "Время, до которого пользователь зарегистрирован. UNIX время в милисекундах."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы пагинации."
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Количество элементов на странице для пагинаци."
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "content-length",
+                  "value": "77"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 25 Aug 2026 21:29:17 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"content\": [],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 0,\n    \"totalPages\": 0\n  }\n}"
+            },
+            {
+              "name": "Клиенты получены",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client"
+                  ],
+                  "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "description": "UUID идентификатор клиента."
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "description": "Логин клиента."
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "Статус клиента."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "description": "Время, от которого(включительно) пользователь зарегистрирован. UNIX время в милисекундах."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "description": "Время, до которого пользователь зарегистрирован. UNIX время в милисекундах."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы пагинации."
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Количество элементов на странице для пагинаци."
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "content-length",
+                  "value": "396"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 25 Aug 2026 21:42:46 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"content\": [\n    {\n      \"callbackUrl\": null,\n      \"id\": \"58860ef0-276e-47d8-8bb7-bf71c9edee43\",\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1787694158946,\n      \"status\": \"ACTIVE\",\n      \"username\": \"client-2\"\n    },\n    {\n      \"callbackUrl\": null,\n      \"id\": \"a5e22019-d525-48f4-8699-6340c7a031f8\",\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1787694138787,\n      \"status\": \"ACTIVE\",\n      \"username\": \"client-1\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Обновление клиента",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "98fc72ad-2a9d-4ca0-b01e-c61de320d197"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_url}}/api/private/client/:id",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "client",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "5ff40605-6c1b-4c11-938d-6c79f88571a5"
+                }
+              ]
+            },
+            "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |"
+          },
+          "response": [
+            {
+              "name": "Клиент обновлен",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "X-XSRF-TOKEN",
+                    "value": "98fc72ad-2a9d-4ca0-b01e-c61de320d197"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/:id",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "5ff40605-6c1b-4c11-938d-6c79f88571a5"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 27 Aug 2026 15:22:23 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"5ff40605-6c1b-4c11-938d-6c79f88571a5\",\n  \"username\": \"client-3\",\n  \"registeredAt\": 1787694337768,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 800\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Модуль для работы с сущностью клиента.",
+      "auth": {
+        "type": "jwt",
+        "jwt": [
+          {
+            "key": "algorithm",
+            "value": "HS256",
+            "type": "string"
+          },
+          {
+            "key": "isSecretBase64Encoded",
+            "value": false,
+            "type": "boolean"
+          },
+          {
+            "key": "payload",
+            "value": "{}",
+            "type": "string"
+          },
+          {
+            "key": "addTokenTo",
+            "value": "header",
+            "type": "string"
+          },
+          {
+            "key": "headerPrefix",
+            "value": "Bearer",
+            "type": "string"
+          },
+          {
+            "key": "queryParamKey",
+            "value": "token",
+            "type": "string"
+          },
+          {
+            "key": "header",
+            "value": "{}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Словарь",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": [
+        {
+          "name": "Словарь получен",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{processing_url}}/api/private/dictionary",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "dictionary"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-content-type-options",
+              "value": "nosniff"
+            },
+            {
+              "key": "x-xss-protection",
+              "value": "0"
+            },
+            {
+              "key": "cache-control",
+              "value": "no-cache, no-store, max-age=0, must-revalidate"
+            },
+            {
+              "key": "pragma",
+              "value": "no-cache"
+            },
+            {
+              "key": "expires",
+              "value": "0"
+            },
+            {
+              "key": "x-frame-options",
+              "value": "DENY"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "date",
+              "value": "Thu, 27 Aug 2026 16:05:03 GMT"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"ClientStatus\": [\n    {\n      \"description\": \"Активен\",\n      \"name\": \"ACTIVE\"\n    },\n    {\n      \"description\": \"Заблокирован\",\n      \"name\": \"BLOCKED\"\n    }\n  ]\n}"
+        }
+      ]
+    }
+  ]
+}
