@@ -97,3 +97,10 @@ tasks.register('installFrontend', NpmTask) {
     workingDir = file('../frontend')
     args = ['run', 'build']
 }
+
+tasks.register('redeployFrontend', Copy) {
+    from(rootDir)
+    include('config/frontend/**')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(new File(rootDir, 'docker/mount/processing/config'))
+}
