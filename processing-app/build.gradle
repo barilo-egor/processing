@@ -1,6 +1,7 @@
 plugins {
     id 'processing'
     id 'org.springframework.boot'
+    id("com.github.node-gradle.node") version "7.1.0"
 }
 
 dependencies {
@@ -34,7 +35,7 @@ tasks.register('processingStartUp', Exec) {
         executable '/usr/local/bin/docker'
         args 'compose', 'up', '-d', '--build'
     }
-    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir')
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend')
 }
 
 tasks.register('processingShutdown', Exec) {
@@ -58,7 +59,7 @@ tasks.register('processingRedeployJar', Exec) {
         executable '/usr/local/bin/docker'
         args 'compose', 'up', '-d', '--no-deps', '--force-recreate', 'processing'
     }
-    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir')
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend')
 }
 
 tasks.named("bootJar") {
@@ -78,10 +79,21 @@ tasks.register('copyConfigToDockerDir', Copy) {
     include('config/**')
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     into(new File(rootDir, 'docker/mount/processing'))
+    mustRunAfter('installFrontend')
 }
 
 tasks.register('copyPluginsToDockerMountDir', Copy) {
     from(new File(rootDir, 'docker'))
     include('keycloak-webhook-provider-core.jar', 'keycloak-webhook-provider-http.jar')
     into(new File(rootDir, 'docker/mount/keycloak_plugins'))
+}
+
+node {
+    download = true
+    version = '26.8.1'
+}
+
+tasks.register('installFrontend', NpmTask) {
+    workingDir = file('../frontend')
+    args = ['run', 'build']
 }

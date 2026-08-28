@@ -9,3 +9,6 @@ spring:
   mvc:
     problem-details:
       enabled: true
+  web:
+    resources:
+      static-locations: 'file:config/frontend/'
