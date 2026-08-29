@@ -11,6 +11,138 @@
       "name": "clients",
       "item": [
         {
+          "name": "Создание клиента",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{webhook_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{webhook_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Auth",
+                "value": ""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n    \"time\": \"1788022344266\",\n    \"details\": {\n        \"username\": \"postman-admin12\"\n    },\n    \"type\": \"REGISTER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_url}}/api/private/client/event/",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "client",
+                "event",
+                ""
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Клиент создан",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Auth",
+                    "value": ""
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"id\": \"7321f213-6ab9-4d15-b950-9de1c756876a\",\n    \"time\": \"1788022344266\",\n    \"details\": {\n        \"username\": \"postman-admin\"\n    },\n    \"type\": \"REGISTER\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/event/",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    "event",
+                    ""
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 17:01:21 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
           "name": "Получение клиентов",
           "protocolProfileBehavior": {
             "followRedirects": true
@@ -290,12 +422,7 @@
           "name": "Обновление клиента",
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "X-XSRF-TOKEN",
-                "value": "98fc72ad-2a9d-4ca0-b01e-c61de320d197"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
@@ -319,7 +446,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "5ff40605-6c1b-4c11-938d-6c79f88571a5"
+                  "value": "7321f213-6ab9-4d15-b950-9de1c756876a"
                 }
               ]
             },
@@ -415,6 +542,604 @@
               ],
               "cookie": [],
               "body": "{\n  \"id\": \"5ff40605-6c1b-4c11-938d-6c79f88571a5\",\n  \"username\": \"client-3\",\n  \"registeredAt\": 1787694337768,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 800\n}"
+            }
+          ]
+        },
+        {
+          "name": "Создание токена",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Test-User",
+                "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_url}}/api/private/api-key?name=key2",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "api-key"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "key2"
+                }
+              ]
+            },
+            "description": "Клиент, выполняющий запрос, для связки с ключом идентифицируется на бэке."
+          },
+          "response": [
+            {
+              "name": "Апи ключ создан",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_ADMIN"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/api-key?name=key1",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    "api-key"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "key1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "text/plain;charset=UTF-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "43"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 20:37:08 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "eXZNxzIJqBj0mVkwQjy1utWrbz7iO7u0rXieOdQroTc"
+            },
+            {
+              "name": "Апи ключ уже существует",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/api-key?name=key1",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    "api-key"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "key1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/problem+json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 21:26:46 GMT"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"instance\": \"/api/private/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038806026,\n  \"description\": \"Апи ключ с именем key1 уже существует.\"\n}"
+            },
+            {
+              "name": "Параметр name отсутствует, либо пуст",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/api-key?name=",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    "api-key"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/problem+json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 21:27:02 GMT"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"instance\": \"/api/private/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038822590,\n  \"description\": \"createApiKey.name: must not be blank\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Получение апи ключей клиента",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Test-User",
+                "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_url}}/api/private/api-key",
+              "host": [
+                "{{processing_url}}"
+              ],
+              "path": [
+                "api",
+                "private",
+                "api-key"
+              ]
+            },
+            "description": "Клиент, выполняющий запрос, для связки с ключом идентифицируется на бэке."
+          },
+          "response": [
+            {
+              "name": "Апи ключи получены",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/api-key",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "api-key"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 22:07:59 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": 1,\n    \"preview\": \"eXZ...oTc\",\n    \"name\": \"key1\"\n  },\n  {\n    \"id\": 4,\n    \"preview\": \"b3u...cpQ\",\n    \"name\": \"key2\"\n  }\n]"
+            },
+            {
+              "name": "Апи ключи отсутствуют",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_url}}/api/private/api-key",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "api-key"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 22:08:47 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "[]"
+            }
+          ]
+        },
+        {
+          "name": "Удаление апи ключа клиента",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Test-User",
+                "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+              }
+            ],
+            "url": {
+              "raw": "{{processing_private_api_url}}/api-key/{{id}}",
+              "host": [
+                "{{processing_private_api_url}}"
+              ],
+              "path": [
+                "api-key",
+                "{{id}}"
+              ]
+            },
+            "description": "Клиент, выполняющий запрос, для связки с ключом идентифицируется на бэке. В случае, если ключ с переданным идентификатором существует в базе, но не принадлежит клиенту, будет возвращен статус 400 с описанием отсутствия данного ключа."
+          },
+          "response": [
+            {
+              "name": "Апи ключ удален",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/api-key/{{id}}",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "api-key",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 29 Aug 2026 22:18:39 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": ""
             }
           ]
         }
