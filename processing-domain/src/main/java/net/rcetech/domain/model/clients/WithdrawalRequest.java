@@ -27,8 +27,9 @@ public class WithdrawalRequest {
     /**
      * Идентификатор клиента {@link Client#getId()}.
      */
-    @Column(name = "client_id", nullable = false)
-    private Long clientId;
+    @ManyToOne(fetch =  FetchType.LAZY, optional = false)
+    @JoinColumn(nullable = false, name = "client_id")
+    private Client client;
 
     /**
      * Сумма вывода.

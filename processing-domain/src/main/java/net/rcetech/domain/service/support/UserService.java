@@ -2,51 +2,26 @@ package net.rcetech.domain.service.support;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.mapper.support.UserMapper;
+import net.rcetech.domain.model.support.SupportUser;
+import net.rcetech.domain.repository.support.SupportUserRepository;
 import net.rcetech.meta.exception.NotFoundException;
-import net.rcetech.meta.support.exception.PasswordValidationException;
-import net.rcetech.meta.support.exception.UserAlreadyExistsException;
+import net.rcetech.meta.support.dto.UserDTO;
 import net.rcetech.meta.support.exception.UserNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import net.rcetech.domain.model.support.SupportUser;
-import net.rcetech.domain.repository.support.UserRepository;
-import net.rcetech.meta.support.dto.UserDTO;
 
 @Service
 @Slf4j
 @Transactional(readOnly = true)
 public class UserService {
 
-    private static final String STRENGTH_REGEX =
-            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
-    private final UserRepository userRepository;
+    private final SupportUserRepository supportUserRepository;
 
     private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
-        this.userRepository = userRepository;
+    public UserService(SupportUserRepository supportUserRepository, UserMapper userMapper) {
+        this.supportUserRepository = supportUserRepository;
         this.userMapper = userMapper;
-    }
-
-    /**
-     * Создает нового пользователя.
-     * Метод хэширует пароль, сохраняет сущность в базу данных.
-     *
-     * @param userDTO данные для создания нового пользователя
-     * @throws UserAlreadyExistsException  если пользователь с таким username уже зарегистрирован
-     * @throws PasswordValidationException если пароль не прошел валидацию
-     */
-    @Transactional
-    public UserDTO create(UserDTO userDTO) {
-        log.debug("Запрос на создание пользователя: username {}", userDTO.getUsername());
-        if (userRepository.existsByUsername(userDTO.getUsername())) {
-            throw new UserAlreadyExistsException();
-        }
-        final String encryptedPassword = validateAndHashPassword(userDTO.getPassword());
-        SupportUser user = SupportUser.builder().username(userDTO.getUsername()).password(encryptedPassword).build();
-        user = userRepository.save(user);
-        log.debug("Создан пользователь: {}", user.getId());
-        return userMapper.fromEntity(user);
     }
 
     /**
@@ -58,7 +33,7 @@ public class UserService {
      */
     public UserDTO getUserByUsername(String username) {
         log.debug("Запрос пользователя: username {}", username);
-        SupportUser user = userRepository.findByUsername(username)
+        SupportUser user = supportUserRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(username));
         return userMapper.fromEntity(user);
     }
@@ -72,24 +47,9 @@ public class UserService {
      */
     public UserDTO getUserById(Long id) {
         log.debug("Запрос user: id {}", id);
-        SupportUser user = userRepository.findSupportUserById(id)
+        SupportUser user = supportUserRepository.findSupportUserById(id)
                 .orElseThrow(UserNotFoundException::new);
         return userMapper.fromEntity(user);
-    }
-
-    /**
-     * Проверяет надежность пароля по регулярному выражению и хэширует его.
-     *
-     * @param password исходный пароль в открытом виде
-     * @return захэшированная строка пароля
-     * @throws PasswordValidationException если пароль равен null или не соответствует требованиям безопасности
-     */
-    public String validateAndHashPassword(String password) {
-        if (password == null || !password.matches(STRENGTH_REGEX)) {
-            throw new PasswordValidationException();
-        }
-        return password;
-//        return passwordEncoder.encode(password);
     }
 
 }

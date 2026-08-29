@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.rcetech.meta.support.UserRole;
 
 import java.time.Instant;
 
@@ -23,20 +22,6 @@ public class SupportUser {
 
     @Column(nullable = false, unique = true)
     private String username;
-
-    /**
-     * Хэш пароля
-     */
-    @Column(nullable = false)
-    private String password;
-
-    /**
-     * Роль пользователя
-     */
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private UserRole role = UserRole.NEW;
 
     /**
      * Временная метка регистрации

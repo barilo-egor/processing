@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,7 +36,8 @@ class KeycloakEventServiceTest {
         keycloakEventService = new KeycloakEventService(executor, List.of(keycloakEventHandler), meterRegistry);
         KeycloakEvent keycloakEvent = mock(KeycloakEvent.class);
         when(keycloakEvent.type()).thenReturn(KeycloakEvent.EventType.REGISTER);
-        keycloakEventService.handle(keycloakEvent);
+        boolean actual = keycloakEventService.handle(keycloakEvent);
+        assertTrue(actual);
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         verify(executor).execute(captor.capture());
         captor.getValue().run();
@@ -51,7 +52,8 @@ class KeycloakEventServiceTest {
         when(keycloakEvent.type()).thenReturn(KeycloakEvent.EventType.REGISTER);
         doThrow(RuntimeException.class).when(keycloakEventHandler).handle(keycloakEvent);
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
-        keycloakEventService.handle(keycloakEvent);
+        boolean actual = keycloakEventService.handle(keycloakEvent);
+        assertTrue(actual);
         verify(executor).execute(captor.capture());
         captor.getValue().run();
         verify(meterRegistry).counter(
@@ -67,7 +69,8 @@ class KeycloakEventServiceTest {
         keycloakEventService = new KeycloakEventService(executor, List.of(keycloakEventHandler), meterRegistry);
         KeycloakEvent keycloakEvent = mock(KeycloakEvent.class);
         when(keycloakEvent.type()).thenReturn(KeycloakEvent.EventType.CUSTOM_REQUIRED_ACTION_ERROR);
-        keycloakEventService.handle(keycloakEvent);
+        boolean actual = keycloakEventService.handle(keycloakEvent);
+        assertFalse(actual);
         verify(keycloakEventHandler, never()).handle(keycloakEvent);
     }
 

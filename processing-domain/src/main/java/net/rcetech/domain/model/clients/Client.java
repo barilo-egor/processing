@@ -1,5 +1,6 @@
 package net.rcetech.domain.model.clients;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +9,7 @@ import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -55,6 +57,14 @@ public class Client implements Persistable<UUID> {
      */
     @Column(nullable = false)
     private Integer orderTimeoutSeconds = DEFAULT_ORDER_TIMEOUT;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    @JsonIgnore
+    private List<ApiKey> apiKeys;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    @JsonIgnore
+    private List<WithdrawalRequest> withdrawalRequests;
 
     @Transient
     private boolean isNew = true;

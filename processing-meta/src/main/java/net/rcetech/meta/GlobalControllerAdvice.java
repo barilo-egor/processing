@@ -1,5 +1,6 @@
 package net.rcetech.meta;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
@@ -26,22 +27,24 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({ BaseException.class })
     public ProblemDetail handleBaseException(BaseException ex) {
-        log.error("Controller business error: {}", ex.getMessage(), ex);
+        long epochMilli = Instant.now().toEpochMilli();
+        log.error("{} Controller business error: {}", epochMilli, ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problemDetail.setTitle(ex.getMessage());
         problemDetail.setType(URI.create("/errors/internal-server-error"));
-        problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
+        problemDetail.setProperty(TIMESTAMP, epochMilli);
         return problemDetail;
     }
 
     @ExceptionHandler({ Exception.class })
     public ProblemDetail handleGenericException(Exception ex) {
-        log.error("Controller not handled error: {}", ex.getMessage(), ex);
+        long epochMilli = Instant.now().toEpochMilli();
+        log.error("{} Controller not handled error: {}", epochMilli, ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problemDetail.setTitle("Internal Server Error");
         problemDetail.setType(URI.create("/errors/internal-server-error"));
-        problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
-        problemDetail.setProperty(DESCRIPTION, ex.getMessage());
+        problemDetail.setProperty(TIMESTAMP, epochMilli);
+        problemDetail.setProperty(DESCRIPTION, "Internal Server Error");
         return problemDetail;
     }
 
@@ -55,8 +58,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler({ BadRequestException.class })
-    public ProblemDetail handleBadRequest(BadRequestException ex) {
+    @ExceptionHandler({ BadRequestException.class, ConstraintViolationException.class})
+    public ProblemDetail handleBadRequest(Exception ex) {
         log.error("Bad request error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle("Bad Request");

@@ -42,8 +42,8 @@ public class MetaSecurityConfig {
     @Bean
     static RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.withDefaultRolePrefix()
-                .role("ADMIN").implies("OPERATOR", "USER")
-                .role("OPERATOR").implies("USER")
+                .role("ADMIN").implies("OPERATOR", "CLIENT")
+                .role("OPERATOR").implies("CLIENT")
                 .build();
     }
 }

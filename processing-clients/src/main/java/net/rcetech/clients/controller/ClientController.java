@@ -14,6 +14,7 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @RestController
 @Slf4j
 @RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
+@Validated
 public class ClientController {
 
     private final KeycloakEventService keycloakEventService;
@@ -37,13 +39,19 @@ public class ClientController {
     }
 
     @PostMapping("/event/")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void event(@RequestBody KeycloakEvent event) {
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Void> event(@RequestBody KeycloakEvent event) {
         log.trace("Получен ивент из keycloak: {}", event);
-        keycloakEventService.handle(event);
+        boolean isHandled = keycloakEventService.handle(event);
+        if (isHandled) {
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public PagedModel<ClientResponseDTO> getClients(ClientFilter filter, Pageable pageable) {
         return new PagedModel<>(clientService.findAll(filter, pageable));
     }

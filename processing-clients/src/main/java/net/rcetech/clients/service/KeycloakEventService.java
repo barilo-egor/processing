@@ -41,7 +41,7 @@ public class KeycloakEventService {
         }
     }
 
-    public void handle(KeycloakEvent event) {
+    public boolean handle(KeycloakEvent event) {
         KeycloakEventHandler keycloakEventHandler = keycloakEventHandlers.get(event.type());
         if (Objects.nonNull(keycloakEventHandler)) {
             keycloakEventExecutor.execute(() -> {
@@ -52,8 +52,10 @@ public class KeycloakEventService {
                     meterRegistry.counter(MetricsConstants.KEYCLOAK_EVENT_HANDLE_ERROR, MetricsConstants.Tags.TYPE, event.type().name());
                 }
             });
+            return true;
         } else {
             log.trace("Ивент от keycloak проигнорирован: {}", event);
+            return false;
         }
     }
 }

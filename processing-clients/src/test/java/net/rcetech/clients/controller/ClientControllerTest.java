@@ -4,6 +4,7 @@ import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.mapping.clients.ClientMapper;
+import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -65,6 +66,9 @@ class ClientControllerTest {
     }
 
     @MockitoBean
+    private ApiKeyService apiKeyService;
+
+    @MockitoBean
     private KeycloakEventService keycloakEventService;
 
     @MockitoBean
@@ -85,17 +89,31 @@ class ClientControllerTest {
             "login_event_with_unknown_field.json"})
     @WithMockUser(roles = {"WEBHOOK_CLIENT"})
     void event_shouldSerializeJson(String fileName) throws Exception {
+        when(keycloakEventService.handle(any(KeycloakEvent.class))).thenReturn(true);
         String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
         mockMvc.perform(
                         post("/api/private/client/event/")
                                 .header("Content-Type", "application/json")
                                 .content(json))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
         verify(keycloakEventService).handle(any(KeycloakEvent.class));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"login_event.json", "login_error_event.json"})
+    @WithMockUser(roles = {"WEBHOOK_CLIENT"})
+    void event_shouldReturnNoContentIfHandlerNotFound(String fileName) throws Exception {
+        when(keycloakEventService.handle(any(KeycloakEvent.class))).thenReturn(false);
+        String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
+        mockMvc.perform(
+                        post("/api/private/client/event/")
+                                .header("Content-Type", "application/json")
+                                .content(json))
+                .andExpect(status().isNoContent());
+    }
+
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void getClients_shouldReturnEmptyArray() throws Exception {
         Page<ClientResponseDTO> page = new PageImpl<>(new ArrayList<>());
         when(clientService.findAll(any(), any())).thenReturn(page);
@@ -113,7 +131,7 @@ class ClientControllerTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 5})
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
         List<ClientResponseDTO> clients = new ArrayList<>();
         for (int i = 0; i < clientsSize; i++) {
@@ -149,7 +167,7 @@ class ClientControllerTest {
             c6e5d372-9436-4cdb-a6c4-dc33c0fc8d7a,user_poser,BLOCKED,1787659000000,1787659000987,20,10
             """)
     @ParameterizedTest
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void getClients_shouldPassParametersToMethod(String id, String username, String status, long from, long to,
                                                  int size, int page) throws Exception {
         when(clientService.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
