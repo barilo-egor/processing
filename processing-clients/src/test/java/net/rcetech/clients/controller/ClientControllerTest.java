@@ -2,6 +2,7 @@ package net.rcetech.clients.controller;
 
 import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.clients.event.KeycloakEvent;
+import net.rcetech.clients.service.ClientSecurityService;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.service.clients.ApiKeyService;
@@ -9,10 +10,12 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -35,6 +38,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,10 +48,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,6 +66,11 @@ class ClientControllerTest {
         @Bean
         public ClientMapper clientMapper() {
             return Mappers.getMapper(ClientMapper.class);
+        }
+
+        @Bean
+        public ClientSecurityService clientSecurityService() {
+            return new ClientSecurityService();
         }
     }
 
@@ -82,6 +91,11 @@ class ClientControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ClientSecurityService clientSecurityService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @ParameterizedTest
     @DisplayName("Сериализация объекта должна пройти без ошибок, должен быть вызван метод сервиса.")
@@ -194,5 +208,93 @@ class ClientControllerTest {
                 () -> assertEquals(size, pageable.getPageSize()),
                 () -> assertEquals(page, pageable.getPageNumber())
         );
+    }
+
+    @ValueSource(strings = {
+            "CLIENT",
+            "OPERATOR"
+    })
+    @ParameterizedTest
+    @DisplayName("Доступ должен быть запрещен для ролей отличных от ADMIN.")
+    void getClients_shouldReturnForbiddenForNotAdmin(String role) throws Exception {
+        mockMvc.perform(get("/api/private/client")
+                        .with(user("user").roles(role)))
+                .andExpect(status().isForbidden());
+    }
+
+    @ValueSource(strings = {
+            "OPERATOR", "USER"
+    })
+    @ParameterizedTest
+    void update_shouldReturnForbiddenIfNotAdminOrClient(String role) throws Exception {
+        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+                        .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role)))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"status\":\"BLOCKED\"}",
+            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
+            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
+            "{\"orderTimeoutSeconds\":700}"
+    })
+    void update_shouldReturnForbiddenForClientIfUpdateNotAccessedFields(String json) throws Exception {
+        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+                        .header("Content-Type", "application/json")
+                        .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles("CLIENT"))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @RepeatedTest(value = 2)
+    void update_shouldReturnForbiddenIfClientNotSelfUpdating() throws Exception {
+        mockMvc.perform(patch("/api/private/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(csrf())
+                        .content("{\"callbackUrl\":\"https://example.com/callback\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"status\":\"BLOCKED\"}",
+            "{\"status\":\"BLOCKED\", \"callbackUrl\":\"https://example.com\"}",
+            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
+            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
+            "{\"callbackUrl\":\"https://example.com\"}"
+    })
+    @DisplayName("Сериализация должна пройти без ошибок.")
+    void update_shouldUpdateClient(String json) throws Exception {
+        UpdateClientDTO expected = objectMapper.readValue(json, UpdateClientDTO.class);
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/private/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles("ADMIN"))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(expected, captor.getValue());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "http://example.com/callback",
+            "example.com/callback",
+            "qwe"
+    })
+    void update_shouldReturnBadRequestIfUrlIsNotValid(String nodValidUrl) throws Exception {
+        UUID uuid = UUID.randomUUID();
+        mockMvc.perform(
+                patch("/api/private/client/" + uuid)
+                        .header("Content-Type", "application/json")
+                        .with(user(uuid.toString()).roles("CLIENT"))
+                        .with(csrf())
+                        .content("{\"callbackUrl\":\"" + nodValidUrl + "\"}")
+        ).andExpect(status().isBadRequest());
     }
 }
