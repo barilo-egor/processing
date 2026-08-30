@@ -57,7 +57,7 @@ public class ClientController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@clientSecurityService.canUpdate(#id, #updateClientDTO, authentication)")
     public ResponseEntity<ClientResponseDTO> update(@PathVariable UUID id, @RequestBody UpdateClientDTO updateClientDTO) {
         return new ResponseEntity<>(clientMapper.toResponse(clientService.update(id, updateClientDTO)), HttpStatus.OK);
     }
