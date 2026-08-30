@@ -1,5 +1,6 @@
 package net.rcetech.clients.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
@@ -58,7 +59,7 @@ public class ClientController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("@clientSecurityService.canUpdate(#id, #updateClientDTO, authentication)")
-    public ResponseEntity<ClientResponseDTO> update(@PathVariable UUID id, @RequestBody UpdateClientDTO updateClientDTO) {
+    public ResponseEntity<ClientResponseDTO> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
         return new ResponseEntity<>(clientMapper.toResponse(clientService.update(id, updateClientDTO)), HttpStatus.OK);
     }
 }

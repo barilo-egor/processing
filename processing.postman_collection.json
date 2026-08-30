@@ -425,7 +425,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"callbackUrl\": \"http://google.com\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -450,7 +450,7 @@
                 }
               ]
             },
-            "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |"
+            "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |\n| callbackUrl | string | Адрес для отправки callback. | Валидный URL. |"
           },
           "response": [
             {
