@@ -4,14 +4,16 @@ import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface MerchantConfigService {
 
     /**
      * Получение конфигураций на каждого мерчанта, перечисленного в {@link tgb.cryptoexchange.commons.enums.Merchant}.
+     * @param ownerId идентификатор клиента
      * @return список конфигураций на всех мерчантов, отсортированных в порядке очереди по возрастанию
      */
-    List<MerchantConfigResponseDTO> findAll();
+    List<MerchantConfigResponseDTO> findAll(UUID ownerId);
 
     /**
      * Обновление конфигурации мерчанта. Обновляются только поля, не равные null.
