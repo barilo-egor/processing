@@ -7,7 +7,16 @@ import java.util.List;
 
 public interface MerchantConfigService {
 
+    /**
+     * Получение конфигураций на каждого мерчанта, перечисленного в {@link tgb.cryptoexchange.commons.enums.Merchant}.
+     * @return список конфигураций на всех мерчантов, отсортированных в порядке очереди по возрастанию
+     */
     List<MerchantConfigResponseDTO> findAll();
 
+    /**
+     * Обновление конфигурации мерчанта. Обновляются только поля, не равные null.
+     * @param id идентификатор конфигурации
+     * @param updateDTO объект, содержащий обновляемые поля
+     */
     void update(Long id, MerchantConfigUpdateDTO updateDTO);
 }
