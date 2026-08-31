@@ -17,6 +17,7 @@ public interface MerchantConfigService {
      * Обновление конфигурации мерчанта. Обновляются только поля, не равные null.
      * @param id идентификатор конфигурации
      * @param updateDTO объект, содержащий обновляемые поля
+     * @return обновленную конфигурацию
      */
-    void update(Long id, MerchantConfigUpdateDTO updateDTO);
+    MerchantConfigResponseDTO update(Long id, MerchantConfigUpdateDTO updateDTO);
 }
