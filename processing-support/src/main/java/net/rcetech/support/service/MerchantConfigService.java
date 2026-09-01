@@ -10,10 +10,10 @@ public interface MerchantConfigService {
 
     /**
      * Получение конфигураций на каждого мерчанта, перечисленного в {@link tgb.cryptoexchange.commons.enums.Merchant}.
-     * @param ownerId идентификатор клиента
+     * @param clientId идентификатор клиента
      * @return список конфигураций на всех мерчантов, отсортированных в порядке очереди по возрастанию
      */
-    List<MerchantConfigResponseDTO> findAll(UUID ownerId);
+    List<MerchantConfigResponseDTO> findAll(UUID clientId);
 
     /**
      * Обновление конфигурации мерчанта. Обновляются только поля, не равные null.

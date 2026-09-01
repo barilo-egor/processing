@@ -21,10 +21,10 @@ public class MerchantConfigController {
         this.merchantConfigService = merchantConfigService;
     }
 
-    @GetMapping("/{ownerId}")
+    @GetMapping("/{clientId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<MerchantConfigResponseDTO>> get(@PathVariable UUID ownerId) {
-        return ResponseEntity.ok(merchantConfigService.findAll(ownerId));
+    public ResponseEntity<List<MerchantConfigResponseDTO>> get(@PathVariable UUID clientId) {
+        return ResponseEntity.ok(merchantConfigService.findAll(clientId));
     }
 
     @PatchMapping("/{id}")
