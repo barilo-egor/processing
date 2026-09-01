@@ -32,6 +32,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -365,7 +366,7 @@ class ClientServiceTest {
         for (int i = 0; i < 5; i++) {
             clientRepository.save(getDummyClient());
         }
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null, null);
         assertThrows(BadRequestException.class,
                 () -> clientService.update(id, updateClientDTO));
     }
@@ -373,7 +374,7 @@ class ClientServiceTest {
     @Test
     @DisplayName("Метод не должен обновлять поля, если в DTO они null.")
     void update_shouldNotUpdateFieldsIfNull() {
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null, null);
         Client client = new Client();
         UUID clientId = UUID.randomUUID();
         client.setId(clientId);
@@ -388,12 +389,13 @@ class ClientServiceTest {
     }
 
     @CsvSource("""
-            BLOCKED,500,https://example.com/callback
-            ACTIVE,1200,https://google.com/webhook
+            BLOCKED,25.0,500,https://example.com/callback
+            ACTIVE,13.5,1200,https://google.com/webhook
             """)
     @ParameterizedTest
     @DisplayName("Метод должен обновить все переданные поля.")
-    void update_shouldUpdateClient(ClientStatus status, Integer orderTimeoutSeconds, String callbackUrl) {
+    void update_shouldUpdateClient(ClientStatus status, BigDecimal commissionPercent, Integer orderTimeoutSeconds,
+                                   String callbackUrl) {
         assertNotEquals(Client.DEFAULT_ORDER_TIMEOUT, orderTimeoutSeconds,
                 "Для теста нужно отличное от дефолтного значение времени таймаута ордера.");
         UUID id = UUID.randomUUID();
@@ -409,12 +411,14 @@ class ClientServiceTest {
                 "Необходим установленный статус клиента, отличный от полученного в параметре.");
         fillRequiredFields(client);
         clientRepository.save(client);
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(status, orderTimeoutSeconds, callbackUrl);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(status, commissionPercent, orderTimeoutSeconds, callbackUrl);
         clientService.update(id, updateClientDTO);
         Client updated = clientRepository.findById(id).orElseThrow(IllegalStateException::new);
         assertAll(
                 () -> assertEquals(status, updated.getStatus()),
-                () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds())
+                () -> assertEquals(commissionPercent, updated.getCommissionPercent()),
+                () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds()),
+                () -> assertEquals(callbackUrl, updated.getCallbackUrl())
         );
     }
 }

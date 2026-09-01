@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.data.domain.Persistable;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -76,7 +77,7 @@ public class Client implements Persistable<UUID> {
      * Процент комиссии площадки с каждого ордера
      */
     @Column
-    private Double commissionPercent;
+    private BigDecimal commissionPercent;
 
     @Transient
     private boolean isNew = true;

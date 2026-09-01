@@ -19,6 +19,7 @@ public class ClientSecurityService {
         if (!isSelf) {
             return false;
         }
-        return Objects.isNull(dto.status()) && Objects.isNull(dto.orderTimeoutSeconds());
+        return Objects.isNull(dto.status()) && Objects.isNull(dto.orderTimeoutSeconds())
+                && Objects.isNull(dto.commissionPercent());
     }
 }

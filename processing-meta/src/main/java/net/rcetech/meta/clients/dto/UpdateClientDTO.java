@@ -4,8 +4,11 @@ import jakarta.validation.constraints.Min;
 import net.rcetech.meta.clients.ClientStatus;
 import org.hibernate.validator.constraints.URL;
 
+import java.math.BigDecimal;
+
 public record UpdateClientDTO(
         ClientStatus status,
+        @Min(0) BigDecimal commissionPercent,
         @Min(0) Integer orderTimeoutSeconds,
         @URL(protocol = "https") String callbackUrl
 ) {}
