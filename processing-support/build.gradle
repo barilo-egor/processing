@@ -10,13 +10,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-oauth2-client'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
     implementation 'org.springframework.kafka:spring-kafka'
 
     implementation 'commons-codec:commons-codec:1.18.0'
-//    implementation 'org.springframework.security:spring-security-crypto'
 
     implementation 'org.semver4j:semver4j:6.0.0'
     implementation 'tgb.cryptoexchange:common-api:1.1.0'
@@ -26,6 +27,9 @@ dependencies {
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
 
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 }
 
 bootJar {

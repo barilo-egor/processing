@@ -1,0 +1,5 @@
+processing:
+  keycloak:
+    webhook:
+      username: 'webhook_user'
+      password: '{noop}webhook_password'
