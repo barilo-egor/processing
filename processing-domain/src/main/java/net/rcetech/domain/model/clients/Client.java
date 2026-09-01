@@ -58,13 +58,25 @@ public class Client implements Persistable<UUID> {
     @Column(nullable = false)
     private Integer orderTimeoutSeconds = DEFAULT_ORDER_TIMEOUT;
 
+    /**
+     * Апи-ключи клиента для программной интеграции, создаются клиентом
+     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
     @JsonIgnore
     private List<ApiKey> apiKeys;
 
+    /**
+     * Заявки на вывод средств клиента, созданные клиентом
+     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
     @JsonIgnore
     private List<WithdrawalRequest> withdrawalRequests;
+
+    /**
+     * Процент комиссии площадки с каждого ордера
+     */
+    @Column
+    private Double commissionPercent;
 
     @Transient
     private boolean isNew = true;
