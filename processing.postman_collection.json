@@ -8,7 +8,7 @@
   },
   "item": [
     {
-      "name": "clients",
+      "name": "client",
       "item": [
         {
           "name": "Создание клиента",
@@ -398,11 +398,11 @@
                 },
                 {
                   "key": "content-length",
-                  "value": "396"
+                  "value": "474"
                 },
                 {
                   "key": "date",
-                  "value": "Tue, 25 Aug 2026 21:42:46 GMT"
+                  "value": "Tue, 01 Sep 2026 21:35:53 GMT"
                 },
                 {
                   "key": "keep-alive",
@@ -414,7 +414,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"content\": [\n    {\n      \"callbackUrl\": null,\n      \"id\": \"58860ef0-276e-47d8-8bb7-bf71c9edee43\",\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1787694158946,\n      \"status\": \"ACTIVE\",\n      \"username\": \"client-2\"\n    },\n    {\n      \"callbackUrl\": null,\n      \"id\": \"a5e22019-d525-48f4-8699-6340c7a031f8\",\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1787694138787,\n      \"status\": \"ACTIVE\",\n      \"username\": \"client-1\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
+              "body": "{\n  \"content\": [\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"username\": \"postman-admin12\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"commissionPercent\": 20.5\n    },\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756876a\",\n      \"username\": \"postman-admin\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": \"https://google.com\",\n      \"orderTimeoutSeconds\": 800,\n      \"commissionPercent\": null\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -425,7 +425,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"callbackUrl\": \"http://google.com\"\n}",
+              "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"callbackUrl\": \"https://google.com\",\n    \"commissionPercent\": 15.5\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -486,13 +486,11 @@
                   "variable": [
                     {
                       "key": "id",
-                      "value": "5ff40605-6c1b-4c11-938d-6c79f88571a5"
+                      "value": "7321f213-6ab9-4d15-b950-9de1c756812a"
                     }
                   ]
                 }
               },
-              "status": "OK",
-              "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
                 {
@@ -529,7 +527,7 @@
                 },
                 {
                   "key": "date",
-                  "value": "Thu, 27 Aug 2026 15:22:23 GMT"
+                  "value": "Tue, 01 Sep 2026 21:37:29 GMT"
                 },
                 {
                   "key": "keep-alive",
@@ -541,7 +539,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"5ff40605-6c1b-4c11-938d-6c79f88571a5\",\n  \"username\": \"client-3\",\n  \"registeredAt\": 1787694337768,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 800\n}"
+              "body": "{\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"username\": \"postman-admin12\",\n  \"registeredAt\": 1788022344266,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 800,\n  \"commissionPercent\": 20.5\n}"
             }
           ]
         },
@@ -847,7 +845,53 @@
               "body": "{\n  \"instance\": \"/api/private/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038822590,\n  \"description\": \"createApiKey.name: must not be blank\"\n}"
             }
           ]
-        },
+        }
+      ],
+      "description": "Модуль для работы с сущностью клиента.",
+      "auth": {
+        "type": "jwt",
+        "jwt": [
+          {
+            "key": "algorithm",
+            "value": "HS256",
+            "type": "string"
+          },
+          {
+            "key": "isSecretBase64Encoded",
+            "value": false,
+            "type": "boolean"
+          },
+          {
+            "key": "addTokenTo",
+            "value": "header",
+            "type": "string"
+          },
+          {
+            "key": "payload",
+            "value": "{}",
+            "type": "string"
+          },
+          {
+            "key": "queryParamKey",
+            "value": "token",
+            "type": "string"
+          },
+          {
+            "key": "header",
+            "value": "{}",
+            "type": "string"
+          },
+          {
+            "key": "headerPrefix",
+            "value": "Bearer",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "api-key",
+      "item": [
         {
           "name": "Получение апи ключей клиента",
           "request": {
@@ -1159,18 +1203,13 @@
             "type": "boolean"
           },
           {
-            "key": "payload",
-            "value": "{}",
-            "type": "string"
-          },
-          {
             "key": "addTokenTo",
             "value": "header",
             "type": "string"
           },
           {
-            "key": "headerPrefix",
-            "value": "Bearer",
+            "key": "payload",
+            "value": "{}",
             "type": "string"
           },
           {
@@ -1182,31 +1221,238 @@
             "key": "header",
             "value": "{}",
             "type": "string"
+          },
+          {
+            "key": "headerPrefix",
+            "value": "Bearer",
+            "type": "string"
           }
         ]
-      },
-      "event": [
+      }
+    },
+    {
+      "name": "merchant-config",
+      "item": [
         {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {},
-            "exec": [
-              ""
-            ]
-          }
+          "name": "Получение конфигураций",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{processing_private_api_url}}/merchant-config/:clientId",
+              "host": [
+                "{{processing_private_api_url}}"
+              ],
+              "path": [
+                "merchant-config",
+                ":clientId"
+              ],
+              "variable": [
+                {
+                  "key": "clientId",
+                  "value": "7321f213-6ab9-4d15-b950-9de1c756812a",
+                  "description": "Идентификатор клиента"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Конфигурации получены",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/merchant-config/:clientId",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "merchant-config",
+                    ":clientId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "clientId",
+                      "value": "7321f213-6ab9-4d15-b950-9de1c756812a",
+                      "description": "Идентификатор клиента"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 01 Sep 2026 21:38:11 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": 1,\n    \"isOn\": true,\n    \"merchant\": \"ALFA_TEAM\",\n    \"maxAmount\": 10000,\n    \"minAmount\": 100\n  },\n  {\n    \"id\": 2,\n    \"isOn\": true,\n    \"merchant\": \"FIAT_CUT\",\n    \"maxAmount\": 4500,\n    \"minAmount\": 500\n  },\n  {\n    \"id\": 3,\n    \"isOn\": false,\n    \"merchant\": \"EXTASY_PAY\",\n    \"maxAmount\": 10000,\n    \"minAmount\": 100\n  },\n  {\n    \"id\": 4,\n    \"isOn\": true,\n    \"merchant\": \"ASGARD\",\n    \"maxAmount\": 15000,\n    \"minAmount\": 10000\n  }\n]"
+            }
+          ]
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {},
-            "exec": [
-              ""
-            ]
-          }
+          "name": "Обновление конфигурации",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isOn\": true,\n  \"maxAmount\": 10000,\n  \"minAmount\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_private_api_url}}/merchant-config/:id",
+              "host": [
+                "{{processing_private_api_url}}"
+              ],
+              "path": [
+                "merchant-config",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Идентификатор конфигурации"
+                }
+              ]
+            },
+            "description": "Пример тела во вкладке body.\n\nОтсутствующее поле, либо поле со значением null обновлено не будет."
+          },
+          "response": [
+            {
+              "name": "Конфигурация обновлена",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isOn\": true,\n  \"maxAmount\": 10000,\n  \"minAmount\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_private_api_url}}/merchant-config/:id",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "merchant-config",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "Идентификатор конфигурации"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "transfer-encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 01 Sep 2026 21:41:42 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"isOn\": true,\n  \"merchant\": \"ALFA_TEAM\",\n  \"maxAmount\": 10000,\n  \"minAmount\": 100\n}"
+            }
+          ]
         }
       ]
     },
