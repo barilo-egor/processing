@@ -40,6 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,13 +168,14 @@ class ClientControllerTest {
             resultActions.andExpect(jsonPath("$.content[" + i + "].status").value("ACTIVE"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].callbackUrl").value("https://example.com/callback"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].orderTimeoutSeconds").value(900));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].commissionPercent").value("20.5"));
             i++;
         }
     }
 
     private static @NonNull ClientResponseDTO getClient(int i) {
         return new ClientResponseDTO(UUID.randomUUID(), "test" + i, Instant.now(),
-                ClientStatus.ACTIVE, "https://example.com/callback", 900);
+                ClientStatus.ACTIVE, "https://example.com/callback", 900,  new BigDecimal("20.5"));
     }
 
     @CsvSource("""
@@ -226,6 +228,7 @@ class ClientControllerTest {
             "OPERATOR", "USER"
     })
     @ParameterizedTest
+    @DisplayName("Доступ должен быть запрещен для всех кроме администратора и оператора.")
     void update_shouldReturnForbiddenIfNotAdminOrClient(String role) throws Exception {
         mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
                         .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role)))
@@ -237,8 +240,10 @@ class ClientControllerTest {
             "{\"status\":\"BLOCKED\"}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
+            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\", \"percentCommission\":\"15.5\"}",
             "{\"orderTimeoutSeconds\":700}"
     })
+    @DisplayName("Доступ должен быть запрещен клиенту, если присутствуют поля, запрещенные к обновлению клиенту.")
     void update_shouldReturnForbiddenForClientIfUpdateNotAccessedFields(String json) throws Exception {
         mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
                         .header("Content-Type", "application/json")
@@ -249,6 +254,7 @@ class ClientControllerTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Доступ должен быть запрещен, если клиент обновляет поля не самого себя.")
     void update_shouldReturnForbiddenIfClientNotSelfUpdating() throws Exception {
         mockMvc.perform(patch("/api/private/client/" + UUID.randomUUID())
                         .header("Content-Type", "application/json")
@@ -287,6 +293,7 @@ class ClientControllerTest {
             "example.com/callback",
             "qwe"
     })
+    @DisplayName("Должен вернуть 400, если юрл невалиден, либо протокол не https.")
     void update_shouldReturnBadRequestIfUrlIsNotValid(String nodValidUrl) throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(

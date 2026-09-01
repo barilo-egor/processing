@@ -4,6 +4,7 @@ import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.serialize.InstantToMillisSerializer;
 import tools.jackson.databind.annotation.JsonSerialize;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -14,5 +15,6 @@ public record ClientResponseDTO(
         Instant registeredAt,
         ClientStatus status,
         String callbackUrl,
-        Integer orderTimeoutSeconds
+        Integer orderTimeoutSeconds,
+        BigDecimal commissionPercent
 ) {}
