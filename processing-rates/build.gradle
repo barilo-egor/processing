@@ -2,13 +2,6 @@ plugins {
     id 'processing'
 }
 
-group = 'net.rcetech'
-version = 'unspecified'
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation project(':processing-meta')
 
@@ -19,6 +12,6 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-test {
-    useJUnitPlatform()
+bootJar {
+    enabled = false
 }
