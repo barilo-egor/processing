@@ -1,4 +1,9 @@
 spring:
+  grpc:
+    client:
+      channels:
+        api-merchant-details:
+          address: "localhost:58000"
   datasource:
     username:
     password:
