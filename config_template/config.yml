@@ -3,7 +3,7 @@ spring:
     client:
       channels:
         api-merchant-details:
-          address: "localhost:58000"
+          address: "localhost:9090"
   datasource:
     username:
     password:
