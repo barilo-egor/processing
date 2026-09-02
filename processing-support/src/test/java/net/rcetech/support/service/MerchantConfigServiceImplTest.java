@@ -30,16 +30,16 @@ import static org.mockito.Mockito.*;
 class MerchantConfigServiceImplTest {
 
     @Mock
-    private MerchantConfigServiceGrpc.MerchantConfigServiceFutureStub configFutureStub;
+    private ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub;
 
     @Mock
     private MerchantConfigMapper merchantConfigMapper;
 
     @Mock
-    private ListenableFuture<FindAllMerchantConfigsResponseGrpc> findAllFuture;
+    private ListenableFuture<FindAllApiMerchantConfigsResponseGrpc> findAllFuture;
 
     @Mock
-    private ListenableFuture<MerchantConfigResponseGrpc> updateFuture;
+    private ListenableFuture<ApiMerchantConfigItemGrpc> updateFuture;
 
     @InjectMocks
     private MerchantConfigServiceImpl service;
@@ -59,11 +59,11 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldReturnMerchantConfigList_whenFindAllSucceeds() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
-        var configGrpc = MerchantConfigResponseGrpc.newBuilder()
+        var configGrpc = ApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
                 .setMerchant(testMerchant.name())
@@ -71,7 +71,7 @@ class MerchantConfigServiceImplTest {
                 .setMinAmount(Int32Value.of(100))
                 .build();
 
-        var grpcResponse = FindAllMerchantConfigsResponseGrpc.newBuilder()
+        var grpcResponse = FindAllApiMerchantConfigsResponseGrpc.newBuilder()
                 .addConfigs(configGrpc)
                 .build();
 
@@ -105,33 +105,32 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldPassOwnerIdToGrpcRequest_whenFindAllCalled() throws Exception {
-        var grpcResponse = FindAllMerchantConfigsResponseGrpc.newBuilder().build();
+        var grpcResponse = FindAllApiMerchantConfigsResponseGrpc.newBuilder().build();
         var expectedResponse = List.<MerchantConfigResponseDTO>of();
 
-        when(configFutureStub.findAll(any(FindAllMerchantConfigsRequestGrpc.class))).thenReturn(findAllFuture);
+        when(configFutureStub.findAll(any(FindAllApiMerchantConfigsRequestGrpc.class))).thenReturn(findAllFuture);
         mockFutureSuccess(findAllFuture, grpcResponse);
         when(merchantConfigMapper.merchantConfigsToList(grpcResponse)).thenReturn(expectedResponse);
 
         service.findAll(ownerId);
 
-        var requestCaptor = ArgumentCaptor.forClass(FindAllMerchantConfigsRequestGrpc.class);
+        var requestCaptor = ArgumentCaptor.forClass(FindAllApiMerchantConfigsRequestGrpc.class);
         verify(configFutureStub).findAll(requestCaptor.capture());
         assertThat(requestCaptor.getValue().getOwnerId()).isEqualTo(ownerId.toString());
     }
 
     @Test
     void shouldReturnUpdatedConfig_whenUpdateSucceeds() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, testMerchant, 5_000, 200);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 5_000, 200);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
-                .setMerchant(testMerchant.name())
                 .setMaxAmount(Int32Value.of(5_000))
                 .setMinAmount(Int32Value.of(200))
                 .build();
 
-        var grpcResponse = MerchantConfigResponseGrpc.newBuilder()
+        var grpcResponse = ApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
                 .setMerchant(testMerchant.name())
@@ -168,16 +167,15 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldCorrectlyBuildGrpcRequestThroughMapper_whenUpdateCalled() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(false, testMerchant, 3_000, null);
+        var updateDTO = new MerchantConfigUpdateDTO(false, 3_000, null);
 
-        var expectedGrpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var expectedGrpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(false))
-                .setMerchant(testMerchant.name())
                 .setMaxAmount(Int32Value.of(3_000))
                 .build();
 
-        var grpcResponse = MerchantConfigResponseGrpc.newBuilder()
+        var grpcResponse = ApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .build();
 
@@ -196,7 +194,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcInternalError_whenFindAll() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
@@ -214,11 +212,10 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcInternalError_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, testMerchant, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, null);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
-                .setMerchant(testMerchant.name())
                 .build();
 
         var grpcException = io.grpc.Status.INTERNAL
@@ -236,7 +233,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcUnavailableError_whenFindAll() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
@@ -254,9 +251,9 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcPermissionDeniedError_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
                 .build();
@@ -276,7 +273,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forNetworkErrors_whenFindAll() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
@@ -292,9 +289,9 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forNetworkErrors_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, 1_000, null);
+        var updateDTO = new MerchantConfigUpdateDTO(null, 1_000, null);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setMaxAmount(Int32Value.of(1_000))
                 .build();
@@ -312,7 +309,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forInterruptedException_whenFindAll() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
@@ -329,9 +326,9 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGenericException_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, null, 50);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, 50);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setMinAmount(Int32Value.of(50))
                 .build();
@@ -347,7 +344,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleStatusRuntimeExceptionWithoutCause_whenFindAll() throws Exception {
-        var grpcRequest = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        var grpcRequest = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
 
@@ -365,15 +362,14 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleMapperReturningNull_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, testMerchant, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
-                .setMerchant(testMerchant.name())
                 .build();
 
-        var grpcResponse = MerchantConfigResponseGrpc.newBuilder()
+        var grpcResponse = ApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .build();
 
@@ -389,17 +385,16 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleFullFlowFromRequestToResponse_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, testMerchant, 8_000, 150);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 8_000, 150);
 
-        var grpcRequest = UpdateMerchantConfigRequestGrpc.newBuilder()
+        var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
-                .setMerchant(testMerchant.name())
                 .setMaxAmount(Int32Value.of(8_000))
                 .setMinAmount(Int32Value.of(150))
                 .build();
 
-        var grpcResponse = MerchantConfigResponseGrpc.newBuilder()
+        var grpcResponse = ApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
                 .setIsOn(BoolValue.of(true))
                 .setMerchant(testMerchant.name())
