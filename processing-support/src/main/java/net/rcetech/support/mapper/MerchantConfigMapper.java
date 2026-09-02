@@ -60,9 +60,6 @@ public class MerchantConfigMapper {
         if (updateDTO.isOn() != null) {
             builder.setIsOn(BoolValue.of(updateDTO.isOn()));
         }
-        if (updateDTO.merchant() != null) {
-            builder.setMerchant(updateDTO.merchant().name());
-        }
         if (updateDTO.maxAmount() != null) {
             builder.setMaxAmount(Int32Value.of(updateDTO.maxAmount()));
         }
