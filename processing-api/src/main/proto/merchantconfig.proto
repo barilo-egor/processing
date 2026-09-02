@@ -17,7 +17,6 @@ service MerchantConfigService {
 message UpdateMerchantConfigRequestGrpc {
   int64 id = 1;
   google.protobuf.BoolValue is_on = 2;
-  string merchant = 3;
   google.protobuf.Int32Value max_amount = 4;
   google.protobuf.Int32Value min_amount = 5;
 }
