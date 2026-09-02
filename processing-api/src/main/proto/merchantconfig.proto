@@ -9,27 +9,27 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
 
-service MerchantConfigService {
-  rpc FindAll (FindAllMerchantConfigsRequestGrpc) returns (FindAllMerchantConfigsResponseGrpc);
-  rpc Update (UpdateMerchantConfigRequestGrpc) returns (MerchantConfigResponseGrpc);
+service ApiMerchantConfigService {
+  rpc FindAll (FindAllApiMerchantConfigsRequestGrpc) returns (FindAllApiMerchantConfigsResponseGrpc);
+  rpc Update (UpdateApiMerchantConfigItemGrpc) returns (ApiMerchantConfigItemGrpc);
 }
 
-message UpdateMerchantConfigRequestGrpc {
+message UpdateApiMerchantConfigItemGrpc {
   int64 id = 1;
   google.protobuf.BoolValue is_on = 2;
   google.protobuf.Int32Value max_amount = 3;
   google.protobuf.Int32Value min_amount = 4;
 }
 
-message FindAllMerchantConfigsRequestGrpc {
+message FindAllApiMerchantConfigsRequestGrpc {
   string owner_id = 1;
 }
 
-message FindAllMerchantConfigsResponseGrpc {
-  repeated MerchantConfigResponseGrpc configs = 1;
+message FindAllApiMerchantConfigsResponseGrpc {
+  repeated ApiMerchantConfigItemGrpc configs = 1;
 }
 
-message MerchantConfigResponseGrpc {
+message ApiMerchantConfigItemGrpc {
   int64 id = 1;
   google.protobuf.BoolValue is_on = 2;
   string merchant = 3;

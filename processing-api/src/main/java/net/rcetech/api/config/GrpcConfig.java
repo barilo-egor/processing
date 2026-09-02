@@ -1,7 +1,7 @@
 package net.rcetech.api.config;
 
 import io.grpc.Channel;
-import net.rcetech.grpc.generated.MerchantConfigServiceGrpc;
+import net.rcetech.grpc.generated.ApiMerchantConfigServiceGrpc;
 import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,10 +29,10 @@ public class GrpcConfig {
      * Stub для работы с конфигурациями мерчантов.
      */
     @Bean
-    public MerchantConfigServiceGrpc.MerchantConfigServiceFutureStub merchantConfigServiceFutureStub(
+    public ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub merchantConfigServiceFutureStub(
             GrpcChannelFactory channelFactory) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
-        return MerchantConfigServiceGrpc.newFutureStub(channel);
+        return ApiMerchantConfigServiceGrpc.newFutureStub(channel);
     }
 
 }

@@ -21,11 +21,11 @@ import java.util.UUID;
 @Service
 public class MerchantConfigServiceImpl extends GrpcService implements MerchantConfigService {
 
-    private final MerchantConfigServiceGrpc.MerchantConfigServiceFutureStub configFutureStub;
+    private final ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub;
 
     private final MerchantConfigMapper merchantConfigMapper;
 
-    public MerchantConfigServiceImpl(MerchantConfigServiceGrpc.MerchantConfigServiceFutureStub configFutureStub,
+    public MerchantConfigServiceImpl(ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub,
             MerchantConfigMapper merchantConfigMapper) {
         this.configFutureStub = configFutureStub;
         this.merchantConfigMapper = merchantConfigMapper;
@@ -33,12 +33,12 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
 
     @Override
     public List<MerchantConfigResponseDTO> findAll(UUID ownerId) {
-        FindAllMerchantConfigsRequestGrpc request = FindAllMerchantConfigsRequestGrpc.newBuilder()
+        FindAllApiMerchantConfigsRequestGrpc request = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
-        ListenableFuture<FindAllMerchantConfigsResponseGrpc> grpcFuture = configFutureStub.findAll(request);
+        ListenableFuture<FindAllApiMerchantConfigsResponseGrpc> grpcFuture = configFutureStub.findAll(request);
         try {
-            FindAllMerchantConfigsResponseGrpc response = toCompletableFuture(grpcFuture).join();
+            FindAllApiMerchantConfigsResponseGrpc response = toCompletableFuture(grpcFuture).join();
             return merchantConfigMapper.merchantConfigsToList(response);
         } catch (Exception ex) {
             throw mapGrpcException(ex, "findAll");
@@ -47,10 +47,10 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
 
     @Override
     public MerchantConfigResponseDTO update(Long id, MerchantConfigUpdateDTO updateDTO) {
-        UpdateMerchantConfigRequestGrpc request = merchantConfigMapper.updateDtoToGrpc(id, updateDTO);
-        ListenableFuture<MerchantConfigResponseGrpc> grpcFuture = configFutureStub.update(request);
+        UpdateApiMerchantConfigItemGrpc request = merchantConfigMapper.updateDtoToGrpc(id, updateDTO);
+        ListenableFuture<ApiMerchantConfigItemGrpc> grpcFuture = configFutureStub.update(request);
         try {
-            MerchantConfigResponseGrpc response = toCompletableFuture(grpcFuture).join();
+            ApiMerchantConfigItemGrpc response = toCompletableFuture(grpcFuture).join();
             return merchantConfigMapper.grpcToDto(response);
         } catch (Exception ex) {
             throw mapGrpcException(ex, "update");
@@ -69,7 +69,7 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
         if (cause instanceof StatusRuntimeException statusEx) {
             log.error("Системная gRPC ошибка от api-merchant-details при {}: код={}",
                     operation, statusEx.getStatus().getCode());
-            return new BaseException("gRPC service error");
+            return new BaseException("gRPC service error", statusEx);
         }
         log.error("Непредвиденная ошибка сети при вызове gRPC ({})", operation, ex);
         return new BaseException("System connection error");

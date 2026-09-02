@@ -2,9 +2,9 @@ package net.rcetech.support.mapper;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
-import net.rcetech.grpc.generated.FindAllMerchantConfigsResponseGrpc;
-import net.rcetech.grpc.generated.MerchantConfigResponseGrpc;
-import net.rcetech.grpc.generated.UpdateMerchantConfigRequestGrpc;
+import net.rcetech.grpc.generated.ApiMerchantConfigItemGrpc;
+import net.rcetech.grpc.generated.FindAllApiMerchantConfigsResponseGrpc;
+import net.rcetech.grpc.generated.UpdateApiMerchantConfigItemGrpc;
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class MerchantConfigMapper {
      * @param response gRPC-ответ со списком конфигураций
      * @return список DTO конфигураций
      */
-    public List<MerchantConfigResponseDTO> merchantConfigsToList(FindAllMerchantConfigsResponseGrpc response) {
+    public List<MerchantConfigResponseDTO> merchantConfigsToList(FindAllApiMerchantConfigsResponseGrpc response) {
         return response.getConfigsList().stream()
                 .map(this::grpcToDto)
                 .toList();
@@ -36,7 +36,7 @@ public class MerchantConfigMapper {
      * @param response gRPC-ответ конфигурации
      * @return DTO конфигурации
      */
-    public MerchantConfigResponseDTO grpcToDto(MerchantConfigResponseGrpc response) {
+    public MerchantConfigResponseDTO grpcToDto(ApiMerchantConfigItemGrpc response) {
         return new MerchantConfigResponseDTO(
                 response.getId(),
                 response.hasIsOn() ? response.getIsOn().getValue() : null,
@@ -53,8 +53,8 @@ public class MerchantConfigMapper {
      * @param updateDTO поля для обновления (только non-null попадают в запрос)
      * @return gRPC-запрос обновления
      */
-    public UpdateMerchantConfigRequestGrpc updateDtoToGrpc(Long id, MerchantConfigUpdateDTO updateDTO) {
-        UpdateMerchantConfigRequestGrpc.Builder builder = UpdateMerchantConfigRequestGrpc.newBuilder()
+    public UpdateApiMerchantConfigItemGrpc updateDtoToGrpc(Long id, MerchantConfigUpdateDTO updateDTO) {
+        UpdateApiMerchantConfigItemGrpc.Builder builder = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(id);
 
         if (updateDTO.isOn() != null) {
