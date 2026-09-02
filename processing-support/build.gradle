@@ -1,5 +1,7 @@
 plugins {
     id 'processing'
+    id 'com.google.protobuf'
+    id 'idea'
 }
 
 dependencies {
@@ -17,6 +19,11 @@ dependencies {
 
     implementation 'org.springframework.kafka:spring-kafka'
 
+    implementation platform('org.springframework.grpc:spring-grpc-dependencies:1.0.3')
+    implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
+    implementation 'build.buf:protovalidate:1.2.2'
+    protobuf files('build.buf:protovalidate:1.2.2')
+
     implementation 'commons-codec:commons-codec:1.18.0'
 
     implementation 'org.semver4j:semver4j:6.0.0'
@@ -30,6 +37,35 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+}
+
+idea {
+    module {
+        def generatedProtoDir = file("${projectDir}/build/generated/source/proto/main/java")
+
+        sourceDirs += generatedProtoDir
+        generatedSourceDirs += generatedProtoDir
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.34.1"
+    }
+    plugins {
+        grpc {
+            setArtifact("io.grpc:protoc-gen-grpc-java:1.81.0")
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {
+                    option 'jakarta_omit'
+                }
+            }
+        }
+    }
 }
 
 bootJar {

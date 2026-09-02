@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option java_package = "net.rcetech.grpc.generated";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+service MerchantConfigService {
+  rpc FindAll (FindAllMerchantConfigsRequestGrpc) returns (FindAllMerchantConfigsResponseGrpc);
+  rpc Update (UpdateMerchantConfigRequestGrpc) returns (MerchantConfigResponseGrpc);
+}
+
+message UpdateMerchantConfigRequestGrpc {
+  int64 id = 1;
+  google.protobuf.BoolValue is_on = 2;
+  string merchant = 3;
+  google.protobuf.Int32Value max_amount = 4;
+  google.protobuf.Int32Value min_amount = 5;
+}
+
+message FindAllMerchantConfigsRequestGrpc {
+  string owner_id = 1;
+}
+
+message FindAllMerchantConfigsResponseGrpc {
+  repeated MerchantConfigResponseGrpc configs = 1;
+}
+
+message MerchantConfigResponseGrpc {
+  int64 id = 1;
+  google.protobuf.BoolValue is_on = 2;
+  string merchant = 3;
+  google.protobuf.Int32Value max_amount = 4;
+  google.protobuf.Int32Value min_amount = 5;
+}
+
+

@@ -10,6 +10,8 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-core'
     implementation 'org.springframework.security:spring-security-oauth2-client'
 
+    implementation 'com.google.guava:guava:33.4.8-jre'
+
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 }
 
