@@ -4,17 +4,18 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import net.rcetech.grpc.generated.GetDetailsGrpc;
-import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
-import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
 import net.rcetech.api.constants.Metrics;
 import net.rcetech.api.dto.ApiDetailsRequestDTO;
 import net.rcetech.api.dto.ApiDetailsResponseDTO;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
-import net.rcetech.meta.exception.BaseException;
 import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
+import net.rcetech.grpc.generated.GetDetailsGrpc;
+import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
+import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
+import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.util.GrpcService;
+import org.springframework.stereotype.Service;
 
 import static net.rcetech.api.constants.Metrics.CLIENT_ID;
 
