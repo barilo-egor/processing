@@ -38,4 +38,3 @@ message MerchantConfigResponseGrpc {
   google.protobuf.Int32Value min_amount = 5;
 }
 
-
