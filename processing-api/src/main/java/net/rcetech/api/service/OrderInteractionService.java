@@ -5,14 +5,14 @@ import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.constants.Metrics;
 import net.rcetech.api.dto.*;
+import net.rcetech.api.dto.OrderResponseDTO;
 import net.rcetech.api.exceptions.OrderNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.api.mapper.OrdersMapper;
 import net.rcetech.meta.orders.dto.*;
-import net.rcetech.api.dto.OrderResponseDTO;
+import net.rcetech.orders.service.OrderApi;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import net.rcetech.orders.service.OrderApi;
 
 import java.time.Instant;
 import java.util.List;
@@ -74,7 +74,7 @@ public class OrderInteractionService {
         Instant expiresAt = orderResponseDTO.createdAt().plusSeconds(clientOrderTimeout);
         OrderResponseDTO responseDTO = OrderResponseDTO.builder()
                 .id(orderId)
-                .internalId(clientRequest.getInternalId())
+                .internalId(clientRequest.internalId())
                 .details(detailsResponseDTO.getDetails())
                 .status(orderResponseDTO.status())
                 .createdAt(orderResponseDTO.createdAt())
@@ -99,7 +99,7 @@ public class OrderInteractionService {
         Instant expiresAt = createdAt.plusSeconds(clientOrderTimeout);
         return OrderResponseDTO.builder()
                 .id(UUID.randomUUID())
-                .internalId(clientRequest.getInternalId())
+                .internalId(clientRequest.internalId())
                 .details(DetailsDTO.builder()
                         .requestMethod("CARD")
                         .details("1111 2222 3333 4444")

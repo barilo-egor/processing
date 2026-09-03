@@ -34,7 +34,7 @@ public record CreateOrderRequestDTO(
         @Min(value = 1, message = "Сумма должна быть больше 0")
         Integer amount,
 
-        boolean enableUniqueAmount,
+        Boolean enableUniqueAmount,
 
         @URL(message = "Некорректный формат URL")
         String callbackUrl

@@ -89,14 +89,11 @@ class OrderInteractionServiceTest {
         orderId = UUID.randomUUID();
         clientOrderTimeout = 300;
 
-        createOrderDTO = CreateOrderDTO.builder()
-                .internalId("internal-123")
-                .amount(1000)
-                .methods(Set.of(RequestMethod.SBP, RequestMethod.CARD))
-                .enableUniqueAmount(true)
-                .callbackUrl("https://callback.url")
-                .userId("user-123")
-                .build();
+        createOrderDTO = new CreateOrderDTO(
+                "internal-123", 1000,
+                Set.of(RequestMethod.SBP, RequestMethod.CARD), true, "https://callback.url",
+                "user-123"
+        );
 
         clientDTO = ClientByApiKeyDTO.builder()
                 .clientId(1L)
@@ -200,14 +197,11 @@ class OrderInteractionServiceTest {
 
     @Test
     void shouldCreateOrderWithEnableUniqueAmountFalse() {
-        var createOrderDTOWithoutUnique = CreateOrderDTO.builder()
-                .internalId("internal-123")
-                .amount(1000)
-                .methods(Set.of(RequestMethod.SBP))
-                .enableUniqueAmount(false)
-                .callbackUrl("https://callback.url")
-                .userId("user-123")
-                .build();
+        var createOrderDTOWithoutUnique = new CreateOrderDTO(
+                "internal-123", 1000,
+                Set.of(RequestMethod.SBP), false, "https://callback.url",
+                "user-123"
+        );
 
         var apiDetailsRequestDTOWithoutUnique = ApiDetailsRequestDTO.builder()
                 .requestId(UUID.randomUUID())
@@ -403,7 +397,7 @@ class OrderInteractionServiceTest {
                 });
 
         verify(orderApi).updateOrderStatus(
-                eq(new UpdateOrderStatusRequestDTO(orderId, "CANCELED", clientDTO.getClientId())));
+                new UpdateOrderStatusRequestDTO(orderId, "CANCELED", clientDTO.getClientId()));
         verify(orderApi).getOrders(any(GetOrdersFilterDTO.class));
     }
 
@@ -482,14 +476,11 @@ class OrderInteractionServiceTest {
 
     @Test
     void shouldHandleCreateOrderWithNullCallbackUrl() {
-        var createOrderWithoutCallback = CreateOrderDTO.builder()
-                .internalId("internal-123")
-                .amount(1000)
-                .methods(Set.of(RequestMethod.SBP))
-                .enableUniqueAmount(true)
-                .callbackUrl(null)
-                .userId("user-123")
-                .build();
+        var createOrderWithoutCallback = new CreateOrderDTO(
+                "internal-123", 1000,
+                Set.of(RequestMethod.SBP), true, null,
+                "user-123"
+        );
 
         var createOrderRequestWithoutCallback = new CreateOrderRequestDTO(
                 orderId,

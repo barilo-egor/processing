@@ -5,8 +5,8 @@ import net.rcetech.api.dto.ApiDetailsResponseDTO;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.exceptions.EnableUniqueAmountException;
-import org.springframework.stereotype.Component;
 import net.rcetech.meta.orders.dto.CreateOrderRequestDTO;
+import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -18,27 +18,27 @@ public class OrdersMapper {
     public CreateOrderRequestDTO createRequestDTO(UUID orderId, CreateOrderDTO clientRequest,
             ApiDetailsResponseDTO detailsResponseDTO, ClientByApiKeyDTO client) {
         Integer amount;
-        if (clientRequest.isEnableUniqueAmount()) {
+        if (Boolean.TRUE.equals(clientRequest.enableUniqueAmount())) {
             amount = Objects.isNull(detailsResponseDTO.getAmount()) ?
-                    clientRequest.getAmount() :
+                    clientRequest.amount() :
                     detailsResponseDTO.getAmount();
         } else {
             if (Objects.nonNull(detailsResponseDTO.getAmount())) {
                 throw new EnableUniqueAmountException();
             }
-            amount = clientRequest.getAmount();
+            amount = clientRequest.amount();
         }
 
         return new CreateOrderRequestDTO(
                 orderId,
                 client.getClientId(),
-                clientRequest.getInternalId(),
+                clientRequest.internalId(),
                 detailsResponseDTO.getMerchant(),
                 detailsResponseDTO.getOrderId(),
                 detailsResponseDTO.getOrderStatus(),
                 amount,
-                clientRequest.isEnableUniqueAmount(),
-                clientRequest.getCallbackUrl()
+                Boolean.TRUE.equals(clientRequest.enableUniqueAmount()),
+                clientRequest.callbackUrl()
         );
     }
 

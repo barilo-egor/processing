@@ -50,9 +50,9 @@ public class DetailsMapper {
 
     public ApiDetailsRequestDTO orderToRequestDTO(CreateOrderDTO orderDTO) {
         return ApiDetailsRequestDTO.builder()
-                .userId(orderDTO.getUserId())
-                .amount(orderDTO.getAmount())
-                .methods(orderDTO.getMethods())
+                .userId(orderDTO.userId())
+                .amount(orderDTO.amount())
+                .methods(orderDTO.methods())
                 .requestId(generator.generate())
                 .internalId(generator.generate())
                 .build();
