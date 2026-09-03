@@ -9,6 +9,7 @@ import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
 import net.rcetech.meta.util.GrpcService;
 import net.rcetech.support.mapper.MerchantConfigMapper;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
+@Profile("!merchant-details-stub")
 public class MerchantConfigServiceImpl extends GrpcService implements MerchantConfigService {
 
     private final ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub;
@@ -72,7 +74,7 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
             return new BaseException("gRPC service error", statusEx);
         }
         log.error("Непредвиденная ошибка сети при вызове gRPC ({})", operation, ex);
-        return new BaseException("System connection error");
+        return new BaseException("System connection error", ex);
     }
 
 }

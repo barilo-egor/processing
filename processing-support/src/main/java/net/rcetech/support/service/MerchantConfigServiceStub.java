@@ -2,6 +2,7 @@ package net.rcetech.support.service;
 
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@Deprecated(forRemoval = true)
+@Profile("merchant-details-stub")
 public class MerchantConfigServiceStub implements MerchantConfigService{
     @Override
     public List<MerchantConfigResponseDTO> findAll(UUID clientId) {
