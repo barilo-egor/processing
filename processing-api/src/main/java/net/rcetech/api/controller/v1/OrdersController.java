@@ -39,8 +39,8 @@ public class OrdersController {
      */
     @PostMapping
     public OrderResponseDTO createOrder(@Valid @RequestBody CreateOrderDTO clientRequest,
-            @RequestHeader(value = "X-Test-Order", required = false) String isTestOrder,
-            @RequestHeader(value = "X-Order-Timeout") Integer clientOrderTimeout,
+            @RequestHeader(value = "Test-Order", required = false) String isTestOrder,
+            @RequestHeader(value = "Order-Timeout") Integer clientOrderTimeout,
             @RequestAttribute("authenticatedClient") ClientByApiKeyDTO client) {
         if (Boolean.parseBoolean(isTestOrder)) {
             log.info("Получен тестовый запрос (X-Test-Order = true) для клиента {}.", client);
