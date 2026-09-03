@@ -10,9 +10,9 @@ import net.rcetech.api.dto.ApiDetailsResponseDTO;
 import net.rcetech.api.dto.ClientByApiKeyDTO;
 import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
 import net.rcetech.api.mapper.DetailsMapper;
-import net.rcetech.grpc.generated.GetDetailsGrpc;
-import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
-import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
+import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
+import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
@@ -25,14 +25,14 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
 
     public static final String STATUS = "status";
 
-    private final MerchantDetailsServiceGrpc.MerchantDetailsServiceFutureStub detailsFutureStub;
+    private final ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub;
 
     private final DetailsMapper detailsMapper;
 
     private final MeterRegistry meterRegistry;
 
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper, MeterRegistry meterRegistry,
-            MerchantDetailsServiceGrpc.MerchantDetailsServiceFutureStub detailsFutureStub) {
+            ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub) {
         this.detailsFutureStub = detailsFutureStub;
         this.detailsMapper = detailsMapper;
         this.meterRegistry = meterRegistry;
@@ -47,10 +47,10 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
      * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
      */
     public ApiDetailsResponseDTO getDetails(ApiDetailsRequestDTO requestDTO, ClientByApiKeyDTO client) {
-        GetDetailsGrpc request = detailsMapper.detailsRequestDTOToGrpc(requestDTO);
-        ListenableFuture<GetDetailsResponseGrpc> grpcFuture = detailsFutureStub.getDetails(request);
+        DetailsRequestGrpc request = detailsMapper.detailsRequestDTOToGrpc(requestDTO);
+        ListenableFuture<DetailsResponseGrpc> grpcFuture = detailsFutureStub.detailsRequest(request);
         try {
-            GetDetailsResponseGrpc response = toCompletableFuture(grpcFuture).join();
+            DetailsResponseGrpc response = toCompletableFuture(grpcFuture).join();
             return detailsMapper.grpcResponseToDTO(response);
         } catch (Exception ex) {
             Throwable cause = ex.getCause() != null ? ex.getCause() : ex;

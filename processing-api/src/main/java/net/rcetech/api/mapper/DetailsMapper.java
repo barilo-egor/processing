@@ -2,14 +2,14 @@ package net.rcetech.api.mapper;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import org.springframework.stereotype.Component;
-import net.rcetech.grpc.generated.GetDetailsGrpc;
-import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
 import net.rcetech.api.dto.ApiDetailsRequestDTO;
 import net.rcetech.api.dto.ApiDetailsResponseDTO;
 import net.rcetech.api.dto.CreateOrderDTO;
 import net.rcetech.api.dto.DetailsDTO;
 import net.rcetech.api.enums.RequestMethod;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
+import net.rcetech.grpc.generated.DetailsResponseGrpc;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public class DetailsMapper {
 
     private final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
-    public ApiDetailsResponseDTO grpcResponseToDTO(GetDetailsResponseGrpc response) {
+    public ApiDetailsResponseDTO grpcResponseToDTO(DetailsResponseGrpc response) {
         return ApiDetailsResponseDTO.builder()
                 .requestId(response.getRequestId())
                 .orderId(response.getOrderId())
@@ -34,12 +34,12 @@ public class DetailsMapper {
                 .build();
     }
 
-    public GetDetailsGrpc detailsRequestDTOToGrpc(ApiDetailsRequestDTO requestDTO) {
+    public DetailsRequestGrpc detailsRequestDTOToGrpc(ApiDetailsRequestDTO requestDTO) {
         List<String> methodsList = requestDTO.getMethods() != null
                 ? requestDTO.getMethods().stream()
                 .map(RequestMethod::name)
                 .toList() : List.of();
-        return GetDetailsGrpc.newBuilder()
+        return DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestDTO.getRequestId().toString())
                 .setInternalId(requestDTO.getInternalId().toString())
                 .setUserId(requestDTO.getUserId())

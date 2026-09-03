@@ -1,8 +1,8 @@
 package net.rcetech.api.config;
 
 import io.grpc.Channel;
+import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.ApiMerchantConfigServiceGrpc;
-import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.GrpcChannelFactory;
@@ -19,10 +19,10 @@ public class GrpcConfig {
      * Stub для получения реквизитов мерчанта.
      */
     @Bean
-    public MerchantDetailsServiceGrpc.MerchantDetailsServiceFutureStub merchantDetailsServiceFutureStub(
+    public ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub merchantDetailsServiceFutureStub(
             GrpcChannelFactory channelFactory) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
-        return MerchantDetailsServiceGrpc.newFutureStub(channel);
+        return ApiDetailsRequestServiceGrpc.newFutureStub(channel);
     }
 
     /**

@@ -9,21 +9,22 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
 
-service MerchantDetailsService {
+service ApiDetailsRequestService {
 
-  rpc GetDetails (GetDetailsGrpc) returns (GetDetailsResponseGrpc);
+  rpc DetailsRequest (DetailsRequestGrpc) returns (DetailsResponseGrpc);
 
 }
 
-message GetDetailsGrpc {
+message DetailsRequestGrpc {
   string request_id = 1;
   string internal_id = 2;
   optional string user_id = 3;
   int32 amount = 4;
-  repeated string request_method = 5;
+  int32 wait_timeout = 5;
+  repeated string request_method = 6;
 }
 
-message GetDetailsResponseGrpc {
+message DetailsResponseGrpc {
   string request_id = 1;
   string merchant = 2;
   string order_id = 3;

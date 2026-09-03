@@ -6,6 +6,18 @@ import com.google.rpc.Status;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import net.rcetech.api.dto.ApiDetailsRequestDTO;
+import net.rcetech.api.dto.ApiDetailsResponseDTO;
+import net.rcetech.api.dto.ClientByApiKeyDTO;
+import net.rcetech.api.dto.DetailsDTO;
+import net.rcetech.api.enums.RequestMethod;
+import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
+import net.rcetech.api.mapper.DetailsMapper;
+import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
+import net.rcetech.grpc.generated.DetailsGrpc;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
+import net.rcetech.grpc.generated.DetailsResponseGrpc;
+import net.rcetech.meta.exception.BaseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,41 +25,29 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import net.rcetech.grpc.generated.DetailsGrpc;
-import net.rcetech.grpc.generated.GetDetailsGrpc;
-import net.rcetech.grpc.generated.GetDetailsResponseGrpc;
-import net.rcetech.grpc.generated.MerchantDetailsServiceGrpc;
-import net.rcetech.api.dto.ApiDetailsRequestDTO;
-import net.rcetech.api.dto.ApiDetailsResponseDTO;
-import net.rcetech.api.dto.ClientByApiKeyDTO;
-import net.rcetech.api.dto.DetailsDTO;
-import net.rcetech.api.enums.RequestMethod;
-import net.rcetech.meta.exception.BaseException;
-import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
-import net.rcetech.api.mapper.DetailsMapper;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST_ERROR;
+import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST_NO_DETAILS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST_ERROR;
-import static net.rcetech.api.constants.Metrics.DETAILS_REQUEST_NO_DETAILS;
 
 @ExtendWith(MockitoExtension.class)
 class ApiMerchantDetailsGrpcServiceTest {
 
     @Mock
-    private MerchantDetailsServiceGrpc.MerchantDetailsServiceFutureStub detailsFutureStub;
+    private ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub;
 
     @Mock
     private DetailsMapper detailsMapper;
 
     @Mock
-    private ListenableFuture<GetDetailsResponseGrpc> listenableFuture;
+    private ListenableFuture<DetailsResponseGrpc> listenableFuture;
 
     @InjectMocks
     private ApiMerchantDetailsGrpcService service;
@@ -83,7 +83,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP, RequestMethod.CARD))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -92,7 +92,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .addRequestMethod("CARD")
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Merchant LLC")
                 .setOrderId("order-456")
@@ -121,7 +121,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -148,7 +148,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 });
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
-        verify(detailsFutureStub).getDetails(grpcRequest);
+        verify(detailsFutureStub).detailsRequest(grpcRequest);
         verify(listenableFuture).get();
         verify(listenableFuture).addListener(any(Runnable.class), any());
         verify(detailsMapper).grpcResponseToDTO(grpcResponse);
@@ -173,14 +173,14 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(null)
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
                 .setAmount(500)
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Merchant LLC")
                 .setOrderId("order-456")
@@ -205,7 +205,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -220,7 +220,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         assertThat(result.getAmount()).isEqualTo(500);
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
-        verify(detailsFutureStub).getDetails(grpcRequest);
+        verify(detailsFutureStub).detailsRequest(grpcRequest);
     }
 
     @Test
@@ -233,14 +233,14 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of())
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
                 .setAmount(500)
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Merchant LLC")
                 .setOrderId("order-456")
@@ -265,7 +265,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -290,7 +290,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -306,7 +306,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         var grpcException = StatusProto.toStatusRuntimeException(status);
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(grpcException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -320,7 +320,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .hasNoCause();
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
-        verify(detailsFutureStub).getDetails(grpcRequest);
+        verify(detailsFutureStub).detailsRequest(grpcRequest);
         verify(listenableFuture).get();
         verify(listenableFuture).addListener(any(Runnable.class), any());
         verify(detailsMapper, never()).grpcResponseToDTO(any());
@@ -345,7 +345,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.CARD))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -358,7 +358,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .asRuntimeException();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(grpcException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -390,7 +390,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -403,7 +403,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .asRuntimeException();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(grpcException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -435,7 +435,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -448,7 +448,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .asRuntimeException();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(grpcException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -472,7 +472,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -485,7 +485,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .asRuntimeException();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(grpcException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -509,7 +509,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -520,7 +520,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         var networkException = new RuntimeException("Connection refused");
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(new ExecutionException(networkException));
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -544,7 +544,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -555,7 +555,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         var interruptedException = new InterruptedException("Thread interrupted");
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(interruptedException);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -582,7 +582,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -593,7 +593,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         var genericException = new RuntimeException("Unexpected error");
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(genericException);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -617,7 +617,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -630,7 +630,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .asRuntimeException();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenThrow(grpcException);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -662,7 +662,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-123")
@@ -670,13 +670,13 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .addRequestMethod("SBP")
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Merchant LLC")
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -700,7 +700,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP, RequestMethod.CARD, RequestMethod.QR))
                 .build();
 
-        var expectedGrpcRequest = GetDetailsGrpc.newBuilder()
+        var expectedGrpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-999")
@@ -710,7 +710,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .addRequestMethod("QR")
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Merchant LLC")
                 .build();
@@ -721,7 +721,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(expectedGrpcRequest);
-        when(detailsFutureStub.getDetails(expectedGrpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(expectedGrpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -732,8 +732,8 @@ class ApiMerchantDetailsGrpcServiceTest {
 
         service.getDetails(requestDTO, clientByApiKeyDTO);
 
-        var requestCaptor = ArgumentCaptor.forClass(GetDetailsGrpc.class);
-        verify(detailsFutureStub).getDetails(requestCaptor.capture());
+        var requestCaptor = ArgumentCaptor.forClass(DetailsRequestGrpc.class);
+        verify(detailsFutureStub).detailsRequest(requestCaptor.capture());
         var capturedRequest = requestCaptor.getValue();
 
         assertThat(capturedRequest.getRequestId()).isEqualTo(requestId.toString());
@@ -754,7 +754,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .methods(Set.of(RequestMethod.SBP))
                 .build();
 
-        var grpcRequest = GetDetailsGrpc.newBuilder()
+        var grpcRequest = DetailsRequestGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setInternalId(internalId.toString())
                 .setUserId("user-full")
@@ -762,7 +762,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .addRequestMethod("SBP")
                 .build();
 
-        var grpcResponse = GetDetailsResponseGrpc.newBuilder()
+        var grpcResponse = DetailsResponseGrpc.newBuilder()
                 .setRequestId(requestId.toString())
                 .setMerchant("Full Merchant LLC")
                 .setOrderId("order-full-123")
@@ -791,7 +791,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .build();
 
         when(detailsMapper.detailsRequestDTOToGrpc(requestDTO)).thenReturn(grpcRequest);
-        when(detailsFutureStub.getDetails(grpcRequest)).thenReturn(listenableFuture);
+        when(detailsFutureStub.detailsRequest(grpcRequest)).thenReturn(listenableFuture);
         when(listenableFuture.get()).thenReturn(grpcResponse);
         doAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(0);
@@ -819,7 +819,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 });
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
-        verify(detailsFutureStub).getDetails(grpcRequest);
+        verify(detailsFutureStub).detailsRequest(grpcRequest);
         verify(listenableFuture).get();
         verify(listenableFuture).addListener(any(Runnable.class), any());
         verify(detailsMapper).grpcResponseToDTO(grpcResponse);
