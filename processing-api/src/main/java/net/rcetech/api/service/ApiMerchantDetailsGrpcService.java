@@ -1,6 +1,5 @@
 package net.rcetech.api.service;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -16,7 +15,6 @@ import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,13 +22,13 @@ import java.util.UUID;
 @Slf4j
 public class ApiMerchantDetailsGrpcService extends GrpcService {
 
-    private final ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub;
+    private final ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub;
 
     private final DetailsMapper detailsMapper;
 
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
-            ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub) {
-        this.detailsFutureStub = detailsFutureStub;
+            ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub) {
+        this.detailsBlockingStub = detailsBlockingStub;
         this.detailsMapper = detailsMapper;
     }
 
@@ -45,26 +43,24 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
-            ListenableFuture<DetailsResponseGrpc> grpcFuture = detailsFutureStub.detailsRequest(
+
+            DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
                     detailsMapper.detailsRequestDTOToGrpc(requestId, orderId, clientOrderRequest)
             );
-            return Optional.of(detailsMapper.grpcResponseToDTO(toCompletableFuture(grpcFuture).join()));
-        } catch (Exception ex) {
-            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-            if (cause instanceof StatusRuntimeException statusException) {
-                Status status = StatusProto.fromThrowable(statusException);
-                if (Objects.isNull(status)) {
-                    throw new BaseException("StatusRuntimeException без статуса", statusException);
-                }
-                if (status.getCode() == Code.NOT_FOUND_VALUE) {
-                    log.info("Не найдены реквизиты для {}", clientOrderRequest);
-                    throw new MerchantDetailsNotFoundException();
-                } else {
-                    throw new BaseException("Неизвестная ошибка GRPC " + status.getCode(), statusException);
-                }
+
+            return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
+        } catch (StatusRuntimeException statusException) {
+            Status status = StatusProto.fromThrowable(statusException);
+
+            int code = status != null ? status.getCode() : statusException.getStatus().getCode().value();
+            if (code == Code.NOT_FOUND_VALUE) {
+                log.info("Не найдены реквизиты для {}", clientOrderRequest);
+                throw new MerchantDetailsNotFoundException();
             } else {
-                throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
+                throw new BaseException("Неизвестная ошибка GRPC " + code, statusException);
             }
+        } catch (Exception ex) {
+            throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
     }
 

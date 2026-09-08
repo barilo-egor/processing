@@ -19,10 +19,10 @@ public class GrpcConfig {
      * Stub для получения реквизитов мерчанта.
      */
     @Bean
-    public ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub merchantDetailsServiceFutureStub(
+    public ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub merchantDetailsServiceBlockingStub(
             GrpcChannelFactory channelFactory) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
-        return ApiDetailsRequestServiceGrpc.newFutureStub(channel);
+        return ApiDetailsRequestServiceGrpc.newBlockingStub(channel);
     }
 
     /**
