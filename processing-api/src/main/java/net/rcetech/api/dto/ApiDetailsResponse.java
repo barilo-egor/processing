@@ -10,8 +10,8 @@ import tgb.cryptoexchange.commons.enums.Merchant;
  * @param merchant мерчант, выдавший реквизиты
  * @param orderId идентификатор ордера в системе мерчанта
  * @param orderStatus статус ордера в системе мерчанта
- * @param amount
- * @param details
+ * @param amount сумма ордера(если мерчант обновил эту сумму)
+ * @param details реквизиты для оплаты
  */
 public record ApiDetailsResponse(
         String requestId,
@@ -21,6 +21,12 @@ public record ApiDetailsResponse(
         Integer amount,
         Details details
 ) {
+    /**
+     * Реквизиты для оплаты
+     * @param requestMethod метод оплаты
+     * @param details реквизиты
+     * @param bank банк/оператор реквизита
+     */
     public record Details(
             RequestMethod requestMethod,
             String details,

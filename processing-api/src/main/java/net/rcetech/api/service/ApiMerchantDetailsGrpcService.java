@@ -42,16 +42,15 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
-
             DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
                     detailsMapper.detailsRequestDTOToGrpc(requestId, orderId, clientOrderRequest)
             );
-
             return detailsMapper.grpcResponseToDTO(grpcResponse);
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
-
-            int code = status != null ? status.getCode() : statusException.getStatus().getCode().value();
+            int code = status != null
+                    ? status.getCode()
+                    : statusException.getStatus().getCode().value();
             if (code == Code.NOT_FOUND_VALUE) {
                 log.info("Не найдены реквизиты для {}", clientOrderRequest);
                 throw new MerchantDetailsNotFoundException();
