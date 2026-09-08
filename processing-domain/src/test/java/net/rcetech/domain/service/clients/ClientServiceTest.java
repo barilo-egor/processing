@@ -1,6 +1,5 @@
 package net.rcetech.domain.service.clients;
 
-import jakarta.persistence.EntityManager;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
@@ -67,9 +66,6 @@ class ClientServiceTest {
 
     @Autowired
     private ClientMapper clientMapper;
-
-    @Autowired
-    private EntityManager entityManager;
 
     private ClientService clientService;
 

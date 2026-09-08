@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import tgb.cryptoexchange.commons.enums.Merchant;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.RequestMethod;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -22,14 +24,23 @@ public class Order {
     @Id
     private UUID id;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    /**
+     * Время создания ордера
+     */
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     /**
-     * Идентификатор клиента в api-clients.
+     * Время истечения ордера
      */
-    @Column(nullable = false)
-    private Long clientId;
+    private Instant expiresAt;
+
+    /**
+     * Клиент
+     */
+    @ManyToOne(fetch =  FetchType.LAZY, optional = false)
+    @JoinColumn(nullable = false)
+    private Client client;
 
     /**
      * Идентификатор ордера в сторонней системе.
@@ -51,10 +62,10 @@ public class Order {
     private Integer amount;
 
     /**
-     * Индикатор того, была ли разрешена уникализация клиентом.
+     * Признак того, была ли разрешена уникализация клиентом.
      */
     @Builder.Default
-    @Column(nullable = false, name = "enable_unique_amount")
+    @Column(nullable = false)
     private Boolean enableUniqueAmount = false;
 
     /**
@@ -67,19 +78,38 @@ public class Order {
     /**
      * Идентификатор ордера в системе мерчанта.
      */
-    @Column(nullable = false, name = "merchant_order_id")
+    @Column(nullable = false, unique = true)
     private String merchantOrderId;
 
     /**
      * Статус ордера в системе мерчанта.
      */
-    @Column(nullable = false, name = "merchant_order_status")
+    @Column(nullable = false)
     private String merchantOrderStatus;
+
+    /**
+     * Метод, по которому был запрошен и получен реквизит
+     */
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RequestMethod method;
+
+    /**
+     * Данные реквизита: номер карты, телефона, счета и т.п.
+     */
+    @Column(nullable = false)
+    private String details;
+
+    /**
+     * Банк, сотовый оператор и т.п, иначе организация, которая выдала реквизит
+     */
+    @Column(nullable = false)
+    private String bank;
 
     /**
      * URL на который будет отправлен HTTP запрос об изменении статуса с информацией об ордере.
      */
-    @Column(name = "callback_url")
+    @Column(nullable = false)
     private String callbackUrl;
 
     @PrePersist

@@ -48,4 +48,8 @@ public class ClientService {
         clientMapper.updateNotNull(updateClientDTO, client);
         return clientRepository.save(client);
     }
+
+    public Integer getOrderTimeoutSecondsById(UUID clientId) {
+        return clientRepository.getOrderTimeoutSecondsById(clientId);
+    }
 }

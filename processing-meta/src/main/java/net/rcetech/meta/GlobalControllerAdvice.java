@@ -4,6 +4,8 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import net.rcetech.meta.exception.ServiceUnavailableException;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.*;
@@ -87,7 +89,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create("/docs/errors/bad-request"));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         problemDetail.setProperty(DESCRIPTION, ex.getMessage());
-        return  problemDetail;
+        return problemDetail;
     }
 
     @Override
@@ -100,5 +102,23 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         problemDetail.setProperty(DESCRIPTION, "The request body was expected but is missing. Please check the request body.");
         return handleExceptionInternal(ex, problemDetail, headers, status, request);
+    }
+
+    @ExceptionHandler({ ServiceUnavailableException.class })
+    public ProblemDetail handle(ServiceUnavailableException ex) {
+        long epochMilli = Instant.now().toEpochMilli();
+        log.error("{} Server error: {}", epochMilli, ex.getMessage(), ex);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setTitle("Service Unavailable");
+        problemDetail.setType(URI.create("/docs/errors/service-unavailable"));
+        problemDetail.setProperty(TIMESTAMP, epochMilli);
+        return problemDetail;
+    }
+
+    @ExceptionHandler({ MerchantDetailsNotFoundException.class })
+    public ProblemDetail handle(MerchantDetailsNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setTitle("Details not found");
+        return problemDetail;
     }
 }

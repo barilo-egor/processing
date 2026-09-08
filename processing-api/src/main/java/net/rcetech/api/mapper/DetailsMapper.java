@@ -1,61 +1,48 @@
 package net.rcetech.api.mapper;
 
-import com.fasterxml.uuid.Generators;
-import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import net.rcetech.api.dto.ApiDetailsRequestDTO;
-import net.rcetech.api.dto.ApiDetailsResponseDTO;
-import net.rcetech.api.dto.CreateOrderDTO;
-import net.rcetech.api.dto.DetailsDTO;
-import net.rcetech.api.enums.RequestMethod;
+import net.rcetech.api.dto.ApiDetailsResponse;
+import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
-import org.springframework.stereotype.Component;
+import net.rcetech.meta.orders.RequestMethod;
+import org.mapstruct.*;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
-@Component
-public class DetailsMapper {
+@Mapper(
+        componentModel = "spring",
+        collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR
+)
+public interface DetailsMapper {
 
-    private final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
+    ApiDetailsResponse grpcResponseToDTO(DetailsResponseGrpc response);
 
-    public ApiDetailsResponseDTO grpcResponseToDTO(DetailsResponseGrpc response) {
-        return ApiDetailsResponseDTO.builder()
-                .requestId(response.getRequestId())
-                .orderId(response.getOrderId())
-                .orderStatus(response.getOrderStatus())
-                .merchant(response.getMerchant())
-                .amount(response.getAmount())
-                .details(DetailsDTO.builder()
-                        .requestMethod(response.getDetails().getRequestMethod())
-                        .bank(response.getDetails().getBank())
-                        .operator(response.getDetails().getOperator())
-                        .details(response.getDetails().getDetails())
-                        .build())
-                .build();
-    }
+    @Mapping(target = "requestId", source = "requestId")
+    @Mapping(target = "internalId", source = "orderId")
+    @Mapping(target = "userId", source = "orderDTO.userId")
+    @Mapping(target = "amount", source = "orderDTO.amount")
+    @Mapping(target = "requestMethod", source = "orderDTO.methods", qualifiedByName = "mapMethods")
+    DetailsRequestGrpc detailsRequestDTOToGrpc(UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
 
-    public DetailsRequestGrpc detailsRequestDTOToGrpc(ApiDetailsRequestDTO requestDTO) {
-        List<String> methodsList = requestDTO.getMethods() != null
-                ? requestDTO.getMethods().stream()
+    @Named("mapMethods")
+    default List<String> mapMethods(Set<RequestMethod> methods) {
+        if (methods == null) {
+            return List.of();
+        }
+        return methods.stream()
                 .map(RequestMethod::name)
-                .toList() : List.of();
-        return DetailsRequestGrpc.newBuilder()
-                .setRequestId(requestDTO.getRequestId().toString())
-                .setInternalId(requestDTO.getInternalId().toString())
-                .setUserId(requestDTO.getUserId())
-                .setAmount(requestDTO.getAmount())
-                .addAllRequestMethod(methodsList)
-                .build();
+                .toList();
     }
 
-    public ApiDetailsRequestDTO orderToRequestDTO(CreateOrderDTO orderDTO) {
-        return ApiDetailsRequestDTO.builder()
-                .userId(orderDTO.userId())
-                .amount(orderDTO.amount())
-                .methods(orderDTO.methods())
-                .requestId(generator.generate())
-                .internalId(generator.generate())
-                .build();
+    default String mapUuidToString(UUID uuid) {
+        return uuid != null ? uuid.toString() : null;
     }
 
+    default Merchant mapStringToMerchant(String merchant) {
+        return merchant != null ? Merchant.valueOf(merchant) : null;
+    }
 }

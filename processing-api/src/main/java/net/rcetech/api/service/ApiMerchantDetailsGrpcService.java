@@ -1,76 +1,70 @@
 package net.rcetech.api.service;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.rpc.Code;
+import com.google.rpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.constants.Metrics;
-import net.rcetech.api.dto.ApiDetailsRequestDTO;
-import net.rcetech.api.dto.ApiDetailsResponseDTO;
-import net.rcetech.api.dto.ClientByApiKeyDTO;
-import net.rcetech.api.exceptions.MerchantDetailsNotFoundException;
+import net.rcetech.api.dto.ApiDetailsResponse;
+import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
-import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
 
-import static net.rcetech.api.constants.Metrics.CLIENT_ID;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
 public class ApiMerchantDetailsGrpcService extends GrpcService {
 
-    public static final String STATUS = "status";
-
     private final ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub;
 
     private final DetailsMapper detailsMapper;
 
-    private final MeterRegistry meterRegistry;
-
-    public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper, MeterRegistry meterRegistry,
+    public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
             ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceFutureStub detailsFutureStub) {
         this.detailsFutureStub = detailsFutureStub;
         this.detailsMapper = detailsMapper;
-        this.meterRegistry = meterRegistry;
     }
 
     /**
      * Получает реквизиты мерчанта по деталям запроса через gRPC.
      *
-     * @param requestDTO параметры запроса реквизитов.
-     * @return {@link ApiDetailsResponseDTO} с найденными реквизитами.
+     * @return {@link ApiDetailsResponse} с найденными реквизитами.
      * @throws MerchantDetailsNotFoundException если реквизиты не найдены (gRPC NOT_FOUND).
      * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
      */
-    public ApiDetailsResponseDTO getDetails(ApiDetailsRequestDTO requestDTO, ClientByApiKeyDTO client) {
-        DetailsRequestGrpc request = detailsMapper.detailsRequestDTOToGrpc(requestDTO);
-        ListenableFuture<DetailsResponseGrpc> grpcFuture = detailsFutureStub.detailsRequest(request);
+    public Optional<ApiDetailsResponse> getDetails(UUID orderId, CreateOrderRequest clientOrderRequest) {
         try {
-            DetailsResponseGrpc response = toCompletableFuture(grpcFuture).join();
-            return detailsMapper.grpcResponseToDTO(response);
+            UUID requestId = UUID.randomUUID();
+            log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
+            ListenableFuture<DetailsResponseGrpc> grpcFuture = detailsFutureStub.detailsRequest(
+                    detailsMapper.detailsRequestDTOToGrpc(requestId, orderId, clientOrderRequest)
+            );
+            return Optional.of(detailsMapper.grpcResponseToDTO(toCompletableFuture(grpcFuture).join()));
         } catch (Exception ex) {
             Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-            if (cause instanceof StatusRuntimeException statusEx) {
-                com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(statusEx);
-                if (status != null && status.getCode() == com.google.rpc.Code.NOT_FOUND_VALUE) {
-                    log.warn("Не найдены реквизиты для {}", requestDTO);
-                    meterRegistry.counter(Metrics.DETAILS_REQUEST_NO_DETAILS, CLIENT_ID,
-                            String.valueOf(client.getClientId()), STATUS, "not_found").increment();
-                    throw new MerchantDetailsNotFoundException();
+            if (cause instanceof StatusRuntimeException statusException) {
+                Status status = StatusProto.fromThrowable(statusException);
+                if (Objects.isNull(status)) {
+                    throw new BaseException("StatusRuntimeException без статуса", statusException);
                 }
-                log.error("Системная gRPC ошибка от merchant-details: код={}", statusEx.getStatus().getCode());
-                meterRegistry.counter(Metrics.DETAILS_REQUEST_ERROR, CLIENT_ID,
-                        String.valueOf(client.getClientId()), STATUS, "error").increment();
-                throw new BaseException("gRPC service error");
+                if (status.getCode() == Code.NOT_FOUND_VALUE) {
+                    log.info("Не найдены реквизиты для {}", clientOrderRequest);
+                    throw new MerchantDetailsNotFoundException();
+                } else {
+                    throw new BaseException("Неизвестная ошибка GRPC " + status.getCode(), statusException);
+                }
+            } else {
+                throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
             }
-            log.error("Непредвиденная ошибка сети при вызове gRPC", ex);
-            meterRegistry.counter(Metrics.DETAILS_REQUEST_ERROR, CLIENT_ID,
-                    String.valueOf(client.getClientId()), STATUS, "error").increment();
-            throw new BaseException("System connection error");
         }
     }
 

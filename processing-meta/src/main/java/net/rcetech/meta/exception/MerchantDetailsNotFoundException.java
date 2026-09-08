@@ -1,4 +1,4 @@
-package net.rcetech.api.exceptions;
+package net.rcetech.meta.exception;
 
 public class MerchantDetailsNotFoundException extends RuntimeException {
 

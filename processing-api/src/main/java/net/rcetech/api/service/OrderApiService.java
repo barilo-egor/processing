@@ -1,0 +1,70 @@
+package net.rcetech.api.service;
+
+import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.dto.ApiDetailsResponse;
+import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import net.rcetech.meta.orders.OrderStatus;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+@Service
+@Slf4j
+public class OrderApiService {
+
+    private final ApiMerchantDetailsGrpcService detailsGrpcService;
+
+    private final ClientService clientService;
+
+    private final OrderService orderService;
+
+    public OrderApiService(ApiMerchantDetailsGrpcService detailsGrpcService,
+                           ClientService clientService, OrderService orderService) {
+        this.detailsGrpcService = detailsGrpcService;
+        this.clientService = clientService;
+        this.orderService = orderService;
+    }
+
+    public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest) {
+        Client client = clientService.findById(clientId)
+                .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
+        UUID orderId = UUID.randomUUID();
+        ApiDetailsResponse detailsResponse = detailsGrpcService.getDetails(orderId, createOrderRequest)
+                .orElseThrow(MerchantDetailsNotFoundException::new);
+        ApiDetailsResponse.Details details = detailsResponse.details();
+        Order order = new Order();
+        order.setId(orderId);
+        order.setCreatedAt(Instant.now());
+        order.setExpiresAt(order.getCreatedAt().plusSeconds(client.getOrderTimeoutSeconds()));
+        order.setClient(client);
+        order.setInternalId(createOrderRequest.internalId());
+        order.setStatus(OrderStatus.NEW);
+        order.setAmount(
+                Objects.nonNull(detailsResponse.amount())
+                        ? detailsResponse.amount()
+                        : createOrderRequest.amount()
+        );
+        order.setEnableUniqueAmount(createOrderRequest.enableUniqueAmount());
+        order.setMerchant(detailsResponse.merchant());
+        order.setMerchantOrderId(detailsResponse.orderId());
+        order.setMerchantOrderStatus(detailsResponse.orderStatus());
+        order.setMethod(details.requestMethod());
+        order.setDetails(details.details());
+        order.setBank(details.bank());
+        order.setCallbackUrl(
+                Objects.isNull(createOrderRequest.callbackUrl())
+                        ? client.getCallbackUrl()
+                        : createOrderRequest.callbackUrl()
+        );
+        return orderService.save(order);
+    }
+
+}

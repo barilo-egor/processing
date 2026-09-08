@@ -12,4 +12,6 @@ public interface ClientRepository extends JpaRepository<Client, UUID>, JpaSpecif
     boolean existsByUsername(String username);
 
     Optional<Client> findByUsername(String username);
+
+    Integer getOrderTimeoutSecondsById(UUID clientId);
 }

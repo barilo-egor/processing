@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.data.domain.Persistable;
 
@@ -72,6 +73,13 @@ public class Client implements Persistable<UUID> {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
     @JsonIgnore
     private List<WithdrawalRequest> withdrawalRequests;
+
+    /**
+     * Ордера клиента, созданные клиентом
+     */
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    @JsonIgnore
+    private List<Order> orders;
 
     /**
      * Процент комиссии площадки с каждого ордера
