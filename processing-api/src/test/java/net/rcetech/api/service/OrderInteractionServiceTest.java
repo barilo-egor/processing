@@ -120,7 +120,6 @@ class OrderInteractionServiceTest {
                         .requestMethod("SBP")
                         .details("1234567890")
                         .bank("Test Bank")
-                        .operator("Operator")
                         .build())
                 .build();
 

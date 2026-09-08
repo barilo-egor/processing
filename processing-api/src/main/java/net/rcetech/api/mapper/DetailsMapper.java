@@ -28,7 +28,6 @@ public class DetailsMapper {
                 .details(DetailsDTO.builder()
                         .requestMethod(response.getDetails().getRequestMethod())
                         .bank(response.getDetails().getBank())
-                        .operator(response.getDetails().getOperator())
                         .details(response.getDetails().getDetails())
                         .build())
                 .build();

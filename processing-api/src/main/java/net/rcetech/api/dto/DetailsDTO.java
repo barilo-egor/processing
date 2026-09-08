@@ -15,6 +15,4 @@ public class DetailsDTO {
 
     private String bank;
 
-    private String operator;
-
 }

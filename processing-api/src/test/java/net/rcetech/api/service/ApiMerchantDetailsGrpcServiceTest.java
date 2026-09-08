@@ -102,7 +102,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                         .setRequestMethod("SBP")
                         .setDetails("1234567890")
                         .setBank("Test Bank")
-                        .setOperator("Operator")
                         .build())
                 .build();
 
@@ -116,7 +115,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                         .requestMethod("SBP")
                         .details("1234567890")
                         .bank("Test Bank")
-                        .operator("Operator")
                         .build())
                 .build();
 
@@ -144,7 +142,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                     assertThat(dto.getDetails().getRequestMethod()).isEqualTo("SBP");
                     assertThat(dto.getDetails().getDetails()).isEqualTo("1234567890");
                     assertThat(dto.getDetails().getBank()).isEqualTo("Test Bank");
-                    assertThat(dto.getDetails().getOperator()).isEqualTo("Operator");
                 });
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
@@ -772,7 +769,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                         .setRequestMethod("SBP")
                         .setDetails("1234567890")
                         .setBank("Full Bank")
-                        .setOperator("Full Operator")
                         .build())
                 .build();
 
@@ -786,7 +782,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                         .requestMethod("SBP")
                         .details("1234567890")
                         .bank("Full Bank")
-                        .operator("Full Operator")
                         .build())
                 .build();
 
@@ -815,7 +810,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                     assertThat(dto.getDetails().getRequestMethod()).isEqualTo("SBP");
                     assertThat(dto.getDetails().getDetails()).isEqualTo("1234567890");
                     assertThat(dto.getDetails().getBank()).isEqualTo("Full Bank");
-                    assertThat(dto.getDetails().getOperator()).isEqualTo("Full Operator");
                 });
 
         verify(detailsMapper).detailsRequestDTOToGrpc(requestDTO);
