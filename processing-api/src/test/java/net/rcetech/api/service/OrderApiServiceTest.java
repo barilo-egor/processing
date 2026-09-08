@@ -10,10 +10,13 @@ import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.clients.ClientStatus;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -129,7 +132,7 @@ class OrderApiServiceTest {
     Client getDummyClient() {
         Client client = new Client();
         client.setId(UUID.randomUUID());
-        client.setUsername("test");
+        client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
         client.setStatus(ClientStatus.ACTIVE);
         return clientService.save(client);
@@ -252,5 +255,69 @@ class OrderApiServiceTest {
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         assertEquals(url, orders.getFirst().getCallbackUrl());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "cf7754d2-6613-4140-af3f-7ad6224be68c",
+            "494e618a-757a-4a28-a2d1-3e3feb0bde62"
+    })
+    @DisplayName("Метод должен бросить исключение, если ордер не найден.")
+    void cancelOrder_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id) {
+        UUID orderId = UUID.randomUUID();
+        assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(orderId, id), "Order not found");
+    }
+
+    Order getDummyOrder(Client client) {
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setCreatedAt(Instant.now());
+        order.setExpiresAt(Instant.now().plusSeconds(900));
+        order.setClient(client);
+        order.setInternalId(UUID.randomUUID().toString());
+        order.setStatus(OrderStatus.NEW);
+        order.setAmount(5000);
+        order.setMerchant(Merchant.ALFA_TEAM);
+        order.setMerchantOrderId(UUID.randomUUID().toString());
+        order.setMerchantOrderStatus("SUCCESS");
+        order.setMethod(RequestMethod.CARD);
+        order.setDetails("1234 1234 1234 1234");
+        order.setBank("ALFA");
+        order.setCallbackUrl("https://google.com/callback");
+        return orderRepository.save(order);
+    }
+
+    @DisplayName("Метод должен бросить исключение, если ордер не клиента.")
+    @RepeatedTest(value = 2)
+    void cancelOrder_shouldThrowBadRequestExceptionIfOrderStatusNotFound() {
+        Client client = getDummyClient();
+        Order order = getDummyOrder(client);
+        UUID orderId = order.getId();
+        UUID notOwnerClientId = UUID.randomUUID();
+        assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(notOwnerClientId, orderId),
+                "Order not found");
+    }
+
+    @RepeatedTest(value = 2)
+    @DisplayName("Должен быть отменен только указанный ордер.")
+    void cancelOrder_shouldUpdateStatusToCancelled() {
+        Client targetClient = getDummyClient();
+        Order targetOrder = getDummyOrder(targetClient);
+        for (int i = 0; i < 10; i++) {
+            getDummyOrder(targetClient);
+        }
+        Client anotherClient = getDummyClient();
+        for (int i = 0; i < 5; i++) {
+            getDummyOrder(anotherClient);
+        }
+        orderApiService.cancelOrder(targetClient.getId(), targetOrder.getId());
+        List<Order> orders = orderRepository.findAll();
+        for (Order order : orders) {
+            if (order.getId().equals(targetOrder.getId())) {
+                assertEquals(OrderStatus.CANCELED, order.getStatus());
+            } else {
+                assertEquals(OrderStatus.NEW, order.getStatus());
+            }
+        }
     }
 }

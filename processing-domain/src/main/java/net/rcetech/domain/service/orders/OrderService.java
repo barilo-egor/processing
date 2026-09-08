@@ -6,6 +6,9 @@ import net.rcetech.domain.repository.orders.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 @Slf4j
 @Transactional
@@ -21,4 +24,7 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    public Optional<Order> findById(UUID id) {
+        return orderRepository.findById(id);
+    }
 }

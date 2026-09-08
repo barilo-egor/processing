@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
+import org.springframework.data.domain.Persistable;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
-public class Order {
+public class Order implements Persistable<UUID> {
 
     @Id
     private UUID id;
@@ -112,11 +113,17 @@ public class Order {
     @Column(nullable = false)
     private String callbackUrl;
 
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
-        }
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 
+    @PostPersist
+    @PostLoad
+    void markNotNew() {
+        this.isNew = false;
+    }
 }

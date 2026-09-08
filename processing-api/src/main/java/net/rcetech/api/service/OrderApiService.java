@@ -7,12 +7,15 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -63,6 +66,17 @@ public class OrderApiService {
                         : createOrderRequest.callbackUrl()
         );
         return orderService.save(order);
+    }
+
+    @Transactional
+    public void cancelOrder(UUID clientId, UUID id) {
+        Optional<Order> maybeOrder = orderService.findById(id);
+        if (maybeOrder.isEmpty() || !clientId.equals(maybeOrder.get().getClient().getId())) {
+            throw new BadRequestException("Order not found");
+        }
+        Order order = maybeOrder.get();
+        order.setStatus(OrderStatus.CANCELED);
+        orderService.save(order);
     }
 
 }

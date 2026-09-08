@@ -10,6 +10,8 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.hamcrest.CustomMatcher;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,7 +25,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +67,7 @@ class ApiOrdersControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
+    @DisplayName("Метод должен вернуть 400 если отсутствует тело.")
     void createOrder_shouldReturn400IfNoBody() throws Exception {
         mockMvc.perform(post("/api/v1/order")
                 .with(user("someClient").roles("CLIENT"))
@@ -81,6 +84,7 @@ class ApiOrdersControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если отсутствует поле internalId.")
     void createOrder_shouldReturn400IfNoInternalId() throws Exception {
         String content = """
                 {
@@ -89,7 +93,7 @@ class ApiOrdersControllerTest {
                     "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
-        ResultActions resultActions = mockMvc.perform(
+        mockMvc.perform(
                 post("/api/v1/order")
                         .with(user("test").roles("CLIENT"))
                         .with(csrf())
@@ -97,10 +101,10 @@ class ApiOrdersControllerTest {
                         .header("Content-Type", "application/json")
         ).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value("field 'internalId' should be not blank;"));
-        System.out.println();
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если отсутствует поле bank.")
     void createOrder_shouldReturn400IfInternalIdIsBlank() throws Exception {
         String content = """
                 {
@@ -121,6 +125,7 @@ class ApiOrdersControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если отсутствует поле amount.")
     void createOrder_shouldReturn400IfNoAmount() throws Exception {
         String content = """
                 {
@@ -140,6 +145,7 @@ class ApiOrdersControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если поле amount отрицательное.")
     void createOrder_shouldReturn400IfAmountIsNegative() throws Exception {
         String content = """
                 {
@@ -160,6 +166,7 @@ class ApiOrdersControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если отсутствует поле methods.")
     void createOrder_shouldReturn400IfNoMethods() throws Exception {
         String content = """
                 {
@@ -179,6 +186,7 @@ class ApiOrdersControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть, если массив methods пустой..")
     void createOrder_shouldReturn400IfMethodsIsEmpty() throws Exception {
         String content = """
                 {
@@ -205,6 +213,7 @@ class ApiOrdersControllerTest {
            "http://localhost:8080",
            "http://some-site.com/callback",
     })
+    @DisplayName("Метод должен вернуть, если поле callbackUrl невалидный URL.")
     void createOrder_shouldReturn400IfCallbackUrlsIsNotValid(String callbackUrl) throws Exception {
         String content = """
                 {
@@ -227,6 +236,7 @@ class ApiOrdersControllerTest {
 
     @ParameterizedTest
     @MethodSource("createOrderRequestArguments")
+    @DisplayName("Метод должен 201, если ордер успешно создан..")
     void createOrder_shouldReturn201AndCallServiceAndReturnCreatedOrder(CreateOrderRequest expected) throws Exception {
         ArgumentCaptor<CreateOrderRequest> captor = ArgumentCaptor.forClass(CreateOrderRequest.class);
         UUID clientId = UUID.randomUUID();
@@ -261,6 +271,7 @@ class ApiOrdersControllerTest {
 
     @ParameterizedTest
     @MethodSource("orderSummaryArguments")
+    @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
     void createOrder_shouldReturnCreatedOrder(OrderSummary expected) throws Exception {
         Order order = mock(Order.class);
         when(orderApiService.createOrder(any(), any())).thenReturn(order);
@@ -300,5 +311,16 @@ class ApiOrdersControllerTest {
                 Arguments.of(new OrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
                         OrderStatus.SUCCESS, 1250, false, "https://example.com/path/callback"))
         );
+    }
+
+    @RepeatedTest(value = 2)
+    @DisplayName("Должен быть вызван метод сервиса.")
+    void cancelOrder_shouldCallServiceMethod() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/v1/order/" + orderId)
+                .with(csrf())
+                .with(user(clientId.toString()).roles("CLIENT")));
+        verify(orderApiService).cancelOrder(clientId, orderId);
     }
 }

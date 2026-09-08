@@ -9,10 +9,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.UUID;
@@ -38,4 +35,9 @@ public class ApiOrdersController {
         return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void cancelOrder(@PathVariable UUID id, Principal principal) {
+        orderApiService.cancelOrder(UUID.fromString(principal.getName()), id);
+    }
 }
