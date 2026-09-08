@@ -8,7 +8,6 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.stereotype.Service;
 
@@ -37,8 +36,7 @@ public class OrderApiService {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
         UUID orderId = UUID.randomUUID();
-        ApiDetailsResponse detailsResponse = detailsGrpcService.getDetails(orderId, createOrderRequest)
-                .orElseThrow(MerchantDetailsNotFoundException::new);
+        ApiDetailsResponse detailsResponse = detailsGrpcService.getDetails(orderId, createOrderRequest);
         ApiDetailsResponse.Details details = detailsResponse.details();
         Order order = new Order();
         order.setId(orderId);

@@ -15,7 +15,6 @@ import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,7 +38,7 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
      * @throws MerchantDetailsNotFoundException если реквизиты не найдены (gRPC NOT_FOUND).
      * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
      */
-    public Optional<ApiDetailsResponse> getDetails(UUID orderId, CreateOrderRequest clientOrderRequest) {
+    public ApiDetailsResponse getDetails(UUID orderId, CreateOrderRequest clientOrderRequest) {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
@@ -48,7 +47,7 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
                     detailsMapper.detailsRequestDTOToGrpc(requestId, orderId, clientOrderRequest)
             );
 
-            return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
+            return detailsMapper.grpcResponseToDTO(grpcResponse);
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
 

@@ -11,11 +11,9 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,7 +36,6 @@ import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -145,7 +142,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер, срок которого истекает через время, установленное клиенту.")
     void createOrder_shouldCreateOrderWithExpiresAtWithClientOrderTimeout(int orderTimeout) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(Optional.of(detailsResponse));
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(detailsResponse);
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test");
@@ -170,7 +167,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с переданными в запросе данными.")
     void createOrder_shouldCreateOrderWithCreateOrderRequestData(CreateOrderRequest createOrderRequest) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(Optional.of(detailsResponse));
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(detailsResponse);
         Client client = getDummyClient();
         clientService.save(client);
         orderApiService.createOrder(client.getId(), createOrderRequest);
@@ -208,7 +205,7 @@ class OrderApiServiceTest {
     void createOrder_shouldCreateOrderWithDetailsResponseData(ApiDetailsResponse apiDetailsResponse) {
         Client client = getDummyClient();
         clientService.save(client);
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(Optional.of(apiDetailsResponse));
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(apiDetailsResponse);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
@@ -248,24 +245,12 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с callback url сохраненным за клиентом.")
     void createOrder_shouldCreateOrderWithClientCallbackUrl(String url) {
         ApiDetailsResponse apiDetailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(Optional.of(apiDetailsResponse));
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(apiDetailsResponse);
         Client client = getDummyClient();
         client.setCallbackUrl(url);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         assertEquals(url, orders.getFirst().getCallbackUrl());
-    }
-
-    @Test
-    @DisplayName("Метод должен бросить исключение MerchantDetailsNotFoundException, если реквизиты не были найдены.")
-    void createOrder_shouldThrowMerchantDetailsNotFoundException() {
-        Client client = getDummyClient();
-        clientService.save(client);
-        UUID clientId = client.getId();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(Optional.empty());
-        CreateOrderRequest dummyCreateOrderRequest = getDummyCreateOrderRequest();
-        assertThrows(MerchantDetailsNotFoundException.class,
-                () -> orderApiService.createOrder(clientId, dummyCreateOrderRequest));
     }
 }
