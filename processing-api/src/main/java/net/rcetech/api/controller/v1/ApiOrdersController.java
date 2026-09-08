@@ -35,6 +35,14 @@ public class ApiOrdersController {
         return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
+        return new ResponseEntity<>(orderMapper.toOrderSummary(
+                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id)),
+                HttpStatus.OK
+        );
+    }
+
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void cancelOrder(@PathVariable UUID id, Principal principal) {

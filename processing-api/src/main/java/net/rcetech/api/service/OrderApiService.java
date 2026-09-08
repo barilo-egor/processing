@@ -68,13 +68,17 @@ public class OrderApiService {
         return orderService.save(order);
     }
 
-    @Transactional
-    public void cancelOrder(UUID clientId, UUID id) {
+    public Order findByIdAndClientId(UUID clientId, UUID id) {
         Optional<Order> maybeOrder = orderService.findById(id);
         if (maybeOrder.isEmpty() || !clientId.equals(maybeOrder.get().getClient().getId())) {
             throw new BadRequestException("Order not found");
         }
-        Order order = maybeOrder.get();
+        return maybeOrder.get();
+    }
+
+    @Transactional
+    public void cancelOrder(UUID clientId, UUID id) {
+        Order order = findByIdAndClientId(clientId, id);
         order.setStatus(OrderStatus.CANCELED);
         orderService.save(order);
     }

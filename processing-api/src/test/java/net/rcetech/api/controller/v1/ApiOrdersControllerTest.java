@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -322,5 +323,40 @@ class ApiOrdersControllerTest {
                 .with(csrf())
                 .with(user(clientId.toString()).roles("CLIENT")));
         verify(orderApiService).cancelOrder(clientId, orderId);
+    }
+
+    @ParameterizedTest
+    @MethodSource("orderSummaryArguments")
+    @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
+    void getOrder_shouldReturnOrder(OrderSummary expected) throws Exception {
+        Order order = mock(Order.class);
+        when(orderApiService.findByIdAndClientId(any(), any())).thenReturn(order);
+        when(orderMapper.toOrderSummary(order)).thenReturn(expected);
+        mockMvc.perform(
+                        MockMvcRequestBuilders.get("/api/v1/order/" + expected.id())
+                                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                                .with(csrf())
+                                .content(objectMapper.writeValueAsString(new CreateOrderRequest(
+                                        "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
+                                        Set.of(RequestMethod.SBP), false, null, null
+                                )))
+                                .header("Content-Type", "application/json")
+                ).andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.id").value(new CustomMatcher<String>("is valid UUID") {
+                    @Override
+                    public boolean matches(Object actual) {
+                        return ((actual instanceof String) && !UUID.fromString((String) actual).toString().isBlank());
+                    }
+                }))
+                .andExpect(jsonPath("$.createdAt").value(
+                        LocalDateTime.ofInstant(expected.createdAt(), ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))
+                ))
+                .andExpect(jsonPath("$.internalId").value(expected.internalId()))
+                .andExpect(jsonPath("$.status").value(expected.status().name()))
+                .andExpect(jsonPath("$.amount").value(expected.amount()))
+                .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
+                .andExpect(jsonPath("$.callbackUrl").value(expected.callbackUrl()));
     }
 }
