@@ -22,7 +22,6 @@ public class MetaSecurityConfig {
     @Bean
     public SecurityFilterChain globalFilterChain(HttpSecurity http, List<SpringSecurityConfigurer> configurers) {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/order/**").hasRole("CLIENT")
                 .anyRequest().authenticated()
         );
         for (SpringSecurityConfigurer configurer : configurers) {
