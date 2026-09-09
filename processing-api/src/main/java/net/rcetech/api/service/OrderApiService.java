@@ -5,11 +5,16 @@ import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.repository.orders.OrderSpecifications;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.dto.ClientOrderFilter;
+import net.rcetech.meta.orders.dto.OrderSummary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,6 +86,10 @@ public class OrderApiService {
         Order order = findByIdAndClientId(clientId, id);
         order.setStatus(OrderStatus.CANCELED);
         orderService.save(order);
+    }
+
+    public Page<OrderSummary> findAll(UUID clientId, ClientOrderFilter filter, Pageable pageable) {
+        return orderService.findAll(OrderSpecifications.matches(clientId, filter), pageable);
     }
 
 }

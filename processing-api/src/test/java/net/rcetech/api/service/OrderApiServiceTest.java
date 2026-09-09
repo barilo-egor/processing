@@ -14,9 +14,12 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.orders.dto.ClientOrderFilter;
+import net.rcetech.meta.orders.dto.OrderSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -29,6 +32,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -41,6 +46,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -319,5 +325,59 @@ class OrderApiServiceTest {
                 assertEquals(OrderStatus.NEW, order.getStatus());
             }
         }
+    }
+
+    @Test
+    void findAll_shouldReturnOnlyTargetClientOrders() {
+        Client targetClient = getDummyClient();
+        List<Order> expectedOrders = List.of(getDummyOrder(targetClient), getDummyOrder(targetClient));
+        Client anotherClient = getDummyClient();
+        getDummyOrder(anotherClient);
+
+        Page<OrderSummary> actual = orderApiService.findAll(
+                targetClient.getId(),
+                new ClientOrderFilter(null, null), Pageable.ofSize(10)
+        );
+
+        assertEquals(
+                expectedOrders.stream().map(Order::getId).collect(Collectors.toSet()),
+                actual.getContent().stream().map(OrderSummary::id).collect(Collectors.toSet())
+        );
+    }
+
+    @ValueSource(strings = { "TIMEOUT", "SUCCESS" })
+    @ParameterizedTest
+    void findAll_shouldFilterOrdersByStatus(OrderStatus status) {
+        Client client = getDummyClient();
+        Order nonTargetOrder = getDummyOrder(client);
+        assertNotEquals(nonTargetOrder.getStatus(), status);
+        Order targerOrder = getDummyOrder(client);
+        targerOrder.setStatus(status);
+
+        Page<OrderSummary> actual = orderApiService.findAll(
+                client.getId(),
+                new ClientOrderFilter(status, null), Pageable.ofSize(10)
+        );
+
+        assertEquals(1, actual.getContent().size());
+        assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
+    }
+
+    @ValueSource(strings = { "QR", "SBP" })
+    @ParameterizedTest
+    void findAll_shouldFilterOrdersByStatus(RequestMethod method) {
+        Client client = getDummyClient();
+        Order nonTargetOrder = getDummyOrder(client);
+        assertNotEquals(nonTargetOrder.getMethod(), method);
+        Order targerOrder = getDummyOrder(client);
+        targerOrder.setMethod(method);
+
+        Page<OrderSummary> actual = orderApiService.findAll(
+                client.getId(),
+                new ClientOrderFilter(null, method), Pageable.ofSize(10)
+        );
+
+        assertEquals(1, actual.getContent().size());
+        assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
     }
 }

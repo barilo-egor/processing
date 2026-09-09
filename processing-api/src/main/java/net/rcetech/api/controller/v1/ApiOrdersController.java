@@ -6,7 +6,10 @@ import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.mapping.orders.OrderMapper;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -49,5 +52,10 @@ public class ApiOrdersController {
     @ResponseStatus(HttpStatus.OK)
     public void cancelOrder(@PathVariable UUID id, Principal principal) {
         orderApiService.cancelOrder(UUID.fromString(principal.getName()), id);
+    }
+
+    @GetMapping
+    public PagedModel<OrderSummary> getOrders(ClientOrderFilter filter, Pageable pageable, Principal principal) {
+        return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,6 +33,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -43,8 +45,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -379,5 +380,40 @@ class ApiOrdersControllerTest {
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
                 .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
                 .andExpect(jsonPath("$.callbackUrl").value(expected.callbackUrl()));
+    }
+
+    @Test
+    @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
+    void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
+        OrderSummary expected = new OrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
+                OrderStatus.NEW, 5129, true, "https://google.com/callback");
+        when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
+        mockMvc.perform(get("/api/v1/order")
+                .with(csrf())
+                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                .header("Content-Type", "application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.page").exists())
+                .andExpect(jsonPath("$.page.size").value(1))
+                .andExpect(jsonPath("$.page.number").value(0))
+                .andExpect(jsonPath("$.page.totalElements").value(1))
+                .andExpect(jsonPath("$.page.totalPages").value(1))
+                .andExpect(jsonPath("$.content[0].id").isNotEmpty())
+                .andExpect(jsonPath("$.content[0].id").value(new CustomMatcher<String>("is valid UUID") {
+                    @Override
+                    public boolean matches(Object actual) {
+                        return ((actual instanceof String) && !UUID.fromString((String) actual).toString().isBlank());
+                    }
+                }))
+                .andExpect(jsonPath("$.content[0].createdAt").value(
+                        LocalDateTime.ofInstant(expected.createdAt(), ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))
+                ))
+                .andExpect(jsonPath("$.content[0].internalId").value(expected.internalId()))
+                .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))
+                .andExpect(jsonPath("$.content[0].amount").value(expected.amount()))
+                .andExpect(jsonPath("$.content[0].enableUniqueAmount").value(expected.enableUniqueAmount()))
+                .andExpect(jsonPath("$.content[0].callbackUrl").value(expected.callbackUrl()));
     }
 }

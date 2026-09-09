@@ -3,6 +3,8 @@ package net.rcetech.meta.orders;
 public enum RequestMethod {
 
     CARD,
-    SBP
+    SBP,
+    QR,
+    TRANSGRAN
 
 }
