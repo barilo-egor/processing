@@ -314,6 +314,27 @@ class ApiOrdersControllerTest {
         );
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "ADMIN", "OPERATOR"
+    })
+    void createOrder_shouldReturn401IfNotClient(String role) throws Exception {
+        mockMvc.perform(post("/api/v1/order")
+                .with(csrf())
+                .with(user(UUID.randomUUID().toString()).roles(role))
+                        .header("Content-Type", "application/json")
+                        .content("""
+                                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "enableUniqueAmount": true,
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }"""))
+                .andExpect(status().isForbidden());
+    }
+
     @RepeatedTest(value = 2)
     @DisplayName("Должен быть вызван метод сервиса.")
     void cancelOrder_shouldCallServiceMethod() throws Exception {

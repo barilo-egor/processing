@@ -22,6 +22,7 @@ public class MetaSecurityConfig {
     @Bean
     public SecurityFilterChain globalFilterChain(HttpSecurity http, List<SpringSecurityConfigurer> configurers) {
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/order/**").hasRole("CLIENT")
                 .anyRequest().authenticated()
         );
         for (SpringSecurityConfigurer configurer : configurers) {
@@ -42,8 +43,7 @@ public class MetaSecurityConfig {
     @Bean
     static RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.withDefaultRolePrefix()
-                .role("ADMIN").implies("OPERATOR", "CLIENT")
-                .role("OPERATOR").implies("CLIENT")
+                .role("ADMIN").implies("OPERATOR")
                 .build();
     }
 }

@@ -9,6 +9,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/order")
+@PreAuthorize("hasRole('CLIENT')")
 public class ApiOrdersController {
 
     private final OrderApiService orderApiService;
