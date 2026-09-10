@@ -34,9 +34,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -304,8 +301,7 @@ class ApiOrdersControllerTest {
                     }
                 }))
                 .andExpect(jsonPath("$.createdAt").value(
-                        LocalDateTime.ofInstant(expected.createdAt(), ZoneId.systemDefault())
-                                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))
+                        expected.createdAt().toEpochMilli()
                 ))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
@@ -470,8 +466,7 @@ class ApiOrdersControllerTest {
                     }
                 }))
                 .andExpect(jsonPath("$.createdAt").value(
-                        LocalDateTime.ofInstant(expected.createdAt(), ZoneId.systemDefault())
-                                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))
+                        expected.createdAt().toEpochMilli()
                 ))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
@@ -505,8 +500,7 @@ class ApiOrdersControllerTest {
                     }
                 }))
                 .andExpect(jsonPath("$.content[0].createdAt").value(
-                        LocalDateTime.ofInstant(expected.createdAt(), ZoneId.systemDefault())
-                                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))
+                        expected.createdAt().toEpochMilli()
                 ))
                 .andExpect(jsonPath("$.content[0].internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))

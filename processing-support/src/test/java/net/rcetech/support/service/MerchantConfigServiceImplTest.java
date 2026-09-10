@@ -76,7 +76,7 @@ class MerchantConfigServiceImplTest {
                 .build();
 
         var expectedResponse = List.of(
-                new MerchantConfigResponseDTO(configId, true, testMerchant, 10_000, 100)
+                new MerchantConfigResponseDTO(configId, true, testMerchant, 10_000, 100, 1)
         );
 
         when(configFutureStub.findAll(grpcRequest)).thenReturn(findAllFuture);
@@ -121,7 +121,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldReturnUpdatedConfig_whenUpdateSucceeds() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, 5_000, 200);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 5_000, 200, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -138,7 +138,7 @@ class MerchantConfigServiceImplTest {
                 .setMinAmount(Int32Value.of(200))
                 .build();
 
-        var expectedResponse = new MerchantConfigResponseDTO(configId, true, testMerchant, 5_000, 200);
+        var expectedResponse = new MerchantConfigResponseDTO(configId, true, testMerchant, 5_000, 200, 1);
 
         when(merchantConfigMapper.updateDtoToGrpc(configId, updateDTO)).thenReturn(grpcRequest);
         when(configFutureStub.update(grpcRequest)).thenReturn(updateFuture);
@@ -167,7 +167,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldCorrectlyBuildGrpcRequestThroughMapper_whenUpdateCalled() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(false, 3_000, null);
+        var updateDTO = new MerchantConfigUpdateDTO(false, 3_000, null, 1);
 
         var expectedGrpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -179,7 +179,7 @@ class MerchantConfigServiceImplTest {
                 .setId(configId)
                 .build();
 
-        var expectedResponse = new MerchantConfigResponseDTO(configId, false, testMerchant, 3_000, null);
+        var expectedResponse = new MerchantConfigResponseDTO(configId, false, testMerchant, 3_000, null, 1);
 
         when(merchantConfigMapper.updateDtoToGrpc(configId, updateDTO)).thenReturn(expectedGrpcRequest);
         when(configFutureStub.update(expectedGrpcRequest)).thenReturn(updateFuture);
@@ -212,7 +212,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcInternalError_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, null, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -251,7 +251,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcPermissionDeniedError_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -289,7 +289,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forNetworkErrors_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, 1_000, null);
+        var updateDTO = new MerchantConfigUpdateDTO(null, 1_000, null, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -326,7 +326,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGenericException_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, 50);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, 50, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -362,7 +362,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleMapperReturningNull_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, null, null);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -385,7 +385,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleFullFlowFromRequestToResponse_whenUpdate() throws Exception {
-        var updateDTO = new MerchantConfigUpdateDTO(true, 8_000, 150);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 8_000, 150, 1);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -402,7 +402,7 @@ class MerchantConfigServiceImplTest {
                 .setMinAmount(Int32Value.of(150))
                 .build();
 
-        var expectedResponse = new MerchantConfigResponseDTO(configId, true, testMerchant, 8_000, 150);
+        var expectedResponse = new MerchantConfigResponseDTO(configId, true, testMerchant, 8_000, 150, 1);
 
         when(merchantConfigMapper.updateDtoToGrpc(configId, updateDTO)).thenReturn(grpcRequest);
         when(configFutureStub.update(grpcRequest)).thenReturn(updateFuture);
