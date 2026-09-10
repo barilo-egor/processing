@@ -8,7 +8,6 @@ import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientPrincipal;
-import net.rcetech.meta.config.security.ApiKeyAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.AntPathMatcher;
