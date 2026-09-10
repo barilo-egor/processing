@@ -3,7 +3,7 @@ package net.rcetech.domain.service.orders;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
-import net.rcetech.meta.orders.dto.OrderSummary;
+import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.PredicateSpecification;
@@ -32,8 +32,15 @@ public class OrderService {
         return orderRepository.findById(id);
     }
 
-    public Page<OrderSummary> findAll(PredicateSpecification<Order> filter, Pageable pageable) {
+
+    public <T> Optional<T> findById(UUID id, Class<T> projectionType) {
+        Order order = new Order();
+        order.setId(id);
+        return orderRepository.findBy(Example.of(order), query -> query.as(projectionType)).one();
+    }
+
+    public <T> Page<T> findAll(PredicateSpecification<Order> filter, Pageable pageable, Class<T> projectionType) {
         return orderRepository.findBy(filter,
-                query -> query.as(OrderSummary.class).page(pageable));
+                query -> query.as(projectionType).page(pageable));
     }
 }

@@ -12,7 +12,7 @@ import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
-import net.rcetech.meta.orders.dto.OrderSummary;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import org.hamcrest.CustomMatcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -282,7 +282,7 @@ class ApiOrdersControllerTest {
     @ParameterizedTest
     @MethodSource("orderSummaryArguments")
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
-    void createOrder_shouldReturnCreatedOrder(OrderSummary expected) throws Exception {
+    void createOrder_shouldReturnCreatedOrder(ClientOrderSummary expected) throws Exception {
         Order order = mock(Order.class);
         when(orderApiService.createOrder(any(), any())).thenReturn(order);
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
@@ -316,9 +316,9 @@ class ApiOrdersControllerTest {
 
     static Stream<Arguments> orderSummaryArguments() {
         return Stream.of(
-                Arguments.of(new OrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
                         OrderStatus.NEW, 5129, true, "https://google.com/callback")),
-                Arguments.of(new OrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
                         OrderStatus.SUCCESS, 1250, false, "https://example.com/path/callback"))
         );
     }
@@ -448,7 +448,7 @@ class ApiOrdersControllerTest {
     @ParameterizedTest
     @MethodSource("orderSummaryArguments")
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
-    void getOrder_shouldReturnOrder(OrderSummary expected) throws Exception {
+    void getOrder_shouldReturnOrder(ClientOrderSummary expected) throws Exception {
         Order order = mock(Order.class);
         when(orderApiService.findByIdAndClientId(any(), any())).thenReturn(order);
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
@@ -483,7 +483,7 @@ class ApiOrdersControllerTest {
     @Test
     @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
     void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
-        OrderSummary expected = new OrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
+        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
                 OrderStatus.NEW, 5129, true, "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")

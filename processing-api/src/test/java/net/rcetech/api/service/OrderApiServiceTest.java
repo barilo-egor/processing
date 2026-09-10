@@ -15,7 +15,7 @@ import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
-import net.rcetech.meta.orders.dto.OrderSummary;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -334,14 +334,14 @@ class OrderApiServiceTest {
         Client anotherClient = getDummyClient();
         getDummyOrder(anotherClient);
 
-        Page<OrderSummary> actual = orderApiService.findAll(
+        Page<ClientOrderSummary> actual = orderApiService.findAll(
                 targetClient.getId(),
                 new ClientOrderFilter(null, null), Pageable.ofSize(10)
         );
 
         assertEquals(
                 expectedOrders.stream().map(Order::getId).collect(Collectors.toSet()),
-                actual.getContent().stream().map(OrderSummary::id).collect(Collectors.toSet())
+                actual.getContent().stream().map(ClientOrderSummary::id).collect(Collectors.toSet())
         );
     }
 
@@ -354,7 +354,7 @@ class OrderApiServiceTest {
         Order targerOrder = getDummyOrder(client);
         targerOrder.setStatus(status);
 
-        Page<OrderSummary> actual = orderApiService.findAll(
+        Page<ClientOrderSummary> actual = orderApiService.findAll(
                 client.getId(),
                 new ClientOrderFilter(status, null), Pageable.ofSize(10)
         );
@@ -372,7 +372,7 @@ class OrderApiServiceTest {
         Order targerOrder = getDummyOrder(client);
         targerOrder.setMethod(method);
 
-        Page<OrderSummary> actual = orderApiService.findAll(
+        Page<ClientOrderSummary> actual = orderApiService.findAll(
                 client.getId(),
                 new ClientOrderFilter(null, method), Pageable.ofSize(10)
         );

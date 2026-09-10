@@ -8,7 +8,7 @@ import net.rcetech.domain.mapping.orders.OrderMapper;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
-import net.rcetech.meta.orders.dto.OrderSummary;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -35,14 +35,14 @@ public class ApiOrdersController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
-                                                    Principal principal) {
+    public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
+                                                          Principal principal) {
         Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest);
         return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
+    public ResponseEntity<ClientOrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
         return new ResponseEntity<>(orderMapper.toOrderSummary(
                 orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id)),
                 HttpStatus.OK
@@ -56,7 +56,7 @@ public class ApiOrdersController {
     }
 
     @GetMapping
-    public PagedModel<OrderSummary> getOrders(ClientOrderFilter filter, Pageable pageable, Principal principal) {
+    public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter, Pageable pageable, Principal principal) {
         return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));
     }
 }

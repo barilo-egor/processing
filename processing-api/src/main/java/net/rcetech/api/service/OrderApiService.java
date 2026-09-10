@@ -12,7 +12,7 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
-import net.rcetech.meta.orders.dto.OrderSummary;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -88,8 +88,8 @@ public class OrderApiService {
         orderService.save(order);
     }
 
-    public Page<OrderSummary> findAll(UUID clientId, ClientOrderFilter filter, Pageable pageable) {
-        return orderService.findAll(OrderSpecifications.matches(clientId, filter), pageable);
+    public Page<ClientOrderSummary> findAll(UUID clientId, ClientOrderFilter filter, Pageable pageable) {
+        return orderService.findAll(OrderSpecifications.matches(clientId, filter), pageable, ClientOrderSummary.class);
     }
 
 }
