@@ -42,7 +42,8 @@ public class MerchantConfigMapper {
                 response.hasIsOn() ? response.getIsOn().getValue() : null,
                 response.getMerchant().isBlank() ? null : Merchant.valueOf(response.getMerchant()),
                 response.hasMaxAmount() ? response.getMaxAmount().getValue() : null,
-                response.hasMinAmount() ? response.getMinAmount().getValue() : null
+                response.hasMinAmount() ? response.getMinAmount().getValue() : null,
+                response.hasMerchantOrder() ? response.getMerchantOrder().getValue() : null
         );
     }
 
@@ -65,6 +66,9 @@ public class MerchantConfigMapper {
         }
         if (updateDTO.minAmount() != null) {
             builder.setMinAmount(Int32Value.of(updateDTO.minAmount()));
+        }
+        if (updateDTO.merchantOrder() != null) {
+            builder.setNewOrder(Int32Value.of(updateDTO.merchantOrder()));
         }
 
         return builder.build();
