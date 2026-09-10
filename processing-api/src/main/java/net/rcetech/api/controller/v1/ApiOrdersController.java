@@ -6,6 +6,7 @@ import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.mapping.orders.OrderMapper;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +21,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/order")
+@RequestMapping(WebPath.PUBLIC_API_PATH_V1 + "/order")
 @PreAuthorize("hasRole('CLIENT')")
 public class ApiOrdersController {
 

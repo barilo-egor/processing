@@ -14,6 +14,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ApiKeyService {
@@ -62,5 +63,9 @@ public class ApiKeyService {
             throw new BadRequestException("Запись с идентификатором " + id + " не найдена.");
         }
         apiKeyRepository.deleteById(id);
+    }
+
+    public Optional<ApiKey> findByKey(String apiKey) {
+        return apiKeyRepository.findByHashWithClient(hashSha256(apiKey));
     }
 }

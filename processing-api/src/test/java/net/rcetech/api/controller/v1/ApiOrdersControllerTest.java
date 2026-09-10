@@ -1,9 +1,13 @@
 package net.rcetech.api.controller.v1;
 
+import net.rcetech.api.config.ApiSecurityConfig;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.mapping.orders.OrderMapper;
+import net.rcetech.domain.model.clients.ApiKey;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.OrderStatus;
@@ -34,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -50,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ApiOrdersController.class)
-@Import({MetaSecurityConfig.class})
+@Import({MetaSecurityConfig.class, ApiSecurityConfig.class})
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ApiOrdersControllerTest {
 
@@ -66,15 +71,18 @@ class ApiOrdersControllerTest {
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
+    @MockitoBean
+    private ApiKeyService apiKeyService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     @DisplayName("Метод должен вернуть 400 если отсутствует тело.")
     void createOrder_shouldReturn400IfNoBody() throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                .with(user("someClient").roles("CLIENT"))
-                .with(csrf()))
-                        .andExpect(status().isBadRequest())
+                        .with(user("someClient").roles("CLIENT"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Failed to read request"))
                 .andExpect(jsonPath("$.instance").value("/api/v1/order"))
                 .andExpect(jsonPath("$.status").value(400))
@@ -96,12 +104,12 @@ class ApiOrdersControllerTest {
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
-                post("/api/v1/order")
-                        .with(user("test").roles("CLIENT"))
-                        .with(csrf())
-                        .content(content)
-                        .header("Content-Type", "application/json")
-        ).andExpect(status().isBadRequest())
+                        post("/api/v1/order")
+                                .with(user("test").roles("CLIENT"))
+                                .with(csrf())
+                                .content(content)
+                                .header("Content-Type", "application/json")
+                ).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value("field 'internalId' should be not blank;"));
     }
 
@@ -210,10 +218,10 @@ class ApiOrdersControllerTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-           "qwerty",
-           "ftp://root/home/picture.png",
-           "http://localhost:8080",
-           "http://some-site.com/callback",
+            "qwerty",
+            "ftp://root/home/picture.png",
+            "http://localhost:8080",
+            "http://some-site.com/callback",
     })
     @DisplayName("Метод должен вернуть, если поле callbackUrl невалидный URL.")
     void createOrder_shouldReturn400IfCallbackUrlsIsNotValid(String callbackUrl) throws Exception {
@@ -243,12 +251,12 @@ class ApiOrdersControllerTest {
         ArgumentCaptor<CreateOrderRequest> captor = ArgumentCaptor.forClass(CreateOrderRequest.class);
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(
-                        post("/api/v1/order")
-                                .with(user(clientId.toString()).roles("CLIENT"))
-                                .with(csrf())
-                                .content(objectMapper.writeValueAsString(expected))
-                                .header("Content-Type", "application/json")
-                ).andExpect(status().isCreated());
+                post("/api/v1/order")
+                        .with(user(clientId.toString()).roles("CLIENT"))
+                        .with(csrf())
+                        .content(objectMapper.writeValueAsString(expected))
+                        .header("Content-Type", "application/json")
+        ).andExpect(status().isCreated());
         verify(orderApiService).createOrder(eq(clientId), captor.capture());
         CreateOrderRequest actual = captor.getValue();
         assertAll(
@@ -279,15 +287,15 @@ class ApiOrdersControllerTest {
         when(orderApiService.createOrder(any(), any())).thenReturn(order);
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
-                post("/api/v1/order")
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
-                        .with(csrf())
-                        .content(objectMapper.writeValueAsString(new CreateOrderRequest(
-                                "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
-                                Set.of(RequestMethod.SBP), false, null, null
-                        )))
-                        .header("Content-Type", "application/json")
-        ).andExpect(status().isCreated())
+                        post("/api/v1/order")
+                                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                                .with(csrf())
+                                .content(objectMapper.writeValueAsString(new CreateOrderRequest(
+                                        "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
+                                        Set.of(RequestMethod.SBP), false, null, null
+                                )))
+                                .header("Content-Type", "application/json")
+                ).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.id").value(new CustomMatcher<String>("is valid UUID") {
                     @Override
@@ -319,21 +327,111 @@ class ApiOrdersControllerTest {
     @ValueSource(strings = {
             "ADMIN", "OPERATOR"
     })
-    void createOrder_shouldReturn401IfNotClient(String role) throws Exception {
+    @DisplayName("Доступ должен быть ограничен для всех кроме клиентов.")
+    void createOrder_shouldReturn403IfNotClient(String role) throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                .with(csrf())
-                .with(user(UUID.randomUUID().toString()).roles(role))
+                        .with(csrf())
+                        .with(user(UUID.randomUUID().toString()).roles(role))
                         .header("Content-Type", "application/json")
                         .content("""
                                 {
-                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
-                    "amount": 5000,
-                    "methods": ["CARD"],
-                    "enableUniqueAmount": true,
-                    "userId": "163637435086",
-                    "callbackUrl": "https://example.com/callback"
-                }"""))
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"],
+                                    "enableUniqueAmount": true,
+                                    "userId": "163637435086",
+                                    "callbackUrl": "https://example.com/callback"
+                                }"""))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Метод должен вернуть 401, если заголовок Api-Key отсутствует.")
+    void createOrder_shouldReturn401IfNoApiKey() throws Exception {
+        mockMvc.perform(post("/api/v1/order")
+                        .with(csrf())
+                        .header("Content-Type", "application/json")
+                        .content("""
+                                {
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"],
+                                    "enableUniqueAmount": true,
+                                    "userId": "163637435086",
+                                    "callbackUrl": "https://example.com/callback"
+                                }"""))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "", "   "
+    })
+    @DisplayName("Метод должен вернуть 401, если заголовок Api-Key пустой.")
+    void createOrder_shouldReturn401IfApiKeyIsEmpty(String apiKey) throws Exception {
+        mockMvc.perform(post("/api/v1/order")
+                        .with(csrf())
+                        .header("Content-Type", "application/json")
+                        .header("Api-Key", apiKey)
+                        .content("""
+                                {
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"],
+                                    "enableUniqueAmount": true,
+                                    "userId": "163637435086",
+                                    "callbackUrl": "https://example.com/callback"
+                                }"""))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Метод должен вернуть 401, если ключ по значению из заголовка Api-Key не найден..")
+    void createOrder_shouldReturn401IfApiKeyNotFound() throws Exception {
+        when(apiKeyService.findByKey(any())).thenReturn(Optional.empty());
+        mockMvc.perform(post("/api/v1/order")
+                        .with(csrf())
+                        .header("Content-Type", "application/json")
+                        .header("Api-Key", "iTTnB770i985XpfFWtJBYH1FXCLkCQxo")
+                        .content("""
+                                {
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"],
+                                    "enableUniqueAmount": true,
+                                    "userId": "163637435086",
+                                    "callbackUrl": "https://example.com/callback"
+                                }"""))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "iTTnB770i985XpfFWtJBYH1FXCLkCQxo", "JSF0Fri8Go12IanPKGOTOf86bHwQCsaz"
+    })
+    @DisplayName("Метод должен вернуть 201, если ключ найден. Должен быть вызван метод с соответствующим идентификатором клиента.")
+    void createOrder_shouldReturn201IfApiKeyAccepted(String headerApiKey) throws Exception {
+        ApiKey apiKey = mock(ApiKey.class);
+        when(apiKeyService.findByKey(headerApiKey)).thenReturn(Optional.of(apiKey));
+        Client client = mock(Client.class);
+        UUID clientId = UUID.randomUUID();
+        when(client.getId()).thenReturn(clientId);
+        when(apiKey.getClient()).thenReturn(client);
+        mockMvc.perform(post("/api/v1/order")
+                        .with(csrf())
+                        .header("Content-Type", "application/json")
+                        .header("Api-Key", headerApiKey)
+                        .content("""
+                                {
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"],
+                                    "enableUniqueAmount": true,
+                                    "userId": "163637435086",
+                                    "callbackUrl": "https://example.com/callback"
+                                }"""))
+                .andExpect(status().isCreated());
+        verify(orderApiService).createOrder(eq(clientId), any());
     }
 
     @RepeatedTest(value = 2)
@@ -389,9 +487,9 @@ class ApiOrdersControllerTest {
                 OrderStatus.NEW, 5129, true, "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
-                .with(csrf())
-                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
-                .header("Content-Type", "application/json"))
+                        .with(csrf())
+                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .header("Content-Type", "application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.page").exists())
