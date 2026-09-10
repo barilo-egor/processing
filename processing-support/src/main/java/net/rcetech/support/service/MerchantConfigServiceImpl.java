@@ -1,6 +1,5 @@
 package net.rcetech.support.service;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.grpc.generated.*;
@@ -23,13 +22,13 @@ import java.util.UUID;
 @Profile("!merchant-details-stub")
 public class MerchantConfigServiceImpl extends GrpcService implements MerchantConfigService {
 
-    private final ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub;
+    private final ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceBlockingStub configBlockingStub;
 
     private final MerchantConfigMapper merchantConfigMapper;
 
-    public MerchantConfigServiceImpl(ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub configFutureStub,
-            MerchantConfigMapper merchantConfigMapper) {
-        this.configFutureStub = configFutureStub;
+    public MerchantConfigServiceImpl(ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceBlockingStub configBlockingStub,
+                                     MerchantConfigMapper merchantConfigMapper) {
+        this.configBlockingStub = configBlockingStub;
         this.merchantConfigMapper = merchantConfigMapper;
     }
 
@@ -38,9 +37,8 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
         FindAllApiMerchantConfigsRequestGrpc request = FindAllApiMerchantConfigsRequestGrpc.newBuilder()
                 .setOwnerId(ownerId.toString())
                 .build();
-        ListenableFuture<FindAllApiMerchantConfigsResponseGrpc> grpcFuture = configFutureStub.findAll(request);
         try {
-            FindAllApiMerchantConfigsResponseGrpc response = toCompletableFuture(grpcFuture).join();
+            FindAllApiMerchantConfigsResponseGrpc response = configBlockingStub.findAll(request);
             return merchantConfigMapper.merchantConfigsToList(response);
         } catch (Exception ex) {
             throw mapGrpcException(ex, "findAll");
@@ -50,9 +48,8 @@ public class MerchantConfigServiceImpl extends GrpcService implements MerchantCo
     @Override
     public MerchantConfigResponseDTO update(Long id, MerchantConfigUpdateDTO updateDTO) {
         UpdateApiMerchantConfigItemGrpc request = merchantConfigMapper.updateDtoToGrpc(id, updateDTO);
-        ListenableFuture<ApiMerchantConfigItemGrpc> grpcFuture = configFutureStub.update(request);
         try {
-            ApiMerchantConfigItemGrpc response = toCompletableFuture(grpcFuture).join();
+            ApiMerchantConfigItemGrpc response = configBlockingStub.update(request);
             return merchantConfigMapper.grpcToDto(response);
         } catch (Exception ex) {
             throw mapGrpcException(ex, "update");
