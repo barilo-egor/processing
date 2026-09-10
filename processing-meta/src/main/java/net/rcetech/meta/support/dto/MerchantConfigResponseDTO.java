@@ -7,5 +7,6 @@ public record MerchantConfigResponseDTO(
         Boolean isOn,
         Merchant merchant,
         Integer maxAmount,
-        Integer minAmount
+        Integer minAmount,
+        Integer merchantOrder
 ) {}
