@@ -17,7 +17,7 @@ public class ApiSecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain webhookSecurityFilterChain(HttpSecurity http, ApiKeyService apiKeyService) {
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, ApiKeyService apiKeyService) {
         http.securityMatcher("/api/v1/**")
                 .addFilterBefore(new ApiKeyAuthenticationFilter(apiKeyService), UsernamePasswordAuthenticationFilter.class);
         return http.build();

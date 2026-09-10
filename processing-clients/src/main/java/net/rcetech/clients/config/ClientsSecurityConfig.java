@@ -18,7 +18,7 @@ public class ClientsSecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain webhookSecurityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain clientsSecurityFilterChain(HttpSecurity http) {
         http.securityMatcher("/api/private/client/event/")
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/api/private/client/event/"))
                 .authorizeHttpRequests(auth -> auth
