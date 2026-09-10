@@ -360,7 +360,7 @@ class ApiOrdersControllerTest {
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @ParameterizedTest

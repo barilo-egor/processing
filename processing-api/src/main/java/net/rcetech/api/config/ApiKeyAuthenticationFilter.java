@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
@@ -34,24 +35,26 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String apiKey = request.getHeader(API_KEY_HEADER);
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
-            Optional<ApiKey> apiKeyOpt = apiKeyService.findByKey(apiKey);
-            if (apiKeyOpt.isPresent()) {
-                ApiKey clientKey = apiKeyOpt.get();
-                var authentication = new ApiKeyAuthenticationToken(
-                        new ClientPrincipal(clientKey.getClient().getId()),
-                        apiKey,
-                        List.of(new SimpleGrantedAuthority("ROLE_CLIENT"))
-                );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+        if (Objects.isNull(SecurityContextHolder.getContext().getAuthentication())) {
+            String apiKey = request.getHeader(API_KEY_HEADER);
+            if (apiKey != null && !apiKey.trim().isEmpty()) {
+                Optional<ApiKey> apiKeyOpt = apiKeyService.findByKey(apiKey);
+                if (apiKeyOpt.isPresent()) {
+                    ApiKey clientKey = apiKeyOpt.get();
+                    var authentication = new ApiKeyAuthenticationToken(
+                            new ClientPrincipal(clientKey.getClient().getId()),
+                            apiKey,
+                            List.of(new SimpleGrantedAuthority("ROLE_CLIENT"))
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
             } else {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
-        } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
         }
         filterChain.doFilter(request, response);
     }
