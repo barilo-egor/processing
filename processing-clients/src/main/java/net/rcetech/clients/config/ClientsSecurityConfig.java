@@ -3,6 +3,7 @@ package net.rcetech.clients.config;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +13,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@Profile("!disable-security")
 public class ClientsSecurityConfig {
 
     public static final String WEBHOOK_ROLE = "WEBHOOK_CLIENT";
