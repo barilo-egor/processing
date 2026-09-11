@@ -11,7 +11,7 @@ import java.util.Map;
 public class RequestMethodDictionaryField implements DictionaryField {
     @Override
     public String getField() {
-        return "";
+        return "RequestMethod";
     }
 
     @Override
