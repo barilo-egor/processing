@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ public class DictionaryController {
     private final Map<String, List<Map<String, Object>>> dictionary;
 
     public DictionaryController(List<DictionaryField> dictionaryFields) {
+        dictionaryFields.sort(Comparator.comparing(DictionaryField::getField));
         this.dictionary = new HashMap<>();
         for (DictionaryField dictionaryField : dictionaryFields) {
             this.dictionary.put(dictionaryField.getField(), dictionaryField.getContent());
