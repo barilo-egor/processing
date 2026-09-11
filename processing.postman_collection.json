@@ -1465,12 +1465,48 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_private_api_url}}/order",
+              "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom&createdAtTo&clientId&internalId&status&merchantOrderId",
               "host": [
                 "{{processing_private_api_url}}"
               ],
               "path": [
                 "order"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Идентификатор ордера"
+                },
+                {
+                  "key": "createdAtFrom",
+                  "value": "",
+                  "description": "Время создания от"
+                },
+                {
+                  "key": "createdAtTo",
+                  "value": "",
+                  "description": "Время создания до"
+                },
+                {
+                  "key": "clientId",
+                  "value": "",
+                  "description": "Идентификатор клиента"
+                },
+                {
+                  "key": "internalId",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Статус ордера, доступные значения в словаре"
+                },
+                {
+                  "key": "merchantOrderId",
+                  "value": "",
+                  "description": "Идентификатор ордера в системе мерчанта"
+                }
               ]
             }
           },
