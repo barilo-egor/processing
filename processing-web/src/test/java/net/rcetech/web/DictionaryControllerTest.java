@@ -3,6 +3,8 @@ package net.rcetech.web;
 import net.rcetech.meta.DictionaryField;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.ClientStatusDictionaryField;
+import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.orders.RequestMethodDictionaryField;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -25,6 +27,11 @@ class DictionaryControllerTest {
         public DictionaryField dictionaryField() {
             return new ClientStatusDictionaryField();
         }
+
+        @Bean
+        public RequestMethodDictionaryField methodDictionaryField() {
+            return new RequestMethodDictionaryField();
+        }
     }
 
     @Autowired
@@ -42,6 +49,13 @@ class DictionaryControllerTest {
             resultActions
                     .andExpect(jsonPath("$.ClientStatus[" + i + "].name").value(clientStatus.name()))
                     .andExpect(jsonPath("$.ClientStatus[" + i + "].description").value(clientStatus.getDescription()));
+            i++;
+        }
+        i = 0;
+        for (RequestMethod requestMethod : RequestMethod.values()) {
+            resultActions
+                    .andExpect(jsonPath("$.RequestMethod[" + i + "].name").value(requestMethod.name()))
+                    .andExpect(jsonPath("$.RequestMethod[" + i + "].description").value(requestMethod.getDescription()));
             i++;
         }
     }

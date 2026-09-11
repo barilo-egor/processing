@@ -3,6 +3,7 @@ package net.rcetech.orders.controller;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.WebPath;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import tgb.cryptoexchange.exception.BadRequestException;
 
 import java.util.UUID;
 

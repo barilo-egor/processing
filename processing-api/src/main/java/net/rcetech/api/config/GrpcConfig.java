@@ -29,10 +29,10 @@ public class GrpcConfig {
      * Stub для работы с конфигурациями мерчантов.
      */
     @Bean
-    public ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceFutureStub merchantConfigServiceFutureStub(
+    public ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceBlockingStub merchantConfigServiceBlockingStub(
             GrpcChannelFactory channelFactory) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
-        return ApiMerchantConfigServiceGrpc.newFutureStub(channel);
+        return ApiMerchantConfigServiceGrpc.newBlockingStub(channel);
     }
 
 }
