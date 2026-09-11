@@ -36,7 +36,7 @@ public class OrderService {
     public <T> Optional<T> findById(UUID id, Class<T> projectionType) {
         Order order = new Order();
         order.setId(id);
-        return orderRepository.findBy(Example.of(order), query -> query.as(projectionType)).one();
+        return orderRepository.findBy(Example.of(order), query -> query.as(projectionType).one());
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Order> filter, Pageable pageable, Class<T> projectionType) {
