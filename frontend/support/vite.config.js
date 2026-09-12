@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    outDir: '../config/frontend/support',
+    outDir: '../../config/frontend/support',
     assetsDir: 'assets',
     emptyOutDir: true,
     sourcemap: false,

@@ -93,8 +93,18 @@ node {
     version = '26.8.1'
 }
 
-tasks.register('installFrontend', NpmTask) {
-    workingDir = file('../frontend')
+
+tasks.register('installFrontend') {
+    dependsOn('installClient', 'installSupport')
+}
+
+tasks.register('installClient', NpmTask) {
+    workingDir = file('../frontend/client')
+    args = ['run', 'build']
+}
+
+tasks.register('installSupport', NpmTask) {
+    workingDir = file('../frontend/support')
     args = ['run', 'build']
 }
 

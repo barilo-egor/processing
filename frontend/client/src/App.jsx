@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  api, isUuid, fmtDateTime, dateToMs, fmtPercent,
-} from './api.js';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {api, dateToMs, fmtDateTime, fmtPercent, isUuid,} from './api.js';
 
 /* ============================================================
    Личный кабинет администратора API.
