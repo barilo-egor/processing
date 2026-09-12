@@ -12,6 +12,6 @@ public class RedirectController {
         if (request.isUserInRole("ADMIN") || request.isUserInRole("OPERATOR")) {
             return  "redirect:/support/dashboard";
         }
-        return "redirect:/dashboard";
+        return "redirect:/client/dashboard";
     }
 }

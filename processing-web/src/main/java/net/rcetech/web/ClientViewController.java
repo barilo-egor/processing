@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping
 public class ClientViewController {
 
-    @GetMapping("/dashboard")
+    @GetMapping("/client/dashboard")
     public String view() {
         return "forward:/client/index.html";
     }
