@@ -12,7 +12,7 @@ public class SupportViewController {
 
     @GetMapping
     public String view(HttpServletRequest request) {
-        if (!request.isUserInRole("ADMIN") || !request.isUserInRole("OPERATOR")) {
+        if (!request.isUserInRole("ADMIN") && !request.isUserInRole("OPERATOR")) {
             throw new AuthorizationDeniedException("Access denied");
         }
         return "forward:/support/index.html";
