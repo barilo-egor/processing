@@ -41,5 +41,6 @@ build/
 .continue/
 postman/
 docker/mount/**
-frontend/node_modules/**
+frontend/client/node_modules/**
+frontend/support/node_modules/**
 frontend/dist/**

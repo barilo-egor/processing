@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum OrderStatus {
     NEW("Новый"),
     CANCELED("Отменен"),
-    TIMEOUT("Таймаут"),
+    TIMEOUT("Просрочен"),
+    DISPUTE("В споре"),
     SUCCESS("Успешный");
 
     private final String description;

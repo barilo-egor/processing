@@ -14,6 +14,7 @@ alter table client
 create table orders
 (
     id                    binary(16) not null,
+    version               bigint        not null,
     created_at            datetime(6) not null,
     expires_at            datetime(6) not null,
     client_id             binary(16)       not null,
@@ -42,7 +43,7 @@ create table support_users
     primary key (id)
 ) engine=InnoDB;
 alter table orders
-    add constraint fk_orders_client foreign key (client_id) references client(id) on delete cascade on update cascade;
+    add constraint fk_orders_client foreign key (client_id) references client (id) on delete cascade on update cascade;
 alter table support_users
     add constraint unique_username unique (username);
 create table transaction
@@ -68,7 +69,7 @@ create table withdrawal_request
     primary key (id)
 ) engine=InnoDB;
 alter table withdrawal_request
-    add constraint fk_withdrawal_request_client foreign key (client_id) references client(id) on delete cascade on update cascade;
+    add constraint fk_withdrawal_request_client foreign key (client_id) references client (id) on delete cascade on update cascade;
 create table api_key
 (
     id        bigint      not null auto_increment,
@@ -80,6 +81,6 @@ create table api_key
     foreign key (client_id) references client (id) on delete cascade on update cascade
 );
 alter table api_key
-    add constraint fk_api_key_client foreign key (client_id) references client(id) on delete cascade on update cascade;
+    add constraint fk_api_key_client foreign key (client_id) references client (id) on delete cascade on update cascade;
 alter table api_key
     add constraint unique_hash unique (hash);

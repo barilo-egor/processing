@@ -3,3 +3,12 @@ processing:
     webhook:
       username: 'webhook_user'
       password: '{noop}webhook_password'
+kafka:
+  group-id: 'processing'
+  topic:
+    merchant-details:
+      callback: 'merchant-details-callback-v1'
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update

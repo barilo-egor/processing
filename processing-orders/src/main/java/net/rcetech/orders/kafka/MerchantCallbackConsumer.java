@@ -1,8 +1,8 @@
 package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
+import net.rcetech.orders.callback.OrderCallbackService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 @Profile("!kafka-disabled")
 public class MerchantCallbackConsumer {
 
-    private final OrderService orderService;
+    private final OrderCallbackService orderCallbackService;
 
-    public MerchantCallbackConsumer(OrderService orderService) {
-        this.orderService = orderService;
+    public MerchantCallbackConsumer(OrderCallbackService orderCallbackService) {
+        this.orderCallbackService = orderCallbackService;
     }
 
     /**
@@ -26,10 +26,14 @@ public class MerchantCallbackConsumer {
      *
      * @param consumerRecord запись из Kafka, содержащая событие {@link MerchantCallbackEvent}
      */
-    @KafkaListener(topics = "${kafka.topic.merchant-details.callback}", groupId = "${kafka.group-id}",
-            containerFactory = "merchantCallbackKafkaListenerContainerFactory")
+    @KafkaListener(
+            topics = "${kafka.topic.merchant-details.callback}",
+            groupId = "${kafka.group-id}",
+            containerFactory = "merchantCallbackKafkaListenerContainerFactory"
+    )
     public void callback(ConsumerRecord<String, MerchantCallbackEvent> consumerRecord) {
-        // TODO
+        log.debug("Принят callback key={} : {}", consumerRecord.key(), consumerRecord.value());
+        orderCallbackService.resolve(consumerRecord.value());
     }
 
 }

@@ -1,10 +1,7 @@
 package net.rcetech.domain.model.orders;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
@@ -24,6 +21,11 @@ public class Order implements Persistable<UUID> {
 
     @Id
     private UUID id;
+
+    @Version
+    @Setter(AccessLevel.PRIVATE)
+    @Getter(AccessLevel.PRIVATE)
+    private Long version;
 
     /**
      * Время создания ордера
