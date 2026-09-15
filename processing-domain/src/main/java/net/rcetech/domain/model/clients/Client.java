@@ -105,4 +105,11 @@ public class Client implements Persistable<UUID> {
     void markNotNew() {
         this.isNew = false;
     }
+
+    @PrePersist
+    protected void onCreate() {
+        if (balance == null) {
+            balance = BigDecimal.ZERO;
+        }
+    }
 }
