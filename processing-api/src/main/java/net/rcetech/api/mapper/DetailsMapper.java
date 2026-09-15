@@ -2,8 +2,10 @@ package net.rcetech.api.mapper;
 
 import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.dto.MerchantCallbackDTO;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
+import net.rcetech.grpc.generated.MerchantCallbackGrpc;
 import net.rcetech.meta.orders.RequestMethod;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.InjectionStrategy;
@@ -28,6 +30,10 @@ public interface DetailsMapper {
     @Mapping(target = "amount", source = "orderDTO.amount")
     @Mapping(target = "requestMethodList", source = "orderDTO.methods")
     DetailsRequestGrpc detailsRequestDTOToGrpc(UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
+
+    MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
+
+    MerchantCallbackDTO merchantCallbackDTOToGrpc(MerchantCallbackGrpc response);
 
     default String mapRequestMethodToString(RequestMethod method) {
         return method != null ? method.name() : null;

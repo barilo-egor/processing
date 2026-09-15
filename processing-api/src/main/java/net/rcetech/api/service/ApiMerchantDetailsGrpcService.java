@@ -7,9 +7,11 @@ import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.dto.MerchantCallbackDTO;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
+import net.rcetech.grpc.generated.MerchantCallbackGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.util.GrpcService;
@@ -57,6 +59,17 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
             } else {
                 throw new BaseException("Неизвестная ошибка GRPC " + code, statusException);
             }
+        } catch (Exception ex) {
+            throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
+        }
+    }
+
+    public MerchantCallbackDTO getCallback(MerchantCallbackDTO merchantCallbackDTO) {
+        try {
+            MerchantCallbackGrpc grpcResponse = detailsBlockingStub.merchantCallbackRequest(
+                    detailsMapper.merchantCallbackDTOToGrpc(merchantCallbackDTO)
+            );
+            return detailsMapper.merchantCallbackDTOToGrpc(grpcResponse);
         } catch (Exception ex) {
             throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
