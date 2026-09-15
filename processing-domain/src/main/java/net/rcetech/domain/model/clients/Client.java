@@ -89,6 +89,9 @@ public class Client implements Persistable<UUID> {
     @Column
     private BigDecimal commissionPercent;
 
+    @Column
+    private BigDecimal balance;
+
     @Transient
     private boolean isNew = true;
 
@@ -101,5 +104,12 @@ public class Client implements Persistable<UUID> {
     @PostLoad
     void markNotNew() {
         this.isNew = false;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (balance == null) {
+            balance = BigDecimal.ZERO;
+        }
     }
 }

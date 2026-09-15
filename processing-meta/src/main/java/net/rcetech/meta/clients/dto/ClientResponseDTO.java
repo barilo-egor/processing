@@ -1,6 +1,8 @@
 package net.rcetech.meta.clients.dto;
 
 import net.rcetech.meta.clients.ClientStatus;
+import net.rcetech.meta.clients.serializer.BalanceSerializer;
+import net.rcetech.meta.serialize.BigDecimalPlaintStringSerializer;
 import net.rcetech.meta.serialize.InstantToMillisSerializer;
 import tools.jackson.databind.annotation.JsonSerialize;
 
@@ -16,5 +18,8 @@ public record ClientResponseDTO(
         ClientStatus status,
         String callbackUrl,
         Integer orderTimeoutSeconds,
-        BigDecimal commissionPercent
+        @JsonSerialize(using = BigDecimalPlaintStringSerializer.class)
+        BigDecimal commissionPercent,
+        @JsonSerialize(using = BalanceSerializer.class)
+        BigDecimal balance
 ) {}

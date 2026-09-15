@@ -56,7 +56,6 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.SUCCESS);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        orderRepository.save(order);
     }
 
     @Transactional
@@ -64,7 +63,6 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.CANCELED);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        orderRepository.save(order);
     }
 
     @Transactional
@@ -72,7 +70,6 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.TIMEOUT);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        orderRepository.save(order);
     }
 
     @Transactional
@@ -80,6 +77,5 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.DISPUTE);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        orderRepository.save(order);
     }
 }

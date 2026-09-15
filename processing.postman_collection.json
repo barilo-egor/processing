@@ -398,11 +398,11 @@
                 },
                 {
                   "key": "content-length",
-                  "value": "474"
+                  "value": "280"
                 },
                 {
                   "key": "date",
-                  "value": "Tue, 01 Sep 2026 21:35:53 GMT"
+                  "value": "Tue, 15 Sep 2026 17:46:53 GMT"
                 },
                 {
                   "key": "keep-alive",
@@ -414,7 +414,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"content\": [\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"username\": \"postman-admin12\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"commissionPercent\": 20.5\n    },\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756876a\",\n      \"username\": \"postman-admin\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": \"https://google.com\",\n      \"orderTimeoutSeconds\": 800,\n      \"commissionPercent\": null\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
+              "body": "{\n  \"content\": [\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"username\": \"postman-admin12\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"commissionPercent\": null,\n      \"balance\": 0\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },

@@ -74,6 +74,14 @@ class ClientServiceTest {
         clientService = new ClientService(clientRepository, clientMapper);
     }
 
+    @Test
+    void save_shouldSaveWithDefaultValues() {
+        Client dummyClient = getDummyClient();
+        Client actual = clientService.save(dummyClient);
+        assertEquals(BigDecimal.ZERO, actual.getBalance());
+        assertEquals(BigDecimal.ZERO, actual.getBalance());
+    }
+
     @ParameterizedTest
     @CsvSource({"""
             96826b27-4423-4494-a150-5b6a021963c5,10
