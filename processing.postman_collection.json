@@ -1465,7 +1465,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom&createdAtTo&clientId&internalId&status&merchantOrderId",
+              "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom=&createdAtTo=&client=&internalId=&status=&merchantOrderId=",
               "host": [
                 "{{processing_private_api_url}}"
               ],
@@ -1489,13 +1489,14 @@
                   "description": "Время создания до"
                 },
                 {
-                  "key": "clientId",
+                  "key": "client",
                   "value": "",
-                  "description": "Идентификатор клиента"
+                  "description": "Логин либо идентификатор клиента"
                 },
                 {
                   "key": "internalId",
-                  "value": ""
+                  "value": "",
+                  "description": "Идентификатор сделки в системе клиента"
                 },
                 {
                   "key": "status",
@@ -1517,12 +1518,53 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/order",
+                  "raw": "{{processing_private_api_url}}/order?merchant=ALFA_TEAM",
                   "host": [
                     "{{processing_private_api_url}}"
                   ],
                   "path": [
                     "order"
+                  ],
+                  "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "createdAtFrom",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "clientId",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "internalId",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "merchantOrderId",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "merchant",
+                      "value": "ALFA_TEAM"
+                    }
                   ]
                 }
               },
@@ -1560,11 +1602,11 @@
                 },
                 {
                   "key": "content-length",
-                  "value": "1691"
+                  "value": "1358"
                 },
                 {
                   "key": "date",
-                  "value": "Fri, 11 Sep 2026 15:32:42 GMT"
+                  "value": "Tue, 15 Sep 2026 14:25:25 GMT"
                 },
                 {
                   "key": "keep-alive",
@@ -1576,7 +1618,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"content\": [\n    {\n      \"id\": \"a3a32b92-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-001\",\n      \"status\": \"NEW\",\n      \"amount\": 1500\n    },\n    {\n      \"id\": \"a3a386fb-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-002\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 2450\n    },\n    {\n      \"id\": \"a3a38919-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-003\",\n      \"status\": \"CANCELED\",\n      \"amount\": 500\n    },\n    {\n      \"id\": \"a3a38a79-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-004\",\n      \"status\": \"NEW\",\n      \"amount\": 10000\n    },\n    {\n      \"id\": \"a3a38b35-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-005\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 3200\n    },\n    {\n      \"id\": \"a3a39562-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-006\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 750\n    },\n    {\n      \"id\": \"a3a39627-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-007\",\n      \"status\": \"NEW\",\n      \"amount\": 4300\n    },\n    {\n      \"id\": \"a3a396b7-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-008\",\n      \"status\": \"CANCELED\",\n      \"amount\": 12000\n    },\n    {\n      \"id\": \"a3a39783-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-009\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 850\n    },\n    {\n      \"id\": \"a3a39832-adf5-11f1-a191-862847413f63\",\n      \"createdAt\": 1789151394915,\n      \"clientUsername\": \"postman-admin12\",\n      \"internalId\": \"INT-010\",\n      \"status\": \"NEW\",\n      \"amount\": 150\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 10,\n    \"totalPages\": 1\n  }\n}"
+              "body": "{\n  \"content\": [\n    {\n      \"amount\": 1500,\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"client\",\n      \"createdAt\": 1789492123359,\n      \"id\": \"f59dacef-b10e-11f1-a4b9-3654dc2f460f\",\n      \"internalId\": \"INT-001\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"M-ORD-1001\",\n      \"status\": \"NEW\"\n    },\n    {\n      \"amount\": 2450,\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"client\",\n      \"createdAt\": 1789492123359,\n      \"id\": \"f59dd9ff-b10e-11f1-a4b9-3654dc2f460f\",\n      \"internalId\": \"INT-002\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"M-ORD-1002\",\n      \"status\": \"SUCCESS\"\n    },\n    {\n      \"amount\": 500,\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"client\",\n      \"createdAt\": 1789492123359,\n      \"id\": \"f59dde93-b10e-11f1-a4b9-3654dc2f460f\",\n      \"internalId\": \"INT-003\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"M-ORD-2001\",\n      \"status\": \"SUCCESS\"\n    },\n    {\n      \"amount\": 10000,\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"client\",\n      \"createdAt\": 1789492123359,\n      \"id\": \"f59ddff5-b10e-11f1-a4b9-3654dc2f460f\",\n      \"internalId\": \"INT-004\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"M-ORD-3001\",\n      \"status\": \"NEW\"\n    },\n    {\n      \"amount\": 3200,\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"client\",\n      \"createdAt\": 1789492123359,\n      \"id\": \"f59de094-b10e-11f1-a4b9-3654dc2f460f\",\n      \"internalId\": \"INT-005\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"M-ORD-1003\",\n      \"status\": \"SUCCESS\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 5,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -1597,74 +1639,6 @@
             }
           },
           "response": [
-            {
-              "name": "Ордер получен",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{processing_private_api_url}}/order/{{orderId}}",
-                  "host": [
-                    "{{processing_private_api_url}}"
-                  ],
-                  "path": [
-                    "order",
-                    "{{orderId}}"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "x-content-type-options",
-                  "value": "nosniff"
-                },
-                {
-                  "key": "x-xss-protection",
-                  "value": "0"
-                },
-                {
-                  "key": "cache-control",
-                  "value": "no-cache, no-store, max-age=0, must-revalidate"
-                },
-                {
-                  "key": "pragma",
-                  "value": "no-cache"
-                },
-                {
-                  "key": "expires",
-                  "value": "0"
-                },
-                {
-                  "key": "x-frame-options",
-                  "value": "DENY"
-                },
-                {
-                  "key": "content-type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "content-length",
-                  "value": "425"
-                },
-                {
-                  "key": "date",
-                  "value": "Fri, 11 Sep 2026 15:41:43 GMT"
-                },
-                {
-                  "key": "keep-alive",
-                  "value": "timeout=60"
-                },
-                {
-                  "key": "connection",
-                  "value": "keep-alive"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"id\": \"a3a32b92-adf5-11f1-a191-862847413f63\",\n  \"createdAt\": 1789151394915,\n  \"expiresAt\": 1789154994915,\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"internalId\": \"INT-001\",\n  \"status\": \"NEW\",\n  \"amount\": 1500,\n  \"enableUniqueAmount\": false,\n  \"merchant\": \"ALFA_TEAM\",\n  \"merchantOrderId\": \"M-ORD-1001\",\n  \"merchantOrderStatus\": \"PENDING\",\n  \"method\": \"CARD\",\n  \"details\": \"1234 1234 1234 1234\",\n  \"bank\": \"Bank_Alpha\",\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
-            },
             {
               "name": "Ордер не найден",
               "originalRequest": {
@@ -1728,6 +1702,74 @@
               ],
               "cookie": [],
               "body": "{\n  \"instance\": \"/api/private/order/82d23e24-16ce-4671-b882-7a4aa2533b42\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1789141377703,\n  \"description\": \"Order not found\"\n}"
+            },
+            {
+              "name": "Ордер получен",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "order",
+                    "{{orderId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "content-length",
+                  "value": "448"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 15 Sep 2026 14:26:34 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"f59dacef-b10e-11f1-a4b9-3654dc2f460f\",\n  \"createdAt\": 1789492123359,\n  \"expiresAt\": 1789495723359,\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"clientUsername\": \"client\",\n  \"internalId\": \"INT-001\",\n  \"status\": \"NEW\",\n  \"amount\": 1500,\n  \"enableUniqueAmount\": false,\n  \"merchant\": \"ALFA_TEAM\",\n  \"merchantOrderId\": \"M-ORD-1001\",\n  \"merchantOrderStatus\": \"PAID\",\n  \"method\": \"CARD\",\n  \"details\": \"1234 1234 1234 1234 \",\n  \"bank\": \"Bank_Alpha\",\n  \"callbackUrl\": \"http://example.com/callback\"\n}"
             }
           ]
         }
