@@ -11,7 +11,7 @@ import java.util.Map;
 public class OrderStatusDictionaryField implements DictionaryField {
     @Override
     public String getField() {
-        return "OderStatus";
+        return "OrderStatus";
     }
 
     @Override
