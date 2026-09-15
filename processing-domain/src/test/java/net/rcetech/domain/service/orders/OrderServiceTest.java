@@ -17,8 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -36,20 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(OrderService.class)
 @Testcontainers
 class OrderServiceTest {
 
     @Autowired
     private OrderService orderService;
-
-    @TestConfiguration
-    static class Configuration {
-
-        @Bean
-        public OrderService orderService(OrderRepository orderRepository) {
-            return new OrderService(orderRepository);
-        }
-    }
 
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");

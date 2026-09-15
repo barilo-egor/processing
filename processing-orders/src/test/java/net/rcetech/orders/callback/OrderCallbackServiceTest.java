@@ -9,6 +9,7 @@ import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,8 +20,11 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
@@ -35,7 +39,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(OrderService.class)
 @Testcontainers
+@RecordApplicationEvents
 class OrderCallbackServiceTest {
 
     @TestConfiguration
@@ -44,11 +50,6 @@ class OrderCallbackServiceTest {
         @Bean
         public AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver() {
             return new AlfaTeamOrderStatusResolver();
-        }
-
-        @Bean
-        public OrderService orderService(OrderRepository orderRepository) {
-            return new OrderService(orderRepository);
         }
 
         @Bean
@@ -77,6 +78,9 @@ class OrderCallbackServiceTest {
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -219,6 +223,9 @@ class OrderCallbackServiceTest {
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
         assertTrue(maybeOrder.isPresent());
         assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
+        List<OrderStatusUpdatedEvent> actualEvents = applicationEvents.stream(OrderStatusUpdatedEvent.class).toList();
+        assertEquals(1, actualEvents.size());
+        assertEquals(order.getId(), actualEvents.getFirst().getOrderId());
     }
 
     @ParameterizedTest
