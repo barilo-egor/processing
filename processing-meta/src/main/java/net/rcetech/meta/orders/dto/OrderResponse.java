@@ -19,6 +19,7 @@ public record OrderResponse(
         @JsonSerialize(using = InstantToMillisSerializer.class)
         Instant expiresAt,
         UUID clientId,
+        String clientUsername,
         String internalId,
         OrderStatus status,
         Integer amount,
@@ -30,5 +31,4 @@ public record OrderResponse(
         String details,
         String bank,
         String callbackUrl
-) {
-}
+) {}

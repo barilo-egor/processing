@@ -365,7 +365,7 @@ class OrderApiServiceTest {
 
     @ValueSource(strings = { "QR", "SBP" })
     @ParameterizedTest
-    void findAll_shouldFilterOrdersByStatus(RequestMethod method) {
+    void findAll_shouldFilterOrdersByMethod(RequestMethod method) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);
         assertNotEquals(nonTargetOrder.getMethod(), method);
@@ -380,4 +380,5 @@ class OrderApiServiceTest {
         assertEquals(1, actual.getContent().size());
         assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
     }
+
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.data.domain.Persistable;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @Table(name = "client")
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = {"orders"})
 public class Client implements Persistable<UUID> {
 
     public static final Integer DEFAULT_ORDER_TIMEOUT = 900;

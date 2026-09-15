@@ -57,20 +57,60 @@ class OrderControllerTest {
     private MockMvc mockMvc;
 
     @ParameterizedTest
-    @CsvSource("""
-            6e299aaf-4d82-438a-85bc-e2f8bcbadbfb,1789120584024,smokilolik,96f457ff-5f2e-4415-a49c-745ba920bf25,NEW,5450
-            05aa6142-6d22-42f3-99ff-93c9240858b5,1789120591362,TGSHOP,5234975,SUCCESS,2500
-            """)
-    void getOrders_ShouldReturn200WithOrders(UUID id, Long millis, String clientUsername, String internalId,
-                                             OrderStatus status, Integer amount) throws Exception {
-        OrderSummary orderSummary = new OrderSummary(
-                id,
-                Instant.ofEpochMilli(millis),
-                clientUsername,
-                internalId,
-                status,
-                amount
-        );
+    @CsvSource({
+            "6e299aaf-4d82-438a-85bc-e2f8bcbadbfb,1789120584024,smokilolik,67a59d37-15f4-4f63-ac3f-d7337fb8e4f1," +
+                    "96f457ff-5f2e-4415-a49c-745ba920bf25,NEW,5450,ALFA_TEAM,15936",
+            "05aa6142-6d22-42f3-99ff-93c9240858b5,1789120591362,TGSHOP,ae9cfde3-b11b-4b11-99b2-32194d77897a," +
+                    "5234975,SUCCESS,2500,EVO_PAY,f8c7d994-b315-4608-89c6-602548a7c279"
+    })
+    void getOrders_ShouldReturn200WithOrders(UUID id, Long millis, String clientUsername, String clientId, String internalId,
+                                             OrderStatus status, Integer amount, Merchant merchant, String merchantOrderId) throws Exception {
+        OrderSummary orderSummary =  new OrderSummary() {
+            @Override
+            public UUID getId() {
+                return id;
+            }
+
+            @Override
+            public Instant getCreatedAt() {
+                return Instant.ofEpochMilli(millis);
+            }
+
+            @Override
+            public String getClientId() {
+                return clientId;
+            }
+
+            @Override
+            public String getClientUsername() {
+                return clientUsername;
+            }
+
+            @Override
+            public String getInternalId() {
+                return internalId;
+            }
+
+            @Override
+            public OrderStatus getStatus() {
+                return status;
+            }
+
+            @Override
+            public Integer getAmount() {
+                return amount;
+            }
+
+            @Override
+            public Merchant getMerchant() {
+                return merchant;
+            }
+
+            @Override
+            public String getMerchantOrderId() {
+                return merchantOrderId;
+            }
+        };
         when(orderService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(orderSummary)));
         mockMvc.perform(get("/api/private/order")
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
@@ -103,19 +143,19 @@ class OrderControllerTest {
     @ParameterizedTest
     @CsvSource(value = {
             "c63c69fb-e14c-47af-b64e-20bd1faf9c7a,1789122084461,1789122085461,1b3cd577-02a3-4f38-bad2-bfd98fb4e108," +
-                    "1245670,NEW,5400,true,ALFA_TEAM,17457424,PROCESSING,CARD,1234 1234 1234 1234,Альфа-Банк," +
+                    "smokilolik,1245670,NEW,5400,true,ALFA_TEAM,17457424,PROCESSING,CARD,1234 1234 1234 1234,Альфа-Банк," +
                     "https://example.com/callback",
             "33182fc8-ab84-43f6-847d-67c1d8679bbd,1789122089767,1789122090767,9d429ff1-e362-409a-b282-33a33856f20e," +
-                    "b1d61aa7-eb4c-40ce-a458-9192294e5ca0,SUCCESS,1200,false,ONLY_PAYS,b65aecec-781c-420f-a4b9-433f1da03ef4" +
+                    "TG_SHOP,b1d61aa7-eb4c-40ce-a458-9192294e5ca0,SUCCESS,1200,false,ONLY_PAYS,b65aecec-781c-420f-a4b9-433f1da03ef4" +
                     ",ACCEPTED,SBP,+78957623243,T-BANK,null"
     }, nullValues = {"null"})
-    void getOrder_shouldReturn200WithOrder(UUID id, Long createdAt, Long expiresAt, UUID clientId,
+    void getOrder_shouldReturn200WithOrder(UUID id, Long createdAt, Long expiresAt, UUID clientId, String clientUsername,
                                            String internalId, OrderStatus status, Integer amount,
                                            Boolean enableUniqueAmount, Merchant merchant, String merchantOrderId,
                                            String merchantOrderStatus, RequestMethod method, String details,
                                            String bank, String callbackUrl) throws Exception {
         OrderResponse orderResponse = new OrderResponse(id, Instant.ofEpochMilli(createdAt), Instant.ofEpochMilli(expiresAt),
-                clientId, internalId, status, amount, enableUniqueAmount, merchant, merchantOrderId,
+                clientId, clientUsername, internalId, status, amount, enableUniqueAmount, merchant, merchantOrderId,
                 merchantOrderStatus, method, details, bank, callbackUrl);
         when(orderService.findById(any(), any())).thenReturn(Optional.of(orderResponse));
         mockMvc.perform(get("/api/private/order/" + id.toString())

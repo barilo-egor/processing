@@ -1,5 +1,7 @@
 package net.rcetech.domain.repository.orders;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
@@ -42,21 +44,56 @@ public class OrderSpecifications {
             if (Objects.isNull(filter)) {
                 return builder.conjunction();
             }
+
             List<Predicate> predicates = new ArrayList<>();
-            if (Objects.nonNull(filter.id())) {
-                predicates.add(builder.equal(from.get(Order_.id), filter.id()));
+
+            addSimpleEqual(predicates, builder, from.get(Order_.id), filter.id());
+            addStringEqual(predicates, builder, from.get(Order_.internalId), filter.internalId());
+            addSimpleEqual(predicates, builder, from.get(Order_.status), filter.status());
+            addSimpleEqual(predicates, builder, from.get(Order_.merchant), filter.merchant());
+            addStringEqual(predicates, builder, from.get(Order_.merchantOrderId), filter.merchantOrderId());
+
+            if (Objects.nonNull(filter.createdAtFrom())) {
+                predicates.add(builder.greaterThan(from.get(Order_.createdAt), filter.createdAtFrom()));
             }
-            if (Objects.nonNull(filter.internalId())) {
-                predicates.add(builder.equal(from.get(Order_.internalId), filter.internalId()));
+            if (Objects.nonNull(filter.createdAtTo())) {
+                predicates.add(builder.lessThanOrEqualTo(from.get(Order_.createdAt), filter.createdAtTo()));
             }
-            if (Objects.nonNull(filter.status())) {
-                predicates.add(builder.equal(from.get(Order_.status), filter.status()));
-            }
-            if (Objects.nonNull(filter.clientId())) {
+
+            if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
                 Join<Order, Client> join = from.join(Order_.client);
-                predicates.add(builder.equal(join.get(Client_.id), filter.clientId()));
+                UUID clientId;
+                try {
+                    clientId =  UUID.fromString(filter.client());
+                } catch (IllegalArgumentException e) {
+                    clientId = null;
+                }
+                if (Objects.nonNull(clientId)) {
+                    predicates.add(builder.or(
+                            builder.equal(join.get(Client_.id), UUID.fromString(filter.client())),
+                            builder.equal(join.get(Client_.username), filter.client())
+                    ));
+                } else {
+                    predicates.add(builder.equal(join.get(Client_.username), filter.client()));
+                }
             }
+
             return builder.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    private static <T> void addSimpleEqual(List<Predicate> predicates, CriteriaBuilder builder,
+                                           Expression<T> expression, T value) {
+        if (Objects.nonNull(value)) {
+            predicates.add(builder.equal(expression, value));
+        }
+    }
+
+    private static <T> void addStringEqual(List<Predicate> predicates, CriteriaBuilder builder,
+                                           Expression<T> expression, String value) {
+        if (Objects.nonNull(value) && !value.isBlank()) {
+            predicates.add(builder.equal(expression, value));
+        }
+    }
+
 }

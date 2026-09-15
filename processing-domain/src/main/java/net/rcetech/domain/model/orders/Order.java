@@ -17,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
+@ToString(exclude = {"client"})
 public class Order implements Persistable<UUID> {
 
     @Id
