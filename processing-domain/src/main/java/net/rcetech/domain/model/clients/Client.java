@@ -89,6 +89,9 @@ public class Client implements Persistable<UUID> {
     @Column
     private BigDecimal commissionPercent;
 
+    @Column
+    private BigDecimal balance;
+
     @Transient
     private boolean isNew = true;
 

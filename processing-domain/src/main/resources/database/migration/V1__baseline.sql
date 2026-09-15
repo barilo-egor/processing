@@ -7,6 +7,7 @@ create table client
     callback_url          varchar(255),
     order_timeout_seconds integer      not null,
     commission_percent    decimal(3, 1),
+    balance               decimal(12, 4) default 0,
     primary key (id)
 ) engine=InnoDB;
 alter table client
