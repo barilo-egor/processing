@@ -52,8 +52,8 @@ export async function request(url, options = {}) {
         ...(headers || {}),
       },
       ...(body !== undefined
-        ? { body: typeof body === 'string' ? body : JSON.stringify(body) }
-        : {}),
+          ? { body: typeof body === 'string' ? body : JSON.stringify(body) }
+          : {}),
     });
   } catch {
     throw new Error('Нет связи с сервером');
@@ -70,8 +70,8 @@ export async function request(url, options = {}) {
   const ct = res.headers.get('content-type') || '';
   const isJson = ct.includes('application/json');
   const data = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => null);
+      ? await res.json().catch(() => null)
+      : await res.text().catch(() => null);
 
   // Пришла HTML-страница вместо данных — почти наверняка форма входа
   // после редиректа. Считаем это истёкшей сессией.
@@ -84,8 +84,8 @@ export async function request(url, options = {}) {
   if (!res.ok) {
     // Формат ошибки бэка: { status, title, description, ... }
     const msg = (data && typeof data === 'object'
-      && (data.description || data.title || data.message || data.error))
-      || `Ошибка ${res.status}`;
+            && (data.description || data.title || data.message || data.error))
+        || `Ошибка ${res.status}`;
     const err = new Error(msg);
     err.status = res.status;
     throw err;
@@ -120,15 +120,29 @@ export const api = {
   // Обновление клиента. Шлём ТОЛЬКО изменённое поле:
   // бэк обновляет всё, что не null, поэтому лишние поля перезапишут данные.
   updateClient: (id, body) =>
-    request(`${API}/client/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+      request(`${API}/client/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
 
-  // Справочники (ClientStatus и другие перечисления).
+  // Справочники (ClientStatus, OrderStatus и другие перечисления).
   dictionary: () => request(`${API}/dictionary`),
 
+  /* Ордера. Только чтение: список с фильтром и одна запись.
+     Возвращает { items, total, totalPages } — как и клиенты. */
+  async orders(params) {
+    const d = await request(`${API}/order`, { params });
+    const items = Array.isArray(d?.content) ? d.content : [];
+    return {
+      items,
+      total: d?.page?.totalElements ?? items.length,
+      totalPages: d?.page?.totalPages ?? 1,
+    };
+  },
+
+  order: (id) => request(`${API}/order/${encodeURIComponent(id)}`),
+
   merchantConfigs: (clientId) =>
-    request(`${API}/merchant-config/${encodeURIComponent(clientId)}`),
+      request(`${API}/merchant-config/${encodeURIComponent(clientId)}`),
   updateMerchantConfig: (id, body) =>
-    request(`${API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+      request(`${API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
 };
 
 /* ---------------- Формат и проверки ---------------- */
@@ -152,14 +166,27 @@ export function dateToMs(value, edge = 'start') {
   const [y, m, d] = value.split('-').map(Number);
   if (!y || !m || !d) return '';
   const date = edge === 'end'
-    ? new Date(y, m - 1, d, 23, 59, 59, 999)
-    : new Date(y, m - 1, d, 0, 0, 0, 0);
+      ? new Date(y, m - 1, d, 23, 59, 59, 999)
+      : new Date(y, m - 1, d, 0, 0, 0, 0);
   return date.getTime();
 }
 
 // Комиссия: дробное число, может быть null.
 export const fmtPercent = (v) =>
-  v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} %`;
+    v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} %`;
 
 export const fmtSeconds = (v) =>
-  v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU')} сек`;
+    v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU')} сек`;
+
+/* Баланс клиента: рубли, разделитель разрядов, две цифры после запятой.
+   ВНИМАНИЕ: имя поля в ответе бэка не подтверждено — в коллекции Postman
+   баланса нет. Сейчас читаем client.balance, см. ClientCard в App.jsx. */
+export function fmtMoney(v) {
+  if (v == null || v === '') return '—';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return `${n.toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ₽`;
+}

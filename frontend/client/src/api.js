@@ -1,27 +1,29 @@
 /* ============================================================
-   Слой API личного кабинета администратора API.
+   Слой API личного кабинета клиента API.
 
    Авторизация — cookie сессии (OAuth2, паттерн BFF), поэтому во
-   всех запросах credentials: 'include'. Заголовки Telegram здесь
-   не нужны: это обычный сайт, а не Mini App.
+   всех запросах credentials: 'include'.
 
-   Эндпоинты (подтверждены коллекцией Postman):
-     GET   /api/private/client?id&username&status&from&to&page&size
-           -> { content: [...], page: {size, number, totalElements, totalPages} }
-     PATCH /api/private/client/{id}   <- { status?, orderTimeoutSeconds?, commissionPercent?, callbackUrl? }
-           обновляются только поля, не равные null
-     GET   /api/private/dictionary    -> { ClientStatus: [{name, description}] }
-     GET   /api/private/merchant-config/{clientId}
-     PATCH /api/private/merchant-config/{id}
+   Эндпоинты (из коллекции processing.postman_collection):
+     GET    /api/private/api-key            -> [{id, name, preview}]
+     POST   /api/private/api-key?name=      -> строка с полным токеном
+     DELETE /api/private/api-key/{id}
+     PATCH  /api/private/client/{id}        <- {callbackUrl}
+     GET    /api/private/client             -> {content: [...], page: {...}}
+
+   ВНИМАНИЕ, требует подтверждения у бэкенда:
+   отдельного эндпоинта «свой профиль» в коллекции нет. Считаем, что
+   для роли ROLE_CLIENT запрос GET /api/private/client возвращает
+   только собственную запись клиента — из неё берём id и callbackUrl.
+   Если появится /api/private/client/me — заменить в loadProfile()
+   одну строку.
    ============================================================ */
 
 const API = '/api/private';
 
 /* Защита от подделки запросов (CSRF).
    Сервер кладёт секрет в куку XSRF-TOKEN и требует то же значение
-   в заголовке X-XSRF-TOKEN при каждом изменяющем запросе.
-   Чужой сайт куку прочитать не может, поэтому подделать заголовок не сумеет.
-   Без этого заголовка PATCH/POST/DELETE отклоняются. */
+   в заголовке X-XSRF-TOKEN при каждом изменяющем запросе. */
 function xsrfToken() {
   try {
     const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
@@ -33,9 +35,11 @@ function xsrfToken() {
    options:
      method  — 'GET' по умолчанию
      body    — объект (сериализуется) или готовая строка
-     params  — объект query-параметров, пустые отбрасываются */
+     params  — объект query-параметров, пустые отбрасываются
+     raw     — true, если ответ приходит строкой, а не JSON
+               (так отдаётся созданный токен) */
 export async function request(url, options = {}) {
-  const { params, body, headers, ...rest } = options;
+  const { params, body, headers, raw, ...rest } = options;
 
   const method = (rest.method || 'GET').toUpperCase();
   const needsCsrf = method !== 'GET' && method !== 'HEAD';
@@ -52,15 +56,13 @@ export async function request(url, options = {}) {
         ...(headers || {}),
       },
       ...(body !== undefined
-        ? { body: typeof body === 'string' ? body : JSON.stringify(body) }
-        : {}),
+          ? { body: typeof body === 'string' ? body : JSON.stringify(body) }
+          : {}),
     });
   } catch {
     throw new Error('Нет связи с сервером');
   }
 
-  // Сессия истекла. Сервер при этом может ответить редиректом на форму
-  // входа — тогда вместо JSON придёт HTML, это ловится ниже.
   if (res.status === 401 || res.status === 403) {
     const err = new Error('Сессия истекла, войдите заново');
     err.unauthorized = true;
@@ -68,26 +70,33 @@ export async function request(url, options = {}) {
   }
 
   const ct = res.headers.get('content-type') || '';
-  const isJson = ct.includes('application/json');
-  const data = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => null);
+  const isJson = ct.includes('application/json') || ct.includes('problem+json');
+  const text = await res.text().catch(() => '');
 
   // Пришла HTML-страница вместо данных — почти наверняка форма входа
   // после редиректа. Считаем это истёкшей сессией.
-  if (!isJson && typeof data === 'string' && data.trimStart().startsWith('<')) {
+  if (!isJson && text.trimStart().startsWith('<')) {
     const err = new Error('Сессия истекла, войдите заново');
     err.unauthorized = true;
     throw err;
   }
 
-  if (!res.ok) {
-    // Формат ошибки бэка: { status, title, description, ... }
+  let data = text;
+  if (isJson || !raw) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
+
+  // Бэк иногда отдаёт тело ошибки при формально успешном коде,
+  // поэтому проверяем и содержимое: {status, title, description}.
+  const errorish = data && typeof data === 'object' && !Array.isArray(data)
+      && typeof data.status === 'number' && data.status >= 400;
+
+  if (!res.ok || errorish) {
     const msg = (data && typeof data === 'object'
-      && (data.description || data.title || data.message || data.error))
-      || `Ошибка ${res.status}`;
+            && (data.description || data.title || data.message || data.error))
+        || `Ошибка ${res.status}`;
     const err = new Error(msg);
-    err.status = res.status;
+    err.status = errorish ? data.status : res.status;
     throw err;
   }
 
@@ -106,60 +115,47 @@ function buildUrl(url, params) {
 }
 
 export const api = {
-  // Список клиентов. Возвращает { items, total, totalPages }.
-  async clients(params) {
-    const d = await request(`${API}/client`, { params });
+  /* Профиль текущего клиента.
+     См. примечание в шапке файла: берём первую (и единственную для
+     роли клиента) запись из списка клиентов. */
+  async profile() {
+    const d = await request(`${API}/client`);
     const items = Array.isArray(d?.content) ? d.content : [];
-    return {
-      items,
-      total: d?.page?.totalElements ?? items.length,
-      totalPages: d?.page?.totalPages ?? 1,
-    };
+    return items[0] || null;
   },
 
-  // Обновление клиента. Шлём ТОЛЬКО изменённое поле:
-  // бэк обновляет всё, что не null, поэтому лишние поля перезапишут данные.
-  updateClient: (id, body) =>
-    request(`${API}/client/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+  // Сохранение Callback URL. Шлём только это поле:
+  // бэк обновляет всё, что не null.
+  saveCallbackUrl: (id, callbackUrl) =>
+      request(`${API}/client/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: { callbackUrl },
+      }),
 
-  // Справочники (ClientStatus и другие перечисления).
-  dictionary: () => request(`${API}/dictionary`),
+  // Список токенов: [{id, name, preview}].
+  async apiKeys() {
+    const d = await request(`${API}/api-key`);
+    return Array.isArray(d) ? d : [];
+  },
 
-  merchantConfigs: (clientId) =>
-    request(`${API}/merchant-config/${encodeURIComponent(clientId)}`),
-  updateMerchantConfig: (id, body) =>
-    request(`${API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+  // Создание токена. Ответ — строка с полным значением,
+  // показывается один раз и больше не доступна.
+  createApiKey: (name) =>
+      request(`${API}/api-key`, { method: 'POST', params: { name }, raw: true }),
+
+  deleteApiKey: (id) =>
+      request(`${API}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
 /* ---------------- Формат и проверки ---------------- */
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const isUuid = (s) => UUID_RE.test(String(s || '').trim());
-
-// registeredAt приходит как UNIX-время в миллисекундах.
-export function fmtDateTime(ms) {
-  if (ms == null || ms === '') return '—';
-  const d = new Date(Number(ms));
-  if (Number.isNaN(d.getTime())) return '—';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+/* Проверка Callback URL. Пустое значение допустимо — по ТЗ это
+   означает, что уведомления не отправляются. */
+export function isValidCallbackUrl(value) {
+  const v = String(value || '').trim();
+  if (!v) return true;
+  let u;
+  try { u = new URL(v); } catch { return false; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+  return Boolean(u.hostname);
 }
-
-// Дата из поля <input type="date"> (строка ГГГГ-ММ-ДД) -> миллисекунды.
-// edge: 'start' — начало суток, 'end' — конец суток.
-export function dateToMs(value, edge = 'start') {
-  if (!value) return '';
-  const [y, m, d] = value.split('-').map(Number);
-  if (!y || !m || !d) return '';
-  const date = edge === 'end'
-    ? new Date(y, m - 1, d, 23, 59, 59, 999)
-    : new Date(y, m - 1, d, 0, 0, 0, 0);
-  return date.getTime();
-}
-
-// Комиссия: дробное число, может быть null.
-export const fmtPercent = (v) =>
-  v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} %`;
-
-export const fmtSeconds = (v) =>
-  v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU')} сек`;

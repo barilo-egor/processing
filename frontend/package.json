@@ -1,0 +1,17 @@
+{
+  "name": "@webapps/frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "support",
+    "client"
+  ],
+  "scripts": {
+    "build": "npm run build -w @webapps/api-admin && npm run build -w @webapps/api-client",
+    "build:support": "npm run build -w @webapps/api-admin",
+    "build:client": "npm run build -w @webapps/api-client",
+    "dev:support": "npm run dev -w @webapps/api-admin",
+    "dev:client": "npm run dev -w @webapps/api-client"
+  }
+}

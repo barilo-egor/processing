@@ -1,10 +1,10 @@
 {
-  "name": "@webapps/api-admin",
+  "name": "@webapps/api-client",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5182",
+    "dev": "vite --port 5183",
     "build": "vite build",
     "preview": "vite preview"
   },
