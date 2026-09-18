@@ -1,5 +1,6 @@
 package net.rcetech.domain.service.clients;
 
+import jakarta.validation.ConstraintViolationException;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
@@ -78,8 +79,7 @@ class ClientServiceTest {
     void save_shouldSaveWithDefaultValues() {
         Client dummyClient = getDummyClient();
         Client actual = clientService.save(dummyClient);
-        assertEquals(BigDecimal.ZERO, actual.getBalance());
-        assertEquals(BigDecimal.ZERO, actual.getBalance());
+        assertEquals(0, actual.getBalance());
     }
 
     @ParameterizedTest
@@ -321,6 +321,9 @@ class ClientServiceTest {
         if (Objects.isNull(client.getStatus())) {
             client.setStatus(ClientStatus.ACTIVE);
         }
+        if (Objects.isNull(client.getBalance())) {
+            client.setBalance(0);
+        }
     }
 
     @CsvSource("""
@@ -424,5 +427,13 @@ class ClientServiceTest {
                 () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds()),
                 () -> assertEquals(callbackUrl, updated.getCallbackUrl())
         );
+    }
+
+    @Test
+    void saveClient_shouldThrowExceptionIfBalanceNotPositive() {
+        Client client = new Client();
+        client.setBalance(-1);
+        fillRequiredFields(client);
+        assertThrows(ConstraintViolationException.class, () -> clientRepository.saveAndFlush(client));
     }
 }

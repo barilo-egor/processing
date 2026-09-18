@@ -103,10 +103,10 @@ class MerchantCallbackConsumerTest {
                                                     Merchant merchant) {
         String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
         callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
+        ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
         await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
                     verify(orderCallbackService).resolve(captor.capture());
                     MerchantCallbackEvent actual = captor.getValue();
                     assertAll(

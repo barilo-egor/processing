@@ -170,7 +170,7 @@ class ClientControllerTest {
             resultActions.andExpect(jsonPath("$.content[" + i + "].orderTimeoutSeconds").value(900));
             resultActions.andExpect(jsonPath("$.content[" + i + "].commissionPercent").value("20.5"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].balance").isNumber());
-            resultActions.andExpect(jsonPath("$.content[" + i + "].balance").value("154789.24"));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].balance").value("154789"));
             i++;
         }
     }
@@ -178,7 +178,7 @@ class ClientControllerTest {
     private static @NonNull ClientResponseDTO getClient(int i) {
         return new ClientResponseDTO(UUID.randomUUID(), "test" + i, Instant.now(),
                 ClientStatus.ACTIVE, "https://example.com/callback", 900,
-                new BigDecimal("20.5"), new BigDecimal("154789.2455"));
+                new BigDecimal("20.5"), 154789);
     }
 
     @CsvSource("""

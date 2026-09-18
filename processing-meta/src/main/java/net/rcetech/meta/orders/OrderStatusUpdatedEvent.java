@@ -10,8 +10,11 @@ public class OrderStatusUpdatedEvent extends ApplicationEvent {
 
     private final UUID orderId;
 
-    public OrderStatusUpdatedEvent(Object source, UUID orderId) {
+    private final OrderStatus orderStatus;
+
+    public OrderStatusUpdatedEvent(Object source, UUID orderId, OrderStatus orderStatus) {
         super(source);
         this.orderId = orderId;
+        this.orderStatus = orderStatus;
     }
 }

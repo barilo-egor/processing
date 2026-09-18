@@ -21,6 +21,10 @@ dependencies {
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 
     testImplementation 'jakarta.servlet:jakarta.servlet-api'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-mysql'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
 }
 
 bootJar {

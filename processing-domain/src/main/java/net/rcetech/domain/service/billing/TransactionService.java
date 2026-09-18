@@ -1,18 +1,22 @@
 package net.rcetech.domain.service.billing;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.domain.mapper.billing.TransactionMapper;
-import net.rcetech.meta.billing.dto.TransactionDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import net.rcetech.domain.model.billing.Transaction;
+import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.billing.TransactionRepository;
-import net.rcetech.domain.util.PageableUtils;
+import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionCreatedEvent;
+import net.rcetech.meta.billing.TransactionType;
+import net.rcetech.meta.exception.BaseException;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -21,67 +25,36 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
 
-    private final TransactionMapper transactionMapper;
+    private final OrderService orderService;
 
-    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public TransactionService(TransactionRepository transactionRepository, OrderService orderService,
+                              ApplicationEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
-        this.transactionMapper = transactionMapper;
+        this.orderService = orderService;
+        this.eventPublisher = eventPublisher;
     }
 
-    /**
-     * Создает новую transaction, если она не была создана ранее.
-     * <p>
-     * Метод идемпотентен: если transaction с указанным ID уже существует в базе данных,
-     * операция логируется как предупреждение и завершается без повторного сохранения.
-     *
-     * @param transactionDTO данные создаваемой transaction (обязательно должен содержать валидный ID)
-     */
-    public void create(TransactionDTO transactionDTO) {
-        log.debug("Вызов create для transaction: {}", transactionDTO);
-        if (transactionRepository.existsById(transactionDTO.getId())) {
-            // Изменено: добавлен контекст "при создании"
-            log.warn("Дубликат при создании! Transaction с id {} уже существует.", transactionDTO.getId());
-            return;
-        }
-        Transaction transaction = transactionMapper.toEntity(transactionDTO);
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createAfterOrderConfirmation(UUID orderId) {
+        Order order = orderService.findById(orderId)
+                .orElseThrow(() -> new BaseException("Order " + orderId.toString() + " not found"));
+        Transaction transaction = new Transaction();
+        transaction.setClient(order.getClient());
+        transaction.setCreatedAt(Instant.now());
+        transaction.setOperation(Operation.CREDIT);
+        transaction.setAmount(order.getAmount());
+        transaction.setType(TransactionType.ORDER_CONFIRMATION);
+        transaction.setComment("Подтверждение по ордеру " + order.getId() + ". Транзакция создана системой.");
         transactionRepository.save(transaction);
-        log.debug("Успешно создана transaction: {}", transaction.getId());
+        eventPublisher.publishEvent(new TransactionCreatedEvent(
+                this,
+                transaction.getId()
+        ));
     }
 
-    /**
-     * Сохраняет transaction в базе данных, если она не была создана ранее.
-     * <p>
-     * Перед записью проверяет существование записи по ID. Если transaction уже есть,
-     * operation логируется как предупреждение и завершается без перезаписи данных.
-     *
-     * @param transactionDTO данные сохраняемой transaction
-     */
-    // TODO добавить синхронизацию для check and act
-    public void save(TransactionDTO transactionDTO) {
-        log.debug("Вызов save для transaction: {}", transactionDTO);
-        if (transactionRepository.existsById(transactionDTO.getId())) {
-            log.warn("Пропуск сохранения! Transaction с id {} уже существует.", transactionDTO.getId());
-            return;
-        }
-        Transaction transaction = transactionRepository.save(transactionMapper.toEntity(transactionDTO));
-        log.debug("Успешно сохранена transaction: {}", transaction.getId());
+    public Optional<Transaction> findById(Long transactionId) {
+        return transactionRepository.findById(transactionId);
     }
-
-    /**
-     * Возвращает страницу transaction, соответствующих заданным критериям фильтрации и сортировки.
-     * <p>
-     *
-     * @param spec    спецификация JPA с критериями фильтрации полей
-     * @param page    номер запрашиваемой страницы (начиная с 0)
-     * @param size    количество записей на одной странице
-     * @param sorters список строк для настройки направления сортировки (например, "id,desc")
-     * @return страница {@link Page} с результатами поиска, смаппированными в {@link TransactionDTO}
-     */
-    @Transactional(readOnly = true)
-    public Page<TransactionDTO> findTransactions(Specification<Transaction> spec, int page, int size,
-            List<String> sorters) {
-        Pageable pageable = PageableUtils.createPageable(page, size, sorters);
-        return transactionRepository.findAll(spec, pageable).map(transactionMapper::entityToDTO);
-    }
-
 }
