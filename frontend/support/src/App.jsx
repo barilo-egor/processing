@@ -428,7 +428,6 @@ function AccountMenu() {
             aria-haspopup="menu"
             aria-expanded={open}
         >
-          <i className="fa-solid fa-circle-user" />
           <span className="account-name">{name}</span>
           <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} account-caret`} />
         </button>
@@ -436,7 +435,7 @@ function AccountMenu() {
         {open && (
             <div className="account-menu" role="menu">
               <a className="account-item" href="/logout" role="menuitem">
-                <i className="fa-solid fa-arrow-right-from-bracket" />
+                <i className="fa-solid fa-right-from-bracket" />
                 Выйти
               </a>
             </div>
@@ -472,7 +471,7 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
         // Бэк принимает одно поле client — ищет и по логину, и по ID.
         client: filter.client.trim(),
         internalId: filter.internalId.trim(),
-        merchant: filter.merchant.trim(),
+        merchant: filter.merchant,
         merchantOrderId: filter.merchantOrderId.trim(),
         status: filter.status,
         createdAtFrom: dateToMs(filter.createdAtFrom, 'start'),
@@ -533,10 +532,19 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
                      onChange={(e) => set('internalId', e.target.value)} />
             </div>
 
+            {/* В ТЗ здесь текстовое поле, но сервер фильтрует по коду
+              (EVO_PAY), а в таблице показывается название (EvoPay) —
+              вводить пришлось бы код. Справочник мерчантов уже загружен,
+              поэтому выбираем из списка. */}
             <div className="field">
               <label htmlFor="o-merchant">Мерчант</label>
-              <input id="o-merchant" value={draft.merchant}
-                     onChange={(e) => set('merchant', e.target.value)} />
+              <select id="o-merchant" value={draft.merchant}
+                      onChange={(e) => set('merchant', e.target.value)}>
+                <option value="">Все</option>
+                {merchants.map((m) => (
+                    <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="field">
@@ -581,6 +589,8 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
           </div>
         </div>
 
+        <p className="table-hint">Двойной клик по строке — подробная информация</p>
+
         <div className="table-wrap">
           <table className="grid grid-orders">
             <thead>
@@ -609,7 +619,11 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
                     <span className="cell-sub mono">{o.clientId || '—'}</span>
                   </td>
                   <td className="c-right mono">{fmtAmount(o.amount)}</td>
-                  <td>{statusLabel(o.status)}</td>
+                  <td>
+                  <span className={`badge badge-${orderStatusMod(o.status)}`}>
+                    {statusLabel(o.status)}
+                  </span>
+                  </td>
                   <td className="mono">{fmtDateTime(o.createdAt)}</td>
                   <td>{merchantLabel(o.merchant)}</td>
                   <td className="mono">{o.merchantOrderId || '—'}</td>
@@ -654,6 +668,23 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
 function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose, onCopy, showToast }) {
   const [client, setClient] = useState(null);   // карточка клиента поверх
   const [loadingClient, setLoadingClient] = useState(false);
+  /* В списке приходит сокращённый набор полей, поэтому подробности
+     (метод, банк, реквизиты, срок, статус у мерчанта) дозапрашиваем.
+     До ответа показываем то, что уже есть из строки таблицы. */
+  const [full, setFull] = useState(order);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    api.order(order.id)
+        .then((d) => { if (alive && d) setFull({ ...order, ...d }); })
+        .catch((e) => {
+          if (alive) showToast(e.message || 'Не удалось загрузить ордер', 'error');
+        })
+        .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [order, showToast]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !client) onClose(); };
@@ -661,12 +692,12 @@ function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, client]);
 
-  const statusLabel = orderStatuses.find((s) => s.name === order.status)?.description
-      || order.status || '—';
-  const merchantLabel = merchants.find((m) => m.name === order.merchant)?.displayName
-      || order.merchant || '—';
-  const methodLabel = methods.find((m) => m.name === order.method)?.description
-      || order.method || '—';
+  const statusLabel = orderStatuses.find((s) => s.name === full.status)?.description
+      || full.status || '—';
+  const merchantLabel = merchants.find((m) => m.name === full.merchant)?.displayName
+      || full.merchant || '—';
+  const methodLabel = methods.find((m) => m.name === full.method)?.description
+      || full.method || '—';
 
   // Клиента в ордере нет целиком — только логин и ID, поэтому
   // перед открытием карточки подтягиваем запись.
@@ -694,80 +725,84 @@ function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose
   return (
       <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
         <div className="modal modal-wide">
-          <div className="modal-head">
-            <h2>
-              Ордер
-              <span className="head-id copyable mono" onClick={() => onCopy(order.id)} title="Скопировать">
-              {order.id} <i className="fa-regular fa-copy" />
+          <div className="ocard-head">
+            <span className="ocard-ico"><i className="fa-solid fa-receipt" /></span>
+            <div className="ocard-title">
+              <span className="eyebrow">Ордер</span>
+              <span className="copyable mono ocard-id" onClick={() => onCopy(full.id)} title="Скопировать">
+              {full.id} <i className="fa-regular fa-copy" />
             </span>
-            </h2>
+            </div>
+            {loading && <i className="fa-solid fa-spinner fa-spin head-spin" />}
             <button type="button" className="close-x" onClick={onClose} aria-label="Закрыть">×</button>
           </div>
 
-          <div className="modal-body">
-            {/* Ключевые значения */}
-            <div className="key-row">
-              <div className="key-item">
-                <span className="key-label">Сумма</span>
-                <span className="key-value mono">{fmtAmount(order.amount)} ₽</span>
-              </div>
-              <div className="key-item">
-                <span className="key-label">Статус</span>
-                <span className="key-value">{statusLabel}</span>
-              </div>
+          {/* Ключевые значения: сумма слева, статус справа */}
+          <div className="key-row">
+            <div className="key-item">
+              <span className="eyebrow">Сумма</span>
+              <span className="key-value mono">{fmtAmount(full.amount)} ₽</span>
             </div>
+            <div className="key-item key-item-right">
+              <span className="eyebrow">Статус</span>
+              <span className={`badge badge-${orderStatusMod(full.status)}`}>{statusLabel}</span>
+            </div>
+          </div>
 
+          <div className="modal-body">
             <div className="two-col">
               <section className="col">
-                <Row label="Логин клиента">{order.clientUsername || '—'}</Row>
+                <Field label="Логин клиента">{full.clientUsername || '—'}</Field>
 
-                <Row label="ID клиента">
-                <span className="copyable" onClick={() => onCopy(order.clientId)} title="Скопировать">
-                  <span className="mono">{order.clientId || '—'}</span> <i className="fa-regular fa-copy" />
+                <Field label="ID клиента">
+                <span className="copyable" onClick={() => onCopy(full.clientId)} title="Скопировать">
+                  <span className="mono">{full.clientId || '—'}</span> <i className="fa-regular fa-copy" />
                 </span>
-                </Row>
+                </Field>
 
-                <Row label="ID в системе клиента">
-                <span className="copyable" onClick={() => onCopy(order.internalId)} title="Скопировать">
-                  <span className="mono">{order.internalId || '—'}</span> <i className="fa-regular fa-copy" />
+                <Field label="ID в системе клиента">
+                <span className="copyable" onClick={() => onCopy(full.internalId)} title="Скопировать">
+                  <span className="mono">{full.internalId || '—'}</span> <i className="fa-regular fa-copy" />
                 </span>
-                </Row>
+                </Field>
 
-                <Row label="Метод">{methodLabel}</Row>
-                <Row label="Банк">{order.bank || '—'}</Row>
+                <Field label="Метод">{methodLabel}</Field>
+                <Field label="Банк">{full.bank || '—'}</Field>
 
-                <Row label="Реквизиты">
-                <span className="copyable" onClick={() => onCopy(order.details)} title="Скопировать">
-                  <span className="mono">{order.details || '—'}</span> <i className="fa-regular fa-copy" />
+                <Field label="Реквизиты">
+                <span className="copyable" onClick={() => onCopy(full.details)} title="Скопировать">
+                  <span className="mono">{full.details || '—'}</span> <i className="fa-regular fa-copy" />
                 </span>
-                </Row>
+                </Field>
               </section>
 
               <section className="col">
-                <Row label="Дата создания">
-                  <span className="mono">{fmtDateTime(order.createdAt)}</span>
-                </Row>
-                <Row label="Дата истечения">
-                  <span className="mono">{fmtDateTime(order.expiresAt)}</span>
-                </Row>
-                <Row label="Уникализация суммы">
-                  {order.enableUniqueAmount ? 'Разрешена' : 'Не разрешена'}
-                </Row>
-                <Row label="Callback URL">{order.callbackUrl || '—'}</Row>
-                <Row label="Мерчант">{merchantLabel}</Row>
+                <Field label="Дата создания">
+                  <span className="mono">{fmtDateTime(full.createdAt)}</span>
+                </Field>
+                <Field label="Дата истечения">
+                  <span className="mono">{fmtDateTime(full.expiresAt)}</span>
+                </Field>
+                <Field label="Уникализация суммы">
+                  {full.enableUniqueAmount ? 'Разрешена' : 'Не разрешена'}
+                </Field>
+                <Field label="Callback URL">
+                  <span className="mono wrap">{full.callbackUrl || '—'}</span>
+                </Field>
+                <Field label="Мерчант">{merchantLabel}</Field>
 
-                <Row label="ID у мерчанта">
-                <span className="copyable" onClick={() => onCopy(order.merchantOrderId)} title="Скопировать">
-                  <span className="mono">{order.merchantOrderId || '—'}</span> <i className="fa-regular fa-copy" />
+                <Field label="ID у мерчанта">
+                <span className="copyable" onClick={() => onCopy(full.merchantOrderId)} title="Скопировать">
+                  <span className="mono">{full.merchantOrderId || '—'}</span> <i className="fa-regular fa-copy" />
                 </span>
-                </Row>
+                </Field>
 
-                <Row label="Статус у мерчанта">{order.merchantOrderStatus || '—'}</Row>
+                <Field label="Статус у мерчанта">{full.merchantOrderStatus || '—'}</Field>
               </section>
             </div>
           </div>
 
-          <div className="modal-foot">
+          <div className="modal-foot modal-foot-split">
             <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
               <i className="fa-solid fa-user" />
               Открыть карточку клиента
@@ -788,6 +823,25 @@ function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose
         )}
       </div>
   );
+}
+
+/* ---- Поле карточки: подпись сверху, значение снизу ---- */
+function Field({ label, children }) {
+  return (
+      <div className="fitem">
+        <span className="eyebrow">{label}</span>
+        <span className="fvalue">{children}</span>
+      </div>
+  );
+}
+
+/* Цвет бейджа статуса ордера. Успешный — зелёный, отменённый —
+   красный, просроченный и спорный — жёлтый, новый — нейтральный. */
+function orderStatusMod(name) {
+  if (name === 'SUCCESS') return 'ok';
+  if (name === 'CANCELED') return 'bad';
+  if (name === 'TIMEOUT' || name === 'DISPUTE') return 'warn';
+  return 'info';
 }
 
 /* Сумма ордера: целые рубли с разделителем разрядов. */
@@ -920,81 +974,96 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
 
   return (
       <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="modal">
-          <div className="modal-head">
-            <h2>Клиент</h2>
+        <div className="modal modal-wide">
+          <div className="ocard-head">
+          <span className="ocard-ico ocard-ico-lg">
+            {(client.username || '?').charAt(0).toUpperCase()}
+          </span>
+            <div className="ocard-title">
+              <span className="ocard-name">{client.username || '—'}</span>
+              <span className="ocard-sub">Клиент API</span>
+            </div>
+            <StatusBadge status={client.status} statuses={statuses} />
             <button type="button" className="close-x" onClick={onClose} aria-label="Закрыть">×</button>
           </div>
 
           <div className="modal-body">
-            {/* ---------- Информация: только чтение ---------- */}
-            <section className="card-block">
-              <h3 className="card-block-title">Информация</h3>
+            <div className="two-col two-col-split">
+              {/* ---------- Информация: только чтение ---------- */}
+              <section className="col">
+                <h3 className="block-head">
+                  <i className="fa-solid fa-circle-info" />
+                  Информация
+                </h3>
 
-              <Row label="ID">
-              <span className="copyable" onClick={() => onCopy(client.id)} title="Скопировать">
-                <span className="mono">{client.id}</span> <i className="fa-regular fa-copy" />
-              </span>
-              </Row>
+                <Field label="ID">
+                <span className="copyable" onClick={() => onCopy(client.id)} title="Скопировать">
+                  <span className="mono wrap">{client.id}</span> <i className="fa-regular fa-copy" />
+                </span>
+                </Field>
 
-              <Row label="Логин">
-              <span className="copyable" onClick={() => onCopy(client.username)} title="Скопировать">
-                {client.username || '—'} <i className="fa-regular fa-copy" />
-              </span>
-              </Row>
+                <Field label="Логин">
+                <span className="copyable" onClick={() => onCopy(client.username)} title="Скопировать">
+                  {client.username || '—'} <i className="fa-regular fa-copy" />
+                </span>
+                </Field>
 
-              <Row label="Дата регистрации">
-                <span className="mono">{fmtDateTime(client.registeredAt)}</span>
-              </Row>
+                <Field label="Дата регистрации">
+                  <span className="mono">{fmtDateTime(client.registeredAt)}</span>
+                </Field>
 
-              {/* Имя поля баланса не подтверждено — см. примечание в api.js */}
-              <Row label="Баланс">
-                <span className="mono">{fmtMoney(client.balance)}</span>
-              </Row>
-            </section>
+                {/* Имя поля баланса не подтверждено — см. примечание в api.js */}
+                <Field label="Баланс">
+                  <span className="mono">{fmtMoney(client.balance)}</span>
+                </Field>
+              </section>
 
-            {/* ---------- Настройки: поля правятся сразу ---------- */}
-            <section className="card-block">
-              <h3 className="card-block-title">Настройки</h3>
+              {/* ---------- Настройки: поля правятся сразу ---------- */}
+              <section className="col">
+                <h3 className="block-head">
+                  <i className="fa-solid fa-sliders" />
+                  Настройки
+                </h3>
 
-              <FieldRow label="Статус" error={errors.status}>
-                <select
-                    value={form.status}
-                    disabled={saving}
-                    onChange={(e) => setField('status', e.target.value)}
-                >
-                  {statuses.map((s) => (
-                      <option key={s.name} value={s.name}>{s.description}</option>
-                  ))}
-                </select>
-              </FieldRow>
+                <FieldRow label="Статус" error={errors.status}>
+                  <select
+                      value={form.status}
+                      disabled={saving}
+                      onChange={(e) => setField('status', e.target.value)}
+                  >
+                    {statuses.map((s) => (
+                        <option key={s.name} value={s.name}>{s.description}</option>
+                    ))}
+                  </select>
+                </FieldRow>
 
-              <FieldRow label="Комиссия" error={errors.commission}>
-              <span className="input-suffix">
-                <input
-                    type="number" step="0.1" min="0"
-                    value={form.commission}
-                    disabled={saving}
-                    className={errors.commission ? 'invalid' : ''}
-                    onChange={(e) => setField('commission', e.target.value)}
-                />
-                <span className="suffix">%</span>
-              </span>
-              </FieldRow>
+                <FieldRow label="Комиссия" error={errors.commission}>
+                <span className="input-suffix">
+                  <input
+                      type="number" step="0.1" min="0"
+                      value={form.commission}
+                      disabled={saving}
+                      className={errors.commission ? 'invalid' : ''}
+                      onChange={(e) => setField('commission', e.target.value)}
+                  />
+                  <span className="suffix">%</span>
+                </span>
+                </FieldRow>
 
-              <FieldRow label="Время активности ордеров" error={errors.timeout}>
-              <span className="input-suffix">
-                <input
-                    type="number" step="1" min={TIMEOUT_MIN} max={TIMEOUT_MAX}
-                    value={form.timeout}
-                    disabled={saving}
-                    className={errors.timeout ? 'invalid' : ''}
-                    onChange={(e) => setField('timeout', e.target.value)}
-                />
-                <span className="suffix">сек</span>
-              </span>
-              </FieldRow>
-            </section>
+                <FieldRow label="Время активности ордеров" error={errors.timeout}>
+                <span className="input-suffix">
+                  <input
+                      type="number" step="1" min={TIMEOUT_MIN} max={TIMEOUT_MAX}
+                      value={form.timeout}
+                      disabled={saving}
+                      className={errors.timeout ? 'invalid' : ''}
+                      onChange={(e) => setField('timeout', e.target.value)}
+                  />
+                  <span className="suffix">сек</span>
+                </span>
+                </FieldRow>
+              </section>
+            </div>
           </div>
 
           <div className="modal-foot">
@@ -1002,6 +1071,7 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
               Отмена
             </button>
             <button type="button" className="btn btn-primary" disabled={saving} onClick={onSave}>
+              <i className="fa-solid fa-check" />
               Сохранить
             </button>
           </div>
@@ -1020,23 +1090,13 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
   );
 }
 
-/* ---- Строка карточки: подпись и значение ---- */
-function Row({ label, children }) {
-  return (
-      <div className="prow">
-        <span className="k">{label}</span>
-        <span className="v">{children}</span>
-      </div>
-  );
-}
-
 /* ---- Строка с полем ввода и сообщением об ошибке ---- */
 function FieldRow({ label, error, children }) {
   return (
-      <div className={`prow prow-field${error ? ' has-error' : ''}`}>
-        <span className="k">{label}</span>
-        <span className="v">{children}</span>
-        {error && <span className="row-error">{error}</span>}
+      <div className={`fitem fitem-field${error ? ' has-error' : ''}`}>
+        <span className="eyebrow">{label}</span>
+        <span className="fvalue">{children}</span>
+        {error && <span className="field-error">{error}</span>}
       </div>
   );
 }
