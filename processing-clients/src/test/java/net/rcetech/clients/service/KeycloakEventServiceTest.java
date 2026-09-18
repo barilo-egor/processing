@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.event.KeycloakEventHandler;
 import net.rcetech.meta.MetricsConstants;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +32,7 @@ class KeycloakEventServiceTest {
     private KeycloakEventService keycloakEventService;
 
     @Test
+    @DisplayName("Ивент должен быть обработан.")
     void handle_shouldHandleEvent() {
         when(keycloakEventHandler.getEventType()).thenReturn(KeycloakEvent.EventType.REGISTER);
         keycloakEventService = new KeycloakEventService(executor, List.of(keycloakEventHandler), meterRegistry);
@@ -45,6 +47,7 @@ class KeycloakEventServiceTest {
     }
 
     @Test
+    @DisplayName("Ошибка обработки ивента должна быть зарегистрирована как метрика.")
     void handle_shouldCountErrorIfHandlerThrowsException() {
         when(keycloakEventHandler.getEventType()).thenReturn(KeycloakEvent.EventType.REGISTER);
         keycloakEventService = new KeycloakEventService(executor, List.of(keycloakEventHandler), meterRegistry);
@@ -64,6 +67,7 @@ class KeycloakEventServiceTest {
     }
 
     @Test
+    @DisplayName("Должен пропустить ивент, если обработчик по типу не найден.")
     void handle_shouldSkipIfNoHandler() {
         when(keycloakEventHandler.getEventType()).thenReturn(KeycloakEvent.EventType.REGISTER);
         keycloakEventService = new KeycloakEventService(executor, List.of(keycloakEventHandler), meterRegistry);
@@ -75,13 +79,15 @@ class KeycloakEventServiceTest {
     }
 
     @Test
-    void constructor_ShouldThrowNPEIfEventTypeIsNull() {
+    @DisplayName("Метод должен бросить NPE, если тип ивента равен null.")
+    void constructor_shouldThrowNPEIfEventTypeIsNull() {
         when(keycloakEventHandler.getEventType()).thenReturn(null);
         List<KeycloakEventHandler> handlers = List.of(keycloakEventHandler);
         assertThrows(NullPointerException.class, () -> new KeycloakEventService(executor, handlers, meterRegistry));
     }
 
     @Test
+    @DisplayName("Должен бросить IllegalStateException, если найдены дубликаты обработчиков.")
     void constructor_shouldThrowIllegalStateExceptionIfDuplicatesHandlers() {
         when(keycloakEventHandler.getEventType()).thenReturn(KeycloakEvent.EventType.REGISTER);
         List<KeycloakEventHandler> handlers = List.of(keycloakEventHandler, keycloakEventHandler);

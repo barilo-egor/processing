@@ -76,6 +76,7 @@ class ClientServiceTest {
     }
 
     @Test
+    @DisplayName("Клиент должен быть сохранен с дефолтными значениями.")
     void save_shouldSaveWithDefaultValues() {
         Client dummyClient = getDummyClient();
         Client actual = clientService.save(dummyClient);
@@ -430,6 +431,7 @@ class ClientServiceTest {
     }
 
     @Test
+    @DisplayName("Должен быть брошен ConstraintViolationException, если баланс меньше нуля.")
     void saveClient_shouldThrowExceptionIfBalanceNotPositive() {
         Client client = new Client();
         client.setBalance(-1);

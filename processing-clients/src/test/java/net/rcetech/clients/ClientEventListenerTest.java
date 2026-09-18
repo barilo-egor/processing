@@ -13,6 +13,7 @@ import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.clients.ClientStatus;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mapstruct.factory.Mappers;
@@ -86,6 +87,7 @@ class ClientEventListenerTest {
             MANUAL_CORRECT,489990
             MANUAL_CORRECT,1
             """)
+    @DisplayName("После создания транзакции на пополнение баланс должен быть увеличен.")
     void transactionCreated_shouldCreditBalance(TransactionType transactionType, Integer amount) {
         Client client = getDummyClient();
         Transaction transaction = new Transaction();
@@ -114,6 +116,7 @@ class ClientEventListenerTest {
             MANUAL_CORRECT,4006
             MANUAL_CORRECT,2066
             """)
+    @DisplayName("После создания транзакции на списание баланс должен быть уменьшен.")
     void transactionCreated_shouldDebitBalance(TransactionType transactionType, Integer amount) {
         Client client = getDummyClient();
         client.setBalance(amount + 1000);

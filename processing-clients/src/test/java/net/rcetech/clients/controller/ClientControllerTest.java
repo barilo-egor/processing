@@ -117,6 +117,7 @@ class ClientControllerTest {
     @ParameterizedTest
     @ValueSource(strings = {"login_event.json", "login_error_event.json"})
     @WithMockUser(roles = {"WEBHOOK_CLIENT"})
+    @DisplayName("Метод должен вернуть статус NO CONTENT, если обработчик для ивента не найден.")
     void event_shouldReturnNoContentIfHandlerNotFound(String fileName) throws Exception {
         when(keycloakEventService.handle(any(KeycloakEvent.class))).thenReturn(false);
         String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
@@ -129,6 +130,7 @@ class ClientControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    @DisplayName("Метод должен вернуть пустой массив.")
     void getClients_shouldReturnEmptyArray() throws Exception {
         Page<ClientResponseDTO> page = new PageImpl<>(new ArrayList<>());
         when(clientService.findAll(any(), any())).thenReturn(page);
@@ -187,6 +189,7 @@ class ClientControllerTest {
             """)
     @ParameterizedTest
     @WithMockUser(roles = "ADMIN")
+    @DisplayName("Метод должен передать параметры фильтрации в метод сервиса.")
     void getClients_shouldPassParametersToMethod(String id, String username, String status, long from, long to,
                                                  int size, int page) throws Exception {
         when(clientService.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));

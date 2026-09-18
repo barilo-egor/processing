@@ -15,6 +15,7 @@ import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -128,6 +129,7 @@ class TransactionEventListenerTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен создать транзакцию, если статус ордера SUCCESS.")
     void orderStatusUpdated_shouldCreateTransactionIfSuccessStatus() {
         Client client = getDummyClient();
         UUID orderId = UUID.randomUUID();
@@ -163,6 +165,7 @@ class TransactionEventListenerTest {
     @ValueSource(strings = {
             "NEW", "DISPUTE"
     })
+    @DisplayName("Метод должен пропустить ивент, если это не SUCCESS статус.")
     void orderStatusUpdated_shouldSkipIfStatusNotSuccess(OrderStatus status) {
         Client client = getDummyClient();
         UUID orderId = UUID.randomUUID();

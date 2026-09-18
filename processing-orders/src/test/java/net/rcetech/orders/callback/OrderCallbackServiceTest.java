@@ -12,6 +12,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -146,6 +147,7 @@ class OrderCallbackServiceTest {
     @ValueSource(strings = {
             "12363466", "7257beb1-b01f-4c05-a053-1e1144f3d18b"
     })
+    @DisplayName("Метод должен пропустить обработку КБ, если ордер не найден.")
     void resolve_shouldSkipIfOrderNotFound(String id) {
         Client client = getDummyClient();
         Order order = getDummyOrder(client);
@@ -163,7 +165,8 @@ class OrderCallbackServiceTest {
             "12363466,QWERTY",
             "7257beb1-b01f-4c05-a053-1e1144f3d18b,VERY_SUCCESS"
     })
-    void resolve_shouldThrowBaseExceptionIfStatusNotResolveed(String id, String status) {
+    @DisplayName("Метод должен бросить BaseException, если статус не определен.")
+    void resolve_shouldThrowBaseExceptionIfStatusNotResolved(String id, String status) {
         Client client = getDummyClient();
         Order order = new Order();
         order.setMerchantOrderId(id);
@@ -182,6 +185,7 @@ class OrderCallbackServiceTest {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
+    @DisplayName("Метод должен пропустить обработку, если статус не может быть обработан.")
     void resolve_shouldSkipIfStatusUnprocessable(UUID id) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -205,6 +209,7 @@ class OrderCallbackServiceTest {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
+    @DisplayName("Метод должен подтвердить ордер, если КБ с успешным статусом.")
     void resolve_shouldConfirmOrder(UUID id) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -233,6 +238,7 @@ class OrderCallbackServiceTest {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
+    @DisplayName("Метод должен отменить ордер, если КБ со статусом отмены.")
     void resolve_shouldCancelOrder(UUID id) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -258,6 +264,7 @@ class OrderCallbackServiceTest {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
+    @DisplayName("Метод должен отменить ордер по таймауту, если КБ со статусом истечения.")
     void resolve_shouldTimeoutOrder(UUID id) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -283,6 +290,7 @@ class OrderCallbackServiceTest {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
+    @DisplayName("Метод должен перевести в спор ордер, если КБ со статусом спора.")
     void resolve_shouldDisputeOrder(UUID id) {
         Client client = getDummyClient();
         Order order = new Order();

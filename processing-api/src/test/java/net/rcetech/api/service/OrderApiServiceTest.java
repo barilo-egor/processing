@@ -324,6 +324,7 @@ class OrderApiServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть только ордера клиента, совершающего запрос.")
     void findAll_shouldReturnOnlyTargetClientOrders() {
         Client targetClient = getDummyClient();
         List<Order> expectedOrders = List.of(getDummyOrder(targetClient), getDummyOrder(targetClient));
@@ -343,6 +344,7 @@ class OrderApiServiceTest {
 
     @ValueSource(strings = { "TIMEOUT", "SUCCESS" })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть отфильтрованные по статусу ордера.")
     void findAll_shouldFilterOrdersByStatus(OrderStatus status) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);
@@ -361,6 +363,7 @@ class OrderApiServiceTest {
 
     @ValueSource(strings = { "QR", "SBP" })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть отфильтрованные по методу ордера.")
     void findAll_shouldFilterOrdersByMethod(RequestMethod method) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);
