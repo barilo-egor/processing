@@ -3,6 +3,7 @@ package net.rcetech.clients.event;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,8 @@ class KeycloakRegisterEventHandlerTest {
     private KeycloakRegisterEventHandler keycloakRegisterEventHandler;
 
     @Test
-    void getEventTypeShouldReturnRegister() {
+    @DisplayName("Тип, возвращаемый обработчиком должен быть REGISTER.")
+    void getEventType_shouldReturnRegister() {
         assertEquals(KeycloakEvent.EventType.REGISTER, keycloakRegisterEventHandler.getEventType());
     }
 
@@ -37,7 +39,8 @@ class KeycloakRegisterEventHandlerTest {
             4b06fa5a-0bdd-4f7e-8cfa-0df665f1f903,1787396737394,admin365
             """})
     @ParameterizedTest
-    void handleShouldBuildClientFromEvent(UUID id, long time, String username) {
+    @DisplayName("Метод должен сформировать клиента по данным из ивента.")
+    void handle_shouldBuildClientFromEvent(UUID id, long time, String username) {
         KeycloakEvent keycloakEvent = mock(KeycloakEvent.class);
         when(keycloakEvent.id()).thenReturn(id);
         when(keycloakEvent.time()).thenReturn(time);

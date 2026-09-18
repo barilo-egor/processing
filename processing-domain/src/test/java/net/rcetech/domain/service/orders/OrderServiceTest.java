@@ -10,6 +10,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,8 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -36,20 +36,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(OrderService.class)
 @Testcontainers
 class OrderServiceTest {
 
     @Autowired
     private OrderService orderService;
-
-    @TestConfiguration
-    static class Configuration {
-
-        @Bean
-        public OrderService orderService(OrderRepository orderRepository) {
-            return new OrderService(orderRepository);
-        }
-    }
 
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
@@ -128,6 +120,7 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть все ордера, если не задан фильтр.")
     void findAll_shouldReturnAllOrdersWithNullFilter() {
         Client client = getDummyClient();
         getDummyOrder(client);
@@ -143,6 +136,7 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть все ордера, если объект фильтров равен null.")
     void findAll_shouldReturnAllOrdersWithEmptyFilter() {
         Client client = getDummyClient();
         getDummyOrder(client);
@@ -162,6 +156,7 @@ class OrderServiceTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен вернуть ордер, если передан фильтр по id.")
     void findAll_shouldReturnOrderById() {
         Client client = getDummyClient();
         Order order = getDummyOrder(client);
@@ -185,6 +180,7 @@ class OrderServiceTest {
             1789401782887L, 1789401732887L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по дате регистрации ОТ.")
     void findAll_shouldReturnOrderByCreatedFrom(long millis) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -214,6 +210,7 @@ class OrderServiceTest {
             1789401782887L, 1789401732887L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по дате регистрации ДО.")
     void findAll_shouldReturnOrderByCreatedTo(long millis) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -240,6 +237,7 @@ class OrderServiceTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по идентификатору клиента.")
     void findAll_shouldReturnOrderByClientId() {
         Client client = getDummyClient();
         assertNotNull(client.getId());
@@ -266,6 +264,7 @@ class OrderServiceTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по логину клиента.")
     void findAll_shouldReturnOrderByClientUsername() {
         Client client = getDummyClient();
         assertNotNull(client.getId());
@@ -295,6 +294,7 @@ class OrderServiceTest {
             "1789401782887", "a4b4746f-46e4-46e0-a077-348b0f914a36"
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по идентификатору в системе клиента.")
     void findAll_shouldReturnOrderByInternalId(String internalId) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -323,6 +323,7 @@ class OrderServiceTest {
             "NEW", "SUCCESS"
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по статусу.")
     void findAll_shouldReturnOrderByStatus(OrderStatus orderStatus) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -352,6 +353,7 @@ class OrderServiceTest {
             "ALFA_TEAM", "EVO_PAY"
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по мерчанту.")
     void findAll_shouldReturnOrderByMerchant(Merchant merchant) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -381,6 +383,7 @@ class OrderServiceTest {
             "1789401782887", "a4b4746f-46e4-46e0-a077-348b0f914a36"
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по идентификатору в системе мерчанта.")
     void findAll_shouldReturnOrderByMerchantOrderId(String merchantOrderId) {
         Client client = getDummyClient();
         Order order = new Order();
@@ -406,6 +409,7 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть ордера, если в String полях переданы пустые строки.")
     void findAll_shouldReturnAllOrdersIfStringFieldsIsBlank() {
         Client client = getDummyClient();
         getDummyOrder(client);

@@ -9,6 +9,7 @@ import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.hamcrest.CustomMatcher;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -63,6 +64,7 @@ class OrderControllerTest {
             "05aa6142-6d22-42f3-99ff-93c9240858b5,1789120591362,TGSHOP,ae9cfde3-b11b-4b11-99b2-32194d77897a," +
                     "5234975,SUCCESS,2500,EVO_PAY,f8c7d994-b315-4608-89c6-602548a7c279"
     })
+    @DisplayName("Метод должен вернуть статус 200 с JSON ордерами.")
     void getOrders_ShouldReturn200WithOrders(UUID id, Long millis, String clientUsername, String clientId, String internalId,
                                              OrderStatus status, Integer amount, Merchant merchant, String merchantOrderId) throws Exception {
         OrderSummary orderSummary =  new OrderSummary() {
@@ -133,6 +135,7 @@ class OrderControllerTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"CLIENT", "USER"})
+    @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не админ или оператор.")
     void getOrders_ShouldReturn403IfNotAdminOrOperator(String role) throws Exception {
         mockMvc.perform(get("/api/private/order")
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
@@ -149,6 +152,7 @@ class OrderControllerTest {
                     "TG_SHOP,b1d61aa7-eb4c-40ce-a458-9192294e5ca0,SUCCESS,1200,false,ONLY_PAYS,b65aecec-781c-420f-a4b9-433f1da03ef4" +
                     ",ACCEPTED,SBP,+78957623243,T-BANK,null"
     }, nullValues = {"null"})
+    @DisplayName("Метод должен вернуть статус 200 и JSON ордера.")
     void getOrder_shouldReturn200WithOrder(UUID id, Long createdAt, Long expiresAt, UUID clientId, String clientUsername,
                                            String internalId, OrderStatus status, Integer amount,
                                            Boolean enableUniqueAmount, Merchant merchant, String merchantOrderId,
@@ -182,6 +186,7 @@ class OrderControllerTest {
             "b64f3554-0d38-4a31-ade0-daa8e7032e37",
             "0891d19b-dd94-4bca-9d61-9791a4534ee4"
     })
+    @DisplayName("Метод должен вернуть статус 400, если ордер не найден.")
     void getOrderShouldReturn400IfOrderNotFound(UUID id) throws Exception {
         when(orderService.findById(any(), any())).thenReturn(Optional.empty());
         mockMvc.perform(get("/api/private/order/" + id.toString())

@@ -11,6 +11,7 @@ import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.orders.RequestMethod;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +48,7 @@ class ApiMerchantDetailsGrpcServiceTest {
             ALFA_TEAM,SUCCESS,5215,CARD,1234 1234 1234 1234,Сбербанк
             PAYSCROW,PROCESS,2443,SBP,+79851235423,МТС
             """)
+    @DisplayName("Метод должен вернуть валидный ответ.")
     void getDetails_shouldReturnResponse(Merchant merchant, String merchantOrderStatus, Integer amount,
                                          RequestMethod requestMethod, String details, String bank) {
         UUID requestId = UUID.randomUUID();
@@ -86,6 +88,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен бросить MerchantDetailsNotFoundException, если реквизиты не найдены.")
     void getDetails_shouldThrowMerchantDetailsNotFoundExceptionIfNotFoundGrpcStatus() {
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
@@ -100,6 +103,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     @ValueSource(ints = {
             1, 3, 6
     })
+    @DisplayName("Метод должен бросить BaseException, если статус ответа GRPC не ожидаем.")
     void getDetails_shouldThrowBaseExceptionIfUnknownStatus(int statusValue) {
         Status status = Status.fromCodeValue(statusValue);
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(status));
@@ -113,6 +117,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен бросить BaseException, если произошла непредвиденная ошибка при попытке получить реквизиты.")
     void getDetails_shouldThrowBaseExceptionIfUnknownException() {
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new IllegalStateException("Illegal State"));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(

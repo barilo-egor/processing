@@ -12,12 +12,16 @@ import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class ClientService {
+
+    private static final String CLIENT_NOT_FOUND = "Client with id %s not found";
 
     private final ClientRepository clientRepository;
 
@@ -43,13 +47,23 @@ public class ClientService {
 
     public Client update(UUID id, UpdateClientDTO updateClientDTO) {
         Client client = findById(id).orElseThrow(
-                () -> new BadRequestException("Client with id " + id + " not found.")
+                () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
         );
         clientMapper.updateNotNull(updateClientDTO, client);
         return clientRepository.save(client);
     }
 
-    public Integer getOrderTimeoutSecondsById(UUID clientId) {
-        return clientRepository.getOrderTimeoutSecondsById(clientId);
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void creditBalance(UUID clientId, Integer creditAmount) {
+        Client client = findById(clientId)
+                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
+        client.setBalance(client.getBalance() + creditAmount);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void debitBalance(UUID clientId, Integer creditAmount) {
+        Client client = findById(clientId)
+                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
+        client.setBalance(client.getBalance() - creditAmount);
     }
 }

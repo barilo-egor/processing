@@ -5,6 +5,7 @@ import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.ClientStatusDictionaryField;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.RequestMethodDictionaryField;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -38,6 +39,7 @@ class DictionaryControllerTest {
     private MockMvc mockMvc;
 
     @Test
+    @DisplayName("Должен быть возвращен список полей словаря, находящихся в spring контексте.")
     void getDictionary() throws Exception {
         ResultActions resultActions = mockMvc.perform(get("/api/private/dictionary"))
                 .andExpect(status().isOk());

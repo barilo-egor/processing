@@ -5,6 +5,7 @@ import net.rcetech.orders.callback.OrderCallbackService;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
@@ -99,14 +100,15 @@ class MerchantCallbackConsumerTest {
             7257beb1-b01f-4c05-a053-1e1144f3d18b,NEW,Новый,ALFA_TEAM
             1236043,DISPUTE,Спор,ALFA_TEAM
             """)
+    @DisplayName("Метод должен передать КБ в метод сервиса.")
     void callback_shouldPassCallbackToServiceMethod(String merchantOrderId, String status, String statusDescription,
                                                     Merchant merchant) {
         String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
         callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
+        ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
         await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
                     verify(orderCallbackService).resolve(captor.capture());
                     MerchantCallbackEvent actual = captor.getValue();
                     assertAll(

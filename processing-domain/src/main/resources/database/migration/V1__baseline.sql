@@ -1,13 +1,14 @@
 create table client
 (
     id                    binary(16) not null,
+    version               bigint       not null,
     username              varchar(255) not null,
     registered_at         datetime(6) not null,
     status                varchar(30)  not null,
     callback_url          varchar(255),
     order_timeout_seconds integer      not null,
     commission_percent    decimal(3, 1),
-    balance               decimal(12, 4) default 0,
+    balance               bigint default 0 check (balance >= 0),
     primary key (id)
 ) engine=InnoDB;
 alter table client
@@ -49,15 +50,17 @@ alter table support_users
     add constraint unique_username unique (username);
 create table transaction
 (
-    id         binary(16) not null,
-    client_id  bigint      not null,
-    amount     integer     not null,
+    id         bigint      not null auto_increment,
+    client_id  binary(16)      not null,
+    created_at datetime(6) not null,
     operation  varchar(30) not null,
+    amount     integer     not null,
     type       varchar(30) not null,
     comment    varchar(255),
-    created_at datetime(6) not null,
     primary key (id)
 ) engine=InnoDB;
+alter table transaction
+    add constraint fk_transaction_client foreign key (client_id) references client (id) on delete cascade on update cascade;
 create table withdrawal_request
 (
     id         bigint       not null auto_increment,
@@ -78,8 +81,7 @@ create table api_key
     name      varchar(30) not null,
     hash      char(64)    not null,
     client_id binary(16) not null,
-    primary key (id),
-    foreign key (client_id) references client (id) on delete cascade on update cascade
+    primary key (id)
 );
 alter table api_key
     add constraint fk_api_key_client foreign key (client_id) references client (id) on delete cascade on update cascade;

@@ -2,6 +2,7 @@ package net.rcetech.domain.model.clients;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,9 @@ public class Client implements Persistable<UUID> {
      */
     @Id
     private UUID id;
+
+    @Version
+    private Long version;
 
     /**
      * Уникальное имя пользователя.
@@ -90,7 +94,8 @@ public class Client implements Persistable<UUID> {
     private BigDecimal commissionPercent;
 
     @Column
-    private BigDecimal balance;
+    @PositiveOrZero(message = "Баланс не может быть отрицательным.")
+    private Integer balance;
 
     @Transient
     private boolean isNew = true;
@@ -109,7 +114,7 @@ public class Client implements Persistable<UUID> {
     @PrePersist
     protected void onCreate() {
         if (balance == null) {
-            balance = BigDecimal.ZERO;
+            balance = 0;
         }
     }
 }

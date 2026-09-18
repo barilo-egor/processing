@@ -5,6 +5,8 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,8 +26,11 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    public OrderService(OrderRepository orderRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public OrderService(OrderRepository orderRepository, ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public Order save(Order order) {
@@ -51,11 +56,13 @@ public class OrderService {
                 query -> query.as(projectionType).page(pageable));
     }
 
+    // TODO добавить ретраи на ObjectOptimisticLockingFailureException сюда и методы ниже
     @Transactional
     public void confirm(UUID id, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.SUCCESS);
         order.setMerchantOrderStatus(merchantOrderStatus);
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -63,6 +70,7 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.CANCELED);
         order.setMerchantOrderStatus(merchantOrderStatus);
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -70,6 +78,7 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.TIMEOUT);
         order.setMerchantOrderStatus(merchantOrderStatus);
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -77,5 +86,6 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.DISPUTE);
         order.setMerchantOrderStatus(merchantOrderStatus);
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
 }

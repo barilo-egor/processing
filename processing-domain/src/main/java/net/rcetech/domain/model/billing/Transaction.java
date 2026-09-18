@@ -5,11 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "transaction")
@@ -20,19 +20,20 @@ import java.util.UUID;
 public class Transaction {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     /**
      * Идентификатор клиента в микросервисе clients.
      */
-    @Column(nullable = false)
-    private Long clientId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    private Client client;
 
     /**
-     * Сумма транзакции.
+     * Временная метка создания транзакции
      */
-    @Column(nullable = false)
-    private Integer amount;
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
     /**
      * Тип операции
@@ -40,6 +41,12 @@ public class Transaction {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Operation operation;
+
+    /**
+     * Сумма транзакции.
+     */
+    @Column(nullable = false)
+    private Integer amount;
 
     /**
      * Тип транзакции
@@ -53,18 +60,5 @@ public class Transaction {
      */
     @Column
     private String comment;
-
-    /**
-     * Временная метка создания транзакции
-     */
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
-        }
-    }
 
 }

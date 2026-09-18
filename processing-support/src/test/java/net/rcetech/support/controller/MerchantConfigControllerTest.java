@@ -3,6 +3,7 @@ package net.rcetech.support.controller;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.support.service.MerchantConfigService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -37,6 +38,7 @@ class MerchantConfigControllerTest {
     private MockMvc mockMvc;
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен вызвать метод сервиса.")
     void get_ShouldReturnConfigs() throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID adminId = UUID.randomUUID();
@@ -51,6 +53,7 @@ class MerchantConfigControllerTest {
     @ValueSource(strings = {
             "CLIENT", "OPERATOR"
     })
+    @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не клиентом или оператором.")
     void get_shouldReturn403IfNotAdmin(String role) throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

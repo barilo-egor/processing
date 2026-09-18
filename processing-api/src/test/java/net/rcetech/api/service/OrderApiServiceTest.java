@@ -32,6 +32,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -54,18 +55,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
+@Import(OrderService.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 class OrderApiServiceTest {
 
     @TestConfiguration
     static class OrderApiServiceTestContextConfiguration {
-
-        @Bean
-        public OrderService orderService(OrderRepository orderRepository) {
-            return new OrderService(orderRepository);
-        }
-
         @Bean
         public ClientMapper clientMapper() {
             return Mappers.getMapper(ClientMapper.class);
@@ -328,6 +324,7 @@ class OrderApiServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть только ордера клиента, совершающего запрос.")
     void findAll_shouldReturnOnlyTargetClientOrders() {
         Client targetClient = getDummyClient();
         List<Order> expectedOrders = List.of(getDummyOrder(targetClient), getDummyOrder(targetClient));
@@ -347,6 +344,7 @@ class OrderApiServiceTest {
 
     @ValueSource(strings = { "TIMEOUT", "SUCCESS" })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть отфильтрованные по статусу ордера.")
     void findAll_shouldFilterOrdersByStatus(OrderStatus status) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);
@@ -365,6 +363,7 @@ class OrderApiServiceTest {
 
     @ValueSource(strings = { "QR", "SBP" })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть отфильтрованные по методу ордера.")
     void findAll_shouldFilterOrdersByMethod(RequestMethod method) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);

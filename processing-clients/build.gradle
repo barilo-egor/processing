@@ -10,13 +10,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-    testImplementation 'org.springframework.security:spring-security-oauth2-core'
-    testImplementation 'org.springframework.security:spring-security-oauth2-client'
 
     // TODO Вынести версию
     implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
@@ -29,6 +26,15 @@ dependencies {
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
 
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.security:spring-security-oauth2-core'
+    testImplementation 'org.springframework.security:spring-security-oauth2-client'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-mysql'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
 }
 
 bootJar {
