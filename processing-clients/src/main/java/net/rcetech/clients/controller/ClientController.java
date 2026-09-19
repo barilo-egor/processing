@@ -11,6 +11,7 @@ import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +54,8 @@ public class ClientController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public PagedModel<ClientResponseDTO> getClients(ClientFilter filter, Pageable pageable) {
+    public PagedModel<ClientResponseDTO> getClients(ClientFilter filter,
+                                                    @PageableDefault(page = 1, size = 20) Pageable pageable) {
         return new PagedModel<>(clientService.findAll(filter, pageable));
     }
 

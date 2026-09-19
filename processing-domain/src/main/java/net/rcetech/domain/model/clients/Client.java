@@ -94,7 +94,7 @@ public class Client implements Persistable<UUID> {
     private BigDecimal commissionPercent;
 
     @Column
-    @PositiveOrZero(message = "Баланс не может быть отрицательным.")
+    @PositiveOrZero(message = "should be positive or zero.")
     private Integer balance;
 
     @Transient

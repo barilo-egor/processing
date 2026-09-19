@@ -1776,6 +1776,239 @@
       ]
     },
     {
+      "name": "transactions",
+      "item": [
+        {
+          "name": "Получение транзакций",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{processing_private_api_url}}/transaction?client&createdAtFrom&createdAtTo",
+              "host": [
+                "{{processing_private_api_url}}"
+              ],
+              "path": [
+                "transaction"
+              ],
+              "query": [
+                {
+                  "key": "client",
+                  "value": "",
+                  "description": "Идентификатор либо логин клиента"
+                },
+                {
+                  "key": "createdAtFrom",
+                  "value": "",
+                  "description": "Время создания от(unix epoch millis)"
+                },
+                {
+                  "key": "createdAtTo",
+                  "value": "",
+                  "description": "Время создания до(unix epoch millis)"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Транзакции получены",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/transaction?client&createdAtFrom&createdAtTo",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "transaction"
+                  ],
+                  "query": [
+                    {
+                      "key": "client",
+                      "value": null,
+                      "description": "Идентификатор либо логин клиента"
+                    },
+                    {
+                      "key": "createdAtFrom",
+                      "value": null,
+                      "description": "Время создания от(unix epoch millis)"
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": null,
+                      "description": "Время создания до(unix epoch millis)"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "content-length",
+                  "value": "1139"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 19 Sep 2026 18:35:22 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"content\": [\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Создание транзакции корректировки",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Test-User",
+                "value": "027e01ef-0eb5-49b0-9c35-a7ecb654652e;ADMIN"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"operation\": \"DEBIT\",\n  \"amount\": 1500,\n  \"comment\": \"Корректировка баланса по заявке №123\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{processing_private_api_url}}/transaction",
+              "host": [
+                "{{processing_private_api_url}}"
+              ],
+              "path": [
+                "transaction"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Транзакция создана",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "027e01ef-0eb5-49b0-9c35-a7ecb654652e;ADMIN"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"operation\": \"DEBIT\",\n  \"amount\": 1500,\n  \"comment\": \"Корректировка баланса по заявке №123\"\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_private_api_url}}/transaction",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "transaction"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "0"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, no-store, max-age=0, must-revalidate"
+                },
+                {
+                  "key": "pragma",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "expires",
+                  "value": "0"
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "DENY"
+                },
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 19 Sep 2026 18:29:46 GMT"
+                },
+                {
+                  "key": "keep-alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Словарь",
       "request": {
         "method": "GET",
@@ -1848,7 +2081,7 @@
             },
             {
               "key": "date",
-              "value": "Fri, 11 Sep 2026 15:11:38 GMT"
+              "value": "Sat, 19 Sep 2026 18:23:41 GMT"
             },
             {
               "key": "keep-alive",
@@ -1860,17 +2093,9 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"OderStatus\": [\n    {\n      \"description\": \"Новый\",\n      \"name\": \"NEW\"\n    },\n    {\n      \"description\": \"Отменен\",\n      \"name\": \"CANCELED\"\n    },\n    {\n      \"description\": \"Таймаут\",\n      \"name\": \"TIMEOUT\"\n    },\n    {\n      \"description\": \"Успешный\",\n      \"name\": \"SUCCESS\"\n    }\n  ],\n  \"ClientStatus\": [\n    {\n      \"description\": \"Активен\",\n      \"name\": \"ACTIVE\"\n    },\n    {\n      \"description\": \"Заблокирован\",\n      \"name\": \"BLOCKED\"\n    }\n  ],\n  \"Merchant\": [\n    {\n      \"displayName\": \"AlfaTeam\",\n      \"name\": \"ALFA_TEAM\"\n    },\n    {\n      \"displayName\": \"AlfaTeam WT\",\n      \"name\": \"ALFA_TEAM_WT\"\n    },\n    {\n      \"displayName\": \"AlfaTeam QR\",\n      \"name\": \"ALFA_TEAM_QR\"\n    },\n    {\n      \"displayName\": \"OnlyPays\",\n      \"name\": \"ONLY_PAYS\"\n    },\n    {\n      \"displayName\": \"EvoPay\",\n      \"name\": \"EVO_PAY\"\n    },\n    {\n      \"displayName\": \"HoneyMoney\",\n      \"name\": \"HONEY_MONEY\"\n    },\n    {\n      \"displayName\": \"CrocoPay\",\n      \"name\": \"CROCO_PAY\"\n    },\n    {\n      \"displayName\": \"BitZone\",\n      \"name\": \"BIT_ZONE\"\n    },\n    {\n      \"displayName\": \"OnyxPay\",\n      \"name\": \"ONYX_PAY\"\n    },\n    {\n      \"displayName\": \"ExtasyPay\",\n      \"name\": \"EXTASY_PAY\"\n    },\n    {\n      \"displayName\": \"ExtasyPay Receipt\",\n      \"name\": \"EXTASY_PAY_RECEIPT\"\n    },\n    {\n      \"displayName\": \"ExtasyPay Receipt 3+\",\n      \"name\": \"EXTASY_PAY_RECEIPT_3\"\n    },\n    {\n      \"displayName\": \"ExtasyPay QR\",\n      \"name\": \"EXTASY_PAY_QR\"\n    },\n    {\n      \"displayName\": \"PayLee\",\n      \"name\": \"PAY_LEE\"\n    },\n    {\n      \"displayName\": \"Payscrow\",\n      \"name\": \"PAYSCROW\"\n    },\n    {\n      \"displayName\": \"Payscrow High Check\",\n      \"name\": \"PAYSCROW_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Payscrow WT\",\n      \"name\": \"PAYSCROW_WHITE_TRIANGLE\"\n    },\n    {\n      \"displayName\": \"Payscrow SIM\",\n      \"name\": \"PAYSCROW_SIM\"\n    },\n    {\n      \"displayName\": \"Payscrow LOW\",\n      \"name\": \"PAYSCROW_LOW\"\n    },\n    {\n      \"displayName\": \"Payscrow Transgran\",\n      \"name\": \"PAYSCROW_TRANSGRAN\"\n    },\n    {\n      \"displayName\": \"GeoTransfer\",\n      \"name\": \"GEO_TRANSFER\"\n    },\n    {\n      \"displayName\": \"Rostrast\",\n      \"name\": \"ROSTRAST\"\n    },\n    {\n      \"displayName\": \"StormTrade\",\n      \"name\": \"STORM_TRADE\"\n    },\n    {\n      \"displayName\": \"StormTrade 13\",\n      \"name\": \"STORM_TRADE_13\"\n    },\n    {\n      \"displayName\": \"SettleX\",\n      \"name\": \"SETTLE_X\"\n    },\n    {\n      \"displayName\": \"SettleX 15\",\n      \"name\": \"SETTLE_X_15\"\n    },\n    {\n      \"displayName\": \"Plata Payment\",\n      \"name\": \"PLATA_PAYMENT\"\n    },\n    {\n      \"displayName\": \"Plata 18\",\n      \"name\": \"PLATA_18\"\n    },\n    {\n      \"displayName\": \"PayLee QR\",\n      \"name\": \"PAY_LEE_QR\"\n    },\n    {\n      \"displayName\": \"Yolo\",\n      \"name\": \"YOLO\"\n    },\n    {\n      \"displayName\": \"Yolo sim\",\n      \"name\": \"YOLO_SIM\"\n    },\n    {\n      \"displayName\": \"Noros\",\n      \"name\": \"NOROS\"\n    },\n    {\n      \"displayName\": \"Noros High Check\",\n      \"name\": \"NOROS_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"FiatCut\",\n      \"name\": \"FIAT_CUT\"\n    },\n    {\n      \"displayName\": \"Cash Out\",\n      \"name\": \"CASH_OUT\"\n    },\n    {\n      \"displayName\": \"PWPay\",\n      \"name\": \"PW_PAY\"\n    },\n    {\n      \"displayName\": \"GOATX\",\n      \"name\": \"GOAT_X\"\n    },\n    {\n      \"displayName\": \"GOATX Sim\",\n      \"name\": \"GOAT_X_SIM\"\n    },\n    {\n      \"displayName\": \"Lotrien\",\n      \"name\": \"LOTRIEN\"\n    },\n    {\n      \"displayName\": \"Lotrien PDF\",\n      \"name\": \"LOTRIEN_PDF\"\n    },\n    {\n      \"displayName\": \"Gambit\",\n      \"name\": \"GAMBIT\"\n    },\n    {\n      \"displayName\": \"Gambit Sim\",\n      \"name\": \"GAMBIT_SIM\"\n    },\n    {\n      \"displayName\": \"Asgard\",\n      \"name\": \"ASGARD\"\n    },\n    {\n      \"displayName\": \"Asgard WT\",\n      \"name\": \"ASGARD_WT\"\n    },\n    {\n      \"displayName\": \"Asgard Sim\",\n      \"name\": \"ASGARD_SIM\"\n    },\n    {\n      \"displayName\": \"Asgard High Check\",\n      \"name\": \"ASGARD_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Deora\",\n      \"name\": \"DEORA\"\n    },\n    {\n      \"displayName\": \"Deora Sim\",\n      \"name\": \"DEORA_SIM\"\n    },\n    {\n      \"displayName\": \"Deora Low Check\",\n      \"name\": \"DEORA_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Deora PDF\",\n      \"name\": \"DEORA_PDF\"\n    },\n    {\n      \"displayName\": \"MeridianPay\",\n      \"name\": \"MERIDIAN_PAY\"\n    },\n    {\n      \"displayName\": \"MeridianPay High Check\",\n      \"name\": \"MERIDIAN_PAY_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"MeridianPay Low Check\",\n      \"name\": \"MERIDIAN_PAY_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"MeridianPay Sim\",\n      \"name\": \"MERIDIAN_PAY_SIM\"\n    },\n    {\n      \"displayName\": \"MeridianPay Nspk\",\n      \"name\": \"MERIDIAN_PAY_NSPK\"\n    },\n    {\n      \"displayName\": \"Souz\",\n      \"name\": \"SOUZ\"\n    },\n    {\n      \"displayName\": \"Souz SBP QR\",\n      \"name\": \"SOUZ_SBP_QR\"\n    },\n    {\n      \"displayName\": \"Souz SIM\",\n      \"name\": \"SOUZ_SIM\"\n    },\n    {\n      \"displayName\": \"Souz PDF\",\n      \"name\": \"SOUZ_PDF\"\n    },\n    {\n      \"displayName\": \"Base 51\",\n      \"name\": \"BASE_51\"\n    },\n    {\n      \"displayName\": \"Base 51 SIM\",\n      \"name\": \"BASE_51_SIM\"\n    },\n    {\n      \"displayName\": \"Base 51 Low Check\",\n      \"name\": \"BASE_51_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Base 51 High Check\",\n      \"name\": \"BASE_51_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Prisma Pay\",\n      \"name\": \"PRISMA_PAY\"\n    },\n    {\n      \"displayName\": \"Bucks Pay\",\n      \"name\": \"BUCKS_PAY\"\n    },\n    {\n      \"displayName\": \"Bucks Pay Sim\",\n      \"name\": \"BUCKS_PAY_SIM\"\n    },\n    {\n      \"displayName\": \"Many Pay\",\n      \"name\": \"MANY_PAY\"\n    },\n    {\n      \"displayName\": \"Many Pay High Check\",\n      \"name\": \"MANY_PAY_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Many Pay Low Check\",\n      \"name\": \"MANY_PAY_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"PaySync\",\n      \"name\": \"PAYSYNC\"\n    },\n    {\n      \"displayName\": \"Cube\",\n      \"name\": \"CUBE\"\n    },\n    {\n      \"displayName\": \"Cube Low Check\",\n      \"name\": \"CUBE_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Cube High Check\",\n      \"name\": \"CUBE_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Cube Sim\",\n      \"name\": \"CUBE_SIM\"\n    },\n    {\n      \"displayName\": \"RSPay\",\n      \"name\": \"RS_PAY\"\n    },\n    {\n      \"displayName\": \"RSPay BT\",\n      \"name\": \"RS_PAY_BT\"\n    },\n    {\n      \"displayName\": \"Wat\",\n      \"name\": \"WAT\"\n    },\n    {\n      \"displayName\": \"Wat SIM\",\n      \"name\": \"WAT_SIM\"\n    },\n    {\n      \"displayName\": \"Wat PDF\",\n      \"name\": \"WAT_PDF\"\n    },\n    {\n      \"displayName\": \"TronEx SIM\",\n      \"name\": \"TRON_EX_SIM\"\n    },\n    {\n      \"displayName\": \"TronEx BT\",\n      \"name\": \"TRON_EX_BT\"\n    },\n    {\n      \"displayName\": \"TronEx QR\",\n      \"name\": \"TRON_EX_QR\"\n    },\n    {\n      \"displayName\": \"TronEx PDF\",\n      \"name\": \"TRON_EX_PDF\"\n    }\n  ],\n  \"RequestMethod\": [\n    {\n      \"description\": \"Карта\",\n      \"name\": \"CARD\"\n    },\n    {\n      \"description\": \"СБП\",\n      \"name\": \"SBP\"\n    },\n    {\n      \"description\": \"QR\",\n      \"name\": \"QR\"\n    }\n  ]\n}"
+          "body": "{\n  \"ClientStatus\": [\n    {\n      \"description\": \"Активен\",\n      \"name\": \"ACTIVE\"\n    },\n    {\n      \"description\": \"Заблокирован\",\n      \"name\": \"BLOCKED\"\n    }\n  ],\n  \"OrderStatus\": [\n    {\n      \"description\": \"Новый\",\n      \"name\": \"NEW\"\n    },\n    {\n      \"description\": \"Отменен\",\n      \"name\": \"CANCELED\"\n    },\n    {\n      \"description\": \"Просрочен\",\n      \"name\": \"TIMEOUT\"\n    },\n    {\n      \"description\": \"В споре\",\n      \"name\": \"DISPUTE\"\n    },\n    {\n      \"description\": \"Успешный\",\n      \"name\": \"SUCCESS\"\n    }\n  ],\n  \"TransactionType\": [\n    {\n      \"description\": \"Подтверждение ордера\",\n      \"name\": \"ORDER_CONFIRMATION\"\n    },\n    {\n      \"description\": \"Вывод по инициативе клиента\",\n      \"name\": \"CLIENT_WITHDRAWAL\"\n    },\n    {\n      \"description\": \"Ручная корректировка\",\n      \"name\": \"MANUAL_CORRECT\"\n    }\n  ],\n  \"Merchant\": [\n    {\n      \"displayName\": \"AlfaTeam\",\n      \"name\": \"ALFA_TEAM\"\n    },\n    {\n      \"displayName\": \"AlfaTeam WT\",\n      \"name\": \"ALFA_TEAM_WT\"\n    },\n    {\n      \"displayName\": \"AlfaTeam QR\",\n      \"name\": \"ALFA_TEAM_QR\"\n    },\n    {\n      \"displayName\": \"OnlyPays\",\n      \"name\": \"ONLY_PAYS\"\n    },\n    {\n      \"displayName\": \"EvoPay\",\n      \"name\": \"EVO_PAY\"\n    },\n    {\n      \"displayName\": \"HoneyMoney\",\n      \"name\": \"HONEY_MONEY\"\n    },\n    {\n      \"displayName\": \"CrocoPay\",\n      \"name\": \"CROCO_PAY\"\n    },\n    {\n      \"displayName\": \"BitZone\",\n      \"name\": \"BIT_ZONE\"\n    },\n    {\n      \"displayName\": \"OnyxPay\",\n      \"name\": \"ONYX_PAY\"\n    },\n    {\n      \"displayName\": \"ExtasyPay\",\n      \"name\": \"EXTASY_PAY\"\n    },\n    {\n      \"displayName\": \"ExtasyPay Receipt\",\n      \"name\": \"EXTASY_PAY_RECEIPT\"\n    },\n    {\n      \"displayName\": \"ExtasyPay Receipt 3+\",\n      \"name\": \"EXTASY_PAY_RECEIPT_3\"\n    },\n    {\n      \"displayName\": \"ExtasyPay QR\",\n      \"name\": \"EXTASY_PAY_QR\"\n    },\n    {\n      \"displayName\": \"PayLee\",\n      \"name\": \"PAY_LEE\"\n    },\n    {\n      \"displayName\": \"Payscrow\",\n      \"name\": \"PAYSCROW\"\n    },\n    {\n      \"displayName\": \"Payscrow High Check\",\n      \"name\": \"PAYSCROW_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Payscrow WT\",\n      \"name\": \"PAYSCROW_WHITE_TRIANGLE\"\n    },\n    {\n      \"displayName\": \"Payscrow SIM\",\n      \"name\": \"PAYSCROW_SIM\"\n    },\n    {\n      \"displayName\": \"Payscrow LOW\",\n      \"name\": \"PAYSCROW_LOW\"\n    },\n    {\n      \"displayName\": \"Payscrow Transgran\",\n      \"name\": \"PAYSCROW_TRANSGRAN\"\n    },\n    {\n      \"displayName\": \"GeoTransfer\",\n      \"name\": \"GEO_TRANSFER\"\n    },\n    {\n      \"displayName\": \"Rostrast\",\n      \"name\": \"ROSTRAST\"\n    },\n    {\n      \"displayName\": \"StormTrade\",\n      \"name\": \"STORM_TRADE\"\n    },\n    {\n      \"displayName\": \"StormTrade 13\",\n      \"name\": \"STORM_TRADE_13\"\n    },\n    {\n      \"displayName\": \"SettleX\",\n      \"name\": \"SETTLE_X\"\n    },\n    {\n      \"displayName\": \"SettleX 15\",\n      \"name\": \"SETTLE_X_15\"\n    },\n    {\n      \"displayName\": \"Plata Payment\",\n      \"name\": \"PLATA_PAYMENT\"\n    },\n    {\n      \"displayName\": \"Plata 18\",\n      \"name\": \"PLATA_18\"\n    },\n    {\n      \"displayName\": \"PayLee QR\",\n      \"name\": \"PAY_LEE_QR\"\n    },\n    {\n      \"displayName\": \"Yolo\",\n      \"name\": \"YOLO\"\n    },\n    {\n      \"displayName\": \"Yolo sim\",\n      \"name\": \"YOLO_SIM\"\n    },\n    {\n      \"displayName\": \"Noros\",\n      \"name\": \"NOROS\"\n    },\n    {\n      \"displayName\": \"Noros High Check\",\n      \"name\": \"NOROS_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"FiatCut\",\n      \"name\": \"FIAT_CUT\"\n    },\n    {\n      \"displayName\": \"Cash Out\",\n      \"name\": \"CASH_OUT\"\n    },\n    {\n      \"displayName\": \"PWPay\",\n      \"name\": \"PW_PAY\"\n    },\n    {\n      \"displayName\": \"GOATX\",\n      \"name\": \"GOAT_X\"\n    },\n    {\n      \"displayName\": \"GOATX Sim\",\n      \"name\": \"GOAT_X_SIM\"\n    },\n    {\n      \"displayName\": \"Lotrien\",\n      \"name\": \"LOTRIEN\"\n    },\n    {\n      \"displayName\": \"Lotrien PDF\",\n      \"name\": \"LOTRIEN_PDF\"\n    },\n    {\n      \"displayName\": \"Gambit\",\n      \"name\": \"GAMBIT\"\n    },\n    {\n      \"displayName\": \"Gambit Sim\",\n      \"name\": \"GAMBIT_SIM\"\n    },\n    {\n      \"displayName\": \"Asgard\",\n      \"name\": \"ASGARD\"\n    },\n    {\n      \"displayName\": \"Asgard WT\",\n      \"name\": \"ASGARD_WT\"\n    },\n    {\n      \"displayName\": \"Asgard Sim\",\n      \"name\": \"ASGARD_SIM\"\n    },\n    {\n      \"displayName\": \"Asgard High Check\",\n      \"name\": \"ASGARD_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Deora\",\n      \"name\": \"DEORA\"\n    },\n    {\n      \"displayName\": \"Deora Sim\",\n      \"name\": \"DEORA_SIM\"\n    },\n    {\n      \"displayName\": \"Deora Low Check\",\n      \"name\": \"DEORA_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Deora PDF\",\n      \"name\": \"DEORA_PDF\"\n    },\n    {\n      \"displayName\": \"MeridianPay\",\n      \"name\": \"MERIDIAN_PAY\"\n    },\n    {\n      \"displayName\": \"MeridianPay High Check\",\n      \"name\": \"MERIDIAN_PAY_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"MeridianPay Low Check\",\n      \"name\": \"MERIDIAN_PAY_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"MeridianPay Sim\",\n      \"name\": \"MERIDIAN_PAY_SIM\"\n    },\n    {\n      \"displayName\": \"MeridianPay Nspk\",\n      \"name\": \"MERIDIAN_PAY_NSPK\"\n    },\n    {\n      \"displayName\": \"Souz\",\n      \"name\": \"SOUZ\"\n    },\n    {\n      \"displayName\": \"Souz SBP QR\",\n      \"name\": \"SOUZ_SBP_QR\"\n    },\n    {\n      \"displayName\": \"Souz SIM\",\n      \"name\": \"SOUZ_SIM\"\n    },\n    {\n      \"displayName\": \"Souz PDF\",\n      \"name\": \"SOUZ_PDF\"\n    },\n    {\n      \"displayName\": \"Base 51\",\n      \"name\": \"BASE_51\"\n    },\n    {\n      \"displayName\": \"Base 51 SIM\",\n      \"name\": \"BASE_51_SIM\"\n    },\n    {\n      \"displayName\": \"Base 51 Low Check\",\n      \"name\": \"BASE_51_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Base 51 High Check\",\n      \"name\": \"BASE_51_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Prisma Pay\",\n      \"name\": \"PRISMA_PAY\"\n    },\n    {\n      \"displayName\": \"Bucks Pay\",\n      \"name\": \"BUCKS_PAY\"\n    },\n    {\n      \"displayName\": \"Bucks Pay Sim\",\n      \"name\": \"BUCKS_PAY_SIM\"\n    },\n    {\n      \"displayName\": \"Many Pay\",\n      \"name\": \"MANY_PAY\"\n    },\n    {\n      \"displayName\": \"Many Pay High Check\",\n      \"name\": \"MANY_PAY_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Many Pay Low Check\",\n      \"name\": \"MANY_PAY_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"PaySync\",\n      \"name\": \"PAYSYNC\"\n    },\n    {\n      \"displayName\": \"Cube\",\n      \"name\": \"CUBE\"\n    },\n    {\n      \"displayName\": \"Cube Low Check\",\n      \"name\": \"CUBE_LOW_CHECK\"\n    },\n    {\n      \"displayName\": \"Cube High Check\",\n      \"name\": \"CUBE_HIGH_CHECK\"\n    },\n    {\n      \"displayName\": \"Cube Sim\",\n      \"name\": \"CUBE_SIM\"\n    },\n    {\n      \"displayName\": \"RSPay\",\n      \"name\": \"RS_PAY\"\n    },\n    {\n      \"displayName\": \"RSPay BT\",\n      \"name\": \"RS_PAY_BT\"\n    },\n    {\n      \"displayName\": \"Wat\",\n      \"name\": \"WAT\"\n    },\n    {\n      \"displayName\": \"Wat SIM\",\n      \"name\": \"WAT_SIM\"\n    },\n    {\n      \"displayName\": \"Wat PDF\",\n      \"name\": \"WAT_PDF\"\n    },\n    {\n      \"displayName\": \"TronEx SIM\",\n      \"name\": \"TRON_EX_SIM\"\n    },\n    {\n      \"displayName\": \"TronEx BT\",\n      \"name\": \"TRON_EX_BT\"\n    },\n    {\n      \"displayName\": \"TronEx QR\",\n      \"name\": \"TRON_EX_QR\"\n    },\n    {\n      \"displayName\": \"TronEx PDF\",\n      \"name\": \"TRON_EX_PDF\"\n    }\n  ],\n  \"RequestMethod\": [\n    {\n      \"description\": \"Карта\",\n      \"name\": \"CARD\"\n    },\n    {\n      \"description\": \"СБП\",\n      \"name\": \"SBP\"\n    },\n    {\n      \"description\": \"QR\",\n      \"name\": \"QR\"\n    }\n  ],\n  \"Operation\": [\n    {\n      \"description\": \"Зачисление\",\n      \"name\": \"CREDIT\"\n    },\n    {\n      \"description\": \"Списание\",\n      \"name\": \"DEBIT\"\n    }\n  ]\n}"
         }
       ]
-    },
-    {
-      "name": "New Request",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
     }
   ]
 }

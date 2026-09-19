@@ -87,7 +87,7 @@ class ApiOrdersControllerTest {
                 .andExpect(jsonPath("$.timestamp").isNotEmpty())
                 .andExpect(jsonPath("$.timestamp").isNumber())
                 .andExpect(jsonPath("$.description")
-                        .value("The request body was expected but is missing. Please check the request body."));
+                        .value("Required body is missing."));
     }
 
     @Test

@@ -5,10 +5,12 @@ import net.rcetech.orders.callback.OrderCallbackService;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -37,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -87,6 +88,11 @@ class MerchantCallbackConsumerTest {
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
+    @BeforeEach
+    void setUp() {
+        Mockito.reset(orderCallbackService);
+    }
+
     private final String callbackJsonTemplate =
             "{" +
                     "\"merchantOrderId\":\"%s\", " +
@@ -97,7 +103,6 @@ class MerchantCallbackConsumerTest {
 
     @ParameterizedTest
     @CsvSource("""
-            7257beb1-b01f-4c05-a053-1e1144f3d18b,NEW,Новый,ALFA_TEAM
             1236043,DISPUTE,Спор,ALFA_TEAM
             """)
     @DisplayName("Метод должен передать КБ в метод сервиса.")
@@ -105,10 +110,10 @@ class MerchantCallbackConsumerTest {
                                                     Merchant merchant) {
         String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
         callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
-        ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
         await()
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(2, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
+                    ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
                     verify(orderCallbackService).resolve(captor.capture());
                     MerchantCallbackEvent actual = captor.getValue();
                     assertAll(

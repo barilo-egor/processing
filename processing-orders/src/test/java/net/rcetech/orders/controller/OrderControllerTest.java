@@ -65,7 +65,7 @@ class OrderControllerTest {
                     "5234975,SUCCESS,2500,EVO_PAY,f8c7d994-b315-4608-89c6-602548a7c279"
     })
     @DisplayName("Метод должен вернуть статус 200 с JSON ордерами.")
-    void getOrders_ShouldReturn200WithOrders(UUID id, Long millis, String clientUsername, String clientId, String internalId,
+    void getOrders_ShouldReturn200WithOrders(UUID id, Long millis, String clientUsername, UUID clientId, String internalId,
                                              OrderStatus status, Integer amount, Merchant merchant, String merchantOrderId) throws Exception {
         OrderSummary orderSummary =  new OrderSummary() {
             @Override
@@ -79,7 +79,7 @@ class OrderControllerTest {
             }
 
             @Override
-            public String getClientId() {
+            public UUID getClientId() {
                 return clientId;
             }
 

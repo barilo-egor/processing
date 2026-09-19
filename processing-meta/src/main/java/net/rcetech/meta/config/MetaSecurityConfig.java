@@ -1,7 +1,9 @@
 package net.rcetech.meta.config;
 
 import net.rcetech.meta.SpringSecurityConfigurer;
+import net.rcetech.meta.WebPath;
 import net.rcetech.meta.user.KeycloakRoleConverter;
+import net.rcetech.meta.user.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -22,6 +24,12 @@ public class MetaSecurityConfig {
     @Bean
     public SecurityFilterChain globalFilterChain(HttpSecurity http, List<SpringSecurityConfigurer> configurers) {
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                        WebPath.PRIVATE_API_PATH + "/order/**",
+                        WebPath.PRIVATE_API_PATH + "/transaction/**"
+                ).hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name())
+                .requestMatchers(WebPath.PRIVATE_API_PATH + "/client/**")
+                .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name(), Role.CLIENT.name())
                 .anyRequest().authenticated()
         );
         for (SpringSecurityConfigurer configurer : configurers) {

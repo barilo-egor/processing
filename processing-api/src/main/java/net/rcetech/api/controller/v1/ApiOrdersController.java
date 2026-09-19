@@ -10,6 +10,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(WebPath.PUBLIC_API_PATH_V1 + "/order")
+@RequestMapping(WebPath.V1_API_PATH + "/order")
 @PreAuthorize("hasRole('CLIENT')")
 public class ApiOrdersController {
 
@@ -56,7 +57,9 @@ public class ApiOrdersController {
     }
 
     @GetMapping
-    public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter, Pageable pageable, Principal principal) {
+    public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter,
+                                                    @PageableDefault(page = 1, size = 20) Pageable pageable,
+                                                    Principal principal) {
         return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));
     }
 }

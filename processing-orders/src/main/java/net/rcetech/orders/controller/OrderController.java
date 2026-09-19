@@ -8,6 +8,7 @@ import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,7 @@ public class OrderController {
     }
 
     @GetMapping
-    public PagedModel<OrderSummary> getOrders(OrderFilter filter, Pageable pageable){
+    public PagedModel<OrderSummary> getOrders(OrderFilter filter, @PageableDefault(page = 1, size = 20) Pageable pageable){
         return new PagedModel<>(orderService.findAll(OrderSpecifications.matches(filter), pageable, OrderSummary.class));
     }
 

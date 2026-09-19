@@ -1,15 +1,16 @@
 package net.rcetech.billing.utils;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import lombok.experimental.UtilityClass;
-import net.rcetech.meta.billing.dto.GetTransactionsRequest;
 import net.rcetech.domain.model.billing.Transaction;
-import org.springframework.data.jpa.domain.Specification;
+import net.rcetech.domain.model.billing.Transaction_;
+import net.rcetech.domain.repository.clients.ClientSpecifications;
+import net.rcetech.meta.billing.dto.TransactionFilter;
+import org.springframework.data.jpa.domain.PredicateSpecification;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Утилита для формирования JPA-спецификаций сущности {@link Transaction}.
@@ -17,42 +18,23 @@ import java.util.List;
 @UtilityClass
 public class TransactionSpecification {
 
-    public static Specification<Transaction> buildSpecification(GetTransactionsRequest request) {
-        return (root, query, cb) -> cb.and(toPredicates(root, cb, request));
-    }
-
-    private static Predicate[] toPredicates(Root<Transaction> root, CriteriaBuilder cb, GetTransactionsRequest request) {
-        List<Predicate> predicates = new ArrayList<>();
-
-        if (request.id() != null) {
-            predicates.add(cb.equal(root.get("id"), request.id()));
-        }
-
-        if (request.clientIds() != null && !request.clientIds().isEmpty()) {
-            predicates.add(root.get("clientId").in(request.clientIds()));
-        }
-
-        if (request.minAmount() != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), request.minAmount()));
-        }
-
-        if (request.maxAmount() != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("amount"), request.maxAmount()));
-        }
-
-        if (request.operations() != null && !request.operations().isEmpty()) {
-            predicates.add(root.get("operation").in(request.operations()));
-        }
-
-        if (request.createdAtFrom() != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), request.createdAtFrom()));
-        }
-
-        if (request.createdAtTo() != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), request.createdAtTo()));
-        }
-
-        return predicates.toArray(new Predicate[0]);
+    public static PredicateSpecification<Transaction> matches(TransactionFilter filter) {
+        return ((from, builder) -> {
+            if (Objects.isNull(filter)) {
+                return builder.conjunction();
+            }
+            List<Predicate> predicates = new ArrayList<>();
+            if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
+                predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Transaction_.client), builder));
+            }
+            if (Objects.nonNull(filter.createdAtFrom())) {
+                predicates.add(builder.greaterThan(from.get(Transaction_.createdAt), filter.createdAtFrom()));
+            }
+            if (Objects.nonNull(filter.createdAtTo())) {
+                predicates.add(builder.lessThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtTo()));
+            }
+            return builder.and(predicates.toArray(new Predicate[0]));
+        });
     }
 
 }

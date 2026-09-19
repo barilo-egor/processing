@@ -1,5 +1,7 @@
 package net.rcetech.domain.repository.clients;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
 import net.rcetech.domain.model.clients.Client;
@@ -9,6 +11,8 @@ import org.springframework.data.jpa.domain.PredicateSpecification;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 @UtilityClass
 public class ClientSpecifications {
@@ -36,5 +40,22 @@ public class ClientSpecifications {
             }
             return builder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    public static <T> Predicate idOrUsername(String query, Join<T, Client> join, CriteriaBuilder builder) {
+        UUID clientId;
+        try {
+            clientId =  UUID.fromString(query);
+        } catch (IllegalArgumentException e) {
+            clientId = null;
+        }
+        if (Objects.nonNull(clientId)) {
+            return builder.or(
+                    builder.equal(join.get(Client_.id), UUID.fromString(query)),
+                    builder.equal(join.get(Client_.username), query)
+            );
+        } else {
+            return builder.equal(join.get(Client_.username), query);
+        }
     }
 }

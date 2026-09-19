@@ -1,5 +1,6 @@
 package net.rcetech.billing;
 
+import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
@@ -7,6 +8,7 @@ import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.billing.TransactionService;
+import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
@@ -27,6 +29,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.transaction.TestTransaction;
@@ -44,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({TransactionService.class, OrderService.class, TransactionEventListener.class})
+@Import({TransactionService.class, OrderService.class, TransactionEventListener.class, ClientService.class})
 @RecordApplicationEvents
 class TransactionEventListenerTest {
 
@@ -73,6 +76,9 @@ class TransactionEventListenerTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @MockitoBean
+    private ClientMapper clientMapper;
 
     Client getDummyClient() {
         Client client = new Client();

@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Objects;
 
 @ControllerAdvice
 @NullMarked
@@ -100,7 +102,13 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         ProblemDetail problemDetail = createProblemDetail(ex, status, "Failed to read request",
                 null, null, request);
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
-        problemDetail.setProperty(DESCRIPTION, "The request body was expected but is missing. Please check the request body.");
+        if (Objects.nonNull(ex.getMessage()) && ex.getMessage().startsWith("Required request body is missing")) {
+            problemDetail.setProperty(DESCRIPTION, "Required body is missing.");
+        } else if (ex.getCause() instanceof InvalidFormatException) {
+            problemDetail.setProperty(DESCRIPTION, ex.getCause().getMessage());
+        } else {
+            problemDetail.setProperty(DESCRIPTION, "The request body is missing or contains invalid data.");
+        }
         return handleExceptionInternal(ex, problemDetail, headers, status, request);
     }
 

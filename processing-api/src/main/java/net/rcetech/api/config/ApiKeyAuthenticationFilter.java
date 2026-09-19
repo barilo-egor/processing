@@ -22,7 +22,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "Api-Key";
 
-    private static final String PROTECTED_URL_PATTERN = WebPath.PUBLIC_API_PATH_V1 + "/**";
+    private static final String PROTECTED_URL_PATTERN = WebPath.V1_API_PATH + "/**";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 

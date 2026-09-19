@@ -14,7 +14,7 @@ public interface OrderSummary {
     @JsonSerialize(using = InstantToMillisSerializer.class)
     Instant getCreatedAt();
     @Value("#{target.client.id}")
-    String getClientId();
+    UUID getClientId();
     @Value("#{target.client.username}")
     String getClientUsername();
     String getInternalId();
