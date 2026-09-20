@@ -1,4 +1,4 @@
-package net.rcetech.billing.utils;
+package net.rcetech.domain.repository.billing;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
@@ -44,6 +44,9 @@ public class TransactionSpecification {
         return (from, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.equal(from.join(Transaction_.client).get(Client_.id), clientId));
+            if (Objects.isNull(filter)) {
+                return builder.and(predicates.toArray(new Predicate[0]));
+            }
             if (Objects.nonNull(filter.createdAtFrom())) {
                 predicates.add(builder.greaterThan(from.get(Transaction_.createdAt), filter.createdAtFrom()));
             }

@@ -1,7 +1,7 @@
 package net.rcetech.billing.controller;
 
 import jakarta.validation.Valid;
-import net.rcetech.billing.utils.TransactionSpecification;
+import net.rcetech.domain.repository.billing.TransactionSpecification;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.ManualCorrectTransaction;

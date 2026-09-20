@@ -1,6 +1,6 @@
 package net.rcetech.billing.controller;
 
-import net.rcetech.billing.utils.TransactionSpecification;
+import net.rcetech.domain.repository.billing.TransactionSpecification;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
