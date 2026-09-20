@@ -154,7 +154,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+              "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=&sort",
               "host": [
                 "{{processing_url}}"
               ],
@@ -198,6 +198,11 @@
                   "key": "size",
                   "value": "",
                   "description": "Количество элементов на странице для пагинаци."
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "description": "Сортировка: sort=field1,asc&sort=field2,desc"
                 }
               ]
             },
@@ -1465,7 +1470,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom=&createdAtTo=&client=&internalId=&status=&merchantOrderId=",
+              "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom=&createdAtTo=&client=&internalId=&status=&merchantOrderId=&page&size&sort",
               "host": [
                 "{{processing_private_api_url}}"
               ],
@@ -1507,6 +1512,21 @@
                   "key": "merchantOrderId",
                   "value": "",
                   "description": "Идентификатор ордера в системе мерчанта"
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                },
+                {
+                  "key": "size",
+                  "value": "",
+                  "description": "Размер страницы(по умолчанию 20)"
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "description": "Сортировка: sort=field1,asc&sort=field2,desc"
                 }
               ]
             }
@@ -1784,7 +1804,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_private_api_url}}/transaction?client&createdAtFrom&createdAtTo",
+              "raw": "{{processing_private_api_url}}/transaction?client=&createdAtFrom=&createdAtTo=&page&size&sort",
               "host": [
                 "{{processing_private_api_url}}"
               ],
@@ -1806,6 +1826,21 @@
                   "key": "createdAtTo",
                   "value": "",
                   "description": "Время создания до(unix epoch millis)"
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                },
+                {
+                  "key": "size",
+                  "value": "",
+                  "description": "Размер страницы(по умолчанию 20)"
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "description": "Сортировка: sort=field1,asc&sort=field2,desc"
                 }
               ]
             }
@@ -2003,6 +2038,60 @@
               ],
               "cookie": [],
               "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Клиентское API",
+      "item": [
+        {
+          "name": "REST API",
+          "item": [
+            {
+              "name": "Получение ордеров",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order?status&method&page&size&sort",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "Статус ордера"
+                    },
+                    {
+                      "key": "method",
+                      "value": "",
+                      "description": "Метод ордера"
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Размер страницы(по умолчанию 20)"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                    }
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         }
