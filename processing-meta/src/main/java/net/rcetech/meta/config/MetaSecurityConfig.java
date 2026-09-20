@@ -30,6 +30,8 @@ public class MetaSecurityConfig {
                 ).hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name())
                 .requestMatchers(WebPath.PRIVATE_API_PATH + "/client/**")
                 .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name(), Role.CLIENT.name())
+                .requestMatchers(WebPath.V1_API_PATH + "/**")
+                .hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated()
         );
         for (SpringSecurityConfigurer configurer : configurers) {

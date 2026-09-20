@@ -58,7 +58,7 @@ public class ApiOrdersController {
 
     @GetMapping
     public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter,
-                                                    @PageableDefault(page = 1, size = 20) Pageable pageable,
+                                                    @PageableDefault(size = 20) Pageable pageable,
                                                     Principal principal) {
         return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));
     }

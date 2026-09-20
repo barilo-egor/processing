@@ -30,7 +30,7 @@ public class OrderController {
     }
 
     @GetMapping
-    public PagedModel<OrderSummary> getOrders(OrderFilter filter, @PageableDefault(page = 1, size = 20) Pageable pageable){
+    public PagedModel<OrderSummary> getOrders(OrderFilter filter, @PageableDefault(size = 20) Pageable pageable){
         return new PagedModel<>(orderService.findAll(OrderSpecifications.matches(filter), pageable, OrderSummary.class));
     }
 

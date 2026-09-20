@@ -55,7 +55,7 @@ public class ClientController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public PagedModel<ClientResponseDTO> getClients(ClientFilter filter,
-                                                    @PageableDefault(page = 1, size = 20) Pageable pageable) {
+                                                    @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(clientService.findAll(filter, pageable));
     }
 

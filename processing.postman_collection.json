@@ -1939,7 +1939,8 @@
             "header": [
               {
                 "key": "Test-User",
-                "value": "027e01ef-0eb5-49b0-9c35-a7ecb654652e;ADMIN"
+                "value": "027e01ef-0eb5-49b0-9c35-a7ecb654652e;ADMIN",
+                "disabled": true
               }
             ],
             "body": {
@@ -2053,9 +2054,15 @@
               "name": "Получение ордеров",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT",
+                    "disabled": true
+                  }
+                ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/order?status&method&page&size&sort",
+                  "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
                   "host": [
                     "{{processing_v1_api_url}}"
                   ],
@@ -2091,7 +2098,236 @@
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "Ордера получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT",
+                        "disabled": true
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ],
+                      "query": [
+                        {
+                          "key": "status",
+                          "value": "",
+                          "description": "Статус ордера"
+                        },
+                        {
+                          "key": "method",
+                          "value": "",
+                          "description": "Метод ордера"
+                        },
+                        {
+                          "key": "page",
+                          "value": "",
+                          "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                        },
+                        {
+                          "key": "size",
+                          "value": "",
+                          "description": "Размер страницы(по умолчанию 20)"
+                        },
+                        {
+                          "key": "sort",
+                          "value": "",
+                          "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "1978"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sun, 20 Sep 2026 12:52:52 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"e0094537-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-001\",\n      \"status\": \"NEW\",\n      \"amount\": 1500,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009b915-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-002\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 2450,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009bb86-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-003\",\n      \"status\": \"NEW\",\n      \"amount\": 500,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    },\n    {\n      \"id\": \"e009bcac-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-004\",\n      \"status\": \"NEW\",\n      \"amount\": 10000,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009bd86-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-005\",\n      \"status\": \"NEW\",\n      \"amount\": 3200,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009be11-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-006\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 750,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    },\n    {\n      \"id\": \"e009c879-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-007\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 4300,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009c999-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-008\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 12000,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009ca2a-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-009\",\n      \"status\": \"DISPUTE\",\n      \"amount\": 850,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009cabe-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-010\",\n      \"status\": \"DISPUTE\",\n      \"amount\": 150,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 10,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "transactions",
+          "item": [
+            {
+              "name": "Получение транзакций",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/transaction?createdAtFrom&createdAtTo&page&size&sort",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "transaction"
+                  ],
+                  "query": [
+                    {
+                      "key": "createdAtFrom",
+                      "value": "",
+                      "description": "Время создания от(unix epoch millis)"
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": "",
+                      "description": "Время создания до(unix epoch millis)"
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Размер страницы(по умолчанию 20)"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Транзакции получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/transaction",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "transaction"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "799"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sun, 20 Sep 2026 12:48:59 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
             }
           ]
         }

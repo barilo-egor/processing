@@ -106,7 +106,7 @@ class TransactionControllerTest {
     }
 
     @ParameterizedTest
-    @CsvSource(nullValues = "null", value = {
+    @CsvSource(value = {
             "test1,1789813253222,1789813263222",
             "smoki_lolik,1789813153222,1789813223222",
             "test1,1789813253000,1789813263200"
