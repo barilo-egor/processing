@@ -30,6 +30,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     private static final String TIMESTAMP = "timestamp";
     private static final String DESCRIPTION = "description";
+    private static final String CONTACT_SUPPORT = "Contact support.";
 
     @ExceptionHandler({ BaseException.class })
     public ProblemDetail handleBaseException(BaseException ex) {
@@ -39,6 +40,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setTitle(ex.getMessage());
         problemDetail.setType(URI.create("/errors/internal-server-error"));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
+        problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
         return problemDetail;
     }
 
@@ -50,7 +52,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Internal Server Error");
         problemDetail.setType(URI.create("/errors/internal-server-error"));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
-        problemDetail.setProperty(DESCRIPTION, "Internal Server Error");
+        problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
         return problemDetail;
     }
 
@@ -120,6 +122,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Service Unavailable");
         problemDetail.setType(URI.create("/docs/errors/service-unavailable"));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
+        problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
         return problemDetail;
     }
 

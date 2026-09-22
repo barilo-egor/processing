@@ -38,7 +38,7 @@ public class ClientSpecifications {
             if (clientFilter.to() != null) {
                 predicates.add(builder.lessThan(from.get(Client_.registeredAt), clientFilter.to()));
             }
-            return builder.and(predicates.toArray(new Predicate[0]));
+            return builder.and(predicates);
         };
     }
 

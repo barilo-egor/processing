@@ -9,6 +9,7 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.clients.Client_;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.model.orders.Order_;
+import net.rcetech.domain.repository.clients.ClientSpecifications;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import org.springframework.data.jpa.domain.PredicateSpecification;
@@ -61,24 +62,9 @@ public class OrderSpecifications {
             }
 
             if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
-                Join<Order, Client> join = from.join(Order_.client);
-                UUID clientId;
-                try {
-                    clientId =  UUID.fromString(filter.client());
-                } catch (IllegalArgumentException e) {
-                    clientId = null;
-                }
-                if (Objects.nonNull(clientId)) {
-                    predicates.add(builder.or(
-                            builder.equal(join.get(Client_.id), UUID.fromString(filter.client())),
-                            builder.equal(join.get(Client_.username), filter.client())
-                    ));
-                } else {
-                    predicates.add(builder.equal(join.get(Client_.username), filter.client()));
-                }
+                predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Order_.client), builder));
             }
-
-            return builder.and(predicates.toArray(new Predicate[0]));
+            return builder.and(predicates);
         };
     }
 

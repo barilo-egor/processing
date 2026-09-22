@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.data.domain.Persistable;

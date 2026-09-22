@@ -36,7 +36,7 @@ public class TransactionSpecification {
             if (Objects.nonNull(filter.createdAtTo())) {
                 predicates.add(builder.lessThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtTo()));
             }
-            return builder.and(predicates.toArray(new Predicate[0]));
+            return builder.and(predicates);
         });
     }
 

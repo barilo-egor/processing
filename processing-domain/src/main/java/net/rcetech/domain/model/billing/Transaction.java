@@ -27,6 +27,7 @@ public class Transaction {
      * Идентификатор клиента в микросервисе clients.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(nullable = false, name = "client_id")
     private Client client;
 
     /**

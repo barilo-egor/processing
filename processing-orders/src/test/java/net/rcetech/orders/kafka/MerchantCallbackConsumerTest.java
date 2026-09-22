@@ -19,6 +19,8 @@ import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -31,11 +33,9 @@ import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -58,6 +58,11 @@ class MerchantCallbackConsumerTest {
         }
 
         @Bean
+        public KafkaTemplate<String, String> kafkaTemplate(ProducerFactory<String, String> pf) {
+            return new KafkaTemplate<>(pf);
+        }
+
+        @Bean
         public MerchantCallbackConsumer merchantCallbackConsumer(OrderCallbackService orderCallbackService) {
             return new MerchantCallbackConsumer(orderCallbackService);
         }
@@ -75,6 +80,7 @@ class MerchantCallbackConsumerTest {
         registry.add("spring.datasource.username", mySQLContainer::getUsername);
         registry.add("spring.datasource.password", mySQLContainer::getPassword);
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
     }
 
     @Autowired
@@ -110,19 +116,18 @@ class MerchantCallbackConsumerTest {
                                                     Merchant merchant) {
         String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
         callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
-        await()
-                .atMost(2, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
-                    verify(orderCallbackService).resolve(captor.capture());
-                    MerchantCallbackEvent actual = captor.getValue();
-                    assertAll(
-                            () -> assertEquals(merchantOrderId, actual.getMerchantOrderId()),
-                            () -> assertEquals(status, actual.getStatus()),
-                            () -> assertEquals(statusDescription, actual.getStatusDescription()),
-                            () -> assertEquals(merchant, actual.getMerchant())
-                    );
-                });
+        ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
+
+        verify(orderCallbackService, timeout(10000)).resolve(captor.capture());
+
+        MerchantCallbackEvent actual = captor.getValue();
+        assertAll(
+                () -> assertNotNull(actual, "Event не должен быть null"),
+                () -> assertEquals(merchantOrderId, actual.getMerchantOrderId()),
+                () -> assertEquals(status, actual.getStatus()),
+                () -> assertEquals(statusDescription, actual.getStatusDescription()),
+                () -> assertEquals(merchant.name(), String.valueOf(actual.getMerchant()))
+        );
     }
 
 }

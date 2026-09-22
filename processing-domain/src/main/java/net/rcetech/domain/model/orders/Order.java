@@ -43,7 +43,7 @@ public class Order implements Persistable<UUID> {
      * Клиент
      */
     @ManyToOne(fetch =  FetchType.LAZY, optional = false)
-    @JoinColumn(nullable = false)
+    @JoinColumn(nullable = false, name = "client_id")
     private Client client;
 
     /**

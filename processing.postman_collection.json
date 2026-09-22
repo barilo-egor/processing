@@ -2057,8 +2057,7 @@
                 "header": [
                   {
                     "key": "Test-User",
-                    "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT",
-                    "disabled": true
+                    "value": "{{test_user}}"
                   }
                 ],
                 "url": {
@@ -2213,8 +2212,7 @@
                 "header": [
                   {
                     "key": "Test-User",
-                    "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT",
-                    "disabled": true
+                    "value": "{{test_user}}"
                   }
                 ],
                 "url": {
@@ -2326,6 +2324,430 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"content\": [\n    {\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "withdrawal_request",
+          "item": [
+            {
+              "name": "Создание заявки",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/withdrawal_request?amount=&address=",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "withdrawal_request"
+                  ],
+                  "query": [
+                    {
+                      "key": "amount",
+                      "value": ""
+                    },
+                    {
+                      "key": "address",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Заявка создана",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal_request?amount=50000&address=TX9zFakeAddressTRC20usdtNotReal99x",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal_request"
+                      ],
+                      "query": [
+                        {
+                          "key": "amount",
+                          "value": "50000"
+                        },
+                        {
+                          "key": "address",
+                          "value": "TX9zFakeAddressTRC20usdtNotReal99x"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "text",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "0"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Tue, 22 Sep 2026 13:57:02 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "У клиента не заполнена комиссия",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal_request?amount=10000&address=qwe",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal_request"
+                      ],
+                      "query": [
+                        {
+                          "key": "amount",
+                          "value": "10000"
+                        },
+                        {
+                          "key": "address",
+                          "value": "qwe"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Tue, 22 Sep 2026 14:00:05 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/v1/withdrawal_request\",\n  \"status\": 503,\n  \"title\": \"Service Unavailable\",\n  \"type\": \"/docs/errors/service-unavailable\",\n  \"timestamp\": 1790085605702\n}"
+                }
+              ]
+            },
+            {
+              "name": "Получение заявок",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/withdrawal_request?id&status&createdAtFrom&createdAtTo&address&page&size&sort",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "withdrawal_request"
+                  ],
+                  "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "description": "Идентификатор заявки"
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "Статус заявки"
+                    },
+                    {
+                      "key": "createdAtFrom",
+                      "value": "",
+                      "description": "Время создания от(unix epoch millis)"
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": "",
+                      "description": "Время создания до(unix epoch millis)"
+                    },
+                    {
+                      "key": "address",
+                      "value": "",
+                      "description": "Адрес кошелька"
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Размер страницы(по умолчанию 20)"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Заявки получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal_request",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal_request"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "317"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Tue, 22 Sep 2026 13:59:22 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"f13a8cfd-cf90-4837-8074-03980d84a52e\",\n      \"status\": \"NEW\",\n      \"createdAt\": 1790085422481,\n      \"grossSourceAmount\": 42500,\n      \"commissionPercent\": \"15\",\n      \"netSourceAmount\": 50000,\n      \"rate\": 70.85,\n      \"targetAmount\": 600,\n      \"address\": \"TX9zFakeAddressTRC20usdtNotReal99x\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Отмена заявки",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/withdrawal_request/{{id}}",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "withdrawal_request",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Заявка отменена",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756812a;CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal_request/{{id}}",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal_request",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "text",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "0"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Tue, 22 Sep 2026 15:25:57 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
                 }
               ]
             }
