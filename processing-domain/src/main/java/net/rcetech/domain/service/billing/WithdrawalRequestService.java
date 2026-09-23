@@ -39,6 +39,7 @@ public class WithdrawalRequestService {
         this.ratesConsumer = ratesConsumer;
     }
 
+    @Transactional
     public WithdrawalRequest create(UUID clientId, Integer amount, String address) {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Client with id " + clientId + " not found"));
@@ -63,6 +64,7 @@ public class WithdrawalRequestService {
         return withdrawalRequestRepository.save(withdrawalRequest);
     }
 
+    @Transactional(readOnly = true)
     public <T> Page<T> findAll(PredicateSpecification<WithdrawalRequest> filter, Pageable pageable, Class<T> projectionType) {
         return withdrawalRequestRepository.findBy(filter,
                 query -> query.as(projectionType)
@@ -73,6 +75,12 @@ public class WithdrawalRequestService {
                         )));
     }
 
+    /**
+     * Отмена заявки клиентом, в связи с чем проверяется соответствие автора заявки и отправителя запроса.
+     * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * @param clientId отправитель запроса отмены заявки
+     * @param id идентификатор заявки
+     */
     @Transactional
     public void cancel(UUID clientId, UUID id) {
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
@@ -85,4 +93,24 @@ public class WithdrawalRequestService {
         }
         request.setStatus(WithdrawalRequestStatus.CANCELED);
     }
+
+    /**
+     * Обновление статуса заявки для сотрудников поддержки, так как отсутствует проверка автора заявки.
+     * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * @param id идентификатор заявки
+     * @param status новый статус
+     */
+    @Transactional
+    public void updateStatus(UUID id, WithdrawalRequestStatus status) {
+        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
+        if (maybeRequest.isEmpty()) {
+            throw new BadRequestException("Order not found");
+        }
+        WithdrawalRequest request = maybeRequest.get();
+        if (!WithdrawalRequestStatus.NEW.equals(request.getStatus())) {
+            throw new BadRequestException("Order status must be NEW");
+        }
+        request.setStatus(status);
+    }
+
 }

@@ -3,15 +3,11 @@ package net.rcetech.billing.controller;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.service.billing.WithdrawalRequestService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
-import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.WithdrawalRequestResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
-import net.rcetech.meta.user.Role;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,20 +28,20 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ClientWithdrawalRequestController.class)
+@WebMvcTest(WithdrawalRequestController.class)
 @Import({MetaSecurityConfig.class})
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
-class ClientWithdrawalRequestControllerTest {
+class WithdrawalRequestControllerTest {
 
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
@@ -55,6 +51,19 @@ class ClientWithdrawalRequestControllerTest {
 
     @MockitoBean
     private WithdrawalRequestService withdrawalRequestService;
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "CLIENT",
+            "TRADER"
+    })
+    @DisplayName("Метод должен вернуть 403, если роль пользователя не ADMIN и OPERATOR.")
+    void get_shouldReturn403IfNotAdminOrOperator(String role) throws Exception {
+        mockMvc.perform(get("/api/private/withdrawal-request")
+                .with(csrf())
+                .with(user("673dd1e7-b780-4a8f-871c-01b61bbbc1c1").roles(role))
+        ).andExpect(status().isForbidden());
+    }
 
     @ParameterizedTest
     @CsvSource(nullValues = "null", value = {
@@ -69,10 +78,11 @@ class ClientWithdrawalRequestControllerTest {
         when(withdrawalRequestService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(withdrawalRequestResponse)));
         UUID clientId = UUID.randomUUID();
         try (MockedStatic<WithdrawalRequestSpecifications> mockedSpecifications = Mockito.mockStatic(WithdrawalRequestSpecifications.class)) {
-            mockMvc.perform(get("/api/v1/withdrawal-request")
+            mockMvc.perform(get("/api/private/withdrawal-request")
                     .with(csrf())
-                    .with(user(clientId.toString()).roles("CLIENT"))
+                    .with(user(clientId.toString()).roles("ADMIN"))
                     .queryParam("id", id.toString())
+                    .queryParam("client", client)
                     .queryParam("status", status.toString())
                     .queryParam("createdAtFrom", String.valueOf(createdAtFrom))
                     .queryParam("createdAtTo", String.valueOf(createdAtTo))
@@ -86,11 +96,12 @@ class ClientWithdrawalRequestControllerTest {
                     filterCaptor.capture()
             ));
 
-            assertEquals(clientIdCaptor.getValue(), clientId);
+            assertNull(clientIdCaptor.getValue());
 
             WithdrawalRequestFilter filter = filterCaptor.getValue();
             assertNotNull(filter, "Фильтр не должен быть null");
             assertEquals(id, filter.id());
+            assertEquals(client, filter.client());
             assertEquals(status, filter.status());
             assertEquals(Instant.ofEpochMilli(createdAtFrom), filter.createdAtFrom());
             assertEquals(Instant.ofEpochMilli(createdAtTo), filter.createdAtTo());
@@ -99,27 +110,29 @@ class ClientWithdrawalRequestControllerTest {
     }
 
     @CsvSource({
-            "33093a34-3fe3-4a8d-a054-cc8ea0984b76,NEW,1790175372283," +
+            "cb07e9aa-f6be-4f17-b574-6fd160855544,lolik,33093a34-3fe3-4a8d-a054-cc8ea0984b76,NEW,1790175372283," +
                     "10000,10.0,9000,100,90,TX9zFakeAddressTRC20usdtNotReal99x",
-            "187d52c2-f74e-4fd7-8b35-f15c6c424428,APPROVED,1790175970000," +
+            "6a0c0065-187f-44d4-976f-dea6a2b21039,bolik,187d52c2-f74e-4fd7-8b35-f15c6c424428,APPROVED,1790175970000," +
                     "20000,20.0,16000,50,320,TF7y6fakeTronAddressUSDT88888xxxx1 "
     })
     @ParameterizedTest
     @DisplayName("Метод должен вернуть JSON представление заявки.")
-    void get_shouldReturnRequestJson(UUID id, WithdrawalRequestStatus status,
+    void get_shouldReturnRequestJson(UUID clientId, String clientUsername, UUID id, WithdrawalRequestStatus status,
                                      Long createdAt, Integer grossSourceAmount, BigDecimal commissionPercent,
                                      Integer netSourceAmount, BigDecimal rate, Integer targetAmount,
                                      String address) throws Exception {
-        ClientWithdrawalRequestResponse withdrawalRequestResponse = new ClientWithdrawalRequestResponse(
-                id, status, Instant.ofEpochMilli(createdAt), grossSourceAmount,
+        WithdrawalRequestResponse withdrawalRequestResponse = new WithdrawalRequestResponse(
+                clientId, clientUsername, id, status, Instant.ofEpochMilli(createdAt), grossSourceAmount,
                 commissionPercent, netSourceAmount, rate, targetAmount, address
         );
         when(withdrawalRequestService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(withdrawalRequestResponse)));
 
-        mockMvc.perform(get("/api/v1/withdrawal-request")
-                        .with(csrf())
-                        .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles("CLIENT")))
+        mockMvc.perform(get("/api/private/withdrawal-request")
+                .with(csrf())
+                .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles("ADMIN")))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].clientId").value(clientId.toString()))
+                .andExpect(jsonPath("$.content[0].clientUsername").value(clientUsername))
                 .andExpect(jsonPath("$.content[0].id").value(id.toString()))
                 .andExpect(jsonPath("$.content[0].status").value(status.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").value(createdAt))
@@ -129,84 +142,5 @@ class ClientWithdrawalRequestControllerTest {
                 .andExpect(jsonPath("$.content[0].rate").value(rate.doubleValue()))
                 .andExpect(jsonPath("$.content[0].targetAmount").value(targetAmount))
                 .andExpect(jsonPath("$.content[0].address").value(address));
-    }
-
-    @Test
-    @DisplayName("Метод должен вернуть 400, если отсутствует параметр amount.")
-    void create_shouldReturn400IfNoAmount() throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
-                .with(csrf())
-                .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("Required parameter 'amount' is not present")));
-    }
-
-    @Test
-    @DisplayName("Метод должен вернуть 400, если отсутствует параметр address.")
-    void create_shouldReturn400IfNoAddress() throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
-                        .queryParam("amount", "100")
-                        .with(csrf())
-                        .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("Required parameter 'address' is not present")));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
-    @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
-    void create_shouldReturn403IfNotClient(String role) throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
-                .queryParam("amount", "100")
-                .queryParam("address", "TX9zFakeAddressTRC20usdtNotReal99x")
-                .with(csrf())
-                .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role)))
-        .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "25167,TX9zFakeAddressTRC20usdtNotReal99x",
-            "500000,TF7y6fakeTronAddressUSDT88888xxxx1"
-    })
-    @DisplayName("Метод должен передать параметры в метод сервиса.")
-    void create_shouldPassParametersToService(Integer amount, String address) throws Exception {
-        UUID clientId = UUID.randomUUID();
-        mockMvc.perform(post("/api/v1/withdrawal-request")
-                        .queryParam("amount", amount.toString())
-                        .queryParam("address", address)
-                        .with(csrf())
-                        .with(user(clientId.toString()).roles(Role.CLIENT.name())))
-                .andExpect(status().isCreated());
-        verify(withdrawalRequestService).create(clientId, amount, address);
-    }
-
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
-    @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
-    void cancel_shouldReturn403IfNotClient(String role) throws Exception {
-        mockMvc.perform(patch("/api/v1/withdrawal-request")
-                        .with(csrf())
-                        .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role)))
-                .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "df5df58e-9fb8-4c56-9a77-e938c16501c5,fe0b457d-e4d4-4b78-b155-bf3475bb3518",
-            "0ed874cc-30a1-4645-ac2e-1a1814e1017b,0e845a87-ebef-44c0-b702-ae996b26f537"
-    })
-    @DisplayName("Метод должен передать параметры в метод сервиса.")
-    void cancel_shouldPassParametersToService(UUID clientId, UUID id) throws Exception {
-        mockMvc.perform(patch("/api/v1/withdrawal-request/" + id.toString())
-                        .with(csrf())
-                        .with(user(clientId.toString()).roles("CLIENT")))
-                .andExpect(status().isOk());
-        verify(withdrawalRequestService).cancel(clientId, id);
     }
 }

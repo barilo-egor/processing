@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Positive;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.service.billing.WithdrawalRequestService;
 import net.rcetech.meta.WebPath;
-import net.rcetech.meta.billing.dto.ClientWithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
+import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -18,7 +18,7 @@ import java.security.Principal;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.V1_API_PATH + "/withdrawal_request")
+@RequestMapping(WebPath.V1_API_PATH + "/withdrawal-request")
 @PreAuthorize("hasRole('CLIENT')")
 public class ClientWithdrawalRequestController {
 
@@ -37,7 +37,7 @@ public class ClientWithdrawalRequestController {
     }
 
     @GetMapping
-    public PagedModel<ClientWithdrawalRequestResponse> get(Principal principal, ClientWithdrawalRequestFilter filter,
+    public PagedModel<ClientWithdrawalRequestResponse> get(Principal principal, WithdrawalRequestFilter filter,
                                                            @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(withdrawalRequestService.findAll(
                 WithdrawalRequestSpecifications.matches(UUID.fromString(principal.getName()), filter),

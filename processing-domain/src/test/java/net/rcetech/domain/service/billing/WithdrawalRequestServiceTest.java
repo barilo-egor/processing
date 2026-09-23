@@ -8,8 +8,8 @@ import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
-import net.rcetech.meta.billing.dto.ClientWithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
+import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
@@ -211,13 +211,110 @@ class WithdrawalRequestServiceTest {
         WithdrawalRequest expected = withdrawalRequestService.create(
                 client.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
         );
+
         Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
-                WithdrawalRequestSpecifications.matches(client.getId(), new ClientWithdrawalRequestFilter(
-                        expected.getId(), null, null, null, null
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        expected.getId(), null, null, null, null, null
                 )),
                 Pageable.ofSize(20),
                 ClientWithdrawalRequestResponse.class
         );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    @Test
+    @DisplayName("Метод должен вернуть заявку по id клиента.")
+    void findAllShouldReturnRequestByClientId() {
+        Client client = getDummyClient(BigDecimal.ONE);
+        Client targetClient = getDummyClient(BigDecimal.ONE);
+        assertNotNull(targetClient.getId());
+        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
+        WithdrawalRequest expected = withdrawalRequestService.create(
+                targetClient.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
+        );
+
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(null, new WithdrawalRequestFilter(
+                        null, targetClient.getId().toString(), null, null, null, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    @Test
+    @DisplayName("Метод должен вернуть заявку по username клиента.")
+    void findAllShouldReturnRequestByClientUsername() {
+        Client client = getDummyClient(BigDecimal.ONE);
+        Client targetClient = getDummyClient(BigDecimal.ONE);
+        assertNotNull(targetClient.getId());
+        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
+        WithdrawalRequest expected = withdrawalRequestService.create(
+                targetClient.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
+        );
+
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(null, new WithdrawalRequestFilter(
+                        null, targetClient.getUsername(), null, null, null, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    @Test
+    void findAll_shouldNotFindByClientUsernameIfClientIdPassed() {
+        Client client = getDummyClient(BigDecimal.ONE);
+        Client targetClient = getDummyClient(BigDecimal.ONE);
+        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+
+        withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
+        WithdrawalRequest expected = withdrawalRequestService.create(
+                targetClient.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x"
+        );
+
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(targetClient.getId(), new WithdrawalRequestFilter(
+                        null, client.getUsername(), null, null, null, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    @Test
+    void findAll_shouldNotFindByClientIdInParameterIfClientIdPassed() {
+        Client client = getDummyClient(BigDecimal.ONE);
+        assertNotNull(client.getId());
+        Client targetClient = getDummyClient(BigDecimal.ONE);
+        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+
+        withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
+        WithdrawalRequest expected = withdrawalRequestService.create(
+                targetClient.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x"
+        );
+
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(targetClient.getId(), new WithdrawalRequestFilter(
+                        null, client.getId().toString(), null, null, null, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+
         assertEquals(1, actual.getTotalElements());
         assertEquals(expected.getId(), actual.getContent().getFirst().id());
     }
@@ -236,8 +333,8 @@ class WithdrawalRequestServiceTest {
         fillFields(expected);
         withdrawalRequestRepository.save(expected);
         Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
-                WithdrawalRequestSpecifications.matches(client.getId(), new ClientWithdrawalRequestFilter(
-                        null, status, null, null, null
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null, null, status, null, null, null
                 )),
                 Pageable.ofSize(20),
                 ClientWithdrawalRequestResponse.class
@@ -260,8 +357,8 @@ class WithdrawalRequestServiceTest {
         fillFields(expected);
         withdrawalRequestRepository.save(expected);
         Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
-                WithdrawalRequestSpecifications.matches(client.getId(), new ClientWithdrawalRequestFilter(
-                        null, null, Instant.ofEpochMilli(millis), null, null
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null,null,  null, Instant.ofEpochMilli(millis), null, null
                 )),
                 Pageable.ofSize(20),
                 ClientWithdrawalRequestResponse.class
@@ -284,8 +381,8 @@ class WithdrawalRequestServiceTest {
         fillFields(expected);
         withdrawalRequestRepository.save(expected);
         Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
-                WithdrawalRequestSpecifications.matches(client.getId(), new ClientWithdrawalRequestFilter(
-                        null, null, null, Instant.ofEpochMilli(millis), null
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null, null, null, null, Instant.ofEpochMilli(millis), null
                 )),
                 Pageable.ofSize(20),
                 ClientWithdrawalRequestResponse.class
@@ -308,8 +405,8 @@ class WithdrawalRequestServiceTest {
         fillFields(expected);
         withdrawalRequestRepository.save(expected);
         Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
-                WithdrawalRequestSpecifications.matches(client.getId(), new ClientWithdrawalRequestFilter(
-                        null, null, null, null, address
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null, null, null, null, null, address
                 )),
                 Pageable.ofSize(20),
                 ClientWithdrawalRequestResponse.class
@@ -370,5 +467,49 @@ class WithdrawalRequestServiceTest {
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(request.getId());
         assertTrue(maybeRequest.isPresent());
         assertEquals(WithdrawalRequestStatus.CANCELED, maybeRequest.get().getStatus());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0fae41bc-c171-4ad7-b4bc-1132a8149407,APPROVED",
+            "186f758e-53ab-4973-98af-a924d1b94a10,CANCELED"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если заявка не найдена")
+    void updateStatus_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id, WithdrawalRequestStatus status) {
+        assertThrows(BadRequestException.class, () -> withdrawalRequestService.updateStatus(id, status));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "CANCELED", "APPROVED"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если статус не NEW.")
+    void updateStatus_shouldThrowBadRequestExceptionIfOrderStatusIsNotNew(WithdrawalRequestStatus status) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setStatus(status);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        UUID requestId = withdrawalRequest.getId();
+        assertThrows(BadRequestException.class, () -> withdrawalRequestService.updateStatus(requestId, status));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "APPROVED",
+            "CANCELED"
+    })
+    @DisplayName("Метод должен успешно обновить статус.")
+    void updateStatus_shouldUpdateStatus(WithdrawalRequestStatus status) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setStatus(WithdrawalRequestStatus.NEW);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        withdrawalRequestService.updateStatus(withdrawalRequest.getId(), status);
+
+        Optional<WithdrawalRequest> maybeRequest =  withdrawalRequestRepository.findById(withdrawalRequest.getId());
+        assertTrue(maybeRequest.isPresent());
+        assertEquals(status, maybeRequest.get().getStatus());
     }
 }

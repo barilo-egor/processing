@@ -26,7 +26,8 @@ public class MetaSecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         WebPath.PRIVATE_API_PATH + "/order/**",
-                        WebPath.PRIVATE_API_PATH + "/transaction/**"
+                        WebPath.PRIVATE_API_PATH + "/transaction/**",
+                        WebPath.PRIVATE_API_PATH + "/withdrawal-request/**"
                 ).hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name())
                 .requestMatchers(WebPath.PRIVATE_API_PATH + "/client/**")
                 .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name(), Role.CLIENT.name())

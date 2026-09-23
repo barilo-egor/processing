@@ -7,8 +7,9 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
 import java.util.UUID;
 
-public record ClientWithdrawalRequestFilter(
+public record WithdrawalRequestFilter(
         UUID id,
+        String client,
         WithdrawalRequestStatus status,
         @JsonDeserialize(using = MillisToInstantDeserializer.class)
         Instant createdAtFrom,
