@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/api-key")
+@RequestMapping(WebPath.V1_API_PATH + "/api-key")
 public class ApiKeyController {
 
     private final ApiKeyService apiKeyService;
