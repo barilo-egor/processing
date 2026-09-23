@@ -22,7 +22,7 @@ import java.util.Map;
 @Slf4j
 public class OrdersLoggingAspect {
 
-    @Around("execution(* net.rcetech.api.controller.v1.ApiOrdersController.*(..))")
+    @Around("execution(* net.rcetech.api.controller.v1.ClientOrderController.*(..))")
     public Object logAllOrdersEndpoints(ProceedingJoinPoint joinPoint) throws Throwable {
 
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

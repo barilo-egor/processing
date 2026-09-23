@@ -24,13 +24,13 @@ import java.util.UUID;
 @RestController
 @RequestMapping(WebPath.V1_API_PATH + "/order")
 @PreAuthorize("hasRole('CLIENT')")
-public class ApiOrdersController {
+public class ClientOrderController {
 
     private final OrderApiService orderApiService;
 
     private final OrderMapper orderMapper;
 
-    public ApiOrdersController(OrderApiService orderApiService, OrderMapper orderMapper) {
+    public ClientOrderController(OrderApiService orderApiService, OrderMapper orderMapper) {
         this.orderApiService = orderApiService;
         this.orderMapper = orderMapper;
     }

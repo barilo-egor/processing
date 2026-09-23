@@ -51,10 +51,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ApiOrdersController.class)
+@WebMvcTest(ClientOrderController.class)
 @Import({MetaSecurityConfig.class, ApiSecurityConfig.class})
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
-class ApiOrdersControllerTest {
+class ClientOrderControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
