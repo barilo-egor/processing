@@ -85,11 +85,11 @@ public class WithdrawalRequestService {
     public void cancel(UUID clientId, UUID id) {
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
         if (maybeRequest.isEmpty() || !clientId.equals(maybeRequest.get().getClient().getId())) {
-            throw new BadRequestException("Order not found");
+            throw new BadRequestException("Ордер не найден.");
         }
         WithdrawalRequest request = maybeRequest.get();
         if (!WithdrawalRequestStatus.NEW.equals(request.getStatus())) {
-            throw new BadRequestException("Order status must be NEW");
+            throw new BadRequestException("Заявка должна быть в статусе \"Новая\".");
         }
         request.setStatus(WithdrawalRequestStatus.CANCELED);
     }
