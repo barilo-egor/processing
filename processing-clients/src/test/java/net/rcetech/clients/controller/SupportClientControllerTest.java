@@ -56,10 +56,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ClientController.class)
+@WebMvcTest(SupportClientController.class)
 @Import({ClientsSecurityConfig.class, MetaSecurityConfig.class})
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
-class ClientControllerTest {
+class SupportClientControllerTest {
 
     @TestConfiguration
     static class Configuration {

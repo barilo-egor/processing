@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 @RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
 @Validated
-public class ClientController {
+public class SupportClientController {
 
     private final KeycloakEventService keycloakEventService;
 
@@ -33,8 +33,8 @@ public class ClientController {
 
     private final ClientMapper clientMapper;
 
-    public ClientController(KeycloakEventService keycloakEventService, ClientService clientService,
-                            ClientMapper clientMapper) {
+    public SupportClientController(KeycloakEventService keycloakEventService, ClientService clientService,
+                                   ClientMapper clientMapper) {
         this.keycloakEventService = keycloakEventService;
         this.clientService = clientService;
         this.clientMapper = clientMapper;
