@@ -3,6 +3,7 @@ package net.rcetech.domain.service.clients;
 import lombok.NonNull;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.clients.Client_;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.clients.ClientSpecifications;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -39,6 +40,13 @@ public class ClientService {
 
     public Optional<Client> findById(UUID id) {
         return clientRepository.findById(id);
+    }
+
+    public <T> Optional<T> findById(UUID id, Class<T> projectionType) {
+        return clientRepository.findBy(
+                (from, builder) -> builder.equal(from.get(Client_.id), id),
+                query -> query.as(projectionType).one()
+        );
     }
 
     public Client save(Client client) {
