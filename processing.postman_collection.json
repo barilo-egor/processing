@@ -162,6 +162,32 @@
                   "body": "{\n  \"content\": [\n    {\n      \"id\": \"e0094537-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-001\",\n      \"status\": \"NEW\",\n      \"amount\": 1500,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009b915-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-002\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 2450,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009bb86-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-003\",\n      \"status\": \"NEW\",\n      \"amount\": 500,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    },\n    {\n      \"id\": \"e009bcac-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-004\",\n      \"status\": \"NEW\",\n      \"amount\": 10000,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009bd86-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-005\",\n      \"status\": \"NEW\",\n      \"amount\": 3200,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009be11-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-006\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 750,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    },\n    {\n      \"id\": \"e009c879-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-007\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 4300,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009c999-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-008\",\n      \"status\": \"TIMEOUT\",\n      \"amount\": 12000,\n      \"enableUniqueAmount\": true,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009ca2a-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-009\",\n      \"status\": \"DISPUTE\",\n      \"amount\": 850,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": \"https://example.com/callback\"\n    },\n    {\n      \"id\": \"e009cabe-b4f1-11f1-a8c4-f233d91b4854\",\n      \"createdAt\": 1789919436400,\n      \"internalId\": \"INT-010\",\n      \"status\": \"DISPUTE\",\n      \"amount\": 150,\n      \"enableUniqueAmount\": false,\n      \"callbackUrl\": null\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 10,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
+            },
+            {
+              "name": "Создание ордера",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"internalId\": \"\",\n    \"amount\": 0,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"enableUniqueAmount\": false,\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
