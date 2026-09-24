@@ -3302,6 +3302,138 @@
               ]
             }
           ]
+        },
+        {
+          "name": "merchant-callback",
+          "item": [
+            {
+              "name": "Получение КБ",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "merchant-callback"
+                  ],
+                  "query": [
+                    {
+                      "key": "orderId",
+                      "value": "",
+                      "description": "Идентификатор ордера"
+                    },
+                    {
+                      "key": "merchant",
+                      "value": "",
+                      "description": "Мерчант"
+                    },
+                    {
+                      "key": "merchantOrderId",
+                      "value": "",
+                      "description": "Идентификатор ордера в системе мерчанта"
+                    },
+                    {
+                      "key": "createdAtFrom",
+                      "value": "",
+                      "description": "Время создания от(unix epoch millis)"
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": "",
+                      "description": "Время создания до(unix epoch millis)"
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Размер страницы(по умолчанию 20)"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "КБ получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/merchant-callback",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "merchant-callback"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "2178"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 24 Sep 2026 16:33:36 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": 1,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f661-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f661\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 2,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f855-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f855\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 3,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f86e-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f86e\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 4,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8b6-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f8b6\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 5,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8c8-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f8c8\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 6,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8d5-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8d5\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 7,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8e2-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8e2\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 8,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8ef-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8ef\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 9,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8fc-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8fc\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 10,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f909-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f909\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 10,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
