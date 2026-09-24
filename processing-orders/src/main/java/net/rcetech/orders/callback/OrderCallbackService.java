@@ -2,6 +2,7 @@ package net.rcetech.orders.callback;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -20,8 +21,12 @@ public class OrderCallbackService {
 
     private final OrderService orderService;
 
-    public OrderCallbackService(List<OrderStatusResolver> orderStatusResolver, OrderService orderService) {
+    private final MerchantCallbackService merchantCallbackService;
+
+    public OrderCallbackService(List<OrderStatusResolver> orderStatusResolver, OrderService orderService,
+                                MerchantCallbackService merchantCallbackService) {
         this.orderService = orderService;
+        this.merchantCallbackService = merchantCallbackService;
         this.statusResolversMap = new EnumMap<>(Merchant.class);
         for (OrderStatusResolver resolver : orderStatusResolver) {
             for (Merchant merchant : resolver.getMerchants()) {
@@ -47,6 +52,11 @@ public class OrderCallbackService {
         }
         if (maybeOrder.isPresent()) {
             Order order = maybeOrder.get();
+            try {
+                merchantCallbackService.save(order, merchantCallbackEvent);
+            } catch (Exception e) {
+                log.error("Ошибка при сохранении кб: {}", e.getMessage(), e);
+            }
             Optional<OrderStatus> maybeStatus = statusResolversMap.get(merchantCallbackEvent.getMerchant())
                     .resolve(merchantCallbackEvent.getStatus());
             if (maybeStatus.isEmpty()) {

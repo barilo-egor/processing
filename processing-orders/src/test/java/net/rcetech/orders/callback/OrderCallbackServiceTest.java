@@ -1,9 +1,12 @@
 package net.rcetech.orders.callback;
 
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
+import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BaseException;
@@ -13,6 +16,7 @@ import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -24,6 +28,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
@@ -37,10 +42,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(OrderService.class)
+@Import({OrderService.class, MerchantCallbackService.class})
 @Testcontainers
 @RecordApplicationEvents
 class OrderCallbackServiceTest {
@@ -55,8 +62,9 @@ class OrderCallbackServiceTest {
 
         @Bean
         public OrderCallbackService orderCallbackService(AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver,
-                                                         OrderService orderService) {
-            return new OrderCallbackService(List.of(alfaTeamOrderStatusResolver), orderService);
+                                                         OrderService orderService,
+                                                         MerchantCallbackService merchantCallbackService) {
+            return new OrderCallbackService(List.of(alfaTeamOrderStatusResolver), orderService, merchantCallbackService);
         }
     }
 
@@ -82,6 +90,12 @@ class OrderCallbackServiceTest {
 
     @Autowired
     private ApplicationEvents applicationEvents;
+
+    @MockitoSpyBean
+    private MerchantCallbackService merchantCallbackService;
+
+    @Autowired
+    private MerchantCallbackRepository merchantCallbackRepository;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -309,5 +323,61 @@ class OrderCallbackServiceTest {
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
         assertTrue(maybeOrder.isPresent());
         assertEquals(OrderStatus.DISPUTE, maybeOrder.get().getStatus());
+    }
+
+    @DisplayName("Метод должен подтвердить ордер, даже если было брошено исключение при сохранении КБ.")
+    @Test
+    void resolve_shouldConfirmOrderIfExceptionThrownWhileSavingCallbackService() {
+        Client client = getDummyClient();
+        Order order = new Order();
+        UUID orderId = UUID.randomUUID();
+        order.setId(orderId);
+        fillFields(order, client);
+        orderRepository.save(order);
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(orderId.toString());
+        event.setStatus("PAID");
+        event.setStatusDescription("Status");
+        event.setMerchant(Merchant.ALFA_TEAM);
+        doThrow(BaseException.class).when(merchantCallbackService).save(any(), any());
+        orderCallbackService.resolve(event);
+
+        assertNotNull(order.getId());
+        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
+    }
+
+    @DisplayName("Метод должен сохранить КБ.")
+    @Test
+    void resolve_shouldSaveCallback() {
+        Client client = getDummyClient();
+        Order order = new Order();
+        UUID orderId = UUID.randomUUID();
+        order.setId(orderId);
+        fillFields(order, client);
+        orderRepository.save(order);
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(orderId.toString());
+        event.setStatus("PAID");
+        event.setStatusDescription("Status");
+        event.setMerchant(Merchant.ALFA_TEAM);
+        orderCallbackService.resolve(event);
+
+        assertNotNull(order.getId());
+        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
+        List<MerchantCallback> callbacks = merchantCallbackRepository.findAll();
+        assertEquals(1, callbacks.size());
+        MerchantCallback actual = callbacks.get(0);
+        assertAll(
+                () -> assertNotNull(actual.getId()),
+                () -> assertEquals(orderId, actual.getOrder().getId()),
+                () -> assertEquals(event.getMerchant(), actual.getMerchant()),
+                () -> assertEquals(event.getMerchantOrderId(), actual.getMerchantOrderId()),
+                () -> assertEquals(event.getStatus(), actual.getStatus()),
+                () -> assertEquals(event.getStatusDescription(), actual.getStatusDescription())
+        );
     }
 }

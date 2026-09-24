@@ -3,7 +3,7 @@ create table client
     id                    binary(16)   not null,
     version               bigint       not null,
     username              varchar(255) not null,
-    registered_at         datetime(6)  not null,
+    registered_at         timestamp(0) not null,
     status                varchar(30)  not null,
     callback_url          varchar(255),
     order_timeout_seconds integer      not null,
@@ -18,8 +18,8 @@ create table orders
 (
     id                    binary(16)    not null,
     version               bigint        not null,
-    created_at            datetime(6)   not null,
-    expires_at            datetime(6)   not null,
+    created_at            timestamp(0)  not null,
+    expires_at            timestamp(0)  not null,
     client_id             binary(16)    not null,
     internal_id           varchar(255)  not null,
     status                varchar(30)   not null,
@@ -46,7 +46,7 @@ create table support_users
 (
     id            bigint       not null auto_increment,
     username      varchar(255) not null,
-    registered_at datetime(6)  not null,
+    registered_at timestamp(0) not null,
     primary key (id)
 ) engine = InnoDB;
 alter table support_users
@@ -54,12 +54,12 @@ alter table support_users
 
 create table transaction
 (
-    id         bigint      not null auto_increment,
-    client_id  binary(16)  not null,
-    created_at datetime(6) not null,
-    operation  varchar(30) not null,
-    amount     integer     not null,
-    type       varchar(30) not null,
+    id         bigint       not null auto_increment,
+    client_id  binary(16)   not null,
+    created_at timestamp(0) not null,
+    operation  varchar(30)  not null,
+    amount     integer      not null,
+    type       varchar(30)  not null,
     comment    varchar(255),
     primary key (id)
 ) engine = InnoDB;
@@ -71,7 +71,7 @@ create table withdrawal_request
     id                  binary(16)    not null,
     client_id           binary(16)    not null,
     status              varchar(30)   not null,
-    created_at          datetime(6)   not null,
+    created_at          timestamp(0)  not null,
     gross_source_amount int           not null check ( gross_source_amount > 0 ),
     commission_percent  decimal(5, 2) not null check ( commission_percent > 0 ),
     net_source_amount   int           not null check ( net_source_amount > 0 ),
@@ -95,3 +95,17 @@ create table api_key
 alter table api_key
     add constraint fk_api_key_client foreign key (client_id) references client (id) on delete cascade on update cascade,
     add constraint unique_hash unique (hash);
+
+create table merchant_callback
+(
+    id                 bigint      not null auto_increment,
+    created_at         timestamp(0),
+    order_id           binary(16)  not null,
+    merchant           varchar(30) not null,
+    merchant_order_id  varchar(300),
+    status             varchar(50) not null,
+    status_description varchar(50),
+    primary key (id)
+);
+alter table merchant_callback
+    add constraint fk_merchant_callback_order foreign key (order_id) references orders (id) on delete cascade on update cascade;

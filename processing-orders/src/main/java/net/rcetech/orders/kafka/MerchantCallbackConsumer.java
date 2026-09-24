@@ -33,7 +33,6 @@ public class MerchantCallbackConsumer {
     )
     public void callback(ConsumerRecord<String, MerchantCallbackEvent> consumerRecord) {
         log.debug("Принят callback key={} : {}", consumerRecord.key(), consumerRecord.value());
-        // TODO создать сущность MerchantCallback, сохранять каждый
         orderCallbackService.resolve(consumerRecord.value());
     }
 
