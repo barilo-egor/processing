@@ -23,6 +23,7 @@ message DetailsRequestGrpc {
   int32 amount = 4;
   int32 wait_timeout = 5;
   repeated string request_method = 6;
+  string owner_id = 7;
 }
 
 message DetailsResponseGrpc {

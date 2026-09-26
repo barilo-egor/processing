@@ -34,18 +34,18 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
     }
 
     /**
-     * Получает реквизиты мерчанта по деталям запроса через gRPC.
+     * Получает реквизиты мерчанта по clientId и деталям запроса через gRPC.
      *
      * @return {@link ApiDetailsResponse} с найденными реквизитами.
      * @throws MerchantDetailsNotFoundException если реквизиты не найдены (gRPC NOT_FOUND).
      * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
      */
-    public ApiDetailsResponse getDetails(UUID orderId, CreateOrderRequest clientOrderRequest) {
+    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
             DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
-                    detailsMapper.detailsRequestDTOToGrpc(requestId, orderId, clientOrderRequest)
+                    detailsMapper.detailsRequestDTOToGrpc(clientId, requestId, orderId, clientOrderRequest)
             );
             return detailsMapper.grpcResponseToDTO(grpcResponse);
         } catch (StatusRuntimeException statusException) {

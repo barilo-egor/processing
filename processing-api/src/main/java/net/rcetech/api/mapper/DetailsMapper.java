@@ -28,8 +28,9 @@ public interface DetailsMapper {
     @Mapping(target = "internalId", source = "orderId")
     @Mapping(target = "userId", source = "orderDTO.userId")
     @Mapping(target = "amount", source = "orderDTO.amount")
+    @Mapping(target = "ownerId", source = "clientId")
     @Mapping(target = "requestMethodList", source = "orderDTO.methods")
-    DetailsRequestGrpc detailsRequestDTOToGrpc(UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
+    DetailsRequestGrpc detailsRequestDTOToGrpc(UUID clientId, UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
 
     MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
 

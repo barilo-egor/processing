@@ -66,9 +66,10 @@ class ApiMerchantDetailsGrpcServiceTest {
                 .setAmount(amount)
                 .build();
         when(detailsBlockingStub.detailsRequest(any())).thenReturn(detailsResponseGrpc);
+        UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
         UUID internalId = UUID.randomUUID();
-        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(orderId,
+        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId,
                 new CreateOrderRequest(
                         internalId.toString(), 5042, Set.of(RequestMethod.CARD), true,
                         "https://example.com/callback", "534690"
@@ -95,8 +96,9 @@ class ApiMerchantDetailsGrpcServiceTest {
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
                 "https://example.com/callback", "534690"
         );
+        UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(MerchantDetailsNotFoundException.class, () -> apiMerchantDetailsGrpcService.getDetails(orderId, createOrderRequest));
+        assertThrows(MerchantDetailsNotFoundException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest));
     }
 
     @ParameterizedTest
@@ -111,8 +113,9 @@ class ApiMerchantDetailsGrpcServiceTest {
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
                 "https://example.com/callback", "534690"
         );
+        UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(orderId, createOrderRequest),
+        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest),
                 "Неизвестная ошибка GRPC " + statusValue);
     }
 
@@ -124,8 +127,9 @@ class ApiMerchantDetailsGrpcServiceTest {
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
                 "https://example.com/callback", "534690"
         );
+        UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(orderId, createOrderRequest),
+        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest),
                 "Непредвиденная ошибка: Illegal State");
     }
 }

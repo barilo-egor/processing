@@ -147,7 +147,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер, срок которого истекает через время, установленное клиенту.")
     void createOrder_shouldCreateOrderWithExpiresAtWithClientOrderTimeout(int orderTimeout) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(detailsResponse);
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(detailsResponse);
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test");
@@ -172,7 +172,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с переданными в запросе данными.")
     void createOrder_shouldCreateOrderWithCreateOrderRequestData(CreateOrderRequest createOrderRequest) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(detailsResponse);
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(detailsResponse);
         Client client = getDummyClient();
         clientService.save(client);
         orderApiService.createOrder(client.getId(), createOrderRequest);
@@ -210,7 +210,7 @@ class OrderApiServiceTest {
     void createOrder_shouldCreateOrderWithDetailsResponseData(ApiDetailsResponse apiDetailsResponse) {
         Client client = getDummyClient();
         clientService.save(client);
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(apiDetailsResponse);
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
@@ -250,7 +250,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с callback url сохраненным за клиентом.")
     void createOrder_shouldCreateOrderWithClientCallbackUrl(String url) {
         ApiDetailsResponse apiDetailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any())).thenReturn(apiDetailsResponse);
+        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
         Client client = getDummyClient();
         client.setCallbackUrl(url);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
