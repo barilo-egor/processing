@@ -10,11 +10,15 @@ import lombok.ToString;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.clients.ClientStatus;
+import net.rcetech.meta.orders.RequestMethod;
+import org.hibernate.annotations.SortNatural;
 import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 
 @Entity
@@ -97,6 +101,13 @@ public class Client implements Persistable<UUID> {
     @Column
     @PositiveOrZero(message = "should be positive or zero.")
     private Integer balance;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "client_method", joinColumns = @JoinColumn(name = "client_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "method")
+    @SortNatural
+    private SortedSet<RequestMethod> methods = new TreeSet<>();
 
     @Transient
     private boolean isNew = true;

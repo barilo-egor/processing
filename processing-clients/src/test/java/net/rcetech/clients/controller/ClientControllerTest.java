@@ -2,12 +2,16 @@ package net.rcetech.clients.controller;
 
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.ClientUpdateRequest;
+import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,16 +19,22 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,6 +51,8 @@ class ClientControllerTest {
 
     @MockitoBean
     private ClientService clientService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void get_shouldReturn500IfClientNotFound() throws Exception {
@@ -59,11 +71,54 @@ class ClientControllerTest {
     })
     void get_shouldReturnClientJson(UUID id, String username, Long registeredAt, ClientStatus status, String callbackUrl,
                                     Integer orderTimeoutSeconds, BigDecimal commissionPercent, Integer balance) throws Exception {
-        ClientResponseDTO clientResponseDTO = new ClientResponseDTO(
-                id, username, Instant.ofEpochMilli(registeredAt), status, callbackUrl, orderTimeoutSeconds, commissionPercent, balance
-        );
+        ClientProjection clientResponseDTO = new ClientProjection() {
+            @Override
+            public UUID getId() {
+                return id;
+            }
 
-        when(clientService.findById(id, ClientResponseDTO.class)).thenReturn(Optional.of(clientResponseDTO));
+            @Override
+            public String getUsername() {
+                return username;
+            }
+
+            @Override
+            public Instant getRegisteredAt() {
+                return Instant.ofEpochMilli(registeredAt);
+            }
+
+            @Override
+            public ClientStatus getStatus() {
+                return status;
+            }
+
+            @Override
+            public String getCallbackUrl() {
+                return callbackUrl;
+            }
+
+            @Override
+            public Integer getOrderTimeoutSeconds() {
+                return orderTimeoutSeconds;
+            }
+
+            @Override
+            public BigDecimal getCommissionPercent() {
+                return commissionPercent;
+            }
+
+            @Override
+            public Integer getBalance() {
+                return balance;
+            }
+
+            @Override
+            public Set<RequestMethod> getMethods() {
+                return Set.of(RequestMethod.CARD, RequestMethod.SBP);
+            }
+        };
+
+        when(clientService.findById(id, ClientProjection.class)).thenReturn(Optional.of(clientResponseDTO));
 
         mockMvc.perform(get("/api/v1/client")
                         .with(csrf())
@@ -78,5 +133,35 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$.orderTimeoutSeconds").value(orderTimeoutSeconds))
                 .andExpect(jsonPath("$.commissionPercent").value(commissionPercent.doubleValue()))
                 .andExpect(jsonPath("$.balance").value(balance));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"callbackUrl\":\"https://example.com/callback\"}",
+            "{\"callbackUrl\":\"https://google.com/merchant-details/callback\"}"
+    })
+    void update_shouldPassParameters(String json) throws Exception {
+        ClientUpdateRequest expected = objectMapper.readValue(json, ClientUpdateRequest.class);
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/v1/client")
+                .with(csrf())
+                .with(user(clientId.toString()).roles("CLIENT"))
+                        .header("Content-type", "application/json")
+                .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<ClientUpdateRequest> captor = ArgumentCaptor.forClass(ClientUpdateRequest.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(expected.callbackUrl(), captor.getValue().callbackUrl());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "ADMIN", "OPERATOR"
+    })
+    void update_shouldReturn403IfNotClient(String role) throws Exception {
+        mockMvc.perform(patch("/api/v1/client")
+                        .with(csrf())
+                        .with(user(UUID.randomUUID().toString()).roles(role)))
+                .andExpect(status().isForbidden());
     }
 }

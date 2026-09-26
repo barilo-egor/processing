@@ -2,17 +2,17 @@ package net.rcetech.clients.controller;
 
 import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.clients.event.KeycloakEvent;
-import net.rcetech.clients.service.ClientSecurityService;
 import net.rcetech.clients.service.KeycloakEventService;
-import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
+import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.orders.RequestMethod;
+import org.hamcrest.Matchers;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -20,13 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
@@ -44,6 +41,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -61,20 +59,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class SupportClientControllerTest {
 
-    @TestConfiguration
-    static class Configuration {
-
-        @Bean
-        public ClientMapper clientMapper() {
-            return Mappers.getMapper(ClientMapper.class);
-        }
-
-        @Bean
-        public ClientSecurityService clientSecurityService() {
-            return new ClientSecurityService();
-        }
-    }
-
     @MockitoBean
     private ApiKeyService apiKeyService;
 
@@ -88,13 +72,7 @@ class SupportClientControllerTest {
     private ClientService clientService;
 
     @Autowired
-    private ClientMapper clientMapper;
-
-    @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ClientSecurityService clientSecurityService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -132,8 +110,7 @@ class SupportClientControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Метод должен вернуть пустой массив.")
     void getClients_shouldReturnEmptyArray() throws Exception {
-        Page<ClientResponseDTO> page = new PageImpl<>(new ArrayList<>());
-        when(clientService.findAll(any(), any())).thenReturn(page);
+        when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         mockMvc.perform(get("/api/private/client")
                         .queryParam("username", "test"))
                 .andExpect(status().isOk())
@@ -150,37 +127,85 @@ class SupportClientControllerTest {
     @ValueSource(ints = {1, 5})
     @WithMockUser(roles = "ADMIN")
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
-        List<ClientResponseDTO> clients = new ArrayList<>();
+        List<ClientProjection> clients = new ArrayList<>();
         for (int i = 0; i < clientsSize; i++) {
-            ClientResponseDTO client = getClient(i);
+            ClientProjection client = getClient(i);
             clients.add(client);
         }
-        Page<ClientResponseDTO> page = new PageImpl<>(
+        Page<ClientProjection> page = new PageImpl<>(
                 clients, PageRequest.of(0, 100), clients.size()
         );
-        when(clientService.findAll(any(), any())).thenReturn(page);
+        when(clientService.findAll(any(), any(), eq(ClientProjection.class))).thenReturn(page);
         ResultActions resultActions = mockMvc.perform(get("/api/private/client"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
-        for (ClientResponseDTO client : clients) {
-            resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(client.id().toString()));
-            resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(client.username()));
-            resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(client.registeredAt().toEpochMilli()));
+        for (ClientProjection client : clients) {
+            resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(client.getId().toString()));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(client.getUsername()));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(client.getRegisteredAt().toEpochMilli()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].status").value("ACTIVE"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].callbackUrl").value("https://example.com/callback"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].orderTimeoutSeconds").value(900));
             resultActions.andExpect(jsonPath("$.content[" + i + "].commissionPercent").value("20.5"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].balance").isNumber());
             resultActions.andExpect(jsonPath("$.content[" + i + "].balance").value("154789"));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].methods").isArray());
+            resultActions.andExpect(jsonPath("$.content[" + i + "].methods", Matchers.hasItems("CARD", "SBP")));
             i++;
         }
     }
 
-    private static @NonNull ClientResponseDTO getClient(int i) {
-        return new ClientResponseDTO(UUID.randomUUID(), "test" + i, Instant.now(),
-                ClientStatus.ACTIVE, "https://example.com/callback", 900,
-                new BigDecimal("20.5"), 154789);
+    private static @NonNull ClientProjection getClient(int i) {
+        UUID id = UUID.randomUUID();
+        String username = "test" + i;
+        Instant now = Instant.now();
+        return new ClientProjection() {
+            @Override
+            public UUID getId() {
+                return id;
+            }
+
+            @Override
+            public String getUsername() {
+                return username;
+            }
+
+            @Override
+            public Instant getRegisteredAt() {
+                return now;
+            }
+
+            @Override
+            public ClientStatus getStatus() {
+                return ClientStatus.ACTIVE;
+            }
+
+            @Override
+            public String getCallbackUrl() {
+                return "https://example.com/callback";
+            }
+
+            @Override
+            public Integer getOrderTimeoutSeconds() {
+                return 900;
+            }
+
+            @Override
+            public BigDecimal getCommissionPercent() {
+                return new BigDecimal("20.5");
+            }
+
+            @Override
+            public Integer getBalance() {
+                return 154789;
+            }
+
+            @Override
+            public Set<RequestMethod> getMethods() {
+                return Set.of(RequestMethod.CARD, RequestMethod.SBP);
+            }
+        };
     }
 
     @CsvSource("""
@@ -192,7 +217,7 @@ class SupportClientControllerTest {
     @DisplayName("Метод должен передать параметры фильтрации в метод сервиса.")
     void getClients_shouldPassParametersToMethod(String id, String username, String status, long from, long to,
                                                  int size, int page) throws Exception {
-        when(clientService.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         ArgumentCaptor<ClientFilter> filterCaptor = ArgumentCaptor.forClass(ClientFilter.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         mockMvc.perform(get("/api/private/client")
@@ -204,7 +229,7 @@ class SupportClientControllerTest {
                 .queryParam("page", String.valueOf(page))
                 .queryParam("size", String.valueOf(size))
         ).andExpect(status().isOk());
-        verify(clientService).findAll(filterCaptor.capture(), pageableCaptor.capture());
+        verify(clientService).findAll(filterCaptor.capture(), pageableCaptor.capture(), eq(ClientProjection.class));
         ClientFilter filter = filterCaptor.getValue();
         Pageable pageable = pageableCaptor.getValue();
         assertAll(
@@ -247,7 +272,8 @@ class SupportClientControllerTest {
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\", \"percentCommission\":\"15.5\"}",
-            "{\"orderTimeoutSeconds\":700}"
+            "{\"orderTimeoutSeconds\":700}",
+            "{\"methods\":[\"SBP\",\"CARD\"]}"
     })
     @DisplayName("Доступ должен быть запрещен клиенту, если присутствуют поля, запрещенные к обновлению клиенту.")
     void update_shouldReturnForbiddenForClientIfUpdateNotAccessedFields(String json) throws Exception {
@@ -276,7 +302,8 @@ class SupportClientControllerTest {
             "{\"status\":\"BLOCKED\", \"callbackUrl\":\"https://example.com\"}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
-            "{\"callbackUrl\":\"https://example.com\"}"
+            "{\"callbackUrl\":\"https://example.com\"}",
+            "{\"methods\":[\"CARD\",\"SBP\"]}"
     })
     @DisplayName("Сериализация должна пройти без ошибок.")
     void update_shouldUpdateClient(String json) throws Exception {
@@ -293,21 +320,19 @@ class SupportClientControllerTest {
         assertEquals(expected, captor.getValue());
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "http://example.com/callback",
-            "example.com/callback",
-            "qwe"
-    })
-    @DisplayName("Должен вернуть 400, если юрл невалиден, либо протокол не https.")
-    void update_shouldReturnBadRequestIfUrlIsNotValid(String nodValidUrl) throws Exception {
-        UUID uuid = UUID.randomUUID();
-        mockMvc.perform(
-                patch("/api/private/client/" + uuid)
+    @Test
+    void update_shouldUpdateClientForClientAccess() throws Exception {
+        String json = "{\"callbackUrl\":\"https://example.com\"}";
+        UpdateClientDTO expected = objectMapper.readValue(json, UpdateClientDTO.class);
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/private/client/" + clientId)
                         .header("Content-Type", "application/json")
-                        .with(user(uuid.toString()).roles("CLIENT"))
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles("ADMIN"))
                         .with(csrf())
-                        .content("{\"callbackUrl\":\"" + nodValidUrl + "\"}")
-        ).andExpect(status().isBadRequest());
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(expected, captor.getValue());
     }
 }

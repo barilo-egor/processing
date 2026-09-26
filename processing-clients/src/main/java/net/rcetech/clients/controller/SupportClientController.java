@@ -4,12 +4,11 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
-import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
+import net.rcetech.meta.clients.projection.ClientProjection;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -31,17 +30,14 @@ public class SupportClientController {
 
     private final ClientService clientService;
 
-    private final ClientMapper clientMapper;
-
-    public SupportClientController(KeycloakEventService keycloakEventService, ClientService clientService,
-                                   ClientMapper clientMapper) {
+    public SupportClientController(KeycloakEventService keycloakEventService, ClientService clientService) {
         this.keycloakEventService = keycloakEventService;
         this.clientService = clientService;
-        this.clientMapper = clientMapper;
     }
 
     @PostMapping("/event/")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('WEBHOOK_CLIENT')")
     public ResponseEntity<Void> event(@RequestBody KeycloakEvent event) {
         log.trace("Получен ивент из keycloak: {}", event);
         boolean isHandled = keycloakEventService.handle(event);
@@ -54,14 +50,14 @@ public class SupportClientController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public PagedModel<ClientResponseDTO> getClients(ClientFilter filter,
+    public PagedModel<ClientProjection> getClients(ClientFilter filter,
                                                     @PageableDefault(size = 20) Pageable pageable) {
-        return new PagedModel<>(clientService.findAll(filter, pageable));
+        return new PagedModel<>(clientService.findAll(filter, pageable, ClientProjection.class));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("@clientSecurityService.canUpdate(#id, #updateClientDTO, authentication)")
-    public ResponseEntity<ClientResponseDTO> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
-        return new ResponseEntity<>(clientMapper.toResponse(clientService.update(id, updateClientDTO)), HttpStatus.OK);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ClientProjection> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
+        return new ResponseEntity<>(clientService.update(id, updateClientDTO), HttpStatus.OK);
     }
 }

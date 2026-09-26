@@ -7,8 +7,9 @@ import net.rcetech.domain.model.clients.Client_;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.clients.ClientSpecifications;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
+import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,9 +34,9 @@ public class ClientService {
         this.clientMapper = clientMapper;
     }
 
-    public Page<ClientResponseDTO> findAll(ClientFilter clientFilter, @NonNull Pageable pageable) {
+    public <T> Page<T> findAll(ClientFilter clientFilter, @NonNull Pageable pageable, Class<T> projectionType) {
         return clientRepository.findBy(ClientSpecifications.matches(clientFilter),
-                query -> query.as(ClientResponseDTO.class).page(pageable));
+                query -> query.as(projectionType).page(pageable));
     }
 
     public Optional<Client> findById(UUID id) {
@@ -53,12 +54,24 @@ public class ClientService {
         return clientRepository.save(client);
     }
 
-    public Client update(UUID id, UpdateClientDTO updateClientDTO) {
+    public ClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
         Client client = findById(id).orElseThrow(
                 () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
         );
         clientMapper.updateNotNull(updateClientDTO, client);
-        return clientRepository.save(client);
+        clientRepository.save(client);
+        return findById(id, ClientProjection.class)
+                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));
+    }
+
+    public ClientProjection update(UUID id, ClientUpdateRequest clientUpdateRequest) {
+        Client client = findById(id).orElseThrow(
+                () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
+        );
+        clientMapper.updateNotNull(clientUpdateRequest, client);
+        clientRepository.save(client);
+        return findById(id, ClientProjection.class)
+                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

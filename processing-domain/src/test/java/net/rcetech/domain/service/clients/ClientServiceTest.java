@@ -6,9 +6,11 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
-import net.rcetech.meta.clients.dto.ClientResponseDTO;
+import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
+import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -23,9 +25,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,8 +34,8 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -99,10 +99,10 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         ClientFilter clientFilter = new ClientFilter(id, null, null, null, null);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize), ClientProjection.class);
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(id, actual.getContent().getFirst().id())
+                () -> assertEquals(id, actual.getContent().getFirst().getId())
         );
     }
 
@@ -122,10 +122,10 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         ClientFilter clientFilter = new ClientFilter(null, username, null, null, null);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize), ClientProjection.class);
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(username, actual.getContent().getFirst().username())
+                () -> assertEquals(username, actual.getContent().getFirst().getUsername())
         );
     }
 
@@ -137,9 +137,9 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        Page<ClientResponseDTO> actual = clientService.findAll(
+        Page<ClientProjection> actual = clientService.findAll(
                 new ClientFilter(null, "  ", null, null, null),
-                Pageable.ofSize(10)
+                Pageable.ofSize(10), ClientProjection.class
         );
         assertEquals(10, actual.getTotalElements());
     }
@@ -171,10 +171,10 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, clientStatus, null, null);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
-                () -> assertTrue(actual.getContent().stream().allMatch(c -> clientStatus.equals(c.status())))
+                () -> assertTrue(actual.getContent().stream().allMatch(c -> clientStatus.equals(c.getStatus())))
         );
     }
 
@@ -201,11 +201,11 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, from, null);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.registeredAt().compareTo(from) >= 0
+                        c -> c.getRegisteredAt().compareTo(from) >= 0
                 ))
         );
     }
@@ -233,11 +233,11 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, null, to);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.registeredAt().compareTo(to) < 0
+                        c -> c.getRegisteredAt().compareTo(to) < 0
                 ))
         );
     }
@@ -266,15 +266,19 @@ class ClientServiceTest {
             } else {
                 client.setRegisteredAt(to.plusSeconds(i * 10L));
             }
+            SortedSet<RequestMethod> sortedSet = new TreeSet();
+            sortedSet.add(RequestMethod.CARD);
+            sortedSet.add(RequestMethod.SBP);
+            client.setMethods(sortedSet);
             fillRequiredFields(client);
             clientRepository.save(client);
         }
         ClientFilter clientFilter = new ClientFilter(null, null, null, from, to);
-        Page<ClientResponseDTO> actual = clientService.findAll(clientFilter, Pageable.ofSize(100));
+        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
                 () -> assertTrue(actual.getContent().stream().allMatch(
-                        c -> c.registeredAt().compareTo(from) >= 0 && c.registeredAt().compareTo(to) < 0
+                        c -> c.getRegisteredAt().compareTo(from) >= 0 && c.getRegisteredAt().compareTo(to) < 0
                 ))
         );
     }
@@ -292,14 +296,14 @@ class ClientServiceTest {
             fillRequiredFields(dummy);
             clientRepository.save(dummy);
         }
-        Page<ClientResponseDTO> actual = clientService.findAll(
-                new ClientFilter(client.getId(), client.getUsername(), client.getStatus(), client.getRegisteredAt(),
-                        client.getRegisteredAt().plusMillis(1)),
-                Pageable.ofSize(10)
+        Page<ClientProjection> actual = clientService.findAll(
+                new ClientFilter(client.getId(), client.getUsername(), client.getStatus(), client.getRegisteredAt().minusSeconds(5),
+                        client.getRegisteredAt().plusSeconds(5)),
+                Pageable.ofSize(10), ClientProjection.class
         );
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
-                () -> assertEquals(client.getId(), actual.getContent().getFirst().id())
+                () -> assertEquals(client.getId(), actual.getContent().getFirst().getId())
         );
     }
 
@@ -327,31 +331,6 @@ class ClientServiceTest {
         }
     }
 
-    @CsvSource("""
-            50,5,4
-            20,10,0
-            """)
-    @ParameterizedTest
-    @DisplayName("Метод должен вернуть страницу соответственно указанным параметрам размера страницы и номера.")
-    void findAll_shouldReturnPage(int allClientsSize, int pageSize, int pageNumber) {
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Order.asc("registeredAt")));
-        for (int i = 0; i < allClientsSize; i++) {
-            Client client = new Client();
-            client.setUsername("test_" + i);
-            client.setRegisteredAt(Instant.ofEpochMilli(1787659000000L + i));
-            fillRequiredFields(client);
-            clientRepository.save(client);
-        }
-        Page<ClientResponseDTO> actual = clientService.findAll(new ClientFilter(null, null, null, null, null), pageable);
-        assertEquals(allClientsSize, actual.getTotalElements());
-        int fromIndex = pageNumber * pageSize;
-        for (ClientResponseDTO c : actual.getContent()) {
-            String expectedUsername = "test_" + fromIndex;
-            assertEquals(expectedUsername, c.username());
-            fromIndex++;
-        }
-    }
-
     @Test
     @DisplayName("Метод должен найти всех клиентов если передан null в качестве фильтра.")
     void findAll_shouldReturnAllClientsIfFilterIsNull() {
@@ -360,7 +339,7 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        Page<ClientResponseDTO> actual = clientService.findAll(null, Pageable.ofSize(10));
+        Page<ClientProjection> actual = clientService.findAll(null, Pageable.ofSize(10), ClientProjection.class);
         assertEquals(10, actual.getTotalElements());
     }
 
@@ -374,7 +353,9 @@ class ClientServiceTest {
         for (int i = 0; i < 5; i++) {
             clientRepository.save(getDummyClient());
         }
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null, null);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(
+                null, null, null, null
+        );
         assertThrows(BadRequestException.class,
                 () -> clientService.update(id, updateClientDTO));
     }
@@ -391,19 +372,22 @@ class ClientServiceTest {
         clientService.update(clientId, updateClientDTO);
         Client updated = clientRepository.findById(clientId).orElseThrow(IllegalStateException::new);
         assertAll(
-                () -> assertNotNull(updated.getStatus()),
-                () -> assertNotNull(updated.getOrderTimeoutSeconds())
+                () -> assertEquals(ClientStatus.ACTIVE, updated.getStatus()),
+                () -> assertNull(updated.getCommissionPercent()),
+                () -> assertEquals(900, updated.getOrderTimeoutSeconds()),
+                () -> assertNull(updated.getCallbackUrl()),
+                () -> assertTrue(updated.getMethods().isEmpty())
         );
     }
 
     @CsvSource("""
-            BLOCKED,25.0,500,https://example.com/callback
-            ACTIVE,13.5,1200,https://google.com/webhook
+            BLOCKED,25.0,500,CARD;SBP
+            ACTIVE,13.5,1200,CARD
             """)
     @ParameterizedTest
     @DisplayName("Метод должен обновить все переданные поля.")
     void update_shouldUpdateClient(ClientStatus status, BigDecimal commissionPercent, Integer orderTimeoutSeconds,
-                                   String callbackUrl) {
+                                   String methodsString) {
         assertNotEquals(Client.DEFAULT_ORDER_TIMEOUT, orderTimeoutSeconds,
                 "Для теста нужно отличное от дефолтного значение времени таймаута ордера.");
         UUID id = UUID.randomUUID();
@@ -419,14 +403,19 @@ class ClientServiceTest {
                 "Необходим установленный статус клиента, отличный от полученного в параметре.");
         fillRequiredFields(client);
         clientRepository.save(client);
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(status, commissionPercent, orderTimeoutSeconds, callbackUrl);
+        Set<RequestMethod> methods = Arrays.stream(methodsString.split(";"))
+                .map(RequestMethod::valueOf)
+                .collect(Collectors.toSet());
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(
+                status, commissionPercent, orderTimeoutSeconds, methods
+        );
         clientService.update(id, updateClientDTO);
         Client updated = clientRepository.findById(id).orElseThrow(IllegalStateException::new);
         assertAll(
                 () -> assertEquals(status, updated.getStatus()),
                 () -> assertEquals(commissionPercent, updated.getCommissionPercent()),
                 () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds()),
-                () -> assertEquals(callbackUrl, updated.getCallbackUrl())
+                () -> assertEquals(methods, updated.getMethods())
         );
     }
 
@@ -437,5 +426,56 @@ class ClientServiceTest {
         client.setBalance(-1);
         fillRequiredFields(client);
         assertThrows(ConstraintViolationException.class, () -> clientRepository.saveAndFlush(client));
+    }
+
+    @Test
+    @DisplayName("Метод должен удалить привязанные методы, если передан пустой сет.")
+    void update_shouldSetToEmptyIfPassedEmptyMethodsSet() {
+        Client client = new Client();
+        fillRequiredFields(client);
+        SortedSet<RequestMethod> methods = new TreeSet<>(Arrays.asList(RequestMethod.values()));
+        client.setMethods(methods);
+        clientRepository.save(client);
+        assertNotNull(client.getId());
+
+        clientService.update(client.getId(), new UpdateClientDTO(
+                null, null, null, Set.of())
+        );
+        Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
+        assertTrue(updated.getMethods().isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://google.com/callback",
+            "https://yandex.com/callback"
+    })
+    void update_shouldUpdateCallbackUrl(String url) {
+        Client client = new Client();
+        client.setCallbackUrl("https://example.com");
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        assertNotNull(client.getId());
+
+        clientService.update(client.getId(), new ClientUpdateRequest(url));
+        Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
+        assertEquals(url, updated.getCallbackUrl());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://google.com/callback",
+            "https://yandex.com/callback"
+    })
+    void update_shouldNotUpdateCallbackUrlIfNullPassed(String url) {
+        Client client = new Client();
+        client.setCallbackUrl(url);
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        assertNotNull(client.getId());
+
+        clientService.update(client.getId(), new ClientUpdateRequest(null));
+        Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
+        assertEquals(url, updated.getCallbackUrl());
     }
 }

@@ -1228,11 +1228,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "203"
+                      "value": "253"
                     },
                     {
                       "key": "date",
-                      "value": "Wed, 23 Sep 2026 16:54:28 GMT"
+                      "value": "Sat, 26 Sep 2026 17:26:40 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -1244,7 +1244,121 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"username\": \"postman-admin12\",\n  \"registeredAt\": 1788022344266,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 900,\n  \"commissionPercent\": \"15\",\n  \"balance\": 0\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": \"https://google.com/callback\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"status\": \"ACTIVE\",\n  \"username\": \"postman-admin12\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Обновление клиента",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"callbackUrl\": \"https://google.com/callback\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/client",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "client"
+                  ]
+                },
+                "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |\n| methods | array | Набор констант RequestMethod: пустой массив для удаления привязок, null в случае если методы без изменений. |  |"
+              },
+              "response": [
+                {
+                  "name": "Клиент обновлен",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"callbackUrl\": \"https://google.com/callback\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/client",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "client"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "241"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 26 Sep 2026 17:25:35 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": \"https://google.com/callback\",\n  \"commissionPercent\": null,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [],\n  \"orderTimeoutSeconds\": 900,\n  \"registeredAt\": 1788022344000,\n  \"status\": \"ACTIVE\",\n  \"username\": \"postman-admin12\"\n}"
                 }
               ]
             }
@@ -2378,7 +2492,7 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+                      "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=&sort",
                       "host": [
                         "{{processing_url}}"
                       ],
@@ -2422,6 +2536,11 @@
                           "key": "size",
                           "value": "",
                           "description": "Количество элементов на странице для пагинаци."
+                        },
+                        {
+                          "key": "sort",
+                          "value": null,
+                          "description": "Сортировка: sort=field1,asc&sort=field2,desc"
                         }
                       ]
                     }
@@ -2460,11 +2579,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "280"
+                      "value": "330"
                     },
                     {
                       "key": "date",
-                      "value": "Tue, 15 Sep 2026 17:46:53 GMT"
+                      "value": "Sat, 26 Sep 2026 17:26:58 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2476,7 +2595,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"username\": \"postman-admin12\",\n      \"registeredAt\": 1788022344266,\n      \"status\": \"ACTIVE\",\n      \"callbackUrl\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"commissionPercent\": null,\n      \"balance\": 0\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": \"https://google.com/callback\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1788022344000,\n      \"status\": \"ACTIVE\",\n      \"username\": \"postman-admin12\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -2512,7 +2631,7 @@
                     }
                   ]
                 },
-                "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |\n| callbackUrl | string | Адрес для отправки callback. | Валидный URL. |"
+                "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |\n| methods | array | Набор констант RequestMethod: пустой массив для удаления привязок, null в случае если методы без изменений. |  |"
               },
               "response": [
                 {

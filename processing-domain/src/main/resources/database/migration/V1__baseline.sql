@@ -14,6 +14,15 @@ create table client
 alter table client
     add constraint unique_username unique (username);
 
+create table client_method
+(
+    client_id binary(16) not null,
+    method varchar(30) not null,
+    primary key (client_id, method)
+);
+alter table client_method
+    add constraint fk_client_method foreign key (client_id) references client(id) on delete cascade;
+
 create table orders
 (
     id                    binary(16)    not null,
