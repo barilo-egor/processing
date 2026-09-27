@@ -1228,11 +1228,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "253"
+                      "value": "210"
                     },
                     {
                       "key": "date",
-                      "value": "Sat, 26 Sep 2026 17:26:40 GMT"
+                      "value": "Sun, 27 Sep 2026 18:39:10 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -1244,7 +1244,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": \"https://google.com/callback\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"status\": \"ACTIVE\",\n  \"username\": \"postman-admin12\"\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"username\": \"postman-admin12\"\n}"
                 }
               ]
             },
@@ -2579,11 +2579,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "330"
+                      "value": "275"
                     },
                     {
                       "key": "date",
-                      "value": "Sat, 26 Sep 2026 17:26:58 GMT"
+                      "value": "Sun, 27 Sep 2026 18:37:38 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2595,7 +2595,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": \"https://google.com/callback\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1788022344000,\n      \"status\": \"ACTIVE\",\n      \"username\": \"postman-admin12\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"commissionPercent\": null,\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"methods\": [],\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1788022344000,\n      \"username\": \"postman-admin12\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -2606,7 +2606,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"callbackUrl\": \"https://google.com\",\n    \"commissionPercent\": 15.5\n}",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2627,7 +2627,7 @@
                   "variable": [
                     {
                       "key": "id",
-                      "value": "7321f213-6ab9-4d15-b950-9de1c756876a"
+                      "value": "7321f213-6ab9-4d15-b950-9de1c756812a"
                     }
                   ]
                 },
@@ -2638,15 +2638,10 @@
                   "name": "Клиент обновлен",
                   "originalRequest": {
                     "method": "PATCH",
-                    "header": [
-                      {
-                        "key": "X-XSRF-TOKEN",
-                        "value": "98fc72ad-2a9d-4ca0-b01e-c61de320d197"
-                      }
-                    ],
+                    "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\"\n}",
+                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2672,6 +2667,8 @@
                       ]
                     }
                   },
+                  "status": "OK",
+                  "code": 200,
                   "_postman_previewlanguage": "json",
                   "header": [
                     {
@@ -2708,7 +2705,7 @@
                     },
                     {
                       "key": "date",
-                      "value": "Tue, 01 Sep 2026 21:37:29 GMT"
+                      "value": "Sun, 27 Sep 2026 18:38:03 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2720,7 +2717,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"username\": \"postman-admin12\",\n  \"registeredAt\": 1788022344266,\n  \"status\": \"ACTIVE\",\n  \"callbackUrl\": null,\n  \"orderTimeoutSeconds\": 800,\n  \"commissionPercent\": 20.5\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"username\": \"postman-admin12\"\n}"
                 }
               ]
             },
