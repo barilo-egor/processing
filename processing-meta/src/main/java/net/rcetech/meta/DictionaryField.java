@@ -9,7 +9,7 @@ import java.util.Map;
 public interface DictionaryField {
     /**
      *
-     * @return ключ в словаре, иначе название JSON поля, обычно название класса перечисления: OrderStatus, ClientStatus
+     * @return ключ в словаре, иначе название JSON поля, обычно название класса перечисления: OrderStatus, OrderStatus
      */
     String getField();
 

@@ -8,7 +8,6 @@ import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
@@ -121,7 +120,7 @@ class ClientFacadeTest {
                 .thenReturn(clientProjection);
 
         ClientProjection actual = clientFacade.update(UUID.randomUUID(), new UpdateClientDTO(
-                        ClientStatus.BLOCKED, null, null, null
+                null, null, null
                 )
         );
 

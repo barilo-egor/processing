@@ -2,7 +2,6 @@ package net.rcetech.clients.event;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.meta.clients.ClientStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -21,7 +20,6 @@ public class KeycloakRegisterEventHandler implements KeycloakEventHandler {
         Client client = new Client();
         client.setId(event.id());
         client.setRegisteredAt(Instant.ofEpochMilli(event.time()));
-        client.setStatus(ClientStatus.ACTIVE);
         client.setUsername(event.details().username());
         clientService.save(client);
     }

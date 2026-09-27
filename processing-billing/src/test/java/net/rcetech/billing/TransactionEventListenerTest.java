@@ -13,7 +13,6 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
@@ -85,7 +84,6 @@ class TransactionEventListenerTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 

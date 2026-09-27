@@ -19,9 +19,9 @@ public class MerchantDictionaryField implements DictionaryField {
     @Override
     public List<Map<String, Object>> getContent() {
         return Arrays.stream(Merchant.values())
-                .map(clientStatus -> Map.<String, Object>of(
-                        "name", clientStatus.name(),
-                        "displayName", clientStatus.getDisplayName())
+                .map(merchant -> Map.<String, Object>of(
+                        "name", merchant.name(),
+                        "displayName", merchant.getDisplayName())
                 ).toList();
     }
 }

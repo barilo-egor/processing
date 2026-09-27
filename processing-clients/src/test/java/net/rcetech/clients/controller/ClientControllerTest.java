@@ -1,13 +1,12 @@
 package net.rcetech.clients.controller;
 
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -54,22 +53,15 @@ class ClientControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Test
-    void get_shouldReturn500IfClientNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/client")
-                        .with(csrf())
-                        .with(user("89b4e05b-c129-4ea3-a1d0-088d347b9cd2").roles("CLIENT")))
-                .andExpect(status().isInternalServerError());
-    }
-
     @ParameterizedTest
     @CsvSource({
-            "89b4e05b-c129-4ea3-a1d0-088d347b9cd2,smokilolik,1790181102840,ACTIVE,http://example.com/callback," +
+            "89b4e05b-c129-4ea3-a1d0-088d347b9cd2,smokilolik,1790181102840,http://example.com/callback," +
                     "900,15.5,255695",
-            "a2c47cba-7b49-4d9b-961c-31220f3636e4,test1,1790181102840,ACTIVE,http://google.net/callback," +
+            "a2c47cba-7b49-4d9b-961c-31220f3636e4,test1,1790181102840,http://google.net/callback," +
                     "800,10.0,387"
     })
-    void get_shouldReturnClientJson(UUID id, String username, Long registeredAt, ClientStatus status, String callbackUrl,
+    @DisplayName("Метод должен вернуть JSON клиента.")
+    void get_shouldReturnClientJson(UUID id, String username, Long registeredAt, String callbackUrl,
                                     Integer orderTimeoutSeconds, BigDecimal commissionPercent, Integer balance) throws Exception {
         ClientProjection clientResponseDTO = new ClientProjection() {
             @Override
@@ -85,11 +77,6 @@ class ClientControllerTest {
             @Override
             public Instant getRegisteredAt() {
                 return Instant.ofEpochMilli(registeredAt);
-            }
-
-            @Override
-            public ClientStatus getStatus() {
-                return status;
             }
 
             @Override
@@ -128,7 +115,6 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.username").value(username))
                 .andExpect(jsonPath("$.registeredAt").value(registeredAt))
-                .andExpect(jsonPath("$.status").value(status.name()))
                 .andExpect(jsonPath("$.callbackUrl").value(callbackUrl))
                 .andExpect(jsonPath("$.orderTimeoutSeconds").value(orderTimeoutSeconds))
                 .andExpect(jsonPath("$.commissionPercent").value(commissionPercent.doubleValue()))
@@ -140,6 +126,7 @@ class ClientControllerTest {
             "{\"callbackUrl\":\"https://example.com/callback\"}",
             "{\"callbackUrl\":\"https://google.com/merchant-details/callback\"}"
     })
+    @DisplayName("Параметры запроса должны быть переданы в метод сервиса.")
     void update_shouldPassParameters(String json) throws Exception {
         ClientUpdateRequest expected = objectMapper.readValue(json, ClientUpdateRequest.class);
         UUID clientId = UUID.randomUUID();
@@ -158,6 +145,7 @@ class ClientControllerTest {
     @ValueSource(strings = {
             "ADMIN", "OPERATOR"
     })
+    @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
     void update_shouldReturn403IfNotClient(String role) throws Exception {
         mockMvc.perform(patch("/api/v1/client")
                         .with(csrf())

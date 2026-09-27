@@ -9,7 +9,6 @@ import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.OrderStatus;
@@ -136,7 +135,6 @@ class OrderApiServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientService.save(client);
     }
 
@@ -152,7 +150,6 @@ class OrderApiServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test");
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         client.setOrderTimeoutSeconds(orderTimeout);
         clientService.save(client);
         Instant time = Instant.now();
@@ -315,6 +312,7 @@ class OrderApiServiceTest {
         orderApiService.cancelOrder(targetClient.getId(), targetOrder.getId());
         List<Order> orders = orderRepository.findAll();
         for (Order order : orders) {
+            assertNotNull(order.getId());
             if (order.getId().equals(targetOrder.getId())) {
                 assertEquals(OrderStatus.CANCELED, order.getStatus());
             } else {

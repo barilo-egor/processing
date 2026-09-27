@@ -4,7 +4,6 @@ import jakarta.validation.ConstraintViolationException;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
@@ -98,7 +97,7 @@ class ClientServiceTest {
         for (int i = 0; i < 5; i++) {
             clientRepository.save(getDummyClient());
         }
-        ClientFilter clientFilter = new ClientFilter(id, null, null, null, null);
+        ClientFilter clientFilter = new ClientFilter(id, null, null, null);
         Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize), ClientProjection.class);
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
@@ -121,7 +120,7 @@ class ClientServiceTest {
         for (int i = 0; i < 5; i++) {
             clientRepository.save(getDummyClient());
         }
-        ClientFilter clientFilter = new ClientFilter(null, username, null, null, null);
+        ClientFilter clientFilter = new ClientFilter(null, username, null, null);
         Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(pageSize), ClientProjection.class);
         assertAll(
                 () -> assertEquals(1, actual.getTotalElements()),
@@ -138,44 +137,10 @@ class ClientServiceTest {
             clientRepository.save(client);
         }
         Page<ClientProjection> actual = clientService.findAll(
-                new ClientFilter(null, "  ", null, null, null),
+                new ClientFilter(null, "  ", null, null),
                 Pageable.ofSize(10), ClientProjection.class
         );
         assertEquals(10, actual.getTotalElements());
-    }
-
-    @ParameterizedTest
-    @CsvSource("""
-            ACTIVE,1,5
-            BLOCKED,4,10
-            ACTIVE,0,1
-            BLOCKED,10,10
-            """)
-    @DisplayName("Метод должен найти клиентов с соответствующим статусом.")
-    void findAll_ShouldFindByClientStatus(ClientStatus clientStatus, int matchClientsSize, int notMatchClientsSize) {
-        for (int i = 0; i < matchClientsSize; i++) {
-            Client client = new Client();
-            client.setStatus(clientStatus);
-            fillRequiredFields(client);
-            clientRepository.save(client);
-        }
-        for (int i = 0; i < notMatchClientsSize; i++) {
-            Client client = new Client();
-            for (ClientStatus status : ClientStatus.values()) {
-                if (!status.equals(clientStatus)) {
-                    client.setStatus(status);
-                }
-            }
-            assertNotNull(client.getStatus());
-            fillRequiredFields(client);
-            clientRepository.save(client);
-        }
-        ClientFilter clientFilter = new ClientFilter(null, null, clientStatus, null, null);
-        Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
-        assertAll(
-                () -> assertEquals(matchClientsSize, actual.getTotalElements()),
-                () -> assertTrue(actual.getContent().stream().allMatch(c -> clientStatus.equals(c.getStatus())))
-        );
     }
 
     @ParameterizedTest
@@ -200,7 +165,7 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        ClientFilter clientFilter = new ClientFilter(null, null, null, from, null);
+        ClientFilter clientFilter = new ClientFilter(null, null, from, null);
         Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
@@ -232,7 +197,7 @@ class ClientServiceTest {
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        ClientFilter clientFilter = new ClientFilter(null, null, null, null, to);
+        ClientFilter clientFilter = new ClientFilter(null, null, null, to);
         Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
@@ -266,14 +231,14 @@ class ClientServiceTest {
             } else {
                 client.setRegisteredAt(to.plusSeconds(i * 10L));
             }
-            SortedSet<RequestMethod> sortedSet = new TreeSet();
+            SortedSet<RequestMethod> sortedSet = new TreeSet<>();
             sortedSet.add(RequestMethod.CARD);
             sortedSet.add(RequestMethod.SBP);
             client.setMethods(sortedSet);
             fillRequiredFields(client);
             clientRepository.save(client);
         }
-        ClientFilter clientFilter = new ClientFilter(null, null, null, from, to);
+        ClientFilter clientFilter = new ClientFilter(null, null, from, to);
         Page<ClientProjection> actual = clientService.findAll(clientFilter, Pageable.ofSize(100), ClientProjection.class);
         assertAll(
                 () -> assertEquals(matchClientsSize, actual.getTotalElements()),
@@ -297,7 +262,7 @@ class ClientServiceTest {
             clientRepository.save(dummy);
         }
         Page<ClientProjection> actual = clientService.findAll(
-                new ClientFilter(client.getId(), client.getUsername(), client.getStatus(), client.getRegisteredAt().minusSeconds(5),
+                new ClientFilter(client.getId(), client.getUsername(), client.getRegisteredAt().minusSeconds(5),
                         client.getRegisteredAt().plusSeconds(5)),
                 Pageable.ofSize(10), ClientProjection.class
         );
@@ -322,9 +287,6 @@ class ClientServiceTest {
         }
         if (Objects.isNull(client.getRegisteredAt())) {
             client.setRegisteredAt(Instant.now());
-        }
-        if (Objects.isNull(client.getStatus())) {
-            client.setStatus(ClientStatus.ACTIVE);
         }
         if (Objects.isNull(client.getBalance())) {
             client.setBalance(0);
@@ -354,7 +316,7 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         UpdateClientDTO updateClientDTO = new UpdateClientDTO(
-                null, null, null, null
+                null, null, null
         );
         assertThrows(BadRequestException.class,
                 () -> clientService.update(id, updateClientDTO));
@@ -363,7 +325,7 @@ class ClientServiceTest {
     @Test
     @DisplayName("Метод не должен обновлять поля, если в DTO они null.")
     void update_shouldNotUpdateFieldsIfNull() {
-        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null, null);
+        UpdateClientDTO updateClientDTO = new UpdateClientDTO(null, null, null);
         Client client = new Client();
         UUID clientId = UUID.randomUUID();
         client.setId(clientId);
@@ -372,7 +334,6 @@ class ClientServiceTest {
         clientService.update(clientId, updateClientDTO);
         Client updated = clientRepository.findById(clientId).orElseThrow(IllegalStateException::new);
         assertAll(
-                () -> assertEquals(ClientStatus.ACTIVE, updated.getStatus()),
                 () -> assertNull(updated.getCommissionPercent()),
                 () -> assertEquals(900, updated.getOrderTimeoutSeconds()),
                 () -> assertNull(updated.getCallbackUrl()),
@@ -381,38 +342,29 @@ class ClientServiceTest {
     }
 
     @CsvSource("""
-            BLOCKED,25.0,500,CARD;SBP
-            ACTIVE,13.5,1200,CARD
+            25.0,500,CARD;SBP
+            13.5,1200,CARD
             """)
     @ParameterizedTest
     @DisplayName("Метод должен обновить все переданные поля.")
-    void update_shouldUpdateClient(ClientStatus status, BigDecimal commissionPercent, Integer orderTimeoutSeconds,
+    void update_shouldUpdateClient(BigDecimal commissionPercent, Integer orderTimeoutSeconds,
                                    String methodsString) {
         assertNotEquals(Client.DEFAULT_ORDER_TIMEOUT, orderTimeoutSeconds,
                 "Для теста нужно отличное от дефолтного значение времени таймаута ордера.");
         UUID id = UUID.randomUUID();
         Client client = new Client();
         client.setId(id);
-        for (ClientStatus clientStatus : ClientStatus.values()) {
-            if (!clientStatus.equals(status)) {
-                client.setStatus(clientStatus);
-                break;
-            }
-        }
-        assertNotNull(client.getStatus(),
-                "Необходим установленный статус клиента, отличный от полученного в параметре.");
         fillRequiredFields(client);
         clientRepository.save(client);
         Set<RequestMethod> methods = Arrays.stream(methodsString.split(";"))
                 .map(RequestMethod::valueOf)
                 .collect(Collectors.toSet());
         UpdateClientDTO updateClientDTO = new UpdateClientDTO(
-                status, commissionPercent, orderTimeoutSeconds, methods
+                commissionPercent, orderTimeoutSeconds, methods
         );
         clientService.update(id, updateClientDTO);
         Client updated = clientRepository.findById(id).orElseThrow(IllegalStateException::new);
         assertAll(
-                () -> assertEquals(status, updated.getStatus()),
                 () -> assertEquals(commissionPercent, updated.getCommissionPercent()),
                 () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds()),
                 () -> assertEquals(methods, updated.getMethods())
@@ -439,7 +391,7 @@ class ClientServiceTest {
         assertNotNull(client.getId());
 
         clientService.update(client.getId(), new UpdateClientDTO(
-                null, null, null, Set.of())
+                null, null, Set.of())
         );
         Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
         assertTrue(updated.getMethods().isEmpty());
@@ -450,6 +402,7 @@ class ClientServiceTest {
             "https://google.com/callback",
             "https://yandex.com/callback"
     })
+    @DisplayName("Метод должен обновить КБ юрл.")
     void update_shouldUpdateCallbackUrl(String url) {
         Client client = new Client();
         client.setCallbackUrl("https://example.com");
@@ -467,6 +420,7 @@ class ClientServiceTest {
             "https://google.com/callback",
             "https://yandex.com/callback"
     })
+    @DisplayName("Метод не должен обновлять юрл, если передан null.")
     void update_shouldNotUpdateCallbackUrlIfNullPassed(String url) {
         Client client = new Client();
         client.setCallbackUrl(url);

@@ -5,7 +5,6 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderFilter;
@@ -64,7 +63,6 @@ class OrderServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 

@@ -12,7 +12,6 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
-import net.rcetech.meta.clients.ClientStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -77,7 +76,6 @@ class ClientEventListenerTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 

@@ -1,8 +1,7 @@
 package net.rcetech.web;
 
-import net.rcetech.meta.DictionaryField;
-import net.rcetech.meta.clients.ClientStatus;
-import net.rcetech.meta.clients.ClientStatusDictionaryField;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusDictionaryField;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.RequestMethodDictionaryField;
 import org.junit.jupiter.api.DisplayName;
@@ -25,8 +24,8 @@ class DictionaryControllerTest {
     static class Configuration {
 
         @Bean
-        public DictionaryField dictionaryField() {
-            return new ClientStatusDictionaryField();
+        public OrderStatusDictionaryField dictionaryField() {
+            return new OrderStatusDictionaryField();
         }
 
         @Bean
@@ -44,15 +43,18 @@ class DictionaryControllerTest {
         ResultActions resultActions = mockMvc.perform(get("/api/private/dictionary"))
                 .andExpect(status().isOk());
         resultActions
-                .andExpect(jsonPath("$.ClientStatus").isArray())
-                .andExpect(jsonPath("$.ClientStatus").isNotEmpty());
+                .andExpect(jsonPath("$.OrderStatus").isArray())
+                .andExpect(jsonPath("$.OrderStatus").isNotEmpty());
         int i = 0;
-        for (ClientStatus clientStatus : ClientStatus.values()) {
+        for (OrderStatus orderStatus : OrderStatus.values()) {
             resultActions
-                    .andExpect(jsonPath("$.ClientStatus[" + i + "].name").value(clientStatus.name()))
-                    .andExpect(jsonPath("$.ClientStatus[" + i + "].description").value(clientStatus.getDescription()));
+                    .andExpect(jsonPath("$.OrderStatus[" + i + "].name").value(orderStatus.name()))
+                    .andExpect(jsonPath("$.OrderStatus[" + i + "].description").value(orderStatus.getDescription()));
             i++;
         }
+        resultActions
+                .andExpect(jsonPath("$.RequestMethod").isArray())
+                .andExpect(jsonPath("$.RequestMethod").isNotEmpty());
         i = 0;
         for (RequestMethod requestMethod : RequestMethod.values()) {
             resultActions

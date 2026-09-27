@@ -4,7 +4,6 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
-import net.rcetech.meta.clients.ClientStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +60,6 @@ class ApiSecurityConfigTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 

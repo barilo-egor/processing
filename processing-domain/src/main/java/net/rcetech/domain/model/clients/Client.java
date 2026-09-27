@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.hibernate.annotations.SortNatural;
 import org.springframework.data.domain.Persistable;
@@ -51,13 +50,6 @@ public class Client implements Persistable<UUID> {
      */
     @Column(nullable = false, updatable = false)
     private Instant registeredAt;
-
-    /**
-     * Статус пользователя.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ClientStatus status;
 
     /**
      * Адрес для отправки уведомлений о смене статусов ордера.

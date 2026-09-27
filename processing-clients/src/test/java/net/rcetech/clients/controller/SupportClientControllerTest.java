@@ -5,7 +5,6 @@ import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
@@ -126,6 +125,7 @@ class SupportClientControllerTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 5})
     @WithMockUser(roles = "ADMIN")
+    @DisplayName("Метод должен вернуть JSON список клиентов.")
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
         List<ClientProjection> clients = new ArrayList<>();
         for (int i = 0; i < clientsSize; i++) {
@@ -144,7 +144,6 @@ class SupportClientControllerTest {
             resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(client.getId().toString()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(client.getUsername()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(client.getRegisteredAt().toEpochMilli()));
-            resultActions.andExpect(jsonPath("$.content[" + i + "].status").value("ACTIVE"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].callbackUrl").value("https://example.com/callback"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].orderTimeoutSeconds").value(900));
             resultActions.andExpect(jsonPath("$.content[" + i + "].commissionPercent").value("20.5"));
@@ -174,11 +173,6 @@ class SupportClientControllerTest {
             @Override
             public Instant getRegisteredAt() {
                 return now;
-            }
-
-            @Override
-            public ClientStatus getStatus() {
-                return ClientStatus.ACTIVE;
             }
 
             @Override
@@ -235,7 +229,6 @@ class SupportClientControllerTest {
         assertAll(
                 () -> assertEquals(id, filter.id().toString()),
                 () -> assertEquals(username, filter.username()),
-                () -> assertEquals(status, filter.status().name()),
                 () -> assertEquals(from, filter.from().toEpochMilli()),
                 () -> assertEquals(to, filter.to().toEpochMilli()),
                 () -> assertEquals(size, pageable.getPageSize()),
@@ -321,6 +314,7 @@ class SupportClientControllerTest {
     }
 
     @Test
+    @DisplayName("Метод должен обновить клиента, совершившего запрос.")
     void update_shouldUpdateClientForClientAccess() throws Exception {
         String json = "{\"callbackUrl\":\"https://example.com\"}";
         UpdateClientDTO expected = objectMapper.readValue(json, UpdateClientDTO.class);

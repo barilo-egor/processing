@@ -29,9 +29,6 @@ public class ClientSpecifications {
             if (clientFilter.username() != null && !clientFilter.username().isBlank()) {
                 predicates.add(builder.equal(from.get(Client_.username), clientFilter.username()));
             }
-            if (clientFilter.status() != null) {
-                predicates.add(builder.equal(from.get(Client_.status), clientFilter.status()));
-            }
             if (clientFilter.from() != null) {
                 predicates.add(builder.greaterThanOrEqualTo(from.get(Client_.registeredAt), clientFilter.from()));
             }

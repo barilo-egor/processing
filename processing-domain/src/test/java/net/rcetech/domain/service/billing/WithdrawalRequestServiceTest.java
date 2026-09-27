@@ -10,7 +10,6 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
@@ -86,7 +85,6 @@ class WithdrawalRequestServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         client.setCommissionPercent(commissionPercent);
         return clientRepository.save(client);
     }
@@ -273,6 +271,7 @@ class WithdrawalRequestServiceTest {
     }
 
     @Test
+    @DisplayName("Метод не должен искать клиента по username, если передан идентификатор клиента.")
     void findAll_shouldNotFindByClientUsernameIfClientIdPassed() {
         Client client = getDummyClient(BigDecimal.ONE);
         Client targetClient = getDummyClient(BigDecimal.ONE);
@@ -296,6 +295,7 @@ class WithdrawalRequestServiceTest {
     }
 
     @Test
+    @DisplayName("Метод не должен искать клиента по id, если передан идентификатор клиента.")
     void findAll_shouldNotFindByClientIdInParameterIfClientIdPassed() {
         Client client = getDummyClient(BigDecimal.ONE);
         assertNotNull(client.getId());
@@ -429,6 +429,7 @@ class WithdrawalRequestServiceTest {
     @ValueSource(strings = {
             "CANCELED", "APPROVED"
     })
+    @DisplayName("Метод должен бросить BadRequestException, если статус ордера не NEW.")
     void cancel_shouldThrowBadRequestExceptionIfOrderStatusIsNotNew(WithdrawalRequestStatus status) {
         WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
         withdrawalRequest.setStatus(status);

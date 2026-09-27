@@ -14,8 +14,8 @@ import net.rcetech.meta.billing.dto.ClientTransactionFilter;
 import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
 import net.rcetech.meta.billing.dto.TransactionFilter;
 import net.rcetech.meta.billing.dto.TransactionResponse;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BadRequestException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -81,15 +81,14 @@ class TransactionServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 
-    Transaction getDummyTransaction(Client client) {
+    void getDummyTransaction(Client client) {
         Transaction transaction = new Transaction();
         transaction.setClient(client);
         fillFields(transaction);
-        return transactionRepository.save(transaction);
+        transactionRepository.save(transaction);
     }
 
     void fillFields(Transaction transaction) {
@@ -115,6 +114,7 @@ class TransactionServiceTest {
             "CREDIT,5396,Технический сбой.",
             "DEBIT,26222,двойное списание"
     })
+    @DisplayName("Метод должен создать транзакцию ручной корректировки.")
     void createManualCorrect_shouldCreateTransaction(Operation operation, Integer amount, String comment) {
         UUID creatorId = UUID.randomUUID();
         Client client = getDummyClient();
@@ -139,6 +139,7 @@ class TransactionServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен бросить BadRequestException, если клиент не найден.")
     void createManualCorrect_shouldThrowBadRequestExceptionIfClientNotFound() {
         UUID id = UUID.randomUUID();
         Client client = getDummyClient();
@@ -149,6 +150,7 @@ class TransactionServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть все транзакции, если фильтр TransactionFilter равен null.")
     void findAllTransactionFilter_shouldReturnAllTransactionsIfNullFilter() {
         Client client = getDummyClient();
         for (int i = 0; i < 2; i++) {
@@ -163,6 +165,7 @@ class TransactionServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть транзакции найденные по id клиента в фильтре TransactionFilter.")
     void findAllTransactionFilter_shouldReturnTransactionsByClientId() {
         Client client = getDummyClient();
         Client targetClient = getDummyClient();
@@ -181,6 +184,7 @@ class TransactionServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть транзакции найденные по username клиента в фильтре TransactionFilter.")
     void findAllTransactionFilter_shouldReturnTransactionsByClientUsername() {
         Client client = getDummyClient();
         Client targetClient = getDummyClient();
@@ -202,6 +206,7 @@ class TransactionServiceTest {
             1789912612000L, 1789912712302L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть транзакции найденные по createdAt ОТ в фильтре TransactionFilter.")
     void findAllTransactionFilter_shouldReturnTransactionsByCreatedAtFrom(long millis) {
         Client client = getDummyClient();
         Transaction transaction = new Transaction();
@@ -223,6 +228,7 @@ class TransactionServiceTest {
             1789912612000L, 1789912712302L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть транзакции найденные по createdAt ДО в фильтре TransactionFilter.")
     void findAllTransactionFilter_shouldReturnTransactionsByCreatedAtTo(long millis) {
         Client client = getDummyClient();
         Transaction transaction = new Transaction();
@@ -241,6 +247,7 @@ class TransactionServiceTest {
     }
 
     @Test
+    @DisplayName("Метод должен вернуть транзакции клиента, если фильтр ClientTransactionFilter равен null.")
     void findAllClientTransactionFilter_shouldReturnClientTransactionsIfNullFilter() {
         Client client = getDummyClient();
         Client targetClient = getDummyClient();
@@ -261,6 +268,7 @@ class TransactionServiceTest {
             1789912612000L, 1789912712302L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть транзакции, найденные по createdAt ОТ по фильтру ClientTransactionFilter.")
     void findAllClientTransactionFilter_shouldReturnTransactionsByCreatedAtFrom(long millis) {
         Client client = getDummyClient();
         Transaction transaction = new Transaction();
@@ -282,6 +290,7 @@ class TransactionServiceTest {
             1789912612000L, 1789912712302L
     })
     @ParameterizedTest
+    @DisplayName("Метод должен вернуть транзакции, найденные по createdAt ДО по фильтру ClientTransactionFilter.")
     void findAllClientTransactionFilter_shouldReturnTransactionsByCreatedAtTo(long millis) {
         Client client = getDummyClient();
         Transaction transaction = new Transaction();

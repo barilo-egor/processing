@@ -2,7 +2,6 @@ package net.rcetech.clients.event;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.meta.clients.ClientStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +53,6 @@ class KeycloakRegisterEventHandlerTest {
         assertAll(
                 () -> assertEquals(id, actual.getId()),
                 () -> assertEquals(time, actual.getRegisteredAt().toEpochMilli()),
-                () -> assertEquals(ClientStatus.ACTIVE, actual.getStatus()),
                 () -> assertEquals(username, actual.getUsername())
         );
     }

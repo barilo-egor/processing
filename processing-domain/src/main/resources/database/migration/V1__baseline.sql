@@ -4,7 +4,6 @@ create table client
     version               bigint       not null,
     username              varchar(255) not null,
     registered_at         timestamp(0) not null,
-    status                varchar(30)  not null,
     callback_url          varchar(255),
     order_timeout_seconds integer      not null,
     commission_percent    decimal(3, 1),

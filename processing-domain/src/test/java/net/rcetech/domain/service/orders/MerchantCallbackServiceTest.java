@@ -9,7 +9,6 @@ import net.rcetech.domain.repository.orders.MerchantCallbackSpecifications;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.billing.dto.MerchantCallbackFilter;
 import net.rcetech.meta.billing.dto.MerchantCallbackResponse;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.DisplayName;
@@ -69,7 +68,6 @@ class MerchantCallbackServiceTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 
@@ -188,6 +186,7 @@ class MerchantCallbackServiceTest {
     }
 
     @RepeatedTest(value = 2)
+    @DisplayName("Метод должен найти КБ по id ордера.")
     void findAll_shouldFindCallbackByOrderId() {
         Client client = getDummyClient();
         MerchantCallback targetCallback = new MerchantCallback();
@@ -217,6 +216,7 @@ class MerchantCallbackServiceTest {
     @ValueSource(strings = {
             "ALFA_TEAM", "EVO_PAY"
     })
+    @DisplayName("Метод должен найти КБ по мерчанту ордера.")
     void findAll_shouldFindCallbackByMerchant(Merchant merchant) {
         Client client = getDummyClient();
         MerchantCallback targetCallback = new MerchantCallback();
@@ -248,6 +248,7 @@ class MerchantCallbackServiceTest {
     @ValueSource(strings = {
             "bb7ec0c6-9f7b-497f-8c18-06ecba259f49", "1259634"
     })
+    @DisplayName("Метод должен найти КБ по id ордера в системе мерчанта.")
     void findAll_shouldFindCallbackByMerchantOrderId(String merchantOrderId) {
         Client client = getDummyClient();
         MerchantCallback targetCallback = new MerchantCallback();
@@ -279,6 +280,7 @@ class MerchantCallbackServiceTest {
     @ValueSource(longs = {
             1790262068808L, 1790262062000L
     })
+    @DisplayName("Метод должен найти КБ по createdAt ОТ.")
     void findAll_shouldFindCallbackByCreatedAtFrom(long millis) {
         Client client = getDummyClient();
         MerchantCallback targetCallback = new MerchantCallback();
@@ -310,6 +312,7 @@ class MerchantCallbackServiceTest {
     @ValueSource(longs = {
             1790262068808L, 1790262062000L
     })
+    @DisplayName("Метод должен найти КБ по createdAt ДО ордера.")
     void findAll_shouldFindCallbackByCreatedAtTo(long millis) {
         Client client = getDummyClient();
         MerchantCallback targetCallback = new MerchantCallback();

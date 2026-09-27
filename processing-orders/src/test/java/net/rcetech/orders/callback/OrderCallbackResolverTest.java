@@ -8,7 +8,6 @@ import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.clients.ClientStatus;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
@@ -103,7 +102,6 @@ class OrderCallbackResolverTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
-        client.setStatus(ClientStatus.ACTIVE);
         return clientRepository.save(client);
     }
 
