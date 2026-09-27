@@ -2,6 +2,7 @@ package net.rcetech.domain.service.billing;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.billing.Transaction;
+import net.rcetech.domain.model.billing.Transaction_;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.billing.TransactionRepository;
@@ -68,6 +69,12 @@ public class TransactionService {
 
     public Optional<Transaction> findById(Long transactionId) {
         return transactionRepository.findById(transactionId);
+    }
+
+    public <T> Optional<T> findById(Long transactionId, Class<T> projectionType) {
+        return transactionRepository.findBy(
+                (from, criteriaBuilder) -> criteriaBuilder.equal(from.get(Transaction_.id), transactionId),
+                query -> query.as(projectionType).one());
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Transaction> filter, Pageable pageable, Class<T> projectionType) {

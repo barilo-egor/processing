@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 public class ClientService {
@@ -54,21 +55,21 @@ public class ClientService {
         return clientRepository.save(client);
     }
 
+    @Transactional
     public ClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
-        Client client = findById(id).orElseThrow(
-                () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
-        );
-        clientMapper.updateNotNull(updateClientDTO, client);
-        clientRepository.save(client);
-        return findById(id, ClientProjection.class)
-                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));
+        return update(id, client -> clientMapper.updateNotNull(updateClientDTO, client));
     }
 
+    @Transactional
     public ClientProjection update(UUID id, ClientUpdateRequest clientUpdateRequest) {
+        return update(id, client -> clientMapper.updateNotNull(clientUpdateRequest, client));
+    }
+
+    private ClientProjection update(UUID id, Consumer<Client> clientMapFunction) {
         Client client = findById(id).orElseThrow(
                 () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
         );
-        clientMapper.updateNotNull(clientUpdateRequest, client);
+        clientMapFunction.accept(client);
         clientRepository.save(client);
         return findById(id, ClientProjection.class)
                 .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));

@@ -14,6 +14,7 @@ import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.orders.OrderFacade;
 import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,10 +48,10 @@ import static org.mockito.Mockito.doThrow;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({OrderService.class, MerchantCallbackService.class})
+@Import({OrderFacade.class, OrderService.class, MerchantCallbackService.class})
 @Testcontainers
 @RecordApplicationEvents
-class OrderCallbackServiceTest {
+class OrderCallbackResolverTest {
 
     @TestConfiguration
     static class Configuration {
@@ -61,10 +62,10 @@ class OrderCallbackServiceTest {
         }
 
         @Bean
-        public OrderCallbackService orderCallbackService(AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver,
-                                                         OrderService orderService,
-                                                         MerchantCallbackService merchantCallbackService) {
-            return new OrderCallbackService(List.of(alfaTeamOrderStatusResolver), orderService, merchantCallbackService);
+        public OrderCallbackResolver orderCallbackService(AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver,
+                                                          OrderFacade orderFacade,
+                                                          MerchantCallbackService merchantCallbackService) {
+            return new OrderCallbackResolver(List.of(alfaTeamOrderStatusResolver), orderFacade, merchantCallbackService);
         }
     }
 
@@ -80,7 +81,7 @@ class OrderCallbackServiceTest {
     }
 
     @Autowired
-    private OrderCallbackService orderCallbackService;
+    private OrderCallbackResolver orderCallbackResolver;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -167,7 +168,7 @@ class OrderCallbackServiceTest {
         Order order = getDummyOrder(client);
         MerchantCallbackEvent event = new MerchantCallbackEvent();
         event.setMerchantOrderId(id);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
         assertTrue(maybeOrder.isPresent());
@@ -191,7 +192,7 @@ class OrderCallbackServiceTest {
         event.setStatus(status);
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        assertThrows(BaseException.class, () -> orderCallbackService.resolve(event));
+        assertThrows(BaseException.class, () -> orderCallbackResolver.resolve(event));
     }
 
     @ParameterizedTest
@@ -211,7 +212,7 @@ class OrderCallbackServiceTest {
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
         event.setMerchantOrderId(id.toString());
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
         assertTrue(maybeOrder.isPresent());
@@ -236,7 +237,7 @@ class OrderCallbackServiceTest {
         event.setStatus("PAID");
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -265,7 +266,7 @@ class OrderCallbackServiceTest {
         event.setStatus("CANCELED");
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -291,7 +292,7 @@ class OrderCallbackServiceTest {
         event.setStatus("EXPIRED");
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -317,7 +318,7 @@ class OrderCallbackServiceTest {
         event.setStatus("DISPUTE");
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -340,7 +341,7 @@ class OrderCallbackServiceTest {
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
         doThrow(BaseException.class).when(merchantCallbackService).save(any(), any());
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -362,7 +363,7 @@ class OrderCallbackServiceTest {
         event.setStatus("PAID");
         event.setStatusDescription("Status");
         event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackService.resolve(event);
+        orderCallbackResolver.resolve(event);
 
         assertNotNull(order.getId());
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
@@ -370,7 +371,7 @@ class OrderCallbackServiceTest {
         assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
         List<MerchantCallback> callbacks = merchantCallbackRepository.findAll();
         assertEquals(1, callbacks.size());
-        MerchantCallback actual = callbacks.get(0);
+        MerchantCallback actual = callbacks.getFirst();
         assertAll(
                 () -> assertNotNull(actual.getId()),
                 () -> assertEquals(orderId, actual.getOrder().getId()),

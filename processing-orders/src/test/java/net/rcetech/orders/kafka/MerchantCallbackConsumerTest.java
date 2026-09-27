@@ -1,7 +1,7 @@
 package net.rcetech.orders.kafka;
 
 import net.rcetech.meta.orders.MerchantCallbackEvent;
-import net.rcetech.orders.callback.OrderCallbackService;
+import net.rcetech.orders.callback.OrderCallbackResolver;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -63,8 +63,8 @@ class MerchantCallbackConsumerTest {
         }
 
         @Bean
-        public MerchantCallbackConsumer merchantCallbackConsumer(OrderCallbackService orderCallbackService) {
-            return new MerchantCallbackConsumer(orderCallbackService);
+        public MerchantCallbackConsumer merchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver) {
+            return new MerchantCallbackConsumer(orderCallbackResolver);
         }
     }
 
@@ -86,26 +86,16 @@ class MerchantCallbackConsumerTest {
     @Autowired
     private KafkaProducer<String, String> callbackProducer;
 
-    private final String callbackTopic = "merchant-details-callback-v1";
-
     @MockitoBean
-    private OrderCallbackService orderCallbackService;
+    private OrderCallbackResolver orderCallbackResolver;
 
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(orderCallbackService);
+        Mockito.reset(orderCallbackResolver);
     }
-
-    private final String callbackJsonTemplate =
-            "{" +
-                    "\"merchantOrderId\":\"%s\", " +
-                    "\"status\":\"%s\", " +
-                    "\"statusDescription\": \"%s\"," +
-                    "\"merchant\":\"%s\"" +
-                    "}";
 
     @ParameterizedTest
     @CsvSource("""
@@ -114,11 +104,18 @@ class MerchantCallbackConsumerTest {
     @DisplayName("Метод должен передать КБ в метод сервиса.")
     void callback_shouldPassCallbackToServiceMethod(String merchantOrderId, String status, String statusDescription,
                                                     Merchant merchant) {
+        String callbackJsonTemplate = "{" +
+                "\"merchantOrderId\":\"%s\", " +
+                "\"status\":\"%s\", " +
+                "\"statusDescription\": \"%s\"," +
+                "\"merchant\":\"%s\"" +
+                "}";
         String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
+        String callbackTopic = "merchant-details-callback-v1";
         callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
         ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
 
-        verify(orderCallbackService, timeout(10000)).resolve(captor.capture());
+        verify(orderCallbackResolver, timeout(10000)).resolve(captor.capture());
 
         MerchantCallbackEvent actual = captor.getValue();
         assertAll(

@@ -56,7 +56,6 @@ public class OrderService {
                 query -> query.as(projectionType).page(pageable));
     }
 
-    // TODO добавить ретраи на ObjectOptimisticLockingFailureException сюда и методы ниже
     @Transactional
     public void confirm(UUID id, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));

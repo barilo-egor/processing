@@ -2,7 +2,7 @@ package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
-import net.rcetech.orders.callback.OrderCallbackService;
+import net.rcetech.orders.callback.OrderCallbackResolver;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 @Profile("!kafka-disabled")
 public class MerchantCallbackConsumer {
 
-    private final OrderCallbackService orderCallbackService;
+    private final OrderCallbackResolver orderCallbackResolver;
 
-    public MerchantCallbackConsumer(OrderCallbackService orderCallbackService) {
-        this.orderCallbackService = orderCallbackService;
+    public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver) {
+        this.orderCallbackResolver = orderCallbackResolver;
     }
 
     /**
@@ -33,7 +33,12 @@ public class MerchantCallbackConsumer {
     )
     public void callback(ConsumerRecord<String, MerchantCallbackEvent> consumerRecord) {
         log.debug("Принят callback key={} : {}", consumerRecord.key(), consumerRecord.value());
-        orderCallbackService.resolve(consumerRecord.value());
+        try {
+            orderCallbackResolver.resolve(consumerRecord.value());
+        }  catch (Exception e) {
+            // TODO Создание инцидента
+            log.error("Ошибка обработки КБ мерчанта: {}", e.getMessage());
+        }
     }
 
 }

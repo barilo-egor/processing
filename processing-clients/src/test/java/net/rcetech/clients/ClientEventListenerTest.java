@@ -1,6 +1,6 @@
 package net.rcetech.clients;
 
-import net.rcetech.clients.service.ClientBalanceService;
+import net.rcetech.clients.service.ClientFacade;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({OrderService.class, ClientService.class, ClientBalanceService.class, ClientEventListener.class, TransactionService.class})
+@Import({OrderService.class, ClientService.class, ClientFacade.class, ClientEventListener.class, TransactionService.class})
 class ClientEventListenerTest {
 
     @TestConfiguration
