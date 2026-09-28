@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  api, isUuid, fmtDateTime, dateToMs, fmtPercent, fmtMoney,
+  api, isUuid, fmtDateTime, fmtPercent, fmtMoney,
+  dateTimeToMs, shortValue, fmtRate,
 } from './api.js';
 
 /* ============================================================
@@ -25,22 +26,19 @@ const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
   { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
-];
-
-const FALLBACK_STATUSES = [
-  { name: 'ACTIVE', description: 'Активен' },
-  { name: 'BLOCKED', description: 'Заблокирован' },
+  { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
 ];
 
 export default function App() {
   const [section, setSection] = useState('clients');
   const [toast, setToast] = useState(null);
-  const [statuses, setStatuses] = useState(FALLBACK_STATUSES);
   const [orderStatuses, setOrderStatuses] = useState([]);
   // Справочник мерчантов: name -> displayName для показа человеку.
   const [merchants, setMerchants] = useState([]);
   // Способы оплаты: CARD -> «Карта» и так далее.
   const [methods, setMethods] = useState([]);
+  // Статусы заявок на вывод: NEW -> «Новая» и так далее.
+  const [withdrawalStatuses, setWithdrawalStatuses] = useState([]);
   // Клиент, выбранный переходом из таблицы в конфигурацию мерчантов.
   const [configClient, setConfigClient] = useState(null);
 
@@ -54,12 +52,10 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // Справочник статусов — из словаря бэка, с запасным вариантом.
+  // Справочники — из словаря бэка.
   useEffect(() => {
     api.dictionary()
         .then((d) => {
-          const list = d?.ClientStatus;
-          if (Array.isArray(list) && list.length) setStatuses(list);
           // В ответе бэка ключ называется OderStatus — опечатка на их стороне,
           // поэтому читаем оба варианта.
           const orders = d?.OrderStatus || d?.OderStatus;
@@ -68,8 +64,10 @@ export default function App() {
           if (Array.isArray(merchants) && merchants.length) setMerchants(merchants);
           const methods = d?.RequestMethod;
           if (Array.isArray(methods) && methods.length) setMethods(methods);
+          const wStatuses = d?.WithdrawalRequestStatus;
+          if (Array.isArray(wStatuses) && wStatuses.length) setWithdrawalStatuses(wStatuses);
         })
-        .catch(() => { /* останется запасной список */ });
+        .catch(() => { /* без словаря покажутся коды значений */ });
   }, []);
 
   const openMerchantConfig = (client) => {
@@ -109,14 +107,13 @@ export default function App() {
           <main className="content">
             {section === 'clients' && (
                 <ClientsSection
-                    statuses={statuses}
+                    methods={methods}
                     showToast={showToast}
                     onOpenMerchantConfig={openMerchantConfig}
                 />
             )}
             {section === 'orders' && (
                 <OrdersSection
-                    statuses={statuses}
                     orderStatuses={orderStatuses}
                     merchants={merchants}
                     methods={methods}
@@ -126,9 +123,14 @@ export default function App() {
             {section === 'merchants' && (
                 <MerchantsSection
                     client={configClient}
-                    statuses={statuses}
                     showToast={showToast}
                     onPickClient={setConfigClient}
+                />
+            )}
+            {section === 'withdrawals' && (
+                <WithdrawalsSection
+                    withdrawalStatuses={withdrawalStatuses}
+                    showToast={showToast}
                 />
             )}
           </main>
@@ -142,11 +144,13 @@ export default function App() {
 /* ==================== Раздел «Клиенты» ==================== */
 
 const EMPTY_FILTER = {
-  id: '', username: '', status: '',
+  id: '', username: '',
   dateMode: 'equal', dateEqual: '', dateFrom: '', dateTo: '',
+  // Время необязательно: без него поиск идёт по дате, как раньше.
+  timeEqual: '', timeFrom: '', timeTo: '',
 };
 
-function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
+function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const [draft, setDraft] = useState(EMPTY_FILTER);   // что набрано в полях
   const [applied, setApplied] = useState(EMPTY_FILTER); // что реально отправлено
   const [rows, setRows] = useState([]);
@@ -164,16 +168,16 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
       const params = { page: p, size: PAGE_SIZE };
       if (f.id.trim()) params.id = f.id.trim();
       if (f.username.trim()) params.username = f.username.trim();
-      if (f.status) params.status = f.status;
-      // Даты уходят как UNIX-время в миллисекундах.
+      // Даты уходят как UNIX-время в миллисекундах. «Равна» без времени —
+      // весь день, со временем — ровно эта секунда.
       if (f.dateMode === 'equal') {
         if (f.dateEqual) {
-          params.from = dateToMs(f.dateEqual, 'start');
-          params.to = dateToMs(f.dateEqual, 'end');
+          params.from = dateTimeToMs(f.dateEqual, f.timeEqual, 'start');
+          params.to = dateTimeToMs(f.dateEqual, f.timeEqual, 'end');
         }
       } else {
-        if (f.dateFrom) params.from = dateToMs(f.dateFrom, 'start');
-        if (f.dateTo) params.to = dateToMs(f.dateTo, 'end');
+        if (f.dateFrom) params.from = dateTimeToMs(f.dateFrom, f.timeFrom, 'start');
+        if (f.dateTo) params.to = dateTimeToMs(f.dateTo, f.timeTo, 'end');
       }
 
       const { items, total: t } = await api.clients(params);
@@ -243,18 +247,9 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
               />
             </div>
 
-            <div className="field">
-              <label htmlFor="f-status">Статус</label>
-              <select id="f-status" value={draft.status} onChange={(e) => setF('status', e.target.value)}>
-                <option value="">Все</option>
-                {statuses.map((s) => (
-                    <option key={s.name} value={s.name}>{s.description}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Режим и сами даты — в одном блоке, чтобы сетка не разносила их по строкам */}
-            <div className="field-pair">
+            {/* Режим и сами даты — в одном блоке, чтобы сетка не разносила их по строкам.
+                В диапазоне две пары «дата + время», поэтому блок занимает всю строку. */}
+            <div className={`field-pair${draft.dateMode === 'range' ? ' field-pair-range' : ''}`}>
               <div className="field">
                 <label htmlFor="f-mode">Дата регистрации</label>
                 <select id="f-mode" value={draft.dateMode} onChange={(e) => setF('dateMode', e.target.value)}>
@@ -263,20 +258,24 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
                 </select>
               </div>
               {draft.dateMode === 'equal' ? (
-                  <div className="field">
-                    <label htmlFor="f-date">Дата</label>
-                    <input id="f-date" type="date" value={draft.dateEqual}
-                           onChange={(e) => setF('dateEqual', e.target.value)} />
-                  </div>
+                  <DateTimeField
+                      id="f-date" label="Дата"
+                      date={draft.dateEqual} time={draft.timeEqual}
+                      onDate={(v) => setF('dateEqual', v)} onTime={(v) => setF('timeEqual', v)}
+                  />
               ) : (
-                  <div className="field">
-                    <label>С / по</label>
-                    <div className="range-row">
-                      <input type="date" value={draft.dateFrom} onChange={(e) => setF('dateFrom', e.target.value)} />
-                      <span className="range-dash">—</span>
-                      <input type="date" value={draft.dateTo} onChange={(e) => setF('dateTo', e.target.value)} />
-                    </div>
-                  </div>
+                  <>
+                    <DateTimeField
+                        id="f-from" label="С"
+                        date={draft.dateFrom} time={draft.timeFrom}
+                        onDate={(v) => setF('dateFrom', v)} onTime={(v) => setF('timeFrom', v)}
+                    />
+                    <DateTimeField
+                        id="f-to" label="По"
+                        date={draft.dateTo} time={draft.timeTo}
+                        onDate={(v) => setF('dateTo', v)} onTime={(v) => setF('timeTo', v)}
+                    />
+                  </>
               )}
             </div>
           </div>
@@ -301,7 +300,6 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
                   <tr>
                     <th>ID</th>
                     <th>Логин</th>
-                    <th>Статус</th>
                     <th>Дата регистрации</th>
                     <th className="c-right">Комиссия</th>
                     <th className="c-act" aria-label="Действия" />
@@ -316,7 +314,6 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
                       </span>
                         </td>
                         <td>{c.username || '—'}</td>
-                        <td><StatusBadge status={c.status} statuses={statuses} /></td>
                         <td className="mono">{fmtDateTime(c.registeredAt)}</td>
                         <td className="c-right mono">{fmtPercent(c.commissionPercent)}</td>
                         <td className="c-act">
@@ -343,7 +340,7 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
         {card && (
             <ClientCard
                 client={card}
-                statuses={statuses}
+                methods={methods}
                 onClose={() => setCard(null)}
                 onUpdated={applyUpdated}
                 onCopy={copy}
@@ -352,13 +349,6 @@ function ClientsSection({ statuses, showToast, onOpenMerchantConfig }) {
         )}
       </>
   );
-}
-
-/* ---- Бейдж статуса ---- */
-function StatusBadge({ status, statuses }) {
-  const label = statuses.find((s) => s.name === status)?.description || status || '—';
-  const mod = status === 'ACTIVE' ? 'ok' : status === 'BLOCKED' ? 'bad' : 'neutral';
-  return <span className={`badge badge-${mod}`}>{label}</span>;
 }
 
 /* ---- Пагинация ---- */
@@ -449,10 +439,16 @@ function AccountMenu() {
 
 const EMPTY_ORDER_FILTER = {
   id: '', client: '', internalId: '', merchant: '', merchantOrderId: '',
-  status: '', createdAtFrom: '', createdAtTo: '',
+  status: '',
+  // Дата создания: «Равна» — одна дата, «Диапазон» — две.
+  // Время у каждой даты необязательно.
+  dateMode: 'equal',
+  date: '', time: '',
+  createdAtFrom: '', createdAtFromTime: '',
+  createdAtTo: '', createdAtToTime: '',
 };
 
-function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast }) {
+function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
   const [draft, setDraft] = useState(EMPTY_ORDER_FILTER);
   const [applied, setApplied] = useState(EMPTY_ORDER_FILTER);
   const [rows, setRows] = useState([]);
@@ -464,6 +460,16 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
   const load = useCallback(async (filter, pageNum) => {
     setLoading(true);
     try {
+      // «Равна» без времени — весь день, со временем — ровно эта секунда.
+      const range = filter.dateMode === 'equal'
+          ? {
+            createdAtFrom: dateTimeToMs(filter.date, filter.time, 'start'),
+            createdAtTo: dateTimeToMs(filter.date, filter.time, 'end'),
+          }
+          : {
+            createdAtFrom: dateTimeToMs(filter.createdAtFrom, filter.createdAtFromTime, 'start'),
+            createdAtTo: dateTimeToMs(filter.createdAtTo, filter.createdAtToTime, 'end'),
+          };
       const r = await api.orders({
         page: pageNum,
         size: PAGE_SIZE,
@@ -474,8 +480,7 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
         merchant: filter.merchant,
         merchantOrderId: filter.merchantOrderId.trim(),
         status: filter.status,
-        createdAtFrom: dateToMs(filter.createdAtFrom, 'start'),
-        createdAtTo: dateToMs(filter.createdAtTo, 'end'),
+        ...range,
       });
       setRows(r.items);
       setTotal(r.total);
@@ -564,17 +569,36 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
               </select>
             </div>
 
-            <div className="field-pair">
+            {/* Режим и даты — одним блоком; в диапазоне он занимает всю строку */}
+            <div className={`field-pair${draft.dateMode === 'range' ? ' field-pair-range' : ''}`}>
               <div className="field">
-                <label htmlFor="o-from">Создан с</label>
-                <input id="o-from" type="date" value={draft.createdAtFrom}
-                       onChange={(e) => set('createdAtFrom', e.target.value)} />
+                <label htmlFor="o-mode">Дата создания</label>
+                <select id="o-mode" value={draft.dateMode}
+                        onChange={(e) => set('dateMode', e.target.value)}>
+                  <option value="equal">Равна</option>
+                  <option value="range">Диапазон</option>
+                </select>
               </div>
-              <div className="field">
-                <label htmlFor="o-to">Создан по</label>
-                <input id="o-to" type="date" value={draft.createdAtTo}
-                       onChange={(e) => set('createdAtTo', e.target.value)} />
-              </div>
+              {draft.dateMode === 'equal' ? (
+                  <DateTimeField
+                      id="o-date" label="Дата"
+                      date={draft.date} time={draft.time}
+                      onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                  />
+              ) : (
+                  <>
+                    <DateTimeField
+                        id="o-from" label="С"
+                        date={draft.createdAtFrom} time={draft.createdAtFromTime}
+                        onDate={(v) => set('createdAtFrom', v)} onTime={(v) => set('createdAtFromTime', v)}
+                    />
+                    <DateTimeField
+                        id="o-to" label="По"
+                        date={draft.createdAtTo} time={draft.createdAtToTime}
+                        onDate={(v) => set('createdAtTo', v)} onTime={(v) => set('createdAtToTime', v)}
+                    />
+                  </>
+              )}
             </div>
           </div>
 
@@ -648,7 +672,6 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
         {card && (
             <OrderCard
                 order={card}
-                statuses={statuses}
                 orderStatuses={orderStatuses}
                 merchants={merchants}
                 methods={methods}
@@ -665,7 +688,7 @@ function OrdersSection({ statuses, orderStatuses, merchants, methods, showToast 
 /* Всё только для чтения. Ключевые значения — сумма и статус —
    вынесены отдельной строкой, остальное в двух колонках. */
 
-function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose, onCopy, showToast }) {
+function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, showToast }) {
   const [client, setClient] = useState(null);   // карточка клиента поверх
   const [loadingClient, setLoadingClient] = useState(false);
   /* В списке приходит сокращённый набор полей, поэтому подробности
@@ -814,7 +837,7 @@ function OrderCard({ order, statuses, orderStatuses, merchants, methods, onClose
         {client && (
             <ClientCard
                 client={client}
-                statuses={statuses}
+                methods={methods}
                 onClose={() => setClient(null)}
                 onUpdated={setClient}
                 onCopy={onCopy}
@@ -861,40 +884,51 @@ function shortId(id) {
 /* Карточка разделена на два блока: «Информация» только для чтения
    и «Настройки» с полями, доступными для правки сразу, без карандаша.
    Изменения применяются одной кнопкой «Сохранить» — сразу по всем
-   изменённым полям, одним запросом. */
+   изменённым полям, одним запросом.
 
-function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast }) {
+   Статуса у клиента больше нет: эти данные ведутся на сервере
+   авторизации. После «Времени активности ордеров» — поле «Методы»:
+   весь список берётся из словаря RequestMethod, привязаны те,
+   что пришли в client.methods.
+
+   «Отмена» закрывает окно без сохранения, после «Сохранить»
+   окно тоже закрывается. */
+
+function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) {
   // Черновик настроек. Строки, а не числа: поле ввода всегда работает
   // со строкой, приведение и проверка — при сохранении.
   const initial = () => ({
-    status: client.status ?? '',
     commission: client.commissionPercent ?? '',
     timeout: client.orderTimeoutSeconds ?? '',
+    methods: Array.isArray(client.methods) ? client.methods : [],
   });
 
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [confirm, setConfirm] = useState(null); // подтверждение смены статуса
 
   // Клиент мог обновиться снаружи (например, после сохранения) —
   // подхватываем новые значения.
+  const methodsKey = (client.methods || []).join(',');
   useEffect(() => { setForm(initial()); setErrors({}); },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [client.id, client.status, client.commissionPercent, client.orderTimeoutSeconds]);
+      [client.id, client.commissionPercent, client.orderTimeoutSeconds, methodsKey]);
+
+  // Раскрыт ли список методов: Escape тогда закрывает только его.
+  const [methodsOpen, setMethodsOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !confirm) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, confirm]);
+  }, [onClose, methodsOpen]);
 
   const setField = (key, v) => {
     setForm((prev) => ({ ...prev, [key]: v }));
     setErrors((prev) => (prev[key] ? { ...prev, [key]: '' } : prev));
   };
 
-  const reset = () => { setForm(initial()); setErrors({}); };
+  const setMethods = (list) => setForm((prev) => ({ ...prev, methods: list }));
 
   /* Проверка полей. Возвращает { body, errors }:
      body — только изменённые поля, errors — сообщения под полями. */
@@ -920,12 +954,16 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
       body.orderTimeoutSeconds = timeout;
     }
 
-    if (form.status && form.status !== client.status) body.status = form.status;
+    // Способы оплаты: шлём весь выбранный набор, только если он изменился.
+    // Пустой массив отвязывает все методы, отсутствие поля — ничего не меняет.
+    const was = [...(client.methods || [])].sort().join(',');
+    const now = [...form.methods].sort().join(',');
+    if (was !== now) body.methods = form.methods;
 
     return { body, errors: errs };
   };
 
-  const onSave = () => {
+  const onSave = async () => {
     const { body, errors: errs } = validate();
 
     if (Object.keys(errs).length) {
@@ -937,22 +975,12 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
       return;
     }
 
-    // Статус меняется только после подтверждения; остальные поля
-    // уходят тем же запросом, поэтому ждём ответа пользователя.
-    if (body.status) {
-      setConfirm(body);
-      return;
-    }
-    patch(body);
-  };
-
-  const patch = async (body) => {
     setSaving(true);
     try {
       const updated = await api.updateClient(client.id, body);
       onUpdated(updated);
-      setErrors({});
-      showToast(successText(body), 'success');
+      showToast('Изменения сохранены', 'success');
+      onClose();
     } catch (e) {
       showToast(e.message || 'Не удалось сохранить', 'error');
     } finally {
@@ -960,17 +988,11 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
     }
   };
 
-  /* Текст уведомления: смена статуса важнее прочих правок,
-     поэтому о ней сообщаем отдельно. */
-  const successText = (body) => {
-    if (body.status === 'BLOCKED') return 'Клиент заблокирован';
-    if (body.status === 'ACTIVE') return 'Клиент разблокирован';
-    if (body.status) return 'Статус изменён';
-    return 'Изменения сохранены';
-  };
-
-  const statusLabel = (name) =>
-      statuses.find((s) => s.name === name)?.description || name;
+  // Весь список — из словаря. Если словарь не загрузился, покажем хотя бы
+  // привязанные методы кодами, чтобы не потерять их при сохранении.
+  const allMethods = methods.length
+      ? methods
+      : (client.methods || []).map((name) => ({ name, description: name }));
 
   return (
       <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -983,7 +1005,6 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
               <span className="ocard-name">{client.username || '—'}</span>
               <span className="ocard-sub">Клиент API</span>
             </div>
-            <StatusBadge status={client.status} statuses={statuses} />
             <button type="button" className="close-x" onClick={onClose} aria-label="Закрыть">×</button>
           </div>
 
@@ -1012,7 +1033,6 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
                   <span className="mono">{fmtDateTime(client.registeredAt)}</span>
                 </Field>
 
-                {/* Имя поля баланса не подтверждено — см. примечание в api.js */}
                 <Field label="Баланс">
                   <span className="mono">{fmtMoney(client.balance)}</span>
                 </Field>
@@ -1024,18 +1044,6 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
                   <i className="fa-solid fa-sliders" />
                   Настройки
                 </h3>
-
-                <FieldRow label="Статус" error={errors.status}>
-                  <select
-                      value={form.status}
-                      disabled={saving}
-                      onChange={(e) => setField('status', e.target.value)}
-                  >
-                    {statuses.map((s) => (
-                        <option key={s.name} value={s.name}>{s.description}</option>
-                    ))}
-                  </select>
-                </FieldRow>
 
                 <FieldRow label="Комиссия" error={errors.commission}>
                 <span className="input-suffix">
@@ -1062,12 +1070,23 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
                   <span className="suffix">сек</span>
                 </span>
                 </FieldRow>
+
+                <FieldRow label="Методы">
+                  <MethodsSelect
+                      options={allMethods}
+                      value={form.methods}
+                      disabled={saving}
+                      open={methodsOpen}
+                      onOpenChange={setMethodsOpen}
+                      onChange={setMethods}
+                  />
+                </FieldRow>
               </section>
             </div>
           </div>
 
           <div className="modal-foot">
-            <button type="button" className="btn btn-secondary" disabled={saving} onClick={reset}>
+            <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>
               Отмена
             </button>
             <button type="button" className="btn btn-primary" disabled={saving} onClick={onSave}>
@@ -1076,15 +1095,123 @@ function ClientCard({ client, statuses, onClose, onUpdated, onCopy, showToast })
             </button>
           </div>
         </div>
+      </div>
+  );
+}
 
-        {confirm && (
-            <ConfirmStatus
-                username={client.username}
-                next={confirm.status}
-                nextLabel={statusLabel(confirm.status)}
-                onCancel={() => setConfirm(null)}
-                onApply={() => { const body = confirm; setConfirm(null); patch(body); }}
-            />
+/* ---- Выбор методов: метки в поле + выпадающий список с чекбоксами ----
+   Свёрнуто: привязанные методы метками, у каждой крестик — снимает
+   метод, не раскрывая список. Метки в одну строку: поле держит одну
+   высоту, а не поместившиеся сворачиваются в «…ещё {n}» с полным
+   перечнем в подсказке. Клик по полю раскрывает список всех методов
+   словаря. Изменения попадают в черновик карточки и сохраняются
+   только её кнопкой «Сохранить». */
+
+// Сколько символов помещается в поле. Каждая метка сверх текста
+// занимает место под отступы и крестик — считаем его как 4 символа.
+const METHODS_CHAR_LIMIT = 26;
+const TAG_OVERHEAD = 4;
+
+function MethodsSelect({ options, value, disabled, open, onOpenChange, onChange }) {
+  const ref = useRef(null);
+
+  // Клик вне поля и списка, Escape — сворачивают список.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onOpenChange(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') onOpenChange(false); };
+    document.addEventListener('mousedown', onDocDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onOpenChange]);
+
+  const label = (name) => options.find((o) => o.name === name)?.description || name;
+
+  // Метки — в порядке словаря, а не в порядке кликов.
+  const selected = options.filter((o) => value.includes(o.name)).map((o) => o.name);
+
+  // Сколько меток помещается в строку.
+  let used = 0;
+  let visibleCount = 0;
+  for (const name of selected) {
+    const cost = label(name).length + TAG_OVERHEAD;
+    if (used + cost > METHODS_CHAR_LIMIT) break;
+    used += cost;
+    visibleCount += 1;
+  }
+  // Хотя бы одна метка видна всегда, даже очень длинная.
+  if (visibleCount === 0 && selected.length) visibleCount = 1;
+  const visible = selected.slice(0, visibleCount);
+  const hidden = selected.length - visible.length;
+
+  const toggle = (name) => {
+    onChange(value.includes(name) ? value.filter((m) => m !== name) : [...value, name]);
+  };
+
+  const remove = (e, name) => {
+    e.stopPropagation(); // крестик не раскрывает список
+    onChange(value.filter((m) => m !== name));
+  };
+
+  return (
+      <div className={`msel${open ? ' is-open' : ''}${disabled ? ' is-disabled' : ''}`} ref={ref}>
+        <div
+            className="msel-field"
+            role="button"
+            tabIndex={disabled ? -1 : 0}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            onClick={() => !disabled && onOpenChange(!open)}
+            onKeyDown={(e) => {
+              if (disabled) return;
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChange(!open); }
+            }}
+        >
+          <span className="msel-tags">
+            {selected.length === 0 && <span className="msel-empty">Методы не выбраны</span>}
+            {visible.map((name) => (
+                <span key={name} className="msel-tag">
+                  {label(name)}
+                  <button
+                      type="button" className="msel-x"
+                      aria-label={`Убрать «${label(name)}»`}
+                      disabled={disabled}
+                      onClick={(e) => remove(e, name)}
+                  >
+                    ×
+                  </button>
+                </span>
+            ))}
+            {hidden > 0 && (
+                <span className="msel-more" title={selected.map(label).join(', ')}>
+                  …ещё {hidden}
+                </span>
+            )}
+          </span>
+          <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} msel-caret`} />
+        </div>
+
+        {open && (
+            <ul className="msel-list" role="listbox" aria-multiselectable="true">
+              {options.length === 0 && <li className="msel-none">Методы не загружены</li>}
+              {options.map((o) => (
+                  <li key={o.name}>
+                    <label className="msel-option">
+                      <input
+                          type="checkbox"
+                          checked={value.includes(o.name)}
+                          onChange={() => toggle(o.name)}
+                      />
+                      <span>{o.description || o.name}</span>
+                    </label>
+                  </li>
+              ))}
+            </ul>
         )}
       </div>
   );
@@ -1100,42 +1227,6 @@ function FieldRow({ label, error, children }) {
       </div>
   );
 }
-/* ---- Подтверждение смены статуса ---- */
-function ConfirmStatus({ username, next, nextLabel, onCancel, onApply }) {
-  let text; let action;
-  if (next === 'BLOCKED') {
-    text = `Заблокировать клиента ${username}? Клиент потеряет доступ к API — его запросы будут отклоняться.`;
-    action = 'Заблокировать';
-  } else if (next === 'ACTIVE') {
-    text = `Разблокировать клиента ${username}? Клиенту вернётся доступ к API, его запросы снова будут приниматься.`;
-    action = 'Разблокировать';
-  } else {
-    text = `Изменить статус клиента ${username} на «${nextLabel}»?`;
-    action = 'Изменить';
-  }
-
-  return (
-      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-        <div className="modal modal-sm">
-          <div className="modal-head">
-            <h2>Смена статуса</h2>
-            <button type="button" className="close-x" onClick={onCancel} aria-label="Закрыть">×</button>
-          </div>
-          <div className="modal-body"><p className="confirm-text">{text}</p></div>
-          <div className="modal-foot">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>Отмена</button>
-            <button
-                type="button"
-                className={`btn ${next === 'BLOCKED' ? 'btn-danger' : 'btn-primary'}`}
-                onClick={onApply}
-            >
-              {action}
-            </button>
-          </div>
-        </div>
-      </div>
-  );
-}
 
 /* ==================== Конфигурация мерчантов ==================== */
 /* Очерёдность (колонка «№», перетаскивание) пока не реализована:
@@ -1143,7 +1234,7 @@ function ConfirmStatus({ username, next, nextLabel, onCancel, onApply }) {
    Всё остальное из ТЗ работает: включение, суммы, поиск.
    Пагинации по 25 тоже нет — эндпоинт отдаёт плоский массив без страниц. */
 
-function MerchantsSection({ client, statuses, showToast, onPickClient }) {
+function MerchantsSection({ client, showToast, onPickClient }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');   // что набрано в поле
@@ -1205,7 +1296,7 @@ function MerchantsSection({ client, statuses, showToast, onPickClient }) {
   if (!client) {
     return (
         <>
-          <ClientPicker showToast={showToast} statuses={statuses} onPick={onPickClient} />
+          <ClientPicker showToast={showToast} onPick={onPickClient} />
           <div className="card placeholder">
             <i className="fa-solid fa-sliders" />
             <p>Выберите клиента, чтобы настроить мерчантов</p>
@@ -1334,7 +1425,7 @@ function AmountCell({ row, field, onSave }) {
 }
 
 /* ---- Поиск клиента по логину или ID ---- */
-function ClientPicker({ showToast, statuses, onPick }) {
+function ClientPicker({ showToast, onPick }) {
   const [q, setQ] = useState('');
   const [found, setFound] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1384,13 +1475,378 @@ function ClientPicker({ showToast, statuses, onPick }) {
                   <li key={c.id}>
                     <button type="button" onClick={() => onPick(c)}>
                       <span className="pl-name">{c.username}</span>
-                      <StatusBadge status={c.status} statuses={statuses} />
                       <span className="pl-id mono">{c.id}</span>
                     </button>
                   </li>
               ))}
             </ul>
         )}
+      </div>
+  );
+}
+/* ==================== Раздел «Заявки на вывод» ==================== */
+/* Заявки всех клиентов: фильтр, таблица, подтверждение и отмена.
+   Подробного просмотра нет. Кнопки действий — только у заявок NEW. */
+
+const EMPTY_WD_FILTER = {
+  id: '', client: '', status: '', address: '',
+  dateMode: 'equal',
+  date: '', time: '',
+  dateFrom: '', timeFrom: '',
+  dateTo: '', timeTo: '',
+};
+
+/* Цвет метки статуса заявки: NEW — синий, APPROVED — зелёный,
+   CANCELED — красный. */
+function withdrawalStatusMod(name) {
+  if (name === 'APPROVED') return 'ok';
+  if (name === 'CANCELED') return 'bad';
+  if (name === 'NEW') return 'info';
+  return 'neutral';
+}
+
+function WithdrawalsSection({ withdrawalStatuses, showToast }) {
+  const [draft, setDraft] = useState(EMPTY_WD_FILTER);
+  const [applied, setApplied] = useState(EMPTY_WD_FILTER);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [confirm, setConfirm] = useState(null); // { row, action: 'approve' | 'cancel' }
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (f, pageNum) => {
+    setLoading(true);
+    try {
+      // «Равна» — одна дата разворачивается в границы; без времени это
+      // весь день, со временем — ровно эта секунда.
+      const range = f.dateMode === 'equal'
+          ? {
+            createdAtFrom: dateTimeToMs(f.date, f.time, 'start'),
+            createdAtTo: dateTimeToMs(f.date, f.time, 'end'),
+          }
+          : {
+            createdAtFrom: dateTimeToMs(f.dateFrom, f.timeFrom, 'start'),
+            createdAtTo: dateTimeToMs(f.dateTo, f.timeTo, 'end'),
+          };
+      const r = await api.withdrawals({
+        page: pageNum,
+        size: PAGE_SIZE,
+        id: f.id.trim(),
+        // Одно поле на логин и ID клиента — бэк ищет по обоим.
+        client: f.client.trim(),
+        status: f.status,
+        address: f.address.trim(),
+        ...range,
+      });
+      setRows(r.items);
+      setTotal(r.total);
+    } catch (e) {
+      setRows([]);
+      setTotal(0);
+      showToast(e.message || 'Не удалось загрузить заявки', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(applied, page); }, [applied, page, reloadKey, load]);
+
+  const reload = () => setReloadKey((k) => k + 1);
+
+  const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const search = () => { setPage(0); setApplied(draft); };
+  const reset = () => { setPage(0); setDraft(EMPTY_WD_FILTER); setApplied(EMPTY_WD_FILTER); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text ?? ''));
+      showToast('Скопировано', 'success');
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  };
+
+  const statusLabel = (name) =>
+      withdrawalStatuses.find((s) => s.name === name)?.description || name || '—';
+
+  /* Подтверждение или отмена. Статус проверяется на сервере: если заявку
+     уже обработали, бэк отвечает 400. Такой ответ не отличить от прочих
+     ошибок по коду, поэтому перезапрашиваем заявку и смотрим её статус. */
+  const process = async ({ row, action }) => {
+    const next = action === 'approve' ? 'APPROVED' : 'CANCELED';
+    setBusy(true);
+    try {
+      await api.setWithdrawalStatus(row.id, next);
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: next } : r)));
+      showToast(action === 'approve' ? 'Заявка подтверждена' : 'Заявка отменена', 'success');
+    } catch (e) {
+      let changed = false;
+      if (!e.unauthorized) {
+        try {
+          const r = await api.withdrawals({ id: row.id, page: 0, size: 1 });
+          const fresh = r.items.find((x) => x.id === row.id);
+          changed = Boolean(fresh && fresh.status !== 'NEW');
+        } catch { /* проверить не удалось — покажем исходную ошибку */ }
+      }
+      if (changed) {
+        showToast('Статус заявки уже изменён', 'error');
+        reload();
+      } else {
+        showToast(e.message || 'Не удалось изменить статус заявки', 'error');
+      }
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
+  };
+
+  return (
+      <>
+        <div className="card filter-card">
+          <div className="filter-grid filter-grid-3">
+            <div className="field">
+              <label htmlFor="w-id">ID заявки</label>
+              <input id="w-id" value={draft.id} placeholder="UUID заявки"
+                     onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="w-client">Клиент</label>
+              <input id="w-client" value={draft.client} placeholder="ID или логин клиента"
+                     onChange={(e) => set('client', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="w-status">Статус</label>
+              <select id="w-status" value={draft.status} onChange={(e) => set('status', e.target.value)}>
+                <option value="">Все</option>
+                {withdrawalStatuses.map((s) => (
+                    <option key={s.name} value={s.name}>{s.description}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label htmlFor="w-address">Адрес кошелька</label>
+              <input id="w-address" value={draft.address} placeholder="Адрес USDT-кошелька"
+                     onChange={(e) => set('address', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="w-mode">Дата создания</label>
+              <select id="w-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
+                <option value="equal">Равна</option>
+                <option value="range">Диапазон</option>
+              </select>
+            </div>
+
+            {draft.dateMode === 'equal' ? (
+                <DateTimeField
+                    id="w-date" label="Дата"
+                    date={draft.date} time={draft.time}
+                    onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                />
+            ) : (
+                <>
+                  <DateTimeField
+                      id="w-from" label="С"
+                      date={draft.dateFrom} time={draft.timeFrom}
+                      onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
+                  />
+                  <DateTimeField
+                      id="w-to" label="По"
+                      date={draft.dateTo} time={draft.timeTo}
+                      onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                  />
+                </>
+            )}
+          </div>
+
+          <div className="filter-actions">
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+              <i className="fa-solid fa-magnifying-glass" />
+              Поиск
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
+              Сбросить
+            </button>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table className="grid grid-withdrawals">
+            <thead>
+            <tr>
+              <th>Клиент</th>
+              <th>ID заявки</th>
+              <th>Статус</th>
+              <th>Создана</th>
+              <th className="c-right">Сумма заявки, ₽</th>
+              <th className="c-right">Комиссия</th>
+              <th className="c-right">К выводу, ₽</th>
+              <th className="c-right">Курс ₽/USDT</th>
+              <th className="c-right">Сумма, USDT</th>
+              <th>Адрес кошелька</th>
+              <th className="c-act" aria-label="Действия" />
+            </tr>
+            </thead>
+            <tbody>
+            {rows.map((w) => (
+                <tr key={w.id} className="no-hover">
+                  <td>
+                    <span className="cell-main">{w.clientUsername || '—'}</span>
+                    <span className="cell-sub">
+                      <CopyValue value={w.clientId} onCopy={copy} />
+                    </span>
+                  </td>
+                  <td className="c-id"><CopyValue value={w.id} onCopy={copy} /></td>
+                  <td>
+                    <span className={`badge badge-${withdrawalStatusMod(w.status)}`}>
+                      {statusLabel(w.status)}
+                    </span>
+                  </td>
+                  <td className="mono nowrap">{fmtDateTime(w.createdAt)}</td>
+                  <td className="c-right mono strong">{fmtAmount(w.grossSourceAmount)}</td>
+                  <td className="c-right mono">{fmtPercent(w.commissionPercent)}</td>
+                  <td className="c-right mono strong">{fmtAmount(w.netSourceAmount)}</td>
+                  <td className="c-right mono">{fmtRate(w.rate)}</td>
+                  <td className="c-right mono strong">{fmtAmount(w.targetAmount)}</td>
+                  <td className="c-id"><CopyValue value={w.address} head={6} tail={6} onCopy={copy} /></td>
+                  <td className="c-act">
+                    {w.status === 'NEW' && (
+                        <span className="wd-actions">
+                          <button
+                              type="button" className="icon-btn icon-btn-approve"
+                              title="Подтвердить заявку" aria-label="Подтвердить заявку"
+                              onClick={() => setConfirm({ row: w, action: 'approve' })}
+                          >
+                            <i className="fa-solid fa-check" />
+                          </button>
+                          <button
+                              type="button" className="icon-btn icon-btn-cancel"
+                              title="Отменить заявку" aria-label="Отменить заявку"
+                              onClick={() => setConfirm({ row: w, action: 'cancel' })}
+                          >
+                            <i className="fa-solid fa-xmark" />
+                          </button>
+                        </span>
+                    )}
+                  </td>
+                </tr>
+            ))}
+            </tbody>
+          </table>
+
+          {!loading && rows.length === 0 && (
+              <div className="table-empty">Заявок не найдено</div>
+          )}
+          {loading && (
+              <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
+          )}
+        </div>
+
+        <Pagination
+            page={page} total={total} busy={loading}
+            onPage={setPage} label="Всего заявок"
+        />
+
+        {confirm && (
+            <ConfirmWithdrawal
+                row={confirm.row}
+                action={confirm.action}
+                busy={busy}
+                onCancel={() => setConfirm(null)}
+                onApply={() => process(confirm)}
+            />
+        )}
+      </>
+  );
+}
+
+/* ---- Дата и необязательное время двумя полями рядом ----
+   Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Заявки на вывод». */
+function DateTimeField({ id, label, date, time, onDate, onTime }) {
+  return (
+      <div className="field">
+        <label htmlFor={id}>
+          {label} <span className="label-note">· время необязательно</span>
+        </label>
+        <div className="dt-row">
+          <input id={id} type="date" value={date} onChange={(e) => onDate(e.target.value)} />
+          <input
+              type="time" step="1" value={time} aria-label={`${label}: время`}
+              onChange={(e) => onTime(e.target.value)}
+          />
+        </div>
+      </div>
+  );
+}
+
+/* ---- Сокращённое значение: полное в подсказке, копирование по иконке ---- */
+function CopyValue({ value, head, tail, onCopy }) {
+  if (!value) return <span>—</span>;
+  return (
+      <span className="copyable" title={value} onClick={(e) => { e.stopPropagation(); onCopy(value); }}>
+        <span className="mono">{shortValue(value, head, tail)}</span> <i className="fa-regular fa-copy" />
+      </span>
+  );
+}
+
+/* ---- Подтверждение действия над заявкой ----
+   Текст и вид — по макету ТЗ. Адрес в окне сокращён, как на макете;
+   полный адрес — во всплывающей подсказке. */
+function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, busy]);
+
+  const approve = action === 'approve';
+  const id = <span className="mono" title={row.id}>{shortValue(row.id)}</span>;
+  const login = <b>{row.clientUsername || '—'}</b>;
+  const sum = <b>{fmtAmount(row.grossSourceAmount)} ₽</b>;
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm">
+          <div className="modal-head">
+            <h2>{approve ? 'Подтвердить заявку?' : 'Отменить заявку?'}</h2>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            {approve ? (
+                <p className="confirm-text">
+                  Заявка {id} клиента {login} на сумму {sum} будет подтверждена.
+                  <br />
+                  К отправке: <b>{fmtAmount(row.targetAmount)} USDT</b> на адрес{' '}
+                  <span className="mono" title={row.address}>{shortValue(row.address, 6, 6)}</span>.
+                </p>
+            ) : (
+                <p className="confirm-text">
+                  Заявка {id} клиента {login} на сумму {sum} будет отменена.
+                  <br />
+                  Действие необратимо.
+                </p>
+            )}
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>
+              Отмена
+            </button>
+            <button
+                type="button"
+                className={`btn ${approve ? 'btn-primary' : 'btn-danger'}`}
+                onClick={onApply}
+                disabled={busy}
+            >
+              {approve ? 'Подтвердить' : 'Отменить заявку'}
+            </button>
+          </div>
+        </div>
       </div>
   );
 }

@@ -471,3 +471,102 @@ table.grid-orders { min-width: 1080px; }
 .account-btn:hover, .account-btn.is-open { background: var(--surface-2); border-color: var(--accent); }
 .account-item i { color: var(--danger); }
 .account-item:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+/* ============================================================
+   Раздел «Заявки на вывод»
+   ============================================================ */
+
+/* Фильтр в три колонки, как на макете */
+.filter-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1000px) { .filter-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .filter-grid-3 { grid-template-columns: 1fr; } }
+
+.label-note { font-weight: 400; font-size: 12px; color: var(--text-dim); }
+
+/* Дата и время рядом */
+.dt-row { display: flex; gap: 8px; }
+.dt-row input[type="date"] { flex: 1 1 60%; min-width: 0; }
+.dt-row input[type="time"] { flex: 1 1 40%; min-width: 0; }
+
+/* Широкая таблица прокручивается по горизонтали (.table-wrap) */
+table.grid-withdrawals { min-width: 1280px; }
+table.grid-withdrawals td { vertical-align: middle; }
+.nowrap { white-space: nowrap; }
+.strong { font-weight: 700; }
+
+/* Кнопки подтверждения и отмены: цветные сразу, а не только при наведении */
+.wd-actions { display: inline-flex; gap: 6px; }
+.icon-btn-approve {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+}
+.icon-btn-approve:hover { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.icon-btn-cancel {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.icon-btn-cancel:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+/* ============================================================
+   Фильтр по дате и времени: каждая дата — поля «дата» и «время»
+   ============================================================ */
+
+/* Диапазон: режим и две пары «дата + время» — на всю строку */
+.field-pair-range { grid-column: 1 / -1; grid-template-columns: minmax(0, .7fr) minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1000px) {
+  .field-pair-range { grid-template-columns: 1fr; }
+}
+
+/* ---- Поле «Методы» в карточке клиента ---- */
+.dim { color: var(--text-dim); }
+
+.msel { position: relative; width: 100%; max-width: 320px; }
+.msel-field {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 5px 10px 5px 8px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg); cursor: pointer;
+}
+.msel.is-open .msel-field, .msel-field:focus-visible { outline: none; border-color: var(--accent); }
+.msel.is-disabled .msel-field { opacity: .6; cursor: default; }
+
+/* Метки в одну строку, без переноса */
+.msel-tags { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.msel-empty { font-size: 14px; color: var(--text-dim); padding-left: 3px; }
+.msel-tag {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  padding: 3px 4px 3px 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 700;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.msel-x {
+  display: inline-grid; place-items: center; width: 16px; height: 16px;
+  border: none; border-radius: 50%; padding: 0;
+  background: none; color: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+}
+.msel-x:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.msel-more {
+  flex: none; padding: 3px 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.msel-caret { flex: none; font-size: 11px; color: var(--text-dim); }
+
+/* Раскрытый список */
+.msel-list {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+  margin: 0; padding: 4px 0; list-style: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+}
+.msel-list li + li { border-top: 1px solid var(--border); }
+.msel-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.msel-option:hover { background: var(--row-hover); }
+.msel-option input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.msel-none { padding: 10px 14px; font-size: 13px; color: var(--text-dim); }
+
+/* Список не должен обрезаться прокруткой окна карточки */
+.modal-wide:has(.msel.is-open) { overflow: visible; }
