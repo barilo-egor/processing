@@ -52,14 +52,12 @@ public class WithdrawalRequestService {
         withdrawalRequest.setClient(client);
         withdrawalRequest.setStatus(WithdrawalRequestStatus.NEW);
         withdrawalRequest.setCreatedAt(Instant.now());
-        withdrawalRequest.setNetSourceAmount(amount);
+        withdrawalRequest.setGrossSourceAmount(amount);
         withdrawalRequest.setCommissionPercent(client.getCommissionPercent());
-        withdrawalRequest.setGrossSourceAmount(
-                CalculateUtil.subtractPercentCommission(amount, client.getCommissionPercent())
-        );
+        withdrawalRequest.setNetSourceAmount(CalculateUtil.subtractPercentCommission(amount, client.getCommissionPercent()));
         BigDecimal rate = ratesConsumer.consume();
         withdrawalRequest.setRate(rate);
-        withdrawalRequest.setTargetAmount(CalculateUtil.convert(withdrawalRequest.getGrossSourceAmount(), rate));
+        withdrawalRequest.setTargetAmount(CalculateUtil.convert(withdrawalRequest.getNetSourceAmount(), rate));
         withdrawalRequest.setAddress(address);
         return withdrawalRequestRepository.save(withdrawalRequest);
     }

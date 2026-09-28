@@ -151,7 +151,7 @@ class WithdrawalRequestServiceTest {
     })
     @DisplayName("Метод должен создать заявку.")
     void create_shouldCreateRequest(Integer amount, String address, BigDecimal rate, BigDecimal commissionPercent,
-                                    Integer expectedGrossAmount, Integer expectedTargetAmount) {
+                                    Integer expectedNetAmount, Integer expectedTargetAmount) {
         Client client = getDummyClient(commissionPercent);
         when(ratesConsumer.consume()).thenReturn(rate);
 
@@ -165,9 +165,9 @@ class WithdrawalRequestServiceTest {
                 () -> assertEquals(client.getId(), actual.getClient().getId()),
                 () -> assertEquals(WithdrawalRequestStatus.NEW, actual.getStatus()),
                 () -> assertNotNull(actual.getCreatedAt()),
-                () -> assertEquals(amount, actual.getNetSourceAmount()),
+                () -> assertEquals(amount, actual.getGrossSourceAmount()),
                 () -> assertEquals(client.getCommissionPercent(), commissionPercent),
-                () -> assertEquals(expectedGrossAmount, actual.getGrossSourceAmount()),
+                () -> assertEquals(expectedNetAmount, actual.getNetSourceAmount()),
                 () -> assertEquals(rate, actual.getRate()),
                 () -> assertEquals(expectedTargetAmount, actual.getTargetAmount()),
                 () -> assertEquals(address, actual.getAddress())
