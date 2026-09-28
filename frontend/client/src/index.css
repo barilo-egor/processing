@@ -308,3 +308,120 @@ table.grid tbody tr:hover { background: var(--row-hover); }
 }
 .account-item:hover { background: var(--row-hover); }
 .account-item i { width: 16px; text-align: center; color: var(--text-dim); }
+/* ============================================================
+   Разделы-таблицы: «Ордера», «Транзакции», «Заявки на вывод»
+   ============================================================ */
+
+.dim { color: var(--text-dim); }
+.strong { font-weight: 700; }
+.nowrap { white-space: nowrap; }
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+/* ---- Панель фильтра ---- */
+.filters {
+  display: flex; flex-direction: column; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.filters-row { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-start; }
+.filters-row .field { flex: 0 1 160px; }
+.filters-row .field-wide { flex: 1 1 220px; }
+.filters-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filters-extra { margin-left: auto; display: flex; gap: 10px; }
+
+.field select {
+  padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
+  min-width: 0; cursor: pointer;
+}
+.field select:focus { outline: none; border-color: var(--accent); }
+.label-note { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+.field-hint { font-size: 12px; color: var(--text-dim); }
+
+/* Дата + время одной парой */
+.filters-row .field:has(.date-pair) { flex: 0 1 auto; }
+.date-pair { display: flex; gap: 8px; }
+.date-pair input[type="date"] { width: 150px; }
+.date-pair input[type="time"] { width: 120px; }
+
+/* ---- Карточка таблицы ---- */
+.table-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.table-scroll { overflow-x: auto; transition: opacity .15s; }
+.table-scroll.is-loading { opacity: .55; pointer-events: none; }
+.state-flat { border: none; border-radius: 0; background: none; }
+
+table.grid-orders { min-width: 980px; }
+table.grid-tx { min-width: 720px; }
+table.grid-wd { min-width: 1120px; }
+table.grid td { vertical-align: middle; }
+table.grid th.num, table.grid td.num {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+.table-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; padding: 12px 14px; border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+/* ---- Пагинация ---- */
+.pager { display: flex; gap: 6px; }
+.pager-btn {
+  min-width: 30px; height: 30px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.pager-btn:not(:disabled):not(.active):hover { background: var(--row-hover); }
+.pager-btn:disabled { opacity: .4; cursor: default; }
+.pager-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+/* ---- Сокращённое значение с копированием ---- */
+.copy-cell { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.icon-btn-sm { width: 24px; height: 24px; font-size: 12px; }
+.icon-btn-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.icon-btn-danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* Callback URL — в одну строку с многоточием */
+.url-cell { max-width: 260px; }
+.ellipsis {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- Цветные метки ---- */
+.badge {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  color: var(--badge); background: color-mix(in srgb, var(--badge) 15%, transparent);
+}
+.badge-green  { --badge: var(--success); }
+.badge-blue   { --badge: var(--accent); }
+.badge-amber  { --badge: #d97706; }
+.badge-purple { --badge: #8b5cf6; }
+.badge-red    { --badge: var(--danger); }
+.badge-brown  { --badge: #a16207; }
+.badge-grey   { --badge: var(--text-dim); }
+
+/* ---- Транзакции: цвет строки по операции ---- */
+table.grid tbody tr.tx-credit { background: color-mix(in srgb, var(--success) 7%, transparent); }
+table.grid tbody tr.tx-debit  { background: color-mix(in srgb, var(--danger) 7%, transparent); }
+td.plus  { color: var(--success); }
+td.minus { color: var(--danger); }
+
+@media (max-width: 720px) {
+  .filters { padding: 14px; }
+  .filters-extra { margin-left: 0; }
+  .date-pair input[type="date"], .date-pair input[type="time"] { width: auto; flex: 1; }
+}
