@@ -2,6 +2,8 @@ package net.rcetech.clients.event;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.keycloak.KeycloakEvent;
+import net.rcetech.meta.keycloak.KeycloakEventHandler;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package net.rcetech.clients.event;
+package net.rcetech.meta.keycloak;
 
 import java.util.UUID;
 

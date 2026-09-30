@@ -1,9 +1,9 @@
 package net.rcetech.clients.service;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import net.rcetech.clients.event.KeycloakEvent;
-import net.rcetech.clients.event.KeycloakEventHandler;
 import net.rcetech.meta.MetricsConstants;
+import net.rcetech.meta.keycloak.KeycloakEvent;
+import net.rcetech.meta.keycloak.KeycloakEventHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

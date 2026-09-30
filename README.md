@@ -18,6 +18,9 @@
         Перейти в "Realm roles", создать три роли с именами: <code>ADMIN</code>, <code>OPERATOR</code>, <code>CLIENT</code>.
     </li>
     <li>
+        Перейти в "Client scopes",
+    </li>
+    <li>
         Перейти в Users, создать необходимых пользователей(для начала достаточно одного администратора):
         <ul>
             <li>

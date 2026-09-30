@@ -1,4 +1,4 @@
-package net.rcetech.clients.event;
+package net.rcetech.meta.keycloak;
 
 public interface KeycloakEventHandler {
 

@@ -15,12 +15,12 @@ alter table client
 
 create table client_method
 (
-    client_id binary(16) not null,
-    method varchar(30) not null,
+    client_id binary(16)  not null,
+    method    varchar(30) not null,
     primary key (client_id, method)
 );
 alter table client_method
-    add constraint fk_client_method foreign key (client_id) references client(id) on delete cascade;
+    add constraint fk_client_method foreign key (client_id) references client (id) on delete cascade;
 
 create table orders
 (
@@ -50,14 +50,14 @@ alter table orders
         cascade on
         update cascade;
 
-create table support_users
+create table support_user
 (
-    id            bigint       not null auto_increment,
+    id            binary(16)   not null,
     username      varchar(255) not null,
     registered_at timestamp(0) not null,
     primary key (id)
 ) engine = InnoDB;
-alter table support_users
+alter table support_user
     add constraint unique_username unique (username);
 
 create table transaction

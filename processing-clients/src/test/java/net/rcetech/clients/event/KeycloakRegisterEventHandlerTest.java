@@ -2,6 +2,7 @@ package net.rcetech.clients.event;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.keycloak.KeycloakEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

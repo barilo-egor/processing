@@ -2,9 +2,9 @@ package net.rcetech.clients.service;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.event.KeycloakEvent;
-import net.rcetech.clients.event.KeycloakEventHandler;
 import net.rcetech.meta.MetricsConstants;
+import net.rcetech.meta.keycloak.KeycloakEvent;
+import net.rcetech.meta.keycloak.KeycloakEventHandler;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;

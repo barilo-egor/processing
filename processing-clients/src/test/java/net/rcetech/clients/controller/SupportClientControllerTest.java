@@ -1,7 +1,6 @@
 package net.rcetech.clients.controller;
 
 import net.rcetech.clients.config.ClientsSecurityConfig;
-import net.rcetech.clients.event.KeycloakEvent;
 import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
@@ -10,6 +9,7 @@ import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.keycloak.KeycloakEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.hamcrest.Matchers;
 import org.jspecify.annotations.NonNull;
