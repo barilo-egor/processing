@@ -307,15 +307,18 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
                 .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
+                .andExpect(jsonPath("$.method").value(expected.method().name()))
                 .andExpect(jsonPath("$.callbackUrl").value(expected.callbackUrl()));
     }
 
     static Stream<Arguments> orderSummaryArguments() {
         return Stream.of(
                 Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.NEW, 5129, true, "https://google.com/callback")),
+                        OrderStatus.NEW, 5129, true, RequestMethod.CARD,
+                        "https://google.com/callback")),
                 Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.SUCCESS, 1250, false, "https://example.com/path/callback"))
+                        OrderStatus.SUCCESS, 1250, false, RequestMethod.SBP,
+                        "https://example.com/path/callback"))
         );
     }
 
@@ -472,6 +475,7 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
                 .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
+                .andExpect(jsonPath("$.method").value(expected.method().name()))
                 .andExpect(jsonPath("$.callbackUrl").value(expected.callbackUrl()));
     }
 
@@ -479,7 +483,7 @@ class ClientOrderControllerTest {
     @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
     void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
         ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                OrderStatus.NEW, 5129, true, "https://google.com/callback");
+                OrderStatus.NEW, 5129, true, RequestMethod.CARD, "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
                         .with(csrf())
@@ -506,6 +510,7 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))
                 .andExpect(jsonPath("$.content[0].amount").value(expected.amount()))
                 .andExpect(jsonPath("$.content[0].enableUniqueAmount").value(expected.enableUniqueAmount()))
+                .andExpect(jsonPath("$.content[0].method").value(expected.method().name()))
                 .andExpect(jsonPath("$.content[0].callbackUrl").value(expected.callbackUrl()));
     }
 }
