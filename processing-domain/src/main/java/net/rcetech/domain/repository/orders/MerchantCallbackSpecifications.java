@@ -31,10 +31,10 @@ public class MerchantCallbackSpecifications {
                 predicates.add(builder.equal(from.get(MerchantCallback_.merchantOrderId), filter.merchantOrderId()));
             }
             if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThan(from.get(MerchantCallback_.createdAt), filter.createdAtFrom()));
+                predicates.add(builder.greaterThanOrEqualTo(from.get(MerchantCallback_.createdAt), filter.createdAtFrom()));
             }
             if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThanOrEqualTo(from.get(MerchantCallback_.createdAt), filter.createdAtTo()));
+                predicates.add(builder.lessThan(from.get(MerchantCallback_.createdAt), filter.createdAtTo()));
             }
             return builder.and(predicates);
         });

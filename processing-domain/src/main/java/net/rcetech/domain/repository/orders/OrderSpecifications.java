@@ -55,10 +55,10 @@ public class OrderSpecifications {
             addStringEqual(predicates, builder, from.get(Order_.merchantOrderId), filter.merchantOrderId());
 
             if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThan(from.get(Order_.createdAt), filter.createdAtFrom()));
+                predicates.add(builder.greaterThanOrEqualTo(from.get(Order_.createdAt), filter.createdAtFrom()));
             }
             if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThanOrEqualTo(from.get(Order_.createdAt), filter.createdAtTo()));
+                predicates.add(builder.lessThan(from.get(Order_.createdAt), filter.createdAtTo()));
             }
 
             if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {

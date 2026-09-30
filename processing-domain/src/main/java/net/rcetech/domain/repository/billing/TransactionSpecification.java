@@ -31,10 +31,10 @@ public class TransactionSpecification {
                 predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Transaction_.client), builder));
             }
             if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThan(from.get(Transaction_.createdAt), filter.createdAtFrom()));
+                predicates.add(builder.greaterThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtFrom()));
             }
             if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtTo()));
+                predicates.add(builder.lessThan(from.get(Transaction_.createdAt), filter.createdAtTo()));
             }
             return builder.and(predicates);
         });
@@ -48,10 +48,10 @@ public class TransactionSpecification {
                 return builder.and(predicates.toArray(new Predicate[0]));
             }
             if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThan(from.get(Transaction_.createdAt), filter.createdAtFrom()));
+                predicates.add(builder.greaterThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtFrom()));
             }
             if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtTo()));
+                predicates.add(builder.lessThan(from.get(Transaction_.createdAt), filter.createdAtTo()));
             }
             return builder.and(predicates.toArray(new Predicate[0]));
         };
