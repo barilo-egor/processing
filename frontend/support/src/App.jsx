@@ -444,8 +444,18 @@ function Pagination({ page, total, onPage, busy, label }) {
    достаточно подставить значение в состояние name. */
 function AccountMenu() {
   const [open, setOpen] = useState(false);
-  const [name] = useState('Администратор');
+  // Логин вошедшего администратора — из GET /support-user.
+  // Пока ответа нет или запрос не удался — нейтральное «Администратор».
+  const [name, setName] = useState('Администратор');
   const ref = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.supportUser()
+        .then((u) => { if (alive && u?.username) setName(u.username); })
+        .catch(() => { /* оставляем «Администратор» */ });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;

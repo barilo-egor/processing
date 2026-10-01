@@ -20,6 +20,7 @@
      GET   /api/private/transaction?client&createdAtFrom&createdAtTo&page&size&sort
      POST  /api/private/transaction   <- { clientId, operation, amount, comment }
            тип MANUAL_CORRECT бэк ставит сам
+     GET   /api/private/support-user  -> { id, username, registeredAt } — вошедший администратор
      GET   /api/private/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
    ============================================================ */
 
@@ -188,6 +189,9 @@ export const api = {
       totalPages: d?.page?.totalPages ?? 1,
     };
   },
+
+  // Вошедший администратор (для шапки): { id, username, registeredAt }.
+  supportUser: () => request(`${API}/support-user`),
 
   /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
      Сортировку передаём явно: по ТЗ новые сверху. */
