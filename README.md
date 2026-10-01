@@ -18,7 +18,9 @@
         Перейти в "Realm roles", создать три роли с именами: <code>ADMIN</code>, <code>OPERATOR</code>, <code>CLIENT</code>.
     </li>
     <li>
-        Перейти в "Client scopes",
+        Перейти в "Realm Settings", открыть вкладку "User registration" и в подвкладке "User registration" добавить новую 
+        роль по умолчанию через кнопку "ASSign role" -> Realm roles -> CLIENT. Эта настройка
+        позволит выдавать роль CLIENT каждому новому зарегистрированному пользователю.
     </li>
     <li>
         Перейти в Users, создать необходимых пользователей(для начала достаточно одного администратора):

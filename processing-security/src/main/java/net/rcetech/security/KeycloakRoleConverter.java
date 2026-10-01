@@ -1,10 +1,11 @@
-package net.rcetech.meta.user;
+package net.rcetech.security;
 
 import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @NullMarked
+@Component
 public class KeycloakRoleConverter implements GrantedAuthoritiesMapper {
 
     private static final String REALM_ACCESS_KEY = "realm_access";

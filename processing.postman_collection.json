@@ -2181,138 +2181,6 @@
           "name": "client",
           "item": [
             {
-              "name": "Создание клиента",
-              "request": {
-                "auth": {
-                  "type": "basic",
-                  "basic": [
-                    {
-                      "key": "username",
-                      "value": "{{webhook_user}}",
-                      "type": "string"
-                    },
-                    {
-                      "key": "password",
-                      "value": "{{webhook_password}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Auth",
-                    "value": ""
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n    \"time\": \"1788022344266\",\n    \"details\": {\n        \"username\": \"postman-admin12\"\n    },\n    \"type\": \"REGISTER\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{processing_url}}/api/private/client/event/",
-                  "host": [
-                    "{{processing_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "private",
-                    "client",
-                    "event",
-                    ""
-                  ]
-                }
-              },
-              "response": [
-                {
-                  "name": "Клиент создан",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Auth",
-                        "value": ""
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"id\": \"7321f213-6ab9-4d15-b950-9de1c756876a\",\n    \"time\": \"1788022344266\",\n    \"details\": {\n        \"username\": \"postman-admin\"\n    },\n    \"type\": \"REGISTER\"\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{processing_url}}/api/private/client/event/",
-                      "host": [
-                        "{{processing_url}}"
-                      ],
-                      "path": [
-                        "api",
-                        "private",
-                        "client",
-                        "event",
-                        ""
-                      ]
-                    }
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "text",
-                  "header": [
-                    {
-                      "key": "x-content-type-options",
-                      "value": "nosniff"
-                    },
-                    {
-                      "key": "x-xss-protection",
-                      "value": "0"
-                    },
-                    {
-                      "key": "cache-control",
-                      "value": "no-cache, no-store, max-age=0, must-revalidate"
-                    },
-                    {
-                      "key": "pragma",
-                      "value": "no-cache"
-                    },
-                    {
-                      "key": "expires",
-                      "value": "0"
-                    },
-                    {
-                      "key": "x-frame-options",
-                      "value": "DENY"
-                    },
-                    {
-                      "key": "content-length",
-                      "value": "0"
-                    },
-                    {
-                      "key": "date",
-                      "value": "Sat, 29 Aug 2026 17:01:21 GMT"
-                    },
-                    {
-                      "key": "keep-alive",
-                      "value": "timeout=60"
-                    },
-                    {
-                      "key": "connection",
-                      "value": "keep-alive"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": ""
-                }
-              ]
-            },
-            {
               "name": "Получение клиентов",
               "protocolProfileBehavior": {
                 "followRedirects": true
@@ -3545,6 +3413,107 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"content\": [\n    {\n      \"id\": 1,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f661-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f661\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 2,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f855-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f855\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 3,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f86e-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f86e\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 4,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8b6-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f8b6\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 5,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8c8-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"EVO_PAY\",\n      \"merchantOrderId\": \"m-8fc0f8c8\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 6,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8d5-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8d5\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 7,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8e2-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8e2\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 8,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8ef-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8ef\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 9,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f8fc-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f8fc\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    },\n    {\n      \"id\": 10,\n      \"createdAt\": 1790278164000,\n      \"orderId\": \"8fc0f909-b834-11f1-83d8-e24fed1a290f\",\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"m-8fc0f909\",\n      \"status\": \"SUCCESS\",\n      \"statusDescription\": \"Callback processed successfully\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 10,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "support-user",
+          "item": [
+            {
+              "name": "Информация о пользователе поддержки",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/support-user",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "support-user"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Информация получена",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/support-user",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "support-user"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "93"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 01 Oct 2026 19:41:55 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"a6929b80-f871-4381-91af-7fe75e0faa4f\",\n  \"username\": \"admin\",\n  \"registeredAt\": 1790790668000\n}"
                 }
               ]
             }

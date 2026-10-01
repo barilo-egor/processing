@@ -1,7 +1,6 @@
 package net.rcetech.clients.controller;
 
 import net.rcetech.clients.config.ClientsSecurityConfig;
-import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -9,7 +8,6 @@ import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
-import net.rcetech.meta.keycloak.KeycloakEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.hamcrest.Matchers;
 import org.jspecify.annotations.NonNull;
@@ -24,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -49,7 +46,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,9 +60,6 @@ class SupportClientControllerTest {
     private ApiKeyService apiKeyService;
 
     @MockitoBean
-    private KeycloakEventService keycloakEventService;
-
-    @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @MockitoBean
@@ -74,36 +69,6 @@ class SupportClientControllerTest {
     private MockMvc mockMvc;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @ParameterizedTest
-    @DisplayName("Сериализация объекта должна пройти без ошибок, должен быть вызван метод сервиса.")
-    @ValueSource(strings = {"login_event.json", "login_error_event.json", "refresh_token_event.json",
-            "login_event_with_unknown_field.json"})
-    @WithMockUser(roles = {"WEBHOOK_CLIENT"})
-    void event_shouldSerializeJson(String fileName) throws Exception {
-        when(keycloakEventService.handle(any(KeycloakEvent.class))).thenReturn(true);
-        String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
-        mockMvc.perform(
-                        post("/api/private/client/event/")
-                                .header("Content-Type", "application/json")
-                                .content(json))
-                .andExpect(status().isAccepted());
-        verify(keycloakEventService).handle(any(KeycloakEvent.class));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"login_event.json", "login_error_event.json"})
-    @WithMockUser(roles = {"WEBHOOK_CLIENT"})
-    @DisplayName("Метод должен вернуть статус NO CONTENT, если обработчик для ивента не найден.")
-    void event_shouldReturnNoContentIfHandlerNotFound(String fileName) throws Exception {
-        when(keycloakEventService.handle(any(KeycloakEvent.class))).thenReturn(false);
-        String json = new String(new ClassPathResource("/controller/keycloak/" + fileName).getInputStream().readAllBytes());
-        mockMvc.perform(
-                        post("/api/private/client/event/")
-                                .header("Content-Type", "application/json")
-                                .content(json))
-                .andExpect(status().isNoContent());
-    }
 
     @Test
     @WithMockUser(roles = "ADMIN")
