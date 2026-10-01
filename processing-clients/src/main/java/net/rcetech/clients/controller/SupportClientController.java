@@ -2,13 +2,11 @@ package net.rcetech.clients.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.service.KeycloakEventService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
-import net.rcetech.meta.keycloak.KeycloakEvent;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -26,26 +24,10 @@ import java.util.UUID;
 @Validated
 public class SupportClientController {
 
-    private final KeycloakEventService keycloakEventService;
-
     private final ClientService clientService;
 
-    public SupportClientController(KeycloakEventService keycloakEventService, ClientService clientService) {
-        this.keycloakEventService = keycloakEventService;
+    public SupportClientController(ClientService clientService) {
         this.clientService = clientService;
-    }
-
-    @PostMapping("/event/")
-    @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('WEBHOOK_CLIENT')")
-    public ResponseEntity<Void> event(@RequestBody KeycloakEvent event) {
-        log.trace("Получен ивент из keycloak: {}", event);
-        boolean isHandled = keycloakEventService.handle(event);
-        if (isHandled) {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
     }
 
     @GetMapping

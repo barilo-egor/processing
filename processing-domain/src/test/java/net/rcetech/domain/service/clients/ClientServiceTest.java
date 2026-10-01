@@ -10,7 +10,6 @@ import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -23,6 +22,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
+@Import(ClientService.class)
 class ClientServiceTest {
 
     @TestConfiguration
@@ -65,14 +66,7 @@ class ClientServiceTest {
     private ClientRepository clientRepository;
 
     @Autowired
-    private ClientMapper clientMapper;
-
     private ClientService clientService;
-
-    @BeforeEach
-    void setUp() {
-        clientService = new ClientService(clientRepository, clientMapper);
-    }
 
     @Test
     @DisplayName("Клиент должен быть сохранен с дефолтными значениями.")
@@ -431,5 +425,40 @@ class ClientServiceTest {
         clientService.update(client.getId(), new ClientUpdateRequest(null));
         Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
         assertEquals(url, updated.getCallbackUrl());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "f3f0d1d5-f4c6-4af5-ad9c-327ac365ea92,test1",
+            "80adcfbe-d80d-432a-82d3-b61bcc7aacdd,smokilolik"
+    })
+    @DisplayName("Метод не должен создавать клиента, если клиент с переданным id уже существует.")
+    void createIfNotExists_shouldNotCreateClientIfExists(UUID id, String username) {
+        Client client = new Client();
+        client.setId(id);
+        client.setUsername(username);
+        client.setRegisteredAt(Instant.now());
+        clientRepository.save(client);
+
+        clientService.createIfNotExists(id, username);
+
+        assertEquals(1, clientRepository.count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "f3f0d1d5-f4c6-4af5-ad9c-327ac365ea92,test1",
+            "80adcfbe-d80d-432a-82d3-b61bcc7aacdd,smokilolik"
+    })
+    @DisplayName("Метод должен создать клиента, если клиент с переданным id не существует.")
+    void createIfNotExists_shouldCreateClientIfNotExists(UUID id, String username) {
+        assertEquals(0, clientRepository.count());
+
+        clientService.createIfNotExists(id, username);
+
+        List<Client> actual = clientRepository.findAll();
+        assertEquals(1, actual.size());
+        assertEquals(id, actual.getFirst().getId());
+        assertEquals(username, actual.getFirst().getUsername());
     }
 }

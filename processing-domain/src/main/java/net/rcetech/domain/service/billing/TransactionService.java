@@ -60,6 +60,10 @@ public class TransactionService {
         transaction.setAmount(order.getAmount());
         transaction.setType(TransactionType.ORDER_CONFIRMATION);
         transaction.setComment("Подтверждение по ордеру " + order.getId() + ". Транзакция создана системой.");
+        save(transaction);
+    }
+
+    public void save(Transaction transaction) {
         transactionRepository.save(transaction);
         eventPublisher.publishEvent(new TransactionCreatedEvent(
                 this,
@@ -100,6 +104,6 @@ public class TransactionService {
         transaction.setAmount(manualCorrectTransaction.amount());
         transaction.setType(TransactionType.MANUAL_CORRECT);
         transaction.setComment("Создано пользователем " + creatorId + ". Комментарий: " + manualCorrectTransaction.comment());
-        transactionRepository.save(transaction);
+        save(transaction);
     }
 }

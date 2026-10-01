@@ -2,8 +2,8 @@ package net.rcetech.meta.config;
 
 import net.rcetech.meta.SpringSecurityConfigurer;
 import net.rcetech.meta.WebPath;
-import net.rcetech.meta.user.KeycloakRoleConverter;
 import net.rcetech.meta.user.Role;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.util.List;
 
@@ -22,7 +23,10 @@ import java.util.List;
 public class MetaSecurityConfig {
 
     @Bean
-    public SecurityFilterChain globalFilterChain(HttpSecurity http, List<SpringSecurityConfigurer> configurers) {
+    public SecurityFilterChain globalFilterChain(HttpSecurity http,
+                                                 List<SpringSecurityConfigurer> configurers,
+                                                 @Autowired(required = false)
+                                                 AuthenticationSuccessHandler successHandler) {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         WebPath.PRIVATE_API_PATH + "/order/**",
@@ -40,15 +44,10 @@ public class MetaSecurityConfig {
             configurer.configure(http);
         }
         http.oauth2Login(oAuth2 ->
-                oAuth2.defaultSuccessUrl("/dashboard")
+                oAuth2.successHandler(successHandler)
         );
         http.csrf(CsrfConfigurer::spa);
         return http.build();
-    }
-
-    @Bean
-    public KeycloakRoleConverter keycloakRoleConverter() {
-        return new KeycloakRoleConverter();
     }
 
     @Bean

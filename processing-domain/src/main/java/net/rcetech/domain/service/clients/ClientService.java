@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -87,5 +88,16 @@ public class ClientService {
         Client client = findById(clientId)
                 .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
         client.setBalance(client.getBalance() - creditAmount);
+    }
+
+    public void createIfNotExists(UUID id, String username) {
+        if (clientRepository.existsById(id)) {
+            return;
+        }
+        Client client = new Client();
+        client.setId(id);
+        client.setRegisteredAt(Instant.now());
+        client.setUsername(username);
+        clientRepository.save(client);
     }
 }
