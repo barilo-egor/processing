@@ -31,6 +31,8 @@ const SECTIONS = [
 
 export default function App() {
   const [section, setSection] = useState('profile');
+  // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState(null);
   // Профиль грузим один раз: логин нужен в шапке, id — для сохранения
   // Callback URL.
@@ -70,14 +72,32 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
+  // Escape закрывает выехавшее меню.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  const goTo = (id) => { setSection(id); setMenuOpen(false); };
+
   const current = SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
-        <aside className="sidebar">
+        <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Разделы">
           <div className="brand">
             <span className="brand-ico"><i className="fa-solid fa-key" /></span>
             <span className="brand-name">Кабинет клиента</span>
+            <button
+                type="button"
+                className="menu-close"
+                aria-label="Закрыть меню"
+                onClick={() => setMenuOpen(false)}
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
           </div>
           <nav className="nav">
             {SECTIONS.map((s) => (
@@ -85,7 +105,7 @@ export default function App() {
                     key={s.id}
                     type="button"
                     className={`nav-item${section === s.id ? ' active' : ''}`}
-                    onClick={() => setSection(s.id)}
+                    onClick={() => goTo(s.id)}
                 >
                   <i className={s.icon} />
                   <span>{s.title}</span>
@@ -93,10 +113,23 @@ export default function App() {
             ))}
           </nav>
         </aside>
+        {/* Затемнение под выехавшим меню: клик по нему закрывает меню. */}
+        {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
 
         <div className="main">
           <header className="topbar">
-            <h1>{current.title}</h1>
+            <div className="topbar-title">
+              <button
+                  type="button"
+                  className="menu-btn"
+                  aria-label="Открыть меню"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(true)}
+              >
+                <i className="fa-solid fa-bars" />
+              </button>
+              <h1>{current.title}</h1>
+            </div>
             <AccountMenu username={profile?.username} />
           </header>
           <main className="content">
@@ -650,8 +683,9 @@ function DateFilter({ idPrefix, value, onChange }) {
       </div>
   );
 
+  // Режим и даты — одним блоком; «С» и «По» не разрываются переносом.
   return (
-      <>
+      <div className={`date-group${value.mode === 'range' ? ' date-group-range' : ''}`}>
         <div className="field">
           <label htmlFor={`${idPrefix}-mode`}>Дата создания</label>
           <select
@@ -663,15 +697,17 @@ function DateFilter({ idPrefix, value, onChange }) {
             <option value="range">Диапазон</option>
           </select>
         </div>
-        {value.mode === 'eq'
-            ? pair('Дата', 'date', 'time')
-            : (
-                <>
-                  {pair('С', 'fromDate', 'fromTime')}
-                  {pair('По', 'toDate', 'toTime')}
-                </>
-            )}
-      </>
+        <div className="date-fields">
+          {value.mode === 'eq'
+              ? pair('Дата', 'date', 'time')
+              : (
+                  <>
+                    {pair('С', 'fromDate', 'fromTime')}
+                    {pair('По', 'toDate', 'toTime')}
+                  </>
+              )}
+        </div>
+      </div>
   );
 }
 

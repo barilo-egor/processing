@@ -137,7 +137,7 @@ body {
 .filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 /* Пара «режим даты + сама дата» всегда рядом */
 .field-pair { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 12px; grid-column: span 2; }
-@media (max-width: 1000px) { .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1080px) { .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) {
   .filter-grid { grid-template-columns: 1fr; }
   .field-pair { grid-column: auto; grid-template-columns: 1fr; }
@@ -268,14 +268,39 @@ table.grid td.c-right { text-align: right; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ---- Кнопки меню (☰ и ×) — видны только на узком экране ---- */
+.menu-btn, .menu-close {
+  display: none; place-items: center; flex: none;
+  width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: none; color: var(--text); cursor: pointer; font-size: 16px;
+}
+.menu-btn:hover, .menu-close:hover { background: var(--row-hover); }
+.menu-close { margin-left: auto; }
+.topbar-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.menu-backdrop {
+  position: fixed; inset: 0; z-index: 55;
+  background: rgba(0, 0, 0, .45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none !important; }
+}
+
 /* ---- Узкие экраны ---- */
 @media (max-width: 720px) {
-  .layout { flex-direction: column; }
+  /* Боковое меню выезжает слева по кнопке ☰ в шапке. */
   .sidebar {
-    width: 100%; flex-direction: row; align-items: center; justify-content: space-between;
-    gap: 12px; padding: 12px; border-right: none; border-bottom: 1px solid var(--border);
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
+    width: min(280px, 85vw); overflow-y: auto;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform .2s ease, visibility 0s linear .2s;
   }
-  .nav { flex-direction: row; }
+  .sidebar.open {
+    transform: none; visibility: visible;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .35);
+    transition: transform .2s ease;
+  }
+  .menu-btn, .menu-close { display: inline-grid; }
   .content { padding: 16px; }
   .topbar { padding: 14px 16px; }
 }
@@ -477,7 +502,7 @@ table.grid-orders { min-width: 1080px; }
 
 /* Фильтр в три колонки, как на макете */
 .filter-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 1000px) { .filter-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1080px) { .filter-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .filter-grid-3 { grid-template-columns: 1fr; } }
 
 .label-note { font-weight: 400; font-size: 12px; color: var(--text-dim); }
@@ -570,3 +595,129 @@ table.grid-withdrawals td { vertical-align: middle; }
 
 /* Список не должен обрезаться прокруткой окна карточки */
 .modal-wide:has(.msel.is-open) { overflow: visible; }
+
+/* ============================================================
+   Раздел «Транзакции»
+   ============================================================ */
+
+/* Кнопка «Создать транзакцию» — справа от «Поиск» и «Сбросить» */
+.filter-actions-right { margin-left: auto; }
+
+table.grid-tx { min-width: 1040px; }
+table.grid-tx td { vertical-align: middle; }
+.tx-comment { color: var(--text-dim); min-width: 220px; }
+
+/* Операция определяет фон строки и цвет суммы */
+table.grid tbody tr.tx-credit { background: color-mix(in srgb, var(--success) 7%, transparent); }
+table.grid tbody tr.tx-debit  { background: color-mix(in srgb, var(--danger) 7%, transparent); }
+.amount-plus  { color: var(--success); }
+.amount-minus { color: var(--danger); }
+
+/* Цветная точка перед названием операции */
+.op-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 8px; vertical-align: middle; background: var(--text-dim);
+}
+.op-dot.op-credit { background: var(--success); }
+.op-dot.op-debit  { background: var(--danger); }
+
+/* Тип «Ручная корректировка» — коричневый */
+.badge-brown { color: #b7791f; background: color-mix(in srgb, #b7791f 16%, transparent); }
+
+/* Форма «Новая транзакция» */
+.tx-form { display: flex; flex-direction: column; gap: 4px; }
+.tx-form .fitem-field select,
+.tx-form .fitem-field input,
+.tx-form .fitem-field textarea { width: 100%; max-width: none; }
+.tx-form .fvalue { display: block; }
+.tx-form textarea {
+  padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
+  resize: vertical; min-height: 70px;
+}
+.tx-form textarea:focus { outline: none; border-color: var(--accent); }
+.tx-form textarea.invalid { border-color: var(--danger); }
+.field-hint { font-size: 12px; color: var(--text-dim); margin: -4px 0 4px; }
+
+/* Поиск клиента с подсказкой */
+.suggest { position: relative; width: 100%; }
+.suggest-list {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+  margin: 0; padding: 4px 0; list-style: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  max-height: 240px; overflow-y: auto;
+}
+.suggest-list li + li { border-top: 1px solid var(--border); }
+.suggest-list button {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; color: var(--text); text-align: left;
+}
+.suggest-list button:hover { background: var(--row-hover); }
+.suggest-note { padding: 9px 12px; font-size: 13px; color: var(--text-dim); }
+.modal:has(.suggest-list) { overflow: visible; }
+
+/* ============================================================
+   Блок даты в фильтрах: режим + «С»/«По» (или «Дата»)
+   ============================================================
+   Раскладка считается от ширины самого блока (container query),
+   а не окна: у админки есть боковое меню, и ширина окна врёт.
+   «Равна»:    режим и дата с временем в одну строку; поля сжимаются
+               до минимума, дальше дата уходит под режим.
+   «Диапазон»: всё в строку → режим сверху, «С» и «По» под ним →
+               на узком блоке «С» и «По» — две колонки, в каждой
+               дата над временем. «По» от «С» не отрывается никогда. */
+.date-group {
+  container-type: inline-size;
+  grid-column: span 2;
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  gap: 12px; min-width: 0;
+}
+.date-group-range { grid-column: 1 / -1; }
+.date-group > .field { flex: 0 0 160px; }
+
+.date-fields { display: flex; flex-wrap: nowrap; gap: 12px; min-width: 0; }
+
+/* «Равна»: одна пара дата+время забирает остаток строки. */
+/* «Равна»: всё в одну строку не переносится — поля сжимаются
+   (селект до 116px, дата до 128px, время до 96px). Вниз дата уходит
+   только когда блок уже 330px (см. @container ниже). */
+.date-group:not(.date-group-range) { flex-wrap: nowrap; }
+.date-group:not(.date-group-range) > .field { flex: 0 1 160px; min-width: 116px; }
+.date-group > .field > label { white-space: nowrap; }
+.date-group:not(.date-group-range) .date-fields { flex: 1 1 auto; min-width: 232px; max-width: 340px; }
+.date-group:not(.date-group-range) .date-fields > .field { flex: 1 1 auto; }
+.date-group:not(.date-group-range) .dt-row input[type="date"] { flex: 1 1 60%; min-width: 128px; }
+.date-group:not(.date-group-range) .dt-row input[type="time"] { flex: 1 1 40%; min-width: 96px; }
+
+/* «Диапазон»: поля фиксированной ширины. */
+.date-group-range .date-fields { flex: 0 0 auto; }
+.date-group-range .date-fields > .field { flex: none; }
+.date-group-range .dt-row input[type="date"] { flex: none; width: 150px; }
+.date-group-range .dt-row input[type="time"] { flex: none; width: 130px; }
+
+/* Узкий блок: «С» и «По» — две равные колонки, дата над временем. */
+@container (max-width: 599px) {
+  .date-group-range > .field { flex: 1 1 100%; }
+  .date-group-range .date-fields { flex: 1 1 100%; align-items: flex-end; }
+  .date-group-range .date-fields > .field { flex: 1 1 0; min-width: 0; }
+  .date-group-range .dt-row { flex-direction: column; }
+  .date-group-range .dt-row input[type="date"],
+  .date-group-range .dt-row input[type="time"] { width: 100%; min-width: 0; }
+}
+
+/* Сетка в одну колонку: span 2 создал бы лишнюю колонку. */
+@media (max-width: 560px) {
+  .date-group { grid-column: 1 / -1; }
+}
+
+
+@container (max-width: 329px) {
+  .date-group:not(.date-group-range) > .field { flex: 1 1 100%; }
+  .date-group:not(.date-group-range) .date-fields { flex: 1 1 100%; max-width: none; }
+}
+/* Сам контейнер @container стилизовать не может — перенос включаем по ширине окна. */
+@media (max-width: 420px) {
+  .date-group:not(.date-group-range) { flex-wrap: wrap; }
+}

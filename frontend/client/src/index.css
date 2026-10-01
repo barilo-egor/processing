@@ -263,14 +263,39 @@ table.grid tbody tr:hover { background: var(--row-hover); }
   * { transition-duration: .01ms !important; }
 }
 
+/* ---- Кнопки меню (☰ и ×) — видны только на узком экране ---- */
+.menu-btn, .menu-close {
+  display: none; place-items: center; flex: none;
+  width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: none; color: var(--text); cursor: pointer; font-size: 16px;
+}
+.menu-btn:hover, .menu-close:hover { background: var(--row-hover); }
+.menu-close { margin-left: auto; }
+.topbar-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.menu-backdrop {
+  position: fixed; inset: 0; z-index: 55;
+  background: rgba(0, 0, 0, .45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none !important; }
+}
+
 /* ---- Узкие экраны ---- */
 @media (max-width: 720px) {
-  .layout { flex-direction: column; }
+  /* Боковое меню выезжает слева по кнопке ☰ в шапке. */
   .sidebar {
-    width: 100%; flex-direction: row; align-items: center; justify-content: space-between;
-    gap: 12px; padding: 12px; border-right: none; border-bottom: 1px solid var(--border);
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
+    width: min(280px, 85vw); overflow-y: auto;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform .2s ease, visibility 0s linear .2s;
   }
-  .nav { flex-direction: row; }
+  .sidebar.open {
+    transform: none; visibility: visible;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .35);
+    transition: transform .2s ease;
+  }
+  .menu-btn, .menu-close { display: inline-grid; }
   .content { padding: 16px; }
   .topbar { padding: 14px 16px; }
   .block { padding: 16px; }
@@ -424,4 +449,66 @@ td.minus { color: var(--danger); }
   .filters { padding: 14px; }
   .filters-extra { margin-left: 0; }
   .date-pair input[type="date"], .date-pair input[type="time"] { width: auto; flex: 1; }
+}
+
+/* ---- Блок даты в фильтре: режим + «С»/«По» (или «Дата») ----
+   Раскладка считается от ширины самого блока (container query).
+   «Равна»:    режим и дата с временем в одну строку; поля сжимаются
+               до минимума, дальше дата уходит под режим.
+   «Диапазон»: блок во всю строку; всё в строку → режим сверху,
+               «С» и «По» под ним → на узком экране «С» и «По» —
+               две колонки, в каждой дата над временем.
+               «По» от «С» не отрывается никогда. */
+.filters-row .date-group {
+  container-type: inline-size;
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 14px;
+  /* размер блока задаём явно: с container-type он не считается по содержимому */
+  flex: 0 1 470px; min-width: min(100%, 420px);
+}
+.filters-row .date-group-range { flex: 1 1 100%; min-width: 0; }
+.filters-row .date-group > .field { flex: 0 0 160px; }
+
+.date-fields { display: flex; flex-wrap: nowrap; gap: 12px 14px; min-width: 0; }
+
+/* «Равна»: пара дата+время забирает остаток строки. */
+/* «Равна»: всё в одну строку не переносится — поля сжимаются
+   (селект до 116px, дата до 128px, время до 96px). Вниз дата уходит
+   только когда блок уже 330px (см. @container ниже). */
+.filters-row .date-group:not(.date-group-range) { flex-wrap: nowrap; }
+.filters-row .date-group:not(.date-group-range) > .field { flex: 0 1 160px; min-width: 116px; }
+.filters-row .date-group > .field > label { white-space: nowrap; }
+.filters-row .date-group:not(.date-group-range) .date-fields { flex: 1 1 auto; min-width: 232px; max-width: 340px; }
+.filters-row .date-group:not(.date-group-range) .date-fields > .field { flex: 1 1 auto; }
+.date-group:not(.date-group-range) .date-pair input[type="date"] { flex: 1 1 60%; width: auto; min-width: 128px; }
+.date-group:not(.date-group-range) .date-pair input[type="time"] { flex: 1 1 40%; width: auto; min-width: 96px; }
+
+/* «Диапазон»: поля фиксированной ширины. */
+.filters-row .date-group-range .date-fields { flex: 0 0 auto; }
+.filters-row .date-group-range .date-fields > .field { flex: none; }
+.date-group-range .date-pair input[type="date"] { flex: none; width: 150px; }
+.date-group-range .date-pair input[type="time"] { flex: none; width: 120px; }
+
+/* Узкий блок: «С» и «По» — две равные колонки, дата над временем. */
+@container (max-width: 579px) {
+  .filters-row .date-group-range > .field { flex: 1 1 100%; }
+  .filters-row .date-group-range .date-fields { flex: 1 1 100%; align-items: flex-end; }
+  .filters-row .date-group-range .date-fields > .field { flex: 1 1 0; min-width: 0; }
+  .date-group-range .date-pair { flex-direction: column; }
+  .date-group-range .date-pair input[type="date"],
+  .date-group-range .date-pair input[type="time"] { width: 100%; min-width: 0; }
+}
+
+/* Телефон: блок во всю строку. */
+@media (max-width: 720px) {
+  .filters-row .date-group { flex: 1 1 100%; min-width: 0; }
+}
+
+
+@container (max-width: 329px) {
+  .filters-row .date-group:not(.date-group-range) > .field { flex: 1 1 100%; }
+  .filters-row .date-group:not(.date-group-range) .date-fields { flex: 1 1 100%; max-width: none; }
+}
+/* Сам контейнер @container стилизовать не может — перенос включаем по ширине окна. */
+@media (max-width: 420px) {
+  .filters-row .date-group:not(.date-group-range) { flex-wrap: wrap; }
 }

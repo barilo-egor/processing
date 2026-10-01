@@ -26,11 +26,14 @@ const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
   { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
+  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
 ];
 
 export default function App() {
   const [section, setSection] = useState('clients');
+  // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [orderStatuses, setOrderStatuses] = useState([]);
   // Справочник мерчантов: name -> displayName для показа человеку.
@@ -39,6 +42,9 @@ export default function App() {
   const [methods, setMethods] = useState([]);
   // Статусы заявок на вывод: NEW -> «Новая» и так далее.
   const [withdrawalStatuses, setWithdrawalStatuses] = useState([]);
+  // Операции (CREDIT/DEBIT) и типы транзакций — для раздела «Транзакции».
+  const [operations, setOperations] = useState([]);
+  const [txTypes, setTxTypes] = useState([]);
   // Клиент, выбранный переходом из таблицы в конфигурацию мерчантов.
   const [configClient, setConfigClient] = useState(null);
 
@@ -66,6 +72,8 @@ export default function App() {
           if (Array.isArray(methods) && methods.length) setMethods(methods);
           const wStatuses = d?.WithdrawalRequestStatus;
           if (Array.isArray(wStatuses) && wStatuses.length) setWithdrawalStatuses(wStatuses);
+          if (Array.isArray(d?.Operation) && d.Operation.length) setOperations(d.Operation);
+          if (Array.isArray(d?.TransactionType) && d.TransactionType.length) setTxTypes(d.TransactionType);
         })
         .catch(() => { /* без словаря покажутся коды значений */ });
   }, []);
@@ -75,14 +83,32 @@ export default function App() {
     setSection('merchants');
   };
 
+  // Escape закрывает выехавшее меню.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  const goTo = (id) => { setSection(id); setMenuOpen(false); };
+
   const current = SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
-        <aside className="sidebar">
+        <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Разделы">
           <div className="brand">
             <span className="brand-ico"><i className="fa-solid fa-shield-halved" /></span>
             <span className="brand-name">Кабинет API</span>
+            <button
+                type="button"
+                className="menu-close"
+                aria-label="Закрыть меню"
+                onClick={() => setMenuOpen(false)}
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
           </div>
           <nav className="nav">
             {SECTIONS.map((s) => (
@@ -90,7 +116,7 @@ export default function App() {
                     key={s.id}
                     type="button"
                     className={`nav-item${section === s.id ? ' active' : ''}`}
-                    onClick={() => setSection(s.id)}
+                    onClick={() => goTo(s.id)}
                 >
                   <i className={s.icon} />
                   <span>{s.title}</span>
@@ -98,10 +124,23 @@ export default function App() {
             ))}
           </nav>
         </aside>
+        {/* Затемнение под выехавшим меню: клик по нему закрывает меню. */}
+        {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
 
         <div className="main">
           <header className="topbar">
-            <h1>{current.title}</h1>
+            <div className="topbar-title">
+              <button
+                  type="button"
+                  className="menu-btn"
+                  aria-label="Открыть меню"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(true)}
+              >
+                <i className="fa-solid fa-bars" />
+              </button>
+              <h1>{current.title}</h1>
+            </div>
             <AccountMenu />
           </header>
           <main className="content">
@@ -125,6 +164,13 @@ export default function App() {
                     client={configClient}
                     showToast={showToast}
                     onPickClient={setConfigClient}
+                />
+            )}
+            {section === 'transactions' && (
+                <TransactionsSection
+                    operations={operations}
+                    txTypes={txTypes}
+                    showToast={showToast}
                 />
             )}
             {section === 'withdrawals' && (
@@ -249,7 +295,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
 
             {/* Режим и сами даты — в одном блоке, чтобы сетка не разносила их по строкам.
                 В диапазоне две пары «дата + время», поэтому блок занимает всю строку. */}
-            <div className={`field-pair${draft.dateMode === 'range' ? ' field-pair-range' : ''}`}>
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
               <div className="field">
                 <label htmlFor="f-mode">Дата регистрации</label>
                 <select id="f-mode" value={draft.dateMode} onChange={(e) => setF('dateMode', e.target.value)}>
@@ -257,26 +303,28 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                   <option value="range">Диапазон</option>
                 </select>
               </div>
-              {draft.dateMode === 'equal' ? (
-                  <DateTimeField
-                      id="f-date" label="Дата"
-                      date={draft.dateEqual} time={draft.timeEqual}
-                      onDate={(v) => setF('dateEqual', v)} onTime={(v) => setF('timeEqual', v)}
-                  />
-              ) : (
-                  <>
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
                     <DateTimeField
-                        id="f-from" label="С"
-                        date={draft.dateFrom} time={draft.timeFrom}
-                        onDate={(v) => setF('dateFrom', v)} onTime={(v) => setF('timeFrom', v)}
+                        id="f-date" label="Дата"
+                        date={draft.dateEqual} time={draft.timeEqual}
+                        onDate={(v) => setF('dateEqual', v)} onTime={(v) => setF('timeEqual', v)}
                     />
-                    <DateTimeField
-                        id="f-to" label="По"
-                        date={draft.dateTo} time={draft.timeTo}
-                        onDate={(v) => setF('dateTo', v)} onTime={(v) => setF('timeTo', v)}
-                    />
-                  </>
-              )}
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="f-from" label="С"
+                          date={draft.dateFrom} time={draft.timeFrom}
+                          onDate={(v) => setF('dateFrom', v)} onTime={(v) => setF('timeFrom', v)}
+                      />
+                      <DateTimeField
+                          id="f-to" label="По"
+                          date={draft.dateTo} time={draft.timeTo}
+                          onDate={(v) => setF('dateTo', v)} onTime={(v) => setF('timeTo', v)}
+                      />
+                    </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -570,7 +618,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
             </div>
 
             {/* Режим и даты — одним блоком; в диапазоне он занимает всю строку */}
-            <div className={`field-pair${draft.dateMode === 'range' ? ' field-pair-range' : ''}`}>
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
               <div className="field">
                 <label htmlFor="o-mode">Дата создания</label>
                 <select id="o-mode" value={draft.dateMode}
@@ -579,26 +627,28 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
                   <option value="range">Диапазон</option>
                 </select>
               </div>
-              {draft.dateMode === 'equal' ? (
-                  <DateTimeField
-                      id="o-date" label="Дата"
-                      date={draft.date} time={draft.time}
-                      onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
-                  />
-              ) : (
-                  <>
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
                     <DateTimeField
-                        id="o-from" label="С"
-                        date={draft.createdAtFrom} time={draft.createdAtFromTime}
-                        onDate={(v) => set('createdAtFrom', v)} onTime={(v) => set('createdAtFromTime', v)}
+                        id="o-date" label="Дата"
+                        date={draft.date} time={draft.time}
+                        onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
                     />
-                    <DateTimeField
-                        id="o-to" label="По"
-                        date={draft.createdAtTo} time={draft.createdAtToTime}
-                        onDate={(v) => set('createdAtTo', v)} onTime={(v) => set('createdAtToTime', v)}
-                    />
-                  </>
-              )}
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="o-from" label="С"
+                          date={draft.createdAtFrom} time={draft.createdAtFromTime}
+                          onDate={(v) => set('createdAtFrom', v)} onTime={(v) => set('createdAtFromTime', v)}
+                      />
+                      <DateTimeField
+                          id="o-to" label="По"
+                          date={draft.createdAtTo} time={draft.createdAtToTime}
+                          onDate={(v) => set('createdAtTo', v)} onTime={(v) => set('createdAtToTime', v)}
+                      />
+                    </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1635,34 +1685,38 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
                      onChange={(e) => set('address', e.target.value)} onKeyDown={onEnter} />
             </div>
 
-            <div className="field">
-              <label htmlFor="w-mode">Дата создания</label>
-              <select id="w-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
-                <option value="equal">Равна</option>
-                <option value="range">Диапазон</option>
-              </select>
-            </div>
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
+              <div className="field">
+                <label htmlFor="w-mode">Дата создания</label>
+                <select id="w-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
+                  <option value="equal">Равна</option>
+                  <option value="range">Диапазон</option>
+                </select>
+              </div>
 
-            {draft.dateMode === 'equal' ? (
-                <DateTimeField
-                    id="w-date" label="Дата"
-                    date={draft.date} time={draft.time}
-                    onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
-                />
-            ) : (
-                <>
-                  <DateTimeField
-                      id="w-from" label="С"
-                      date={draft.dateFrom} time={draft.timeFrom}
-                      onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
-                  />
-                  <DateTimeField
-                      id="w-to" label="По"
-                      date={draft.dateTo} time={draft.timeTo}
-                      onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
-                  />
-                </>
-            )}
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
+                    <DateTimeField
+                        id="w-date" label="Дата"
+                        date={draft.date} time={draft.time}
+                        onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                    />
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="w-from" label="С"
+                          date={draft.dateFrom} time={draft.timeFrom}
+                          onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
+                      />
+                      <DateTimeField
+                          id="w-to" label="По"
+                          date={draft.dateTo} time={draft.timeTo}
+                          onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                      />
+                    </>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="filter-actions">
@@ -1847,6 +1901,408 @@ function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
             </button>
           </div>
         </div>
+      </div>
+  );
+}
+
+/* ==================== Раздел «Транзакции» ==================== */
+/* Транзакции всех клиентов (сервис billing): фильтр, таблица и ручная
+   корректировка баланса. Устроен по образцу раздела «Ордера».
+   Сортировки по клику на заголовок нет — по ТЗ не предусмотрена. */
+
+const EMPTY_TX_FILTER = {
+  client: '',
+  dateMode: 'equal',
+  date: '', time: '',
+  dateFrom: '', timeFrom: '',
+  dateTo: '', timeTo: '',
+};
+
+// Запасные подписи, если словарь не загрузился.
+const FALLBACK_OPERATIONS = [
+  { name: 'CREDIT', description: 'Зачисление' },
+  { name: 'DEBIT', description: 'Списание' },
+];
+
+// Цвет метки типа транзакции: зелёный, красный, коричневый — по ТЗ.
+const TX_TYPE_MOD = {
+  ORDER_CONFIRMATION: 'ok',
+  CLIENT_WITHDRAWAL: 'bad',
+  MANUAL_CORRECT: 'brown',
+};
+
+function TransactionsSection({ operations, txTypes, showToast }) {
+  const [draft, setDraft] = useState(EMPTY_TX_FILTER);
+  const [applied, setApplied] = useState(EMPTY_TX_FILTER);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [creating, setCreating] = useState(false);
+
+  const load = useCallback(async (f, pageNum) => {
+    setLoading(true);
+    try {
+      // Можно заполнить только одну границу диапазона — вторая не уходит.
+      const range = f.dateMode === 'equal'
+          ? {
+            createdAtFrom: dateTimeToMs(f.date, f.time, 'start'),
+            createdAtTo: dateTimeToMs(f.date, f.time, 'end'),
+          }
+          : {
+            createdAtFrom: dateTimeToMs(f.dateFrom, f.timeFrom, 'start'),
+            createdAtTo: dateTimeToMs(f.dateTo, f.timeTo, 'end'),
+          };
+      const r = await api.transactions({
+        page: pageNum,
+        size: PAGE_SIZE,
+        // Одно поле на логин и ID клиента — бэк ищет по обоим.
+        client: f.client.trim(),
+        ...range,
+      });
+      setRows(r.items);
+      setTotal(r.total);
+    } catch (e) {
+      setRows([]);
+      setTotal(0);
+      showToast(e.message || 'Не удалось загрузить транзакции', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(applied, page); }, [applied, page, reloadKey, load]);
+
+  const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const search = () => { setPage(0); setApplied(draft); };
+  const reset = () => { setPage(0); setDraft(EMPTY_TX_FILTER); setApplied(EMPTY_TX_FILTER); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
+
+  const opList = operations.length ? operations : FALLBACK_OPERATIONS;
+  const opLabel = (name) => opList.find((o) => o.name === name)?.description || name || '—';
+  const typeLabel = (name) => txTypes.find((t) => t.name === name)?.description || name || '—';
+
+  // После создания новая транзакция должна оказаться первой строкой.
+  const onCreated = () => {
+    setCreating(false);
+    showToast('Транзакция создана', 'success');
+    setPage(0);
+    setReloadKey((k) => k + 1);
+  };
+
+  return (
+      <>
+        <div className="card filter-card">
+          <div className="filter-grid filter-grid-3">
+            <div className="field">
+              <label htmlFor="t-client">Клиент</label>
+              <input id="t-client" value={draft.client} placeholder="ID или логин клиента"
+                     onChange={(e) => set('client', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
+              <div className="field">
+                <label htmlFor="t-mode">Дата создания</label>
+                <select id="t-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
+                  <option value="equal">Равна</option>
+                  <option value="range">Диапазон</option>
+                </select>
+              </div>
+
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
+                    <DateTimeField
+                        id="t-date" label="Дата"
+                        date={draft.date} time={draft.time}
+                        onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                    />
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="t-from" label="С"
+                          date={draft.dateFrom} time={draft.timeFrom}
+                          onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
+                      />
+                      <DateTimeField
+                          id="t-to" label="По"
+                          date={draft.dateTo} time={draft.timeTo}
+                          onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                      />
+                    </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-actions">
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+              <i className="fa-solid fa-magnifying-glass" />
+              Поиск
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
+              Сбросить
+            </button>
+            <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
+              <i className="fa-solid fa-plus" />
+              Создать транзакцию
+            </button>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table className="grid grid-tx">
+            <thead>
+            <tr>
+              <th>Клиент</th>
+              <th>Создана</th>
+              <th>Операция</th>
+              <th className="c-right">Сумма, ₽</th>
+              <th>Тип</th>
+              <th>Комментарий</th>
+            </tr>
+            </thead>
+            <tbody>
+            {rows.map((t, i) => {
+              // Операция определяет оформление строки: CREDIT — зеленоватый
+              // фон и «+» зелёным, DEBIT — красноватый фон и «-» красным.
+              const credit = t.operation === 'CREDIT';
+              const debit = t.operation === 'DEBIT';
+              const amount = Math.abs(Number(t.amount));
+              const sign = credit ? '+' : debit ? '-' : '';
+              return (
+                  <tr
+                      key={t.id ?? `${t.clientId}-${t.createdAt}-${i}`}
+                      className={`no-hover${credit ? ' tx-credit' : ''}${debit ? ' tx-debit' : ''}`}
+                  >
+                    <td>
+                      <span className="cell-main">{t.clientUsername || '—'}</span>
+                      <span className="cell-sub mono">{t.clientId || '—'}</span>
+                    </td>
+                    <td className="mono nowrap">{fmtDateTime(t.createdAt)}</td>
+                    <td className="nowrap">
+                      <span className={`op-dot${credit ? ' op-credit' : ''}${debit ? ' op-debit' : ''}`} />
+                      {opLabel(t.operation)}
+                    </td>
+                    <td className={`c-right mono strong nowrap${credit ? ' amount-plus' : ''}${debit ? ' amount-minus' : ''}`}>
+                      {Number.isFinite(amount) ? `${sign}${fmtAmount(amount)}` : '—'}
+                    </td>
+                    <td>
+                      <span className={`badge badge-${TX_TYPE_MOD[t.type] || 'neutral'}`}>
+                        {typeLabel(t.type)}
+                      </span>
+                    </td>
+                    <td className="tx-comment">{t.comment || '-'}</td>
+                  </tr>
+              );
+            })}
+            </tbody>
+          </table>
+
+          {!loading && rows.length === 0 && (
+              <div className="table-empty">Транзакций не найдено</div>
+          )}
+          {loading && (
+              <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
+          )}
+        </div>
+
+        <Pagination
+            page={page} total={total} busy={loading}
+            onPage={setPage} label="Всего транзакций"
+        />
+
+        {creating && (
+            <CreateTransactionDialog
+                operations={opList}
+                showToast={showToast}
+                onCancel={() => setCreating(false)}
+                onCreated={onCreated}
+            />
+        )}
+      </>
+  );
+}
+
+/* ---- Окно «Новая транзакция»: ручная корректировка баланса ---- */
+function CreateTransactionDialog({ operations, showToast, onCancel, onCreated }) {
+  const [operation, setOperation] = useState('CREDIT'); // по ТЗ по умолчанию «Зачисление»
+  const [client, setClient] = useState(null);           // выбранный клиент { id, username }
+  const [amount, setAmount] = useState('');
+  const [comment, setComment] = useState('');
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !saving) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, saving]);
+
+  const clearError = (key) => setErrors((prev) => (prev[key] ? { ...prev, [key]: '' } : prev));
+
+  const submit = async () => {
+    const errs = {};
+    if (!client) errs.client = 'Выберите клиента';
+    const rawAmount = String(amount).trim();
+    if (!/^\d+$/.test(rawAmount) || Number(rawAmount) <= 0) errs.amount = 'Укажите целое число больше нуля';
+    if (!comment.trim()) errs.comment = 'Укажите причину корректировки';
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    setSaving(true);
+    try {
+      await api.createTransaction({
+        clientId: client.id,
+        operation,
+        amount: Number(rawAmount),
+        comment: comment.trim(),
+      });
+      onCreated();
+    } catch (e) {
+      showToast(e.message || 'Не удалось создать транзакцию', 'error');
+      setSaving(false);
+    }
+  };
+
+  return (
+      <div className="overlay">
+        <div className="modal">
+          <div className="ocard-head">
+            <span className="ocard-ico"><i className="fa-solid fa-plus" /></span>
+            <div className="ocard-title">
+              <span className="ocard-name">Новая транзакция</span>
+              <span className="ocard-sub">Ручная корректировка баланса</span>
+            </div>
+            <button type="button" className="close-x" onClick={onCancel} disabled={saving} aria-label="Закрыть">×</button>
+          </div>
+
+          <div className="modal-body tx-form">
+            <FieldRow label="Операция">
+              <select value={operation} disabled={saving} onChange={(e) => setOperation(e.target.value)}>
+                {operations.map((o) => (
+                    <option key={o.name} value={o.name}>{o.description || o.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Клиент" error={errors.client}>
+              <ClientSuggest
+                  value={client}
+                  disabled={saving}
+                  invalid={Boolean(errors.client)}
+                  onChange={(c) => { setClient(c); clearError('client'); }}
+              />
+            </FieldRow>
+
+            <FieldRow label="Сумма, ₽" error={errors.amount}>
+              <input
+                  type="text" inputMode="numeric" placeholder="0"
+                  value={amount} disabled={saving}
+                  className={errors.amount ? 'invalid' : ''}
+                  onChange={(e) => { setAmount(e.target.value); clearError('amount'); }}
+              />
+            </FieldRow>
+            {!errors.amount && <span className="field-hint">Только целое число больше нуля</span>}
+
+            <FieldRow label="Причина корректировки" error={errors.comment}>
+              <textarea
+                  rows={3}
+                  placeholder="Например: возврат после сбоя при подтверждении ордера"
+                  value={comment} disabled={saving}
+                  className={errors.comment ? 'invalid' : ''}
+                  onChange={(e) => { setComment(e.target.value); clearError('comment'); }}
+              />
+            </FieldRow>
+          </div>
+
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>Отмена</button>
+            <button type="button" className="btn btn-primary" onClick={submit} disabled={saving}>Создать</button>
+          </div>
+        </div>
+      </div>
+  );
+}
+
+/* ---- Поиск клиента с подсказкой: логин или ID, выбор из списка ----
+   Бэк ищет по логину и по ID отдельными параметрами, поэтому, как и
+   в «Конфигурации мерчантов», шлём два запроса и объединяем ответы.
+   Если после выбора текст в поле изменили — выбор сбрасывается. */
+function ClientSuggest({ value, disabled, invalid, onChange }) {
+  const [q, setQ] = useState(value?.username || '');
+  const [found, setFound] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const term = q.trim();
+    // Уже выбранного клиента не ищем повторно.
+    if (term.length < 2 || (value && term === value.username)) {
+      setFound([]);
+      return undefined;
+    }
+    let alive = true;
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const [byName, byId] = await Promise.all([
+          api.clients({ username: term, page: 0, size: 10 }).catch(() => ({ items: [] })),
+          isUuid(term) ? api.clients({ id: term, page: 0, size: 10 }).catch(() => ({ items: [] })) : { items: [] },
+        ]);
+        const map = new Map();
+        [...byName.items, ...byId.items].forEach((c) => map.set(c.id, c));
+        if (alive) { setFound([...map.values()]); setOpen(true); }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }, 350); // не дёргаем бэк на каждую букву
+    return () => { alive = false; clearTimeout(t); };
+  }, [q, value]);
+
+  // Клик вне поля закрывает список.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [open]);
+
+  const pick = (c) => {
+    onChange({ id: c.id, username: c.username });
+    setQ(c.username || c.id);
+    setFound([]);
+    setOpen(false);
+  };
+
+  return (
+      <div className="suggest" ref={ref}>
+        <input
+            type="text" placeholder="ID или логин клиента"
+            value={q} disabled={disabled}
+            className={invalid ? 'invalid' : ''}
+            onChange={(e) => {
+              setQ(e.target.value);
+              if (value) onChange(null);
+            }}
+            onFocus={() => { if (found.length) setOpen(true); }}
+            onKeyDown={(e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); } }}
+        />
+        {open && q.trim().length >= 2 && !value && (
+            <ul className="suggest-list">
+              {loading && found.length === 0 && <li className="suggest-note">Поиск…</li>}
+              {!loading && found.length === 0 && <li className="suggest-note">Клиенты не найдены</li>}
+              {found.map((c) => (
+                  <li key={c.id}>
+                    <button type="button" onClick={() => pick(c)}>
+                      <span className="pl-name">{c.username}</span>
+                      <span className="pl-id mono">{c.id}</span>
+                    </button>
+                  </li>
+              ))}
+            </ul>
+        )}
       </div>
   );
 }
