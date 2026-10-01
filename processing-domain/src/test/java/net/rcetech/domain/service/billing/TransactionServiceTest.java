@@ -9,6 +9,7 @@ import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
+import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.dto.ClientTransactionFilter;
 import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
@@ -31,6 +32,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
@@ -38,6 +41,7 @@ import org.testcontainers.mysql.MySQLContainer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({OrderService.class, ClientService.class, TransactionService.class})
+@RecordApplicationEvents
 class TransactionServiceTest {
 
     @TestConfiguration
@@ -75,6 +80,9 @@ class TransactionServiceTest {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -136,6 +144,12 @@ class TransactionServiceTest {
                         transaction.getComment()
                 )
         );
+        Optional<TransactionCreatedEvent> maybeEvent = applicationEvents.stream()
+                .filter(TransactionCreatedEvent.class::isInstance)
+                .map(e -> (TransactionCreatedEvent) e)
+                .findFirst();
+        assertTrue(maybeEvent.isPresent());
+        assertEquals(transaction.getId(), maybeEvent.get().getTransactionId());
     }
 
     @Test
