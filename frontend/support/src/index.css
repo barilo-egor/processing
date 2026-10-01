@@ -605,6 +605,10 @@ table.grid-withdrawals td { vertical-align: middle; }
 
 table.grid-tx { min-width: 1040px; }
 table.grid-tx td { vertical-align: middle; }
+
+/* ---- КБ мерчантов ---- */
+table.grid-callbacks { min-width: 960px; }
+table.grid-callbacks td { vertical-align: middle; }
 .tx-comment { color: var(--text-dim); min-width: 220px; }
 
 /* Операция определяет фон строки и цвет суммы */

@@ -20,6 +20,7 @@
      GET   /api/private/transaction?client&createdAtFrom&createdAtTo&page&size&sort
      POST  /api/private/transaction   <- { clientId, operation, amount, comment }
            тип MANUAL_CORRECT бэк ставит сам
+     GET   /api/private/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
    ============================================================ */
 
 const API = '/api/private';
@@ -178,6 +179,20 @@ export const api = {
      Сортировку передаём явно: по ТЗ новые сверху. */
   async transactions(params) {
     const d = await request(`${API}/transaction`, {
+      params: { sort: 'createdAt,desc', ...params },
+    });
+    const items = Array.isArray(d?.content) ? d.content : [];
+    return {
+      items,
+      total: d?.page?.totalElements ?? items.length,
+      totalPages: d?.page?.totalPages ?? 1,
+    };
+  },
+
+  /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
+     Сортировку передаём явно: по ТЗ новые сверху. */
+  async merchantCallbacks(params) {
+    const d = await request(`${API}/merchant-callback`, {
       params: { sort: 'createdAt,desc', ...params },
     });
     const items = Array.isArray(d?.content) ? d.content : [];

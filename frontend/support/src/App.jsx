@@ -28,6 +28,7 @@ const SECTIONS = [
   { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
   { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
+  { id: 'callbacks', title: 'КБ мерчантов', icon: 'fa-solid fa-rotate' },
 ];
 
 export default function App() {
@@ -178,6 +179,9 @@ export default function App() {
                     withdrawalStatuses={withdrawalStatuses}
                     showToast={showToast}
                 />
+            )}
+            {section === 'callbacks' && (
+                <CallbacksSection merchants={merchants} showToast={showToast} />
             )}
           </main>
         </div>
@@ -1820,8 +1824,208 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
   );
 }
 
+/* ============================================================
+   КБ мерчантов — журнал коллбэков, полученных от мерчантов
+   ============================================================
+   Только просмотр: фильтр, таблица, постраничная загрузка.
+   Подробного просмотра и действий над записями нет (по ТЗ).
+   Фильтра по статусу нет (бэк: не нужен). */
+
+const EMPTY_CB_FILTER = {
+  orderId: '', merchantOrderId: '', merchant: '',
+  dateMode: 'equal',
+  date: '', time: '',
+  dateFrom: '', timeFrom: '',
+  dateTo: '', timeTo: '',
+};
+
+function CallbacksSection({ merchants, showToast }) {
+  const [draft, setDraft] = useState(EMPTY_CB_FILTER);
+  const [applied, setApplied] = useState(EMPTY_CB_FILTER);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async (f, pageNum) => {
+    setLoading(true);
+    try {
+      // Даты — как в остальных разделах: «Равна» без времени — весь день,
+      // со временем — ровно эта секунда.
+      const range = f.dateMode === 'equal'
+          ? {
+            createdAtFrom: dateTimeToMs(f.date, f.time, 'start'),
+            createdAtTo: dateTimeToMs(f.date, f.time, 'end'),
+          }
+          : {
+            createdAtFrom: dateTimeToMs(f.dateFrom, f.timeFrom, 'start'),
+            createdAtTo: dateTimeToMs(f.dateTo, f.timeTo, 'end'),
+          };
+      const r = await api.merchantCallbacks({
+        page: pageNum,
+        size: PAGE_SIZE,
+        orderId: f.orderId.trim(),
+        merchantOrderId: f.merchantOrderId.trim(),
+        merchant: f.merchant,
+        ...range,
+      });
+      setRows(r.items);
+      setTotal(r.total);
+    } catch (e) {
+      setRows([]);
+      setTotal(0);
+      showToast(e.message || 'Не удалось загрузить коллбэки', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(applied, page); }, [applied, page, load]);
+
+  // orderId у бэка — UUID: неполный ID он не примет (ошибка конвертации),
+  // поэтому проверяем формат до запроса, как в разделе «Клиенты».
+  const orderIdInvalid = draft.orderId.trim() !== '' && !isUuid(draft.orderId);
+
+  const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const search = () => { if (orderIdInvalid) return; setPage(0); setApplied(draft); };
+  const reset = () => { setPage(0); setDraft(EMPTY_CB_FILTER); setApplied(EMPTY_CB_FILTER); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text ?? ''));
+      showToast('Скопировано', 'success');
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  };
+
+  // Мерчанты приходят кодом (ALFA_TEAM), человеку показываем displayName.
+  const merchantLabel = (name) =>
+      merchants.find((m) => m.name === name)?.displayName || name || '—';
+
+  return (
+      <>
+        <div className="card filter-card">
+          <div className="filter-grid filter-grid-3">
+            <div className="field">
+              <label htmlFor="cb-order">ID ордера</label>
+              <input id="cb-order" value={draft.orderId} placeholder="UUID ордера"
+                     className={orderIdInvalid ? 'invalid' : ''}
+                     onChange={(e) => set('orderId', e.target.value)} onKeyDown={onEnter} />
+              {orderIdInvalid && <span className="field-error">ID должен соответствовать формату UUID</span>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="cb-morder">ID у мерчанта</label>
+              <input id="cb-morder" value={draft.merchantOrderId}
+                     placeholder="Идентификатор заказа у мерчанта"
+                     onChange={(e) => set('merchantOrderId', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="cb-merchant">Мерчант</label>
+              <select id="cb-merchant" value={draft.merchant}
+                      onChange={(e) => set('merchant', e.target.value)}>
+                <option value="">Все</option>
+                {merchants.map((m) => (
+                    <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
+              <div className="field">
+                <label htmlFor="cb-mode">Дата создания</label>
+                <select id="cb-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
+                  <option value="equal">Равна</option>
+                  <option value="range">Диапазон</option>
+                </select>
+              </div>
+
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
+                    <DateTimeField
+                        id="cb-date" label="Дата"
+                        date={draft.date} time={draft.time}
+                        onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                    />
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="cb-from" label="С"
+                          date={draft.dateFrom} time={draft.timeFrom}
+                          onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
+                      />
+                      <DateTimeField
+                          id="cb-to" label="По"
+                          date={draft.dateTo} time={draft.timeTo}
+                          onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                      />
+                    </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-actions">
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || orderIdInvalid}>
+              <i className="fa-solid fa-magnifying-glass" />
+              Поиск
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
+              Сбросить
+            </button>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table className="grid grid-callbacks">
+            <thead>
+            <tr>
+              <th>Создан</th>
+              <th>ID ордера</th>
+              <th>Мерчант</th>
+              <th>ID у мерчанта</th>
+              <th>Статус</th>
+              <th>Описание статуса</th>
+            </tr>
+            </thead>
+            <tbody>
+            {rows.map((c, i) => (
+                <tr key={c.id || `${c.orderId}-${c.createdAt}-${i}`} className="no-hover">
+                  <td className="mono nowrap">{fmtDateTime(c.createdAt)}</td>
+                  <td className="c-id"><CopyValue value={c.orderId} onCopy={copy} /></td>
+                  <td>{merchantLabel(c.merchant)}</td>
+                  <td className="mono">{c.merchantOrderId || '—'}</td>
+                  {/* Статус — строка от мерчанта, у каждого мерчанта свои значения;
+                        показываем как пришла, без перевода и цветов (решение бэка). */}
+                  <td className="mono">{c.status || '—'}</td>
+                  <td>{c.statusDescription || '—'}</td>
+                </tr>
+            ))}
+            </tbody>
+          </table>
+
+          {!loading && rows.length === 0 && (
+              <div className="table-empty">Коллбэков не найдено</div>
+          )}
+          {loading && (
+              <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
+          )}
+        </div>
+
+        <Pagination
+            page={page} total={total} busy={loading}
+            onPage={setPage} label="Всего коллбэков"
+        />
+      </>
+  );
+}
+
 /* ---- Дата и необязательное время двумя полями рядом ----
-   Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Заявки на вывод». */
+   Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Транзакции»,
+   «Заявки на вывод», «КБ мерчантов». */
 function DateTimeField({ id, label, date, time, onDate, onTime }) {
   return (
       <div className="field">
