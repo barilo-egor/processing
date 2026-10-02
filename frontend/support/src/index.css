@@ -150,6 +150,20 @@ body {
   font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
   min-width: 0;
 }
+/* Одна высота у полей и списков: иначе select ниже, чем поле даты
+   (у даты есть иконка календаря), и в одной строке они стоят вразнобой. */
+.field input:not([type="checkbox"]):not([type="radio"]), .field select { height: 40px; box-sizing: border-box; }
+/* Своя стрелка у списков: у системной стрелки отступ справа меньше, чем
+   у текста слева, и выглядит несимметрично. Стрелка стоит на том же
+   расстоянии от правого края, что и текст от левого. */
+.field select {
+  -webkit-appearance: none; appearance: none;
+  padding-left: 12px; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238b95a5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+}
 .field input:focus, .field select:focus, .modal input:focus, .modal select:focus {
   outline: none; border-color: var(--accent);
 }
