@@ -30,7 +30,8 @@ const SECTIONS = [
 ];
 
 export default function App() {
-  const [section, setSection] = useState('profile');
+  // По умолчанию открываются «Ордера» — основной раздел для клиента.
+  const [section, setSection] = useState('orders');
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState(null);
