@@ -16,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.util.List;
+import java.util.Objects;
 
 @Configuration
 @EnableMethodSecurity
@@ -43,9 +44,11 @@ public class MetaSecurityConfig {
         for (SpringSecurityConfigurer configurer : configurers) {
             configurer.configure(http);
         }
-        http.oauth2Login(oAuth2 ->
-                oAuth2.successHandler(successHandler)
-        );
+        if (Objects.nonNull(successHandler)) {
+            http.oauth2Login(oAuth2 ->
+                    oAuth2.successHandler(successHandler)
+            );
+        }
         http.csrf(CsrfConfigurer::spa);
         return http.build();
     }

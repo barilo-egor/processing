@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Component(value = "registrationAuthenticationHandler")
+@Component
 public class AuthenticationHandler implements AuthenticationSuccessHandler {
 
     private final SupportUserService supportUserService;
