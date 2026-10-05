@@ -1,7 +1,8 @@
 package net.rcetech.api.service;
 
-import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.merchantdetails.ApiDetailsResponse;
+import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
@@ -84,7 +85,7 @@ class OrderApiServiceTest {
     }
 
     @MockitoBean
-    private ApiMerchantDetailsGrpcService apiMerchantDetailsGrpcService;
+    private MerchantDetailsReceiver merchantDetailsReceiver;
 
     @Autowired
     private ClientService clientService;
@@ -99,7 +100,7 @@ class OrderApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        orderApiService = new OrderApiService(apiMerchantDetailsGrpcService, clientService, orderService);
+        orderApiService = new OrderApiService(merchantDetailsReceiver, clientService, orderService);
     }
 
     @ParameterizedTest
@@ -145,7 +146,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер, срок которого истекает через время, установленное клиенту.")
     void createOrder_shouldCreateOrderWithExpiresAtWithClientOrderTimeout(int orderTimeout) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(detailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(detailsResponse);
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test");
@@ -169,7 +170,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с переданными в запросе данными.")
     void createOrder_shouldCreateOrderWithCreateOrderRequestData(CreateOrderRequest createOrderRequest) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(detailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(detailsResponse);
         Client client = getDummyClient();
         clientService.save(client);
         orderApiService.createOrder(client.getId(), createOrderRequest);
@@ -207,7 +208,7 @@ class OrderApiServiceTest {
     void createOrder_shouldCreateOrderWithDetailsResponseData(ApiDetailsResponse apiDetailsResponse) {
         Client client = getDummyClient();
         clientService.save(client);
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
@@ -247,7 +248,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с callback url сохраненным за клиентом.")
     void createOrder_shouldCreateOrderWithClientCallbackUrl(String url) {
         ApiDetailsResponse apiDetailsResponse = getDummyApiDetailsResponse();
-        when(apiMerchantDetailsGrpcService.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
         Client client = getDummyClient();
         client.setCallbackUrl(url);
         orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
@@ -359,7 +360,7 @@ class OrderApiServiceTest {
         assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
     }
 
-    @ValueSource(strings = { "QR", "SBP" })
+    @ValueSource(strings = { "SBP" })
     @ParameterizedTest
     @DisplayName("Метод должен вернуть отфильтрованные по методу ордера.")
     void findAll_shouldFilterOrdersByMethod(RequestMethod method) {

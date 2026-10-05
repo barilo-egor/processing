@@ -1,7 +1,7 @@
 package net.rcetech.api.config;
 
 import io.grpc.Channel;
-import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
+import net.rcetech.api.merchantdetails.TestDetailsClientInterceptor;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.ApiMerchantConfigServiceGrpc;
 import org.springframework.context.annotation.Bean;

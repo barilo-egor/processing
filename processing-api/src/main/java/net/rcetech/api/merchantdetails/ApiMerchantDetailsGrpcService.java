@@ -1,15 +1,11 @@
-package net.rcetech.api.service;
+package net.rcetech.api.merchantdetails;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
-import net.rcetech.api.dto.MerchantCallbackDTO;
-import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
-import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
@@ -50,7 +46,7 @@ public class ApiMerchantDetailsGrpcService {
                     .setInternalId(orderId.toString())
                     .setUserId(clientOrderRequest.userId())
                     .setAmount(clientOrderRequest.amount())
-                    .setWaitTimeout(60)
+                    .setWaitTimeout(10)
                     .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
                     .setOwnerId(clientId.toString())
                     .build();

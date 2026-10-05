@@ -106,6 +106,16 @@ logging:
 Например: <code>f74acb2c-23a0-41c5-b7bb-d84c64fc089d;ROLE_CLIENT</code>. В security-контекст будет подставлен 
 <code>Principal</code> с данными значениями(все запросы будут считаться запросами от переданного в заголовке клиента).</li>
 </ul>
+<h3>md-test-details</h3>
+<ul>
+    <li>Микросервис поиска реквизитов(merchant-details) на процессинговых площадках не будет производить реальный поиск
+и вернет тестовые реквизиты.</li>
+</ul>
+<h3>md-test-callback</h3>
+<ul>
+    <li>Позволяет создавать тестовые КБ по юрлу <code>/api/public/merchant-callback</code>. Как инициировать подробнее 
+описано в postman коллекции <code>Публичное API -> merchant-callback</code>.</li>
+</ul>
 <hr>
 <h1>Словарь констант</h1>
 Доступен по адресу <code>/api/private/dictionary</code>. Для добавления нового значения необходимо 

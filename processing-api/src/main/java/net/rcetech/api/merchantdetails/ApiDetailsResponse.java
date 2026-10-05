@@ -1,4 +1,4 @@
-package net.rcetech.api.dto;
+package net.rcetech.api.merchantdetails;
 
 import net.rcetech.meta.orders.RequestMethod;
 import tgb.cryptoexchange.commons.enums.Merchant;

@@ -1,4 +1,4 @@
-package net.rcetech.api.controller.v1;
+package net.rcetech.api.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;

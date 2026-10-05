@@ -11,9 +11,10 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +40,8 @@ public class MetaSecurityConfig {
                 .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name(), Role.CLIENT.name())
                 .requestMatchers(WebPath.V1_API_PATH + "/**")
                 .hasRole(Role.CLIENT.name())
+                .requestMatchers(WebPath.PUBLIC_API_PATH + "/**")
+                .permitAll()
                 .anyRequest().authenticated()
         );
         for (SpringSecurityConfigurer configurer : configurers) {
@@ -49,7 +52,11 @@ public class MetaSecurityConfig {
                     oAuth2.successHandler(successHandler)
             );
         }
-        http.csrf(CsrfConfigurer::spa);
+        http.csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                .ignoringRequestMatchers(WebPath.PUBLIC_API_PATH + "/**")
+        );
         return http.build();
     }
 

@@ -1,8 +1,9 @@
 package net.rcetech.api.service;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.merchantdetails.ApiDetailsResponse;
+import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
@@ -27,15 +28,15 @@ import java.util.UUID;
 @Slf4j
 public class OrderApiService {
 
-    private final ApiMerchantDetailsGrpcService detailsGrpcService;
+    private final MerchantDetailsReceiver merchantDetailsReceiver;
 
     private final ClientService clientService;
 
     private final OrderService orderService;
 
-    public OrderApiService(ApiMerchantDetailsGrpcService detailsGrpcService,
-                           ClientService clientService, OrderService orderService) {
-        this.detailsGrpcService = detailsGrpcService;
+    public OrderApiService(MerchantDetailsReceiver merchantDetailsReceiver, ClientService clientService,
+                           OrderService orderService) {
+        this.merchantDetailsReceiver = merchantDetailsReceiver;
         this.clientService = clientService;
         this.orderService = orderService;
     }
@@ -44,7 +45,7 @@ public class OrderApiService {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
         UUID orderId = UUID.randomUUID();
-        ApiDetailsResponse detailsResponse = detailsGrpcService.getDetails(clientId, orderId, createOrderRequest);
+        ApiDetailsResponse detailsResponse = merchantDetailsReceiver.getDetails(clientId, orderId, createOrderRequest);
         ApiDetailsResponse.Details details = detailsResponse.details();
         Order order = new Order();
         order.setId(orderId);

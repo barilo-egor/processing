@@ -1,8 +1,6 @@
-package net.rcetech.api.mapper;
+package net.rcetech.api.merchantdetails;
 
-import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
-import net.rcetech.api.dto.MerchantCallbackDTO;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.grpc.generated.MerchantCallbackGrpc;

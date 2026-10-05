@@ -7,8 +7,7 @@ import lombok.Getter;
 @Getter
 public enum RequestMethod {
     CARD("Карта"),
-    SBP("СБП"),
-    QR("QR");
+    SBP("СБП");
 
     private final String description;
 }

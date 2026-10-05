@@ -1,4 +1,4 @@
-package net.rcetech.api.interceptor;
+package net.rcetech.api.merchantdetails;
 
 import io.grpc.*;
 import org.junit.jupiter.api.AfterEach;
