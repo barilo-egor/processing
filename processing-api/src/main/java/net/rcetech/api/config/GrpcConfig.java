@@ -1,6 +1,7 @@
 package net.rcetech.api.config;
 
 import io.grpc.Channel;
+import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.ApiMerchantConfigServiceGrpc;
 import org.springframework.context.annotation.Bean;
@@ -20,9 +21,11 @@ public class GrpcConfig {
      */
     @Bean
     public ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub merchantDetailsServiceBlockingStub(
-            GrpcChannelFactory channelFactory) {
+            GrpcChannelFactory channelFactory,
+            TestDetailsClientInterceptor testDetailsClientInterceptor) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
-        return ApiDetailsRequestServiceGrpc.newBlockingStub(channel);
+        return ApiDetailsRequestServiceGrpc.newBlockingStub(channel)
+                .withInterceptors(testDetailsClientInterceptor);
     }
 
     /**
