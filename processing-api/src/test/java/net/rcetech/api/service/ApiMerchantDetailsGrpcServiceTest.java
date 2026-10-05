@@ -4,6 +4,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsGrpc;
@@ -132,4 +133,74 @@ class ApiMerchantDetailsGrpcServiceTest {
         assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest),
                 "Непредвиденная ошибка: Illegal State");
     }
+
+    @Test
+    @DisplayName("getDetails с testDetails=true должен вызывать получение реквизитов в контексте testDetails=true.")
+    void getDetails_withTestDetailsTrue_shouldSetContextAndReturnResponse() {
+        UUID requestId = UUID.randomUUID();
+        UUID merchantOrderId = UUID.randomUUID();
+        DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
+                .setRequestId(requestId.toString())
+                .setMerchant(Merchant.ALFA_TEAM.name())
+                .setOrderId(merchantOrderId.toString())
+                .setOrderStatus("SUCCESS")
+                .setDetails(DetailsGrpc.newBuilder()
+                        .setRequestMethod(RequestMethod.CARD.name())
+                        .setDetails("1234 1234 1234 1234")
+                        .setBank("Сбербанк")
+                        .build())
+                .setAmount(1000)
+                .build();
+        when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation -> {
+            assertEquals("true", TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
+            return detailsResponseGrpc;
+        });
+
+        UUID clientId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        CreateOrderRequest request = new CreateOrderRequest(
+                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
+                "https://example.com/callback", "534690"
+        );
+
+        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId, request, true);
+        assertNotNull(actual);
+        assertEquals(requestId.toString(), actual.requestId());
+        assertNull(TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
+    }
+
+    @Test
+    @DisplayName("getDetails с testDetails=false не должен устанавливать testDetails в контексте.")
+    void getDetails_withTestDetailsFalse_shouldNotSetContext() {
+        UUID requestId = UUID.randomUUID();
+        UUID merchantOrderId = UUID.randomUUID();
+        DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
+                .setRequestId(requestId.toString())
+                .setMerchant(Merchant.ALFA_TEAM.name())
+                .setOrderId(merchantOrderId.toString())
+                .setOrderStatus("SUCCESS")
+                .setDetails(DetailsGrpc.newBuilder()
+                        .setRequestMethod(RequestMethod.CARD.name())
+                        .setDetails("1234 1234 1234 1234")
+                        .setBank("Сбербанк")
+                        .build())
+                .setAmount(1000)
+                .build();
+        when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation -> {
+            assertNull(TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
+            return detailsResponseGrpc;
+        });
+
+        UUID clientId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        CreateOrderRequest request = new CreateOrderRequest(
+                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
+                "https://example.com/callback", "534690"
+        );
+
+        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId, request, false);
+        assertNotNull(actual);
+        assertEquals(requestId.toString(), actual.requestId());
+    }
+
 }

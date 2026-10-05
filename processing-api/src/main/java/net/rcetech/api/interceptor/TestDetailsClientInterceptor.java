@@ -41,12 +41,11 @@ public class TestDetailsClientInterceptor implements ClientInterceptor {
                     testDetails = getFromHttpRequest();
                 }
 
-                if ("true".equalsIgnoreCase(testDetails)) {
-                    if (!headers.containsKey(TEST_DETAILS_HEADER_KEY)) {
-                        log.debug("Добавление gRPC заголовка {}: true", TEST_DETAILS_HEADER_KEY.name());
-                        headers.put(TEST_DETAILS_HEADER_KEY, "true");
-                    }
+                if ("true".equalsIgnoreCase(testDetails) && !headers.containsKey(TEST_DETAILS_HEADER_KEY)) {
+                    log.debug("Добавление gRPC заголовка {}: true", TEST_DETAILS_HEADER_KEY.name());
+                    headers.put(TEST_DETAILS_HEADER_KEY, "true");
                 }
+
                 super.start(responseListener, headers);
             }
         };

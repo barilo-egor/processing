@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.ApiDetailsResponse;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.dto.MerchantCallbackDTO;
+import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
@@ -18,6 +19,7 @@ import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
@@ -62,6 +64,27 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
         } catch (Exception ex) {
             throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Получает реквизиты мерчанта по clientId и деталям запроса с возможностью запроса тестовых реквизитов.
+     *
+     * @param clientId           идентификатор клиента
+     * @param orderId            идентификатор ордера
+     * @param clientOrderRequest запрос на создание ордера
+     * @param testDetails        флаг запроса тестовых реквизитов
+     * @return {@link ApiDetailsResponse} с найденными реквизитами
+     */
+    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+            boolean testDetails) {
+        if (testDetails) {
+            AtomicReference<ApiDetailsResponse> responseRef = new AtomicReference<>();
+            TestDetailsClientInterceptor.runWithTestDetails(() ->
+                    responseRef.set(getDetails(clientId, orderId, clientOrderRequest))
+            );
+            return responseRef.get();
+        }
+        return getDetails(clientId, orderId, clientOrderRequest);
     }
 
     public MerchantCallbackDTO getCallback(MerchantCallbackDTO merchantCallbackDTO) {
