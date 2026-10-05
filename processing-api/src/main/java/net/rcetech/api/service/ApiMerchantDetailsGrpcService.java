@@ -11,6 +11,7 @@ import net.rcetech.api.dto.MerchantCallbackDTO;
 import net.rcetech.api.interceptor.TestDetailsClientInterceptor;
 import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.grpc.generated.MerchantCallbackGrpc;
 import net.rcetech.meta.exception.BaseException;
@@ -46,8 +47,17 @@ public class ApiMerchantDetailsGrpcService extends GrpcService {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
+            DetailsRequestGrpc detailsRequestGrpc = DetailsRequestGrpc.newBuilder()
+                    .setRequestId(requestId.toString())
+                    .setInternalId(orderId.toString())
+                    .setUserId(clientOrderRequest.userId())
+                    .setAmount(clientOrderRequest.amount())
+                    .setWaitTimeout(60)
+                    .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
+                    .setOwnerId(clientId.toString())
+                    .build();
             DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
-                    detailsMapper.detailsRequestDTOToGrpc(clientId, requestId, orderId, clientOrderRequest)
+                    detailsRequestGrpc
             );
             return detailsMapper.grpcResponseToDTO(grpcResponse);
         } catch (StatusRuntimeException statusException) {
