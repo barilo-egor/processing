@@ -9,14 +9,14 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * gRPC ClientInterceptor для проброса заголовка x-test-details в запросах на получение реквизитов мерчанта.
+ * gRPC ClientInterceptor для проброса заголовка Test-Details в запросах на получение реквизитов мерчанта.
  */
 @Component
 @Slf4j
 public class TestDetailsClientInterceptor implements ClientInterceptor {
 
     public static final Metadata.Key<String> TEST_DETAILS_HEADER_KEY =
-            Metadata.Key.of("x-test-details", Metadata.ASCII_STRING_MARSHALLER);
+            Metadata.Key.of("Test-Details", Metadata.ASCII_STRING_MARSHALLER);
 
     public static final Context.Key<String> TEST_DETAILS_CTX_KEY = Context.key("testDetails");
 
@@ -59,7 +59,7 @@ public class TestDetailsClientInterceptor implements ClientInterceptor {
                 return request.getHeader(TEST_DETAILS_HEADER_KEY.name());
             }
         } catch (Exception e) {
-            log.trace("Не удалось получить x-test-details из HTTP запроса: {}", e.getMessage());
+            log.trace("Не удалось получить Test-Details из HTTP запроса: {}", e.getMessage());
         }
         return null;
     }

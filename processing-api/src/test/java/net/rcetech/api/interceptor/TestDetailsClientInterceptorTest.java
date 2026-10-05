@@ -34,7 +34,7 @@ class TestDetailsClientInterceptorTest {
     }
 
     @Test
-    @DisplayName("Заголовок x-test-details должен добавляться, если установлен контекст gRPC TEST_DETAILS_CTX_KEY=true.")
+    @DisplayName("Заголовок Test-Details должен добавляться, если установлен контекст gRPC TEST_DETAILS_CTX_KEY=true.")
     void interceptCall_shouldAddHeaderWhenContextIsTrue() {
         Channel channel = mock(Channel.class);
         @SuppressWarnings("unchecked")
@@ -54,7 +54,7 @@ class TestDetailsClientInterceptorTest {
     }
 
     @Test
-    @DisplayName("Заголовок x-test-details должен добавляться, если HTTP запрос содержит x-test-details: true.")
+    @DisplayName("Заголовок Test-Details должен добавляться, если HTTP запрос содержит Test-Details: true.")
     void interceptCall_shouldAddHeaderWhenHttpRequestHasHeader() {
         Channel channel = mock(Channel.class);
         @SuppressWarnings("unchecked")
@@ -62,7 +62,7 @@ class TestDetailsClientInterceptorTest {
         doReturn(rawCall).when(channel).newCall(any(), any());
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("x-test-details", "true");
+        request.addHeader("Test-Details", "true");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         Metadata headers = new Metadata();
@@ -75,7 +75,7 @@ class TestDetailsClientInterceptorTest {
     }
 
     @Test
-    @DisplayName("Заголовок x-test-details НЕ должен добавляться, если контекст пуст и HTTP запрос без заголовка.")
+    @DisplayName("Заголовок Test-Details НЕ должен добавляться, если контекст пуст и HTTP запрос без заголовка.")
     void interceptCall_shouldNotAddHeaderWhenNoContextAndNoHttpRequest() {
         Channel channel = mock(Channel.class);
         @SuppressWarnings("unchecked")
@@ -93,7 +93,7 @@ class TestDetailsClientInterceptorTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "false", "0", "no", "random" })
-    @DisplayName("Заголовок x-test-details НЕ должен добавляться, если контекст не равен true.")
+    @DisplayName("Заголовок Test-Details НЕ должен добавляться, если контекст не равен true.")
     void interceptCall_shouldNotAddHeaderWhenContextIsNotTrue(String value) {
         Channel channel = mock(Channel.class);
         @SuppressWarnings("unchecked")
@@ -113,7 +113,7 @@ class TestDetailsClientInterceptorTest {
     }
 
     @Test
-    @DisplayName("Заголовок x-test-details не должен дублироваться, если он уже присутствует в Metadata.")
+    @DisplayName("Заголовок Test-Details не должен дублироваться, если он уже присутствует в Metadata.")
     void interceptCall_shouldNotDuplicateHeaderIfAlreadyPresent() {
         Channel channel = mock(Channel.class);
         @SuppressWarnings("unchecked")
