@@ -12,7 +12,7 @@ import "buf/validate/validate.proto";
 service ApiDetailsRequestService {
 
   rpc DetailsRequest (DetailsRequestGrpc) returns (DetailsResponseGrpc);
-  rpc MerchantCallbackRequest (MerchantCallbackGrpc) returns (MerchantCallbackGrpc);
+  rpc MerchantCallbackRequest (MerchantCallbackGrpc) returns (google.protobuf.Empty);
 
 }
 

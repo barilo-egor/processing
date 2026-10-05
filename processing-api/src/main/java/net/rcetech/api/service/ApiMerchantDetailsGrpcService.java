@@ -13,7 +13,6 @@ import net.rcetech.api.mapper.DetailsMapper;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
-import net.rcetech.grpc.generated.MerchantCallbackGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import org.springframework.stereotype.Service;
@@ -96,12 +95,11 @@ public class ApiMerchantDetailsGrpcService {
         return getDetails(clientId, orderId, clientOrderRequest);
     }
 
-    public MerchantCallbackDTO getCallback(MerchantCallbackDTO merchantCallbackDTO) {
+    public void getCallback(MerchantCallbackDTO merchantCallbackDTO) {
         try {
-            MerchantCallbackGrpc grpcResponse = detailsBlockingStub.merchantCallbackRequest(
+            detailsBlockingStub.merchantCallbackRequest(
                     detailsMapper.merchantCallbackDTOToGrpc(merchantCallbackDTO)
             );
-            return detailsMapper.merchantCallbackDTOToGrpc(grpcResponse);
         } catch (Exception ex) {
             throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
