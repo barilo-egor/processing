@@ -6,7 +6,6 @@ import net.rcetech.grpc.generated.*;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
-import net.rcetech.meta.util.GrpcService;
 import net.rcetech.support.mapper.MerchantConfigMapper;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @Profile("!merchant-details-stub")
-public class MerchantConfigServiceImpl extends GrpcService implements MerchantConfigService {
+public class MerchantConfigServiceImpl implements MerchantConfigService {
 
     private final ApiMerchantConfigServiceGrpc.ApiMerchantConfigServiceBlockingStub configBlockingStub;
 

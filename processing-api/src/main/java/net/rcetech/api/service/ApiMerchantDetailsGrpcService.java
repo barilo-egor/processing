@@ -16,7 +16,6 @@ import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.grpc.generated.MerchantCallbackGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
-import net.rcetech.meta.util.GrpcService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
-public class ApiMerchantDetailsGrpcService extends GrpcService {
+public class ApiMerchantDetailsGrpcService {
 
     private final ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub;
 
