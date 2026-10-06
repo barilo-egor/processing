@@ -13,7 +13,8 @@ import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
-import net.rcetech.rates.RatesConsumer;
+import net.rcetech.rates.RatePair;
+import net.rcetech.rates.RateService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class WithdrawalRequestServiceTest {
     }
 
     @MockitoBean
-    private RatesConsumer ratesConsumer;
+    private RateService rateService;
 
     @Autowired
     private WithdrawalRequestService withdrawalRequestService;
@@ -153,7 +154,7 @@ class WithdrawalRequestServiceTest {
     void create_shouldCreateRequest(Integer amount, String address, BigDecimal rate, BigDecimal commissionPercent,
                                     Integer expectedNetAmount, Integer expectedTargetAmount) {
         Client client = getDummyClient(commissionPercent);
-        when(ratesConsumer.consume()).thenReturn(rate);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(rate);
 
         withdrawalRequestService.create(client.getId(), amount, address);
         List<WithdrawalRequest> requests = withdrawalRequestRepository.findAll();
@@ -177,7 +178,7 @@ class WithdrawalRequestServiceTest {
     @RepeatedTest(value = 2)
     @DisplayName("Метод должен вернуть заявки клиента.")
     void findAll_shouldReturnClientRequests() {
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         Client client = getDummyClient(BigDecimal.ONE);
         for (int i = 0; i < 3; i++) {
             withdrawalRequestService.create(client.getId(), 1000 * (i + 1), "TX9zFakeAddressTRC20usdtNotReal99x");
@@ -204,7 +205,7 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть заявку по id.")
     void findAll_shouldReturnRequestById() {
         Client client = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
         WithdrawalRequest expected = withdrawalRequestService.create(
                 client.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
@@ -228,7 +229,7 @@ class WithdrawalRequestServiceTest {
         Client client = getDummyClient(BigDecimal.ONE);
         Client targetClient = getDummyClient(BigDecimal.ONE);
         assertNotNull(targetClient.getId());
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
         WithdrawalRequest expected = withdrawalRequestService.create(
                 targetClient.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
@@ -252,7 +253,7 @@ class WithdrawalRequestServiceTest {
         Client client = getDummyClient(BigDecimal.ONE);
         Client targetClient = getDummyClient(BigDecimal.ONE);
         assertNotNull(targetClient.getId());
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
         WithdrawalRequest expected = withdrawalRequestService.create(
                 targetClient.getId(), 1000, "TX9zFakeAddressTRC20usdtNotReal99x"
@@ -275,7 +276,7 @@ class WithdrawalRequestServiceTest {
     void findAll_shouldNotFindByClientUsernameIfClientIdPassed() {
         Client client = getDummyClient(BigDecimal.ONE);
         Client targetClient = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
 
         withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
         WithdrawalRequest expected = withdrawalRequestService.create(
@@ -300,7 +301,7 @@ class WithdrawalRequestServiceTest {
         Client client = getDummyClient(BigDecimal.ONE);
         assertNotNull(client.getId());
         Client targetClient = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
 
         withdrawalRequestService.create(client.getId(), 5000, "TX9zFakeAddressTRC20usdtNotReal99x");
         WithdrawalRequest expected = withdrawalRequestService.create(
@@ -326,7 +327,7 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть заявку по статусу.")
     void findAll_shouldReturnRequestByStatus(WithdrawalRequestStatus status) {
         Client client = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         WithdrawalRequest expected = new WithdrawalRequest();
         expected.setStatus(status);
         expected.setClient(client);
@@ -350,7 +351,7 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть заявку по дате создания ОТ.")
     void findAll_shouldReturnRequestByCreatedFrom(long millis) {
         Client client = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         WithdrawalRequest expected = new WithdrawalRequest();
         expected.setCreatedAt(Instant.ofEpochMilli(millis + 50000L));
         expected.setClient(client);
@@ -374,7 +375,7 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть заявку по дате создания ДО.")
     void findAll_shouldReturnRequestByCreatedTo(long millis) {
         Client client = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         WithdrawalRequest expected = new WithdrawalRequest();
         expected.setCreatedAt(Instant.ofEpochMilli(millis - 120000L));
         expected.setClient(client);
@@ -398,7 +399,7 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть заявку по адресу кошелька.")
     void findAll_shouldReturnRequestByAddress(String address) {
         Client client = getDummyClient(BigDecimal.ONE);
-        when(ratesConsumer.consume()).thenReturn(new BigDecimal(80));
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
         WithdrawalRequest expected = new WithdrawalRequest();
         expected.setAddress(address);
         expected.setClient(client);

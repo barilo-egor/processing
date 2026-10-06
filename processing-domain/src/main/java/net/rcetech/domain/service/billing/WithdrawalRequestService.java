@@ -9,7 +9,8 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.util.CalculateUtil;
-import net.rcetech.rates.RatesConsumer;
+import net.rcetech.rates.RatePair;
+import net.rcetech.rates.RateService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,14 +31,15 @@ public class WithdrawalRequestService {
 
     private final ClientService clientService;
 
-    private final RatesConsumer ratesConsumer;
+    private final RateService rateService;
 
     public WithdrawalRequestService(WithdrawalRequestRepository withdrawalRequestRepository,
-                                    ClientService clientService, RatesConsumer ratesConsumer) {
+                                    ClientService clientService, RateService rateService) {
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.clientService = clientService;
-        this.ratesConsumer = ratesConsumer;
+        this.rateService = rateService;
     }
+
 
     @Transactional
     public WithdrawalRequest create(UUID clientId, Integer amount, String address) {
@@ -55,7 +57,7 @@ public class WithdrawalRequestService {
         withdrawalRequest.setGrossSourceAmount(amount);
         withdrawalRequest.setCommissionPercent(client.getCommissionPercent());
         withdrawalRequest.setNetSourceAmount(CalculateUtil.subtractPercentCommission(amount, client.getCommissionPercent()));
-        BigDecimal rate = ratesConsumer.consume();
+        BigDecimal rate = rateService.getRate(RatePair.USDT_RUB);
         withdrawalRequest.setRate(rate);
         withdrawalRequest.setTargetAmount(CalculateUtil.convert(withdrawalRequest.getNetSourceAmount(), rate));
         withdrawalRequest.setAddress(address);

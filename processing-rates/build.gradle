@@ -9,6 +9,7 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:6.0.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.wiremock.integrations:wiremock-spring-boot:4.0.9'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
