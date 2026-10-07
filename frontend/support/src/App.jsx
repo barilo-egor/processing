@@ -223,6 +223,38 @@ export default function App() {
   );
 }
 
+/* ==================== Сортировка по клику на заголовок ====================
+   Сортирует бэк (параметр sort=поле,asc|desc), поэтому порядок общий для всей
+   выборки с учётом фильтра, а не только для текущей страницы.
+   Клик по колонке: по возрастанию → по убыванию → исходный порядок.
+   Имена полей проверены живыми запросами: неизвестное поле бэк отдаёт 500. */
+
+function nextSort(sort, field) {
+  if (!sort || sort.field !== field) return { field, dir: 'asc' };
+  if (sort.dir === 'asc') return { field, dir: 'desc' };
+  return null;
+}
+
+function sortParam(sort) {
+  return sort ? `${sort.field},${sort.dir}` : undefined;
+}
+
+function SortTh({ field, sort, onSort, className = '', children }) {
+  const active = sort?.field === field;
+  const icon = !active ? 'fa-sort' : sort.dir === 'asc' ? 'fa-arrow-up-long' : 'fa-arrow-down-long';
+  return (
+      <th
+          className={`${className} th-sortable${active ? ' active' : ''}`.trim()}
+          aria-sort={!active ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending'}
+      >
+        <button type="button" className="th-sort" onClick={() => onSort(field)} title="Сортировать">
+          {children}
+          <i className={`fa-solid ${icon} sort-ico`} aria-hidden="true" />
+        </button>
+      </th>
+  );
+}
+
 /* ==================== Раздел «Клиенты» ==================== */
 
 const EMPTY_FILTER = {
@@ -241,13 +273,15 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
   const [card, setCard] = useState(null); // открытый клиент
+  const [sort, setSort] = useState(null); // null | { field, dir }
 
   const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
 
-  const load = useCallback(async (f, p) => {
+  const load = useCallback(async (f, p, srt) => {
     setLoading(true);
     try {
       const params = { page: p, size: PAGE_SIZE };
+      if (srt) params.sort = sortParam(srt);
       if (f.id.trim()) params.id = f.id.trim();
       if (f.username.trim()) params.username = f.username.trim();
       // Даты уходят как UNIX-время в миллисекундах. «Равна» без времени —
@@ -273,7 +307,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [load, applied, page]);
+  useEffect(() => { load(applied, page, sort); }, [load, applied, page, sort]);
 
   const setF = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
 
@@ -285,8 +319,11 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const reset = () => {
     setDraft(EMPTY_FILTER);
     setApplied({ ...EMPTY_FILTER });
+    setSort(null);
     setPage(0);
   };
+  // Новая сортировка — с первой страницы.
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
 
   const copy = async (text) => {
     try {
@@ -382,10 +419,10 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                 <table className="grid">
                   <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Логин</th>
-                    <th>Дата регистрации</th>
-                    <th>Комиссия</th>
+                    <SortTh field="id" sort={sort} onSort={onSort}>ID</SortTh>
+                    <SortTh field="username" sort={sort} onSort={onSort}>Логин</SortTh>
+                    <SortTh field="registeredAt" sort={sort} onSort={onSort}>Дата регистрации</SortTh>
+                    <SortTh field="commissionPercent" sort={sort} onSort={onSort}>Комиссия</SortTh>
                     <th className="c-act" aria-label="Действия" />
                   </tr>
                   </thead>
@@ -550,8 +587,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [card, setCard] = useState(null);
+  const [sort, setSort] = useState(null); // null | { field, dir }
 
-  const load = useCallback(async (filter, pageNum) => {
+  const load = useCallback(async (filter, pageNum, srt) => {
     setLoading(true);
     try {
       // «Равна» без времени — весь день, со временем — ровно эта секунда.
@@ -567,6 +605,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
       const r = await api.orders({
         page: pageNum,
         size: PAGE_SIZE,
+        sort: sortParam(srt),
         id: filter.id.trim(),
         // Бэк принимает одно поле client — ищет и по логину, и по ID.
         client: filter.client.trim(),
@@ -587,7 +626,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [applied, page, load]);
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, load]);
 
   const copy = async (text) => {
     try {
@@ -599,7 +638,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
   };
 
   const search = () => { setPage(0); setApplied(draft); };
-  const reset = () => { setPage(0); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
+  const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
+  // Новая сортировка — с первой страницы.
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
 
   const statusLabel = (name) =>
@@ -715,14 +756,14 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
           <table className="grid grid-orders">
             <thead>
             <tr>
-              <th>ID ордера</th>
-              <th>ID в системе клиента</th>
-              <th>Клиент</th>
-              <th className="c-right">Сумма, руб.</th>
-              <th>Статус</th>
-              <th>Создан</th>
-              <th>Мерчант</th>
-              <th>ID у мерчанта</th>
+              <SortTh field="id" sort={sort} onSort={onSort}>ID ордера</SortTh>
+              <SortTh field="internalId" sort={sort} onSort={onSort}>ID в системе клиента</SortTh>
+              <SortTh field="clientUsername" sort={sort} onSort={onSort}>Клиент</SortTh>
+              <SortTh field="amount" sort={sort} onSort={onSort} className="c-right">Сумма, руб.</SortTh>
+              <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
+              <SortTh field="createdAt" sort={sort} onSort={onSort}>Создан</SortTh>
+              <SortTh field="merchant" sort={sort} onSort={onSort}>Мерчант</SortTh>
+              <SortTh field="merchantOrderId" sort={sort} onSort={onSort}>ID у мерчанта</SortTh>
             </tr>
             </thead>
             <tbody>
