@@ -300,6 +300,34 @@ class OrderCallbackResolverTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "DISPUTE",
+            "SUCCESS"
+    })
+    @DisplayName("Метод должен отменить ордер по таймауту, если КБ со статусом истечения.")
+    void resolve_shouldNotUpdateOrderIfNotNewStatus(OrderStatus status) {
+        UUID id = UUID.randomUUID();
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(status);
+        fillFields(order, client);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus("EXPIRED");
+        event.setStatusDescription("Status");
+        event.setMerchant(Merchant.ALFA_TEAM);
+        orderCallbackResolver.resolve(event);
+
+        assertNotNull(order.getId());
+        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(status, maybeOrder.get().getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
             "7de063f7-720f-4078-9cde-c8d1ff924283",
             "d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })

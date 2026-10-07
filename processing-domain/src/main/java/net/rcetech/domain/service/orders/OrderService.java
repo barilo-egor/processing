@@ -14,6 +14,9 @@ import org.springframework.data.jpa.domain.PredicateSpecification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,6 +59,10 @@ public class OrderService {
                 query -> query.as(projectionType).page(pageable));
     }
 
+    public List<Order> findAllExpired() {
+        return orderRepository.findAllByStatusAndExpiresAtBefore(OrderStatus.NEW, Instant.now());
+    }
+
     @Transactional
     public void confirm(UUID id, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
@@ -75,8 +82,13 @@ public class OrderService {
     @Transactional
     public void timeout(UUID id, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
+        if (!OrderStatus.NEW.equals(order.getStatus())) {
+            return;
+        }
         order.setStatus(OrderStatus.TIMEOUT);
-        order.setMerchantOrderStatus(merchantOrderStatus);
+        if (Objects.nonNull(merchantOrderStatus)) {
+            order.setMerchantOrderStatus(merchantOrderStatus);
+        }
         eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
 
