@@ -22,6 +22,13 @@ import {
 // Больше десяти активных токенов у клиента быть не может.
 const TOKENS_LIMIT = 10;
 
+// Ключ в localStorage: свёрнуто ли боковое меню на широком экране.
+const SIDEBAR_KEY = 'client.sidebarCollapsed';
+
+function readCollapsed() {
+  try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
+}
+
 const SECTIONS = [
   { id: 'profile', title: 'Профиль', icon: 'fa-solid fa-user-gear' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
@@ -34,6 +41,8 @@ export default function App() {
   const [section, setSection] = useState('orders');
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
+  // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const [toast, setToast] = useState(null);
   // Профиль грузим один раз: логин нужен в шапке, id — для сохранения
   // Callback URL.
@@ -81,13 +90,24 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      try { localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0'); } catch { /* без запоминания */ }
+      return next;
+    });
+  };
+
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
   const current = SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
-        <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Разделы">
+        <aside
+            className={`sidebar${menuOpen ? ' open' : ''}${collapsed ? ' collapsed' : ''}`}
+            aria-label="Разделы"
+        >
           <div className="brand">
             <span className="brand-ico"><i className="fa-solid fa-key" /></span>
             <span className="brand-name">Кабинет клиента</span>
@@ -107,12 +127,24 @@ export default function App() {
                     type="button"
                     className={`nav-item${section === s.id ? ' active' : ''}`}
                     onClick={() => goTo(s.id)}
+                    title={collapsed ? s.title : undefined}
                 >
                   <i className={s.icon} />
                   <span>{s.title}</span>
                 </button>
             ))}
           </nav>
+          {/* Свернуть/развернуть меню — только на широком экране. */}
+          <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+              title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+          >
+            <i className={`fa-solid ${collapsed ? 'fa-angles-right' : 'fa-angles-left'}`} />
+            <span>Свернуть</span>
+          </button>
         </aside>
         {/* Затемнение под выехавшим меню: клик по нему закрывает меню. */}
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
@@ -379,7 +411,7 @@ function ApiKeysBlock({ showToast }) {
               <input
                   id="token-name"
                   type="text"
-                  placeholder="Например, боевой сервер"
+                  placeholder="Например, тестовый"
                   value={name}
                   disabled={creating || limitReached}
                   className={nameError ? 'invalid' : ''}
