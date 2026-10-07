@@ -4,6 +4,8 @@ spring:
       channels:
         api-merchant-details:
           address: "localhost:9090"
+        merchant-history:
+          address: "localhost:9091"
   datasource:
     username:
     password:

@@ -4,17 +4,20 @@ import io.grpc.Channel;
 import net.rcetech.api.merchantdetails.TestDetailsClientInterceptor;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.ApiMerchantConfigServiceGrpc;
+import net.rcetech.grpc.generated.MerchantHistoryServiceGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.GrpcChannelFactory;
 
 /**
- * Конфигурация gRPC-клиентов микросервиса merchant-details.
+ * Конфигурация gRPC-клиентов микросервисов merchant-details и merchant-history.
  */
 @Configuration
 public class GrpcConfig {
 
     private static final String API_MERCHANT_DETAILS_CHANNEL = "api-merchant-details";
+
+    private static final String MERCHANT_HISTORY_CHANNEL = "merchant-history";
 
     /**
      * Stub для получения реквизитов мерчанта.
@@ -36,6 +39,16 @@ public class GrpcConfig {
             GrpcChannelFactory channelFactory) {
         Channel channel = channelFactory.createChannel(API_MERCHANT_DETAILS_CHANNEL);
         return ApiMerchantConfigServiceGrpc.newBlockingStub(channel);
+    }
+
+    /**
+     * Stub для получения истории мерчантов.
+     */
+    @Bean
+    public MerchantHistoryServiceGrpc.MerchantHistoryServiceBlockingStub merchantHistoryServiceBlockingStub(
+            GrpcChannelFactory channelFactory) {
+        Channel channel = channelFactory.createChannel(MERCHANT_HISTORY_CHANNEL);
+        return MerchantHistoryServiceGrpc.newBlockingStub(channel);
     }
 
 }
