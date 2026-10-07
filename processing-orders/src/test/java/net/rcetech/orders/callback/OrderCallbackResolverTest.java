@@ -14,7 +14,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.OrderFacade;
-import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
+import net.rcetech.orders.status.BridgePayOrderStatusResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,15 +56,15 @@ class OrderCallbackResolverTest {
     static class Configuration {
 
         @Bean
-        public AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver() {
-            return new AlfaTeamOrderStatusResolver();
+        public BridgePayOrderStatusResolver alfaTeamOrderStatusResolver() {
+            return new BridgePayOrderStatusResolver();
         }
 
         @Bean
-        public OrderCallbackResolver orderCallbackService(AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver,
+        public OrderCallbackResolver orderCallbackService(BridgePayOrderStatusResolver bridgePayOrderStatusResolver,
                                                           OrderFacade orderFacade,
                                                           MerchantCallbackService merchantCallbackService) {
-            return new OrderCallbackResolver(List.of(alfaTeamOrderStatusResolver), orderFacade, merchantCallbackService);
+            return new OrderCallbackResolver(List.of(bridgePayOrderStatusResolver), orderFacade, merchantCallbackService);
         }
     }
 

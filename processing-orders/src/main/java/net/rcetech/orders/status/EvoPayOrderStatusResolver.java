@@ -1,27 +1,28 @@
 package net.rcetech.orders.status;
 
 import net.rcetech.meta.orders.OrderStatus;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.Optional;
 import java.util.Set;
 
-@Service
-public class LotrienOrderStatusResolver implements OrderStatusResolver {
-
+@Component
+public class EvoPayOrderStatusResolver implements OrderStatusResolver {
     @Override
     public Set<Merchant> getMerchants() {
-        return Set.of(Merchant.LOTRIEN, Merchant.LOTRIEN_PDF);
+        return Set.of(
+                Merchant.EVO_PAY
+        );
     }
 
     @Override
     public Optional<OrderStatus> resolve(String status) {
         return Optional.ofNullable(
                 switch (status) {
-                    case "CREATED", "PENDING", "IN_PROGRESS" -> OrderStatus.NEW;
+                    case "CREATED", "IN_PROCESS" -> OrderStatus.NEW;
                     case "SUCCESS" -> OrderStatus.SUCCESS;
-                    case "UNISSUED", "CANCEL" -> OrderStatus.CANCELED;
+                    case "CANCEL" -> OrderStatus.CANCELED;
                     case "EXPIRE" -> OrderStatus.TIMEOUT;
                     case "APPEAL" -> OrderStatus.DISPUTE;
                     default -> null;

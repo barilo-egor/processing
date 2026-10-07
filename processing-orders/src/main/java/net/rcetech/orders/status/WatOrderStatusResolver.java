@@ -8,21 +8,22 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
-public class AlfaTeamOrderStatusResolver implements OrderStatusResolver {
+public class WatOrderStatusResolver implements OrderStatusResolver {
     @Override
     public Set<Merchant> getMerchants() {
-        return Set.of(Merchant.ALFA_TEAM, Merchant.ALFA_TEAM_QR, Merchant.ALFA_TEAM_WT);
+        return Set.of(
+                Merchant.WAT, Merchant.WAT_PDF, Merchant.WAT_SIM
+        );
     }
 
     @Override
     public Optional<OrderStatus> resolve(String status) {
         return Optional.ofNullable(
                 switch (status) {
-                    case "NEW" -> OrderStatus.NEW;
-                    case "PAID" -> OrderStatus.SUCCESS;
+                    case "AWAITING_PAYMENT" -> OrderStatus.NEW;
+                    case "FINISHED" -> OrderStatus.SUCCESS;
                     case "CANCELED" -> OrderStatus.CANCELED;
-                    case "EXPIRED" -> OrderStatus.TIMEOUT;
-                    case "DISPUTE" -> OrderStatus.DISPUTE;
+                    case "CLAIM" -> OrderStatus.DISPUTE;
                     default -> null;
                 }
         );
