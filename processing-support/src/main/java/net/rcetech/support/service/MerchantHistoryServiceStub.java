@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-@Profile("merchant-history-stub")
+@Profile("mh-test")
 public class MerchantHistoryServiceStub implements MerchantHistoryService {
 
     @Override

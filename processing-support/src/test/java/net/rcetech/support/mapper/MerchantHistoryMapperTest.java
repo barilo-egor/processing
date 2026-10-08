@@ -21,10 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MerchantHistoryMapperTest {
 
-    private final MerchantHistoryMapper mapper = new MerchantHistoryMapper();
+    private final String applicationName = "processing";
+
+    private final MerchantHistoryMapper mapper = new MerchantHistoryMapper(applicationName);
 
     @Test
-    @DisplayName("Должен корректно преобразовать пустой фильтр и unpaged пагинацию")
+    @DisplayName("Должен корректно преобразовать пустой фильтр и unpaged пагинацию.")
     void shouldMapEmptyFilterAndUnpaged() {
         MerchantHistoryRequestGrpc request = mapper.filterToGrpc(null, Pageable.unpaged());
 
@@ -35,7 +37,7 @@ class MerchantHistoryMapperTest {
         assertThat(request.hasActorId()).isFalse();
         assertThat(request.hasCreatedAtFrom()).isFalse();
         assertThat(request.hasCreatedAtTo()).isFalse();
-        assertThat(request.hasInitiatorApp()).isFalse();
+        assertThat(request.getInitiatorApp().getValue()).isEqualTo(applicationName);
         assertThat(request.hasDetails()).isFalse();
         assertThat(request.getMerchantsList()).isEmpty();
         assertThat(request.hasMerchantAmount()).isFalse();
@@ -43,7 +45,7 @@ class MerchantHistoryMapperTest {
     }
 
     @Test
-    @DisplayName("Должен корректно заполнить все поля gRPC-запроса из фильтра и пагинации")
+    @DisplayName("Должен корректно заполнить все поля gRPC-запроса из фильтра и пагинации.")
     void shouldMapFullFilterAndPagination() {
         Instant now = Instant.now();
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
@@ -52,7 +54,6 @@ class MerchantHistoryMapperTest {
                 "actor-789",
                 now.minusSeconds(3600),
                 now,
-                "processing",
                 "details-info",
                 List.of(Merchant.ALFA_TEAM, Merchant.FIAT_CUT),
                 5000,
@@ -80,7 +81,7 @@ class MerchantHistoryMapperTest {
         assertThat(request.hasCreatedAtTo()).isTrue();
         assertThat(request.getCreatedAtTo().getValue()).isEqualTo(filter.createdAtTo().toEpochMilli());
         assertThat(request.hasInitiatorApp()).isTrue();
-        assertThat(request.getInitiatorApp().getValue()).isEqualTo("processing");
+        assertThat(request.getInitiatorApp().getValue()).isEqualTo(applicationName);
         assertThat(request.hasDetails()).isTrue();
         assertThat(request.getDetails().getValue()).isEqualTo("details-info");
         assertThat(request.getMerchantsList())
@@ -93,7 +94,7 @@ class MerchantHistoryMapperTest {
     }
 
     @Test
-    @DisplayName("Должен корректно сформировать сортировку по возрастанию")
+    @DisplayName("Должен корректно сформировать сортировку по возрастанию.")
     void shouldMapAscendingSort() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "amount"));
         MerchantHistoryRequestGrpc request = mapper.filterToGrpc(null, pageable);
@@ -103,21 +104,21 @@ class MerchantHistoryMapperTest {
     }
 
     @Test
-    @DisplayName("Должен вернуть пустой список, если ответ gRPC равен null")
+    @DisplayName("Должен вернуть пустой список, если ответ gRPC равен null.")
     void shouldReturnEmptyListWhenGrpcResponseIsNull() {
         var result = mapper.grpcToDtoList(null);
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("Должен вернуть null, если элемент DTO ответа gRPC равен null")
+    @DisplayName("Должен вернуть null, если элемент DTO ответа gRPC равен null.")
     void shouldReturnNullWhenGrpcItemIsNull() {
         var result = mapper.grpcToDto(null);
         assertThat(result).isNull();
     }
 
     @Test
-    @DisplayName("Должен корректно преобразовать все поля gRPC-ответа в DTO")
+    @DisplayName("Должен корректно преобразовать все поля gRPC-ответа в DTO.")
     void shouldMapGrpcResponseToDtoList() {
         long epochMillis = Instant.now().toEpochMilli();
         MerchantHistoryResponseDTO grpcDto = MerchantHistoryResponseDTO.newBuilder()
@@ -143,7 +144,6 @@ class MerchantHistoryMapperTest {
         var dto = dtoList.getFirst();
         assertThat(dto.operationId()).isEqualTo("op-1");
         assertThat(dto.actorId()).isEqualTo("act-1");
-        assertThat(dto.initiatorApp()).isEqualTo("proc");
         assertThat(dto.createdAt()).isEqualTo(Instant.ofEpochMilli(epochMillis));
         assertThat(dto.merchant()).isEqualTo(Merchant.ALFA_TEAM);
         assertThat(dto.merchantOrderId()).isEqualTo("m-ord-1");

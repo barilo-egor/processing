@@ -44,7 +44,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен успешно возвращать список истории мерчантов")
     void shouldReturnMerchantHistoryList_whenGetHistorySucceeds() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                "order-1", null, null, null, null, null, null, null, null, null
+                "order-1", null, null, null, null, null, null, null, null
         );
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -74,7 +74,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'gRPC service error' при UNAVAILABLE ошибке gRPC")
     void shouldThrowBaseException_forGrpcUnavailableError() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -95,7 +95,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'gRPC service error' при PERMISSION_DENIED ошибке gRPC")
     void shouldThrowBaseException_forGrpcPermissionDeniedError() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -116,7 +116,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'System connection error' при сетевой ошибке с cause")
     void shouldThrowBaseException_forNetworkErrors() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -138,7 +138,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException при отмене вызова CANCELLED")
     void shouldThrowBaseException_forCancelledCall() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -159,7 +159,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'System connection error' при непредвиденном RuntimeException")
     void shouldThrowBaseException_forGenericException() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -177,7 +177,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен корректно обрабатывать StatusRuntimeException без cause")
     void shouldHandleStatusRuntimeExceptionWithoutCause() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 

@@ -10,6 +10,7 @@ import net.rcetech.grpc.generated.MerchantHistoryResponseGrpc;
 import net.rcetech.grpc.generated.PaginationGrpc;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,12 @@ import java.util.Optional;
 @Component
 public class MerchantHistoryMapper {
 
+    private final String applicationName;
+
+    public MerchantHistoryMapper(@Value("${spring.application.name:processing}") String applicationName) {
+        this.applicationName = applicationName;
+    }
+
     /**
      * Преобразует фильтр и пагинацию в gRPC-запрос.
      *
@@ -38,6 +45,7 @@ public class MerchantHistoryMapper {
         MerchantHistoryRequestGrpc.Builder builder = MerchantHistoryRequestGrpc.newBuilder();
         mapPagination(builder, pageable);
         mapFilter(builder, filter);
+        builder.setInitiatorApp(StringValue.of(applicationName));
         return builder.build();
     }
 
@@ -94,9 +102,6 @@ public class MerchantHistoryMapper {
     }
 
     private void mapDetailsAndAmounts(MerchantHistoryRequestGrpc.Builder builder, MerchantHistoryFilter filter) {
-        if (StringUtils.isNotBlank(filter.initiatorApp())) {
-            builder.setInitiatorApp(StringValue.of(filter.initiatorApp()));
-        }
         if (StringUtils.isNotBlank(filter.details())) {
             builder.setDetails(StringValue.of(filter.details()));
         }

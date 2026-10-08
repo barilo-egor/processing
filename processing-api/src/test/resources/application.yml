@@ -9,6 +9,8 @@ kafka:
     merchant-details:
       callback: 'merchant-details-callback-v1'
 spring:
+  application:
+    name: 'processing'
   jpa:
     hibernate:
       ddl-auto: validate

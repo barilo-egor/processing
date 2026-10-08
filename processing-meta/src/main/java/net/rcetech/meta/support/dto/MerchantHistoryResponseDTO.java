@@ -18,6 +18,4 @@ public record MerchantHistoryResponseDTO(
         Integer merchantAmount,
         String method,
         String details
-) {
-
-}
+) {}

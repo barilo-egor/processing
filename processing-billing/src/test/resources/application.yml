@@ -8,3 +8,6 @@ kafka:
   topic:
     merchant-details:
       callback: 'merchant-details-callback-v1'
+spring:
+  application:
+    name: 'processing'

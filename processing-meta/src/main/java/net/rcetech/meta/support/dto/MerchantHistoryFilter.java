@@ -15,11 +15,8 @@ public record MerchantHistoryFilter(
         Instant createdAtFrom,
         @JsonDeserialize(using = MillisToInstantDeserializer.class)
         Instant createdAtTo,
-        String initiatorApp,
         String details,
         List<Merchant> merchants,
         Integer merchantAmount,
         Integer requestedAmount
-) {
-
-}
+) {}

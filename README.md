@@ -116,6 +116,8 @@ logging:
     <li>Позволяет создавать тестовые КБ по юрлу <code>/api/public/merchant-callback</code>. Как инициировать подробнее 
 описано в postman коллекции <code>Публичное API -> merchant-callback</code>.</li>
 </ul>
+<h3>mh-test</h3>
+    <li>Место взаимодействия с микросервисом истории мерчантов(merchant-history) будут возвращены тестовые данные.</li>
 <hr>
 <h1>Словарь констант</h1>
 Доступен по адресу <code>/api/private/dictionary</code>. Для добавления нового значения необходимо 
