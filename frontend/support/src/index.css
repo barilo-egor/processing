@@ -82,6 +82,36 @@ body {
 .nav-item:hover { background: var(--row-hover); color: var(--text); }
 .nav-item.active { background: var(--accent); color: var(--accent-text); }
 
+/* ---- Сворачивание бокового меню (широкий экран) ---- */
+.sidebar-toggle {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border: none; border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: left; white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.sidebar-toggle i { width: 16px; text-align: center; font-size: 14px; }
+.sidebar-toggle:hover { background: var(--row-hover); color: var(--text); }
+
+@media (min-width: 721px) {
+  /* Меню прилипает к экрану, чтобы кнопка «Свернуть» всегда была видна. */
+  .sidebar {
+    position: sticky; top: 0; align-self: flex-start;
+    height: 100vh; overflow-x: hidden; overflow-y: auto;
+    transition: width .2s ease, padding .2s ease;
+  }
+  .brand-name { white-space: nowrap; }
+  .sidebar.collapsed { width: 64px; padding-left: 10px; padding-right: 10px; }
+  .sidebar.collapsed .brand { padding: 0; justify-content: center; }
+  .sidebar.collapsed .brand-name,
+  .sidebar.collapsed .nav-item span,
+  .sidebar.collapsed .sidebar-toggle span { display: none; }
+  .sidebar.collapsed .nav-item,
+  .sidebar.collapsed .sidebar-toggle { justify-content: center; padding-left: 0; padding-right: 0; }
+}
+
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .topbar { padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .topbar h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
@@ -192,11 +222,24 @@ table.grid thead th {
   color: var(--text-dim); border-bottom: 1px solid var(--border); white-space: nowrap;
 }
 table.grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
+
+/* ---- Сортировка по клику на заголовок ---- */
+.th-sort {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0; border: none; background: none; cursor: pointer;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit;
+}
+.th-sort:hover { color: var(--text); }
+.th-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sort-ico { font-size: 10px; opacity: .35; transition: opacity .15s; }
+.th-sort:hover .sort-ico { opacity: .7; }
+table.grid thead th.th-sortable.active { color: var(--text); }
+th.th-sortable.active .sort-ico { opacity: 1; color: var(--accent); }
 table.grid tbody tr:first-child { border-top: none; }
 table.grid tbody tr:hover { background: var(--row-hover); }
 .mono { font-variant-numeric: tabular-nums; }
 .c-right { text-align: right; }
-table.grid td.c-right { text-align: right; }
+table.grid th.c-right, table.grid td.c-right { text-align: right; }
 .c-act { width: 1%; white-space: nowrap; text-align: right; }
 .c-id { white-space: nowrap; }
 
@@ -204,7 +247,7 @@ table.grid td.c-right { text-align: right; }
 .copyable i { color: var(--text-dim); font-size: 12px; }
 .copyable:hover i { color: var(--accent); }
 
-.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; text-align: center; }
 .badge-ok { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
 .badge-bad { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
 .badge-neutral { color: var(--text-dim); background: var(--surface-2); }
@@ -315,6 +358,7 @@ table.grid td.c-right { text-align: right; }
     transition: transform .2s ease;
   }
   .menu-btn, .menu-close { display: inline-grid; }
+  .sidebar-toggle { display: none; }
   .content { padding: 16px; }
   .topbar { padding: 14px 16px; }
 }
@@ -619,6 +663,9 @@ table.grid-withdrawals td { vertical-align: middle; }
 
 table.grid-tx { min-width: 1040px; }
 table.grid-tx td { vertical-align: middle; }
+/* Тип транзакции — метка в одну строку: при переносе овал оставался
+   шириной во всю колонку, а текст прижимался влево. */
+table.grid-tx .badge { white-space: nowrap; }
 
 /* ---- КБ мерчантов ---- */
 table.grid-callbacks { min-width: 960px; }

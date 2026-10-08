@@ -14,7 +14,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.OrderFacade;
-import net.rcetech.orders.status.AlfaTeamOrderStatusResolver;
+import net.rcetech.orders.status.BridgePayOrderStatusResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,15 +56,15 @@ class OrderCallbackResolverTest {
     static class Configuration {
 
         @Bean
-        public AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver() {
-            return new AlfaTeamOrderStatusResolver();
+        public BridgePayOrderStatusResolver alfaTeamOrderStatusResolver() {
+            return new BridgePayOrderStatusResolver();
         }
 
         @Bean
-        public OrderCallbackResolver orderCallbackService(AlfaTeamOrderStatusResolver alfaTeamOrderStatusResolver,
+        public OrderCallbackResolver orderCallbackService(BridgePayOrderStatusResolver bridgePayOrderStatusResolver,
                                                           OrderFacade orderFacade,
                                                           MerchantCallbackService merchantCallbackService) {
-            return new OrderCallbackResolver(List.of(alfaTeamOrderStatusResolver), orderFacade, merchantCallbackService);
+            return new OrderCallbackResolver(List.of(bridgePayOrderStatusResolver), orderFacade, merchantCallbackService);
         }
     }
 
@@ -296,6 +296,34 @@ class OrderCallbackResolverTest {
         Optional<Order> maybeOrder = orderRepository.findById(order.getId());
         assertTrue(maybeOrder.isPresent());
         assertEquals(OrderStatus.TIMEOUT, maybeOrder.get().getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "DISPUTE",
+            "SUCCESS"
+    })
+    @DisplayName("Метод должен отменить ордер по таймауту, если КБ со статусом истечения.")
+    void resolve_shouldNotUpdateOrderIfNotNewStatus(OrderStatus status) {
+        UUID id = UUID.randomUUID();
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(status);
+        fillFields(order, client);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus("EXPIRED");
+        event.setStatusDescription("Status");
+        event.setMerchant(Merchant.ALFA_TEAM);
+        orderCallbackResolver.resolve(event);
+
+        assertNotNull(order.getId());
+        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(status, maybeOrder.get().getStatus());
     }
 
     @ParameterizedTest

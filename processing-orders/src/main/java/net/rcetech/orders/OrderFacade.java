@@ -43,4 +43,9 @@ public class OrderFacade {
             default -> log.error("Не определен статус коллбэка: {}", merchantOrderStatus); // TODO Создание инцидента
         }
     }
+
+    @Retryable(value = OptimisticLockException.class, jitter = 200, delay = 500, maxDelay = 600)
+    public void timeoutOrder(UUID orderId) {
+        orderService.timeout(orderId, null);
+    }
 }

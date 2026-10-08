@@ -22,6 +22,13 @@ const PAGE_SIZE = 25;
 const TIMEOUT_MIN = 120;
 const TIMEOUT_MAX = 86400;
 
+// Ключ в localStorage: свёрнуто ли боковое меню на широком экране.
+const SIDEBAR_KEY = 'support.sidebarCollapsed';
+
+function readCollapsed() {
+  try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
+}
+
 const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
@@ -32,9 +39,11 @@ const SECTIONS = [
 ];
 
 export default function App() {
-  const [section, setSection] = useState('clients');
+  const [section, setSection] = useState('orders');
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
+  // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const [toast, setToast] = useState(null);
   const [orderStatuses, setOrderStatuses] = useState([]);
   // Справочник мерчантов: name -> displayName для показа человеку.
@@ -92,13 +101,24 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      try { localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0'); } catch { /* без запоминания */ }
+      return next;
+    });
+  };
+
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
   const current = SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
-        <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Разделы">
+        <aside
+            className={`sidebar${menuOpen ? ' open' : ''}${collapsed ? ' collapsed' : ''}`}
+            aria-label="Разделы"
+        >
           <div className="brand">
             <span className="brand-ico"><i className="fa-solid fa-shield-halved" /></span>
             <span className="brand-name">Кабинет API</span>
@@ -118,12 +138,24 @@ export default function App() {
                     type="button"
                     className={`nav-item${section === s.id ? ' active' : ''}`}
                     onClick={() => goTo(s.id)}
+                    title={collapsed ? s.title : undefined}
                 >
                   <i className={s.icon} />
                   <span>{s.title}</span>
                 </button>
             ))}
           </nav>
+          {/* Свернуть/развернуть меню — только на широком экране. */}
+          <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+              title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+          >
+            <i className={`fa-solid ${collapsed ? 'fa-angles-right' : 'fa-angles-left'}`} />
+            <span>Свернуть</span>
+          </button>
         </aside>
         {/* Затемнение под выехавшим меню: клик по нему закрывает меню. */}
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
@@ -191,6 +223,38 @@ export default function App() {
   );
 }
 
+/* ==================== Сортировка по клику на заголовок ====================
+   Сортирует бэк (параметр sort=поле,asc|desc), поэтому порядок общий для всей
+   выборки с учётом фильтра, а не только для текущей страницы.
+   Клик по колонке: по возрастанию → по убыванию → исходный порядок.
+   Имена полей проверены живыми запросами: неизвестное поле бэк отдаёт 500. */
+
+function nextSort(sort, field) {
+  if (!sort || sort.field !== field) return { field, dir: 'asc' };
+  if (sort.dir === 'asc') return { field, dir: 'desc' };
+  return null;
+}
+
+function sortParam(sort) {
+  return sort ? `${sort.field},${sort.dir}` : undefined;
+}
+
+function SortTh({ field, sort, onSort, className = '', children }) {
+  const active = sort?.field === field;
+  const icon = !active ? 'fa-sort' : sort.dir === 'asc' ? 'fa-arrow-up-long' : 'fa-arrow-down-long';
+  return (
+      <th
+          className={`${className} th-sortable${active ? ' active' : ''}`.trim()}
+          aria-sort={!active ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending'}
+      >
+        <button type="button" className="th-sort" onClick={() => onSort(field)} title="Сортировать">
+          {children}
+          <i className={`fa-solid ${icon} sort-ico`} aria-hidden="true" />
+        </button>
+      </th>
+  );
+}
+
 /* ==================== Раздел «Клиенты» ==================== */
 
 const EMPTY_FILTER = {
@@ -209,13 +273,15 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
   const [card, setCard] = useState(null); // открытый клиент
+  const [sort, setSort] = useState(null); // null | { field, dir }
 
   const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
 
-  const load = useCallback(async (f, p) => {
+  const load = useCallback(async (f, p, srt) => {
     setLoading(true);
     try {
       const params = { page: p, size: PAGE_SIZE };
+      if (srt) params.sort = sortParam(srt);
       if (f.id.trim()) params.id = f.id.trim();
       if (f.username.trim()) params.username = f.username.trim();
       // Даты уходят как UNIX-время в миллисекундах. «Равна» без времени —
@@ -241,7 +307,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [load, applied, page]);
+  useEffect(() => { load(applied, page, sort); }, [load, applied, page, sort]);
 
   const setF = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
 
@@ -253,8 +319,11 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const reset = () => {
     setDraft(EMPTY_FILTER);
     setApplied({ ...EMPTY_FILTER });
+    setSort(null);
     setPage(0);
   };
+  // Новая сортировка — с первой страницы.
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
 
   const copy = async (text) => {
     try {
@@ -350,10 +419,10 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                 <table className="grid">
                   <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Логин</th>
-                    <th>Дата регистрации</th>
-                    <th className="c-right">Комиссия</th>
+                    <SortTh field="id" sort={sort} onSort={onSort}>ID</SortTh>
+                    <SortTh field="username" sort={sort} onSort={onSort}>Логин</SortTh>
+                    <SortTh field="registeredAt" sort={sort} onSort={onSort}>Дата регистрации</SortTh>
+                    <SortTh field="commissionPercent" sort={sort} onSort={onSort}>Комиссия</SortTh>
                     <th className="c-act" aria-label="Действия" />
                   </tr>
                   </thead>
@@ -367,7 +436,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                         </td>
                         <td>{c.username || '—'}</td>
                         <td className="mono">{fmtDateTime(c.registeredAt)}</td>
-                        <td className="c-right mono">{fmtPercent(c.commissionPercent)}</td>
+                        <td className="mono">{fmtPercent(c.commissionPercent)}</td>
                         <td className="c-act">
                           <button
                               type="button" className="icon-btn" title="Конфигурация мерчантов"
@@ -518,8 +587,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [card, setCard] = useState(null);
+  const [sort, setSort] = useState(null); // null | { field, dir }
 
-  const load = useCallback(async (filter, pageNum) => {
+  const load = useCallback(async (filter, pageNum, srt) => {
     setLoading(true);
     try {
       // «Равна» без времени — весь день, со временем — ровно эта секунда.
@@ -535,6 +605,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
       const r = await api.orders({
         page: pageNum,
         size: PAGE_SIZE,
+        sort: sortParam(srt),
         id: filter.id.trim(),
         // Бэк принимает одно поле client — ищет и по логину, и по ID.
         client: filter.client.trim(),
@@ -555,7 +626,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [applied, page, load]);
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, load]);
 
   const copy = async (text) => {
     try {
@@ -567,7 +638,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
   };
 
   const search = () => { setPage(0); setApplied(draft); };
-  const reset = () => { setPage(0); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
+  const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
+  // Новая сортировка — с первой страницы.
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
 
   const statusLabel = (name) =>
@@ -683,14 +756,14 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
           <table className="grid grid-orders">
             <thead>
             <tr>
-              <th>ID ордера</th>
-              <th>ID в системе клиента</th>
-              <th>Клиент</th>
-              <th className="c-right">Сумма, руб.</th>
-              <th>Статус</th>
-              <th>Создан</th>
-              <th>Мерчант</th>
-              <th>ID у мерчанта</th>
+              <SortTh field="id" sort={sort} onSort={onSort}>ID ордера</SortTh>
+              <SortTh field="internalId" sort={sort} onSort={onSort}>ID в системе клиента</SortTh>
+              <SortTh field="clientUsername" sort={sort} onSort={onSort}>Клиент</SortTh>
+              <SortTh field="amount" sort={sort} onSort={onSort} className="c-right">Сумма, руб.</SortTh>
+              <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
+              <SortTh field="createdAt" sort={sort} onSort={onSort}>Создан</SortTh>
+              <SortTh field="merchant" sort={sort} onSort={onSort}>Мерчант</SortTh>
+              <SortTh field="merchantOrderId" sort={sort} onSort={onSort}>ID у мерчанта</SortTh>
             </tr>
             </thead>
             <tbody>
@@ -714,7 +787,8 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
                   </td>
                   <td className="mono">{fmtDateTime(o.createdAt)}</td>
                   <td>{merchantLabel(o.merchant)}</td>
-                  <td className="mono">{o.merchantOrderId || '—'}</td>
+                  {/* ID у мерчанта — сокращённо, полный в подсказке, копируется по клику */}
+                  <td className="c-id"><CopyValue value={o.merchantOrderId} onCopy={copy} /></td>
                 </tr>
             ))}
             </tbody>
