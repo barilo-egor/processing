@@ -166,10 +166,15 @@
               "name": "Создание ордера",
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Api-Key",
+                    "value": "{{api_key}}"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"internalId\": \"\",\n    \"amount\": 0,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"enableUniqueAmount\": false,\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                  "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\"],\n    \"enableUniqueAmount\": false,\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3518,6 +3523,179 @@
               ]
             }
           ]
+        },
+        {
+          "name": "merchant-history",
+          "item": [
+            {
+              "name": "Получение историй",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/merchant-history?orderId&operationId&actorId&createdAtFrom&createdAtTo&details&merchants&amount",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "merchant-history"
+                  ],
+                  "query": [
+                    {
+                      "key": "orderId",
+                      "value": "",
+                      "description": "Идентификатор ордера в системе мерчанта"
+                    },
+                    {
+                      "key": "operationId",
+                      "value": "",
+                      "description": "Идентификатор ордера в системе процессинга"
+                    },
+                    {
+                      "key": "actorId",
+                      "value": "",
+                      "description": "Идентификатор клиента"
+                    },
+                    {
+                      "key": "createdAtFrom",
+                      "value": "",
+                      "description": "Время создания от(unix epoch millis)"
+                    },
+                    {
+                      "key": "createdAtTo",
+                      "value": "",
+                      "description": "Время создания до(unix epoch millis)"
+                    },
+                    {
+                      "key": "details",
+                      "value": "",
+                      "description": "Полученные реквизиты"
+                    },
+                    {
+                      "key": "merchants",
+                      "value": "",
+                      "description": "Список мерчантов"
+                    },
+                    {
+                      "key": "amount",
+                      "value": "",
+                      "description": "Поиск по сумме запрошенной/мерчанта"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Истории получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/merchant-history",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "merchant-history"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "315"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 08 Oct 2026 13:34:41 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"operationId\": \"op-1\",\n      \"actorId\": \"actor-1\",\n      \"initiatorApp\": \"processing\",\n      \"createdAt\": 1791466481873,\n      \"merchant\": \"ALFA_TEAM\",\n      \"merchantOrderId\": \"order-1\",\n      \"requestedAmount\": 10000,\n      \"merchantAmount\": 10000,\n      \"method\": \"CARD\",\n      \"details\": \"1234567812345678\"\n    }\n  ],\n  \"page\": {\n    \"size\": 1,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Публичное API",
+      "item": [
+        {
+          "name": "merchant-callback",
+          "item": [
+            {
+              "name": "Запрос тестового КБ",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"merchantOrderId\": \"2dbc6e36-d6d8-4431-8ac5-7a128d9a2d1c\",\n    \"status\": \"SUCCESS\",\n    \"statusDescription\": \"Успешно\",\n    \"merchant\": \"LOTRIEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/public/merchant-callback",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "public",
+                    "merchant-callback"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Юрл доступен только при включенном профиле `md-test-callback`."
         }
       ]
     },

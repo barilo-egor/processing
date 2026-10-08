@@ -17,6 +17,5 @@ public record MerchantHistoryFilter(
         Instant createdAtTo,
         String details,
         List<Merchant> merchants,
-        Integer merchantAmount,
-        Integer requestedAmount
+        Integer amount
 ) {}

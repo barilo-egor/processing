@@ -6,7 +6,7 @@ import tools.jackson.databind.annotation.JsonSerialize;
 
 import java.time.Instant;
 
-public record MerchantHistoryResponseDTO(
+public record MerchantHistoryResponse(
         String operationId,
         String actorId,
         String initiatorApp,

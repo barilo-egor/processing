@@ -7,7 +7,7 @@ import net.rcetech.grpc.generated.MerchantHistoryResponseGrpc;
 import net.rcetech.grpc.generated.MerchantHistoryServiceGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
-import net.rcetech.meta.support.dto.MerchantHistoryResponseDTO;
+import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import net.rcetech.support.mapper.MerchantHistoryMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен успешно возвращать список истории мерчантов")
     void shouldReturnMerchantHistoryList_whenGetHistorySucceeds() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                "order-1", null, null, null, null, null, null, null, null
+                "order-1", null, null, null, null, null, null, null
         );
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -52,7 +52,7 @@ class MerchantHistoryServiceImplTest {
         MerchantHistoryResponseGrpc grpcResponse = MerchantHistoryResponseGrpc.newBuilder().build();
 
         var expectedDtoList = List.of(
-                new MerchantHistoryResponseDTO(
+                new MerchantHistoryResponse(
                         "op-1", "act-1", "proc", Instant.now(), Merchant.ALFA_TEAM,
                         "order-1", 1000, 1000, "CARD", "details"
                 )
@@ -74,7 +74,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'gRPC service error' при UNAVAILABLE ошибке gRPC")
     void shouldThrowBaseException_forGrpcUnavailableError() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -95,7 +95,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'gRPC service error' при PERMISSION_DENIED ошибке gRPC")
     void shouldThrowBaseException_forGrpcPermissionDeniedError() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -116,7 +116,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'System connection error' при сетевой ошибке с cause")
     void shouldThrowBaseException_forNetworkErrors() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -138,7 +138,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException при отмене вызова CANCELLED")
     void shouldThrowBaseException_forCancelledCall() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -159,7 +159,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен выбрасывать BaseException с сообщением 'System connection error' при непредвиденном RuntimeException")
     void shouldThrowBaseException_forGenericException() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 
@@ -177,7 +177,7 @@ class MerchantHistoryServiceImplTest {
     @DisplayName("Должен корректно обрабатывать StatusRuntimeException без cause")
     void shouldHandleStatusRuntimeExceptionWithoutCause() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         );
         Pageable pageable = Pageable.unpaged();
 

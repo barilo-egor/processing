@@ -8,7 +8,7 @@ import net.rcetech.grpc.generated.MerchantHistoryServiceGrpc;
 import net.rcetech.meta.Profiles;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
-import net.rcetech.meta.support.dto.MerchantHistoryResponseDTO;
+import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import net.rcetech.support.mapper.MerchantHistoryMapper;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
@@ -36,7 +36,7 @@ public class MerchantHistoryServiceImpl implements MerchantHistoryService {
     }
 
     @Override
-    public List<MerchantHistoryResponseDTO> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
+    public List<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
         MerchantHistoryRequestGrpc request = merchantHistoryMapper.filterToGrpc(filter, pageable);
         try {
             MerchantHistoryResponseGrpc response = historyBlockingStub.getHistory(request);

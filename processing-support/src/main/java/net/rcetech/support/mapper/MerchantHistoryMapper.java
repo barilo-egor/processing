@@ -9,6 +9,7 @@ import net.rcetech.grpc.generated.MerchantHistoryResponseDTO;
 import net.rcetech.grpc.generated.MerchantHistoryResponseGrpc;
 import net.rcetech.grpc.generated.PaginationGrpc;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
+import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
@@ -106,11 +107,9 @@ public class MerchantHistoryMapper {
             builder.setDetails(StringValue.of(filter.details()));
         }
         mapMerchants(builder, filter.merchants());
-        if (filter.merchantAmount() != null) {
-            builder.setMerchantAmount(Int32Value.of(filter.merchantAmount()));
-        }
-        if (filter.requestedAmount() != null) {
-            builder.setRequestedAmount(Int32Value.of(filter.requestedAmount()));
+        if (filter.amount() != null) {
+            builder.setMerchantAmount(Int32Value.of(filter.amount()));
+            builder.setRequestedAmount(Int32Value.of(filter.amount()));
         }
     }
 
@@ -131,7 +130,7 @@ public class MerchantHistoryMapper {
      * @param response gRPC-ответ со списком записей истории
      * @return список DTO истории мерчанта
      */
-    public List<net.rcetech.meta.support.dto.MerchantHistoryResponseDTO> grpcToDtoList(
+    public List<MerchantHistoryResponse> grpcToDtoList(
             MerchantHistoryResponseGrpc response) {
         if (response == null) {
             return Collections.emptyList();
@@ -147,11 +146,11 @@ public class MerchantHistoryMapper {
      * @param response gRPC-элемент истории
      * @return DTO истории мерчанта
      */
-    public net.rcetech.meta.support.dto.MerchantHistoryResponseDTO grpcToDto(MerchantHistoryResponseDTO response) {
+    public MerchantHistoryResponse grpcToDto(MerchantHistoryResponseDTO response) {
         if (response == null) {
             return null;
         }
-        return new net.rcetech.meta.support.dto.MerchantHistoryResponseDTO(
+        return new MerchantHistoryResponse(
                 response.hasOperationId() ? response.getOperationId().getValue() : null,
                 response.hasActorId() ? response.getActorId().getValue() : null,
                 response.hasInitiatorApp() ? response.getInitiatorApp().getValue() : null,

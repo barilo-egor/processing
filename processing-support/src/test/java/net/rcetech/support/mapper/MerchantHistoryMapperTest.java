@@ -56,8 +56,7 @@ class MerchantHistoryMapperTest {
                 now,
                 "details-info",
                 List.of(Merchant.ALFA_TEAM, Merchant.FIAT_CUT),
-                5000,
-                5500
+                5000
         );
 
         Pageable pageable = PageRequest.of(2, 50, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -90,7 +89,7 @@ class MerchantHistoryMapperTest {
         assertThat(request.hasMerchantAmount()).isTrue();
         assertThat(request.getMerchantAmount().getValue()).isEqualTo(5000);
         assertThat(request.hasRequestedAmount()).isTrue();
-        assertThat(request.getRequestedAmount().getValue()).isEqualTo(5500);
+        assertThat(request.getRequestedAmount().getValue()).isEqualTo(5000);
     }
 
     @Test

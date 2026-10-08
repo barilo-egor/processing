@@ -2,7 +2,7 @@ package net.rcetech.support.service;
 
 import net.rcetech.meta.Profiles;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
-import net.rcetech.meta.support.dto.MerchantHistoryResponseDTO;
+import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,9 +16,9 @@ import java.util.List;
 public class MerchantHistoryServiceStub implements MerchantHistoryService {
 
     @Override
-    public List<MerchantHistoryResponseDTO> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
+    public List<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
         return List.of(
-                new MerchantHistoryResponseDTO(
+                new MerchantHistoryResponse(
                         "op-1",
                         "actor-1",
                         "processing",
