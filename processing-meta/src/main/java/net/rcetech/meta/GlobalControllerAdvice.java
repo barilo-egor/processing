@@ -3,8 +3,8 @@ package net.rcetech.meta;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.exception.BadRequestException;
-import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import net.rcetech.meta.exception.ServiceException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -32,8 +32,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     private static final String DESCRIPTION = "description";
     private static final String CONTACT_SUPPORT = "Contact support.";
 
-    @ExceptionHandler({ BaseException.class })
-    public ProblemDetail handleBaseException(BaseException ex) {
+    @ExceptionHandler({ ServiceException.class })
+    public ProblemDetail handle(ServiceException ex) {
         long epochMilli = Instant.now().toEpochMilli();
         log.error("{} Controller business error: {}", epochMilli, ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
