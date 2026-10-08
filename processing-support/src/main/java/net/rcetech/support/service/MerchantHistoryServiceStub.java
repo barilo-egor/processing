@@ -1,5 +1,6 @@
 package net.rcetech.support.service;
 
+import net.rcetech.meta.Profiles;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponseDTO;
 import org.springframework.context.annotation.Profile;
@@ -11,7 +12,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-@Profile("mh-test")
+@Profile(Profiles.TEST_MERCHANT_HISTORY)
 public class MerchantHistoryServiceStub implements MerchantHistoryService {
 
     @Override

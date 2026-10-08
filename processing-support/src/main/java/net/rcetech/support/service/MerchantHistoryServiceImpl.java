@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.grpc.generated.MerchantHistoryRequestGrpc;
 import net.rcetech.grpc.generated.MerchantHistoryResponseGrpc;
 import net.rcetech.grpc.generated.MerchantHistoryServiceGrpc;
+import net.rcetech.meta.Profiles;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponseDTO;
@@ -20,7 +21,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@Profile("!merchant-history-stub")
+@Profile(Profiles.NOT_TEST_MERCHANT_HISTORY)
 public class MerchantHistoryServiceImpl implements MerchantHistoryService {
 
     private final MerchantHistoryServiceGrpc.MerchantHistoryServiceBlockingStub historyBlockingStub;
