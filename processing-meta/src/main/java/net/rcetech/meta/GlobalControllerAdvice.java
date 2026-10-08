@@ -104,6 +104,9 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         ProblemDetail problemDetail = createProblemDetail(ex, status, "Failed to read request",
                 null, null, request);
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
+        if (ex.getCause() instanceof InvalidFormatException invalidFormatException) {
+            return new ResponseEntity<>(handle(invalidFormatException), HttpStatus.BAD_REQUEST);
+        }
         if (Objects.nonNull(ex.getMessage()) && ex.getMessage().startsWith("Required request body is missing")) {
             problemDetail.setProperty(DESCRIPTION, "Required body is missing.");
         } else if (ex.getCause() instanceof InvalidFormatException) {
@@ -112,6 +115,15 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
             problemDetail.setProperty(DESCRIPTION, "The request body is missing or contains invalid data.");
         }
         return handleExceptionInternal(ex, problemDetail, headers, status, request);
+    }
+
+    public ProblemDetail handle(InvalidFormatException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setTitle("Bad Request");
+        problemDetail.setType(URI.create("/docs/errors/bad-request"));
+        problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
+        problemDetail.setProperty(DESCRIPTION, "Unknown value '" + ex.getValue() + "'.");
+        return problemDetail;
     }
 
     @ExceptionHandler({ ServiceUnavailableException.class })
