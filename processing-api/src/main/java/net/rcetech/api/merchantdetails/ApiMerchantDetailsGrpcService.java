@@ -11,6 +11,7 @@ import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -24,10 +25,14 @@ public class ApiMerchantDetailsGrpcService {
 
     private final DetailsMapper detailsMapper;
 
+    private final String applicationName;
+
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
-            ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub) {
+                                         ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub,
+                                         @Value("${spring.application.name}") String applicationName) {
         this.detailsBlockingStub = detailsBlockingStub;
         this.detailsMapper = detailsMapper;
+        this.applicationName = applicationName;
     }
 
     /**
