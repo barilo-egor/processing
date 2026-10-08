@@ -18,7 +18,8 @@ public class TestMerchantDetailsReceiver implements MerchantDetailsReceiver {
     }
 
     @Override
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
-        return apiMerchantDetailsGrpcService.getDetails(clientId, orderId, clientOrderRequest, true);
+    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+                                         Integer timeoutSeconds) {
+        return apiMerchantDetailsGrpcService.getTestDetails(clientId, orderId, clientOrderRequest);
     }
 }

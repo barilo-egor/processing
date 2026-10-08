@@ -18,7 +18,8 @@ public class MerchantDetailsReceiverImpl implements MerchantDetailsReceiver {
     }
 
     @Override
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
-        return apiMerchantDetailsGrpcService.getDetails(clientId, orderId, clientOrderRequest);
+    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+                                         Integer timeoutSeconds) {
+        return apiMerchantDetailsGrpcService.getDetails(clientId, orderId, clientOrderRequest, timeoutSeconds);
     }
 }

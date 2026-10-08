@@ -255,7 +255,7 @@ class ClientOrderControllerTest {
                         .content(objectMapper.writeValueAsString(expected))
                         .header("Content-Type", "application/json")
         ).andExpect(status().isCreated());
-        verify(orderApiService).createOrder(eq(clientId), captor.capture());
+        verify(orderApiService).createOrder(eq(clientId), captor.capture(), eq(30));
         CreateOrderRequest actual = captor.getValue();
         assertAll(
                 () -> assertEquals(expected.internalId(), actual.internalId()),
@@ -265,6 +265,52 @@ class ClientOrderControllerTest {
                 () -> assertEquals(expected.callbackUrl(), actual.callbackUrl()),
                 () -> assertEquals(expected.userId(), actual.userId())
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 60, 1})
+    @DisplayName("Заголовок с количеством секунд таймаута поиска должен быть передан в сервис.")
+    void createOrder_shouldPassTimeoutSecondsFromHeader(Integer timeoutSeconds) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "enableUniqueAmount": true,
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(csrf())
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Search-Timeout-Seconds", timeoutSeconds)
+        ).andExpect(status().isCreated());
+        verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds));
+    }
+
+    @Test
+    @DisplayName("Если заголовок в запросе отсутствует, то должно быть передано значение таймаута поиска реквизитов по умолчанию.")
+    void createOrder_shouldPassDefaultTimeoutSeconds() throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "enableUniqueAmount": true,
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(csrf())
+                        .content(content)
+                        .header("Content-Type", "application/json")
+        ).andExpect(status().isCreated());
+        verify(orderApiService).createOrder(any(), any(), eq(30));
     }
 
     static Stream<Arguments> createOrderRequestArguments() {
@@ -282,7 +328,7 @@ class ClientOrderControllerTest {
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
     void createOrder_shouldReturnCreatedOrder(ClientOrderSummary expected) throws Exception {
         Order order = mock(Order.class);
-        when(orderApiService.createOrder(any(), any())).thenReturn(order);
+        when(orderApiService.createOrder(any(), any(), anyInt())).thenReturn(order);
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
@@ -433,7 +479,7 @@ class ClientOrderControllerTest {
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
                 .andExpect(status().isCreated());
-        verify(orderApiService).createOrder(eq(clientId), any());
+        verify(orderApiService).createOrder(eq(clientId), any(), eq(30));
     }
 
     @RepeatedTest(value = 2)

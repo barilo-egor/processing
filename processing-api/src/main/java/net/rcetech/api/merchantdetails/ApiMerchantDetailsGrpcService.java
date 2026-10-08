@@ -42,7 +42,8 @@ public class ApiMerchantDetailsGrpcService {
      * @throws MerchantDetailsNotFoundException если реквизиты не найдены (gRPC NOT_FOUND).
      * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
      */
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
+    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+                                         Integer timeoutSeconds) {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
@@ -51,7 +52,7 @@ public class ApiMerchantDetailsGrpcService {
                     .setInternalId(orderId.toString())
                     .setUserId(clientOrderRequest.userId())
                     .setAmount(clientOrderRequest.amount())
-                    .setWaitTimeout(10)
+                    .setWaitTimeout(timeoutSeconds)
                     .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
                     .setOwnerId(clientId.toString())
                     .build();
@@ -81,19 +82,14 @@ public class ApiMerchantDetailsGrpcService {
      * @param clientId           идентификатор клиента
      * @param orderId            идентификатор ордера
      * @param clientOrderRequest запрос на создание ордера
-     * @param testDetails        флаг запроса тестовых реквизитов
      * @return {@link ApiDetailsResponse} с найденными реквизитами
      */
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
-            boolean testDetails) {
-        if (testDetails) {
-            AtomicReference<ApiDetailsResponse> responseRef = new AtomicReference<>();
-            TestDetailsClientInterceptor.runWithTestDetails(() ->
-                    responseRef.set(getDetails(clientId, orderId, clientOrderRequest))
-            );
-            return responseRef.get();
-        }
-        return getDetails(clientId, orderId, clientOrderRequest);
+    public ApiDetailsResponse getTestDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
+        AtomicReference<ApiDetailsResponse> responseRef = new AtomicReference<>();
+        TestDetailsClientInterceptor.runWithTestDetails(() ->
+                responseRef.set(getDetails(clientId, orderId, clientOrderRequest, 10))
+        );
+        return responseRef.get();
     }
 
     public void getCallback(MerchantCallbackDTO merchantCallbackDTO) {

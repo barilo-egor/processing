@@ -41,11 +41,13 @@ public class OrderApiService {
         this.orderService = orderService;
     }
 
-    public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest) {
+    public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest, Integer timeoutSeconds) {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
         UUID orderId = UUID.randomUUID();
-        ApiDetailsResponse detailsResponse = merchantDetailsReceiver.getDetails(clientId, orderId, createOrderRequest);
+        ApiDetailsResponse detailsResponse = merchantDetailsReceiver.getDetails(
+                clientId, orderId, createOrderRequest, timeoutSeconds
+        );
         ApiDetailsResponse.Details details = detailsResponse.details();
         Order order = new Order();
         order.setId(orderId);

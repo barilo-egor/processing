@@ -71,7 +71,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                 new CreateOrderRequest(
                         internalId.toString(), 5042, Set.of(RequestMethod.CARD), true,
                         "https://example.com/callback", "534690"
-                )
+                ), 60
         );
         assertAll(
                 () -> assertEquals(requestId.toString(), actual.requestId()),
@@ -96,7 +96,8 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(MerchantDetailsNotFoundException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest));
+        assertThrows(MerchantDetailsNotFoundException.class,
+                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30));
     }
 
     @ParameterizedTest
@@ -113,7 +114,8 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest),
+        assertThrows(BaseException.class,
+                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30),
                 "Неизвестная ошибка GRPC " + statusValue);
     }
 
@@ -127,7 +129,8 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class, () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest),
+        assertThrows(BaseException.class,
+                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30),
                 "Непредвиденная ошибка: Illegal State");
     }
 
@@ -160,44 +163,10 @@ class ApiMerchantDetailsGrpcServiceTest {
                 "https://example.com/callback", "534690"
         );
 
-        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId, request, true);
+        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getTestDetails(clientId, orderId, request);
         assertNotNull(actual);
         assertEquals(requestId.toString(), actual.requestId());
         assertNull(TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
-    }
-
-    @Test
-    @DisplayName("getDetails с testDetails=false не должен устанавливать testDetails в контексте.")
-    void getDetails_withTestDetailsFalse_shouldNotSetContext() {
-        UUID requestId = UUID.randomUUID();
-        UUID merchantOrderId = UUID.randomUUID();
-        DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
-                .setRequestId(requestId.toString())
-                .setMerchant(Merchant.ALFA_TEAM.name())
-                .setOrderId(merchantOrderId.toString())
-                .setOrderStatus("SUCCESS")
-                .setDetails(DetailsGrpc.newBuilder()
-                        .setRequestMethod(RequestMethod.CARD.name())
-                        .setDetails("1234 1234 1234 1234")
-                        .setBank("Сбербанк")
-                        .build())
-                .setAmount(1000)
-                .build();
-        when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation -> {
-            assertNull(TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
-            return detailsResponseGrpc;
-        });
-
-        UUID clientId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
-        CreateOrderRequest request = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
-                "https://example.com/callback", "534690"
-        );
-
-        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId, request, false);
-        assertNotNull(actual);
-        assertEquals(requestId.toString(), actual.requestId());
     }
 
 }

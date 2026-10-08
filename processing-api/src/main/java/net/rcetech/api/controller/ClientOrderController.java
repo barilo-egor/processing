@@ -37,8 +37,11 @@ public class ClientOrderController {
 
     @PostMapping
     public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
+                                                          @RequestHeader(required = false, defaultValue = "30",
+                                                                  value = "Search-Timeout-Seconds")
+                                                                  Integer timeoutSeconds,
                                                           Principal principal) {
-        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest);
+        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds);
         return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 

@@ -9,5 +9,6 @@ import java.util.UUID;
  */
 public interface MerchantDetailsReceiver {
 
-    ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest);
+    ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+                                  Integer timeoutSeconds);
 }

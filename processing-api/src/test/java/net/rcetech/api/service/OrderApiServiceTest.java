@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
@@ -113,7 +114,7 @@ class OrderApiServiceTest {
         for (int i = 0; i < 10; i++) {
             clientService.save(getDummyClient());
         }
-        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, null));
+        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, null, 30));
     }
 
     ApiDetailsResponse getDummyApiDetailsResponse() {
@@ -146,7 +147,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер, срок которого истекает через время, установленное клиенту.")
     void createOrder_shouldCreateOrderWithExpiresAtWithClientOrderTimeout(int orderTimeout) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(detailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(detailsResponse);
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test");
@@ -156,7 +157,7 @@ class OrderApiServiceTest {
         Instant time = Instant.now();
         try (MockedStatic<Instant> instantMock = Mockito.mockStatic(Instant.class)) {
             instantMock.when(Instant::now).thenReturn(time);
-            orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
+            orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
             List<Order> orders = orderRepository.findAll();
             assertEquals(1, orders.size());
             Order order = orders.getFirst();
@@ -170,10 +171,10 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с переданными в запросе данными.")
     void createOrder_shouldCreateOrderWithCreateOrderRequestData(CreateOrderRequest createOrderRequest) {
         ApiDetailsResponse detailsResponse = getDummyApiDetailsResponse();
-        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(detailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(detailsResponse);
         Client client = getDummyClient();
         clientService.save(client);
-        orderApiService.createOrder(client.getId(), createOrderRequest);
+        orderApiService.createOrder(client.getId(), createOrderRequest, 30);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -208,8 +209,8 @@ class OrderApiServiceTest {
     void createOrder_shouldCreateOrderWithDetailsResponseData(ApiDetailsResponse apiDetailsResponse) {
         Client client = getDummyClient();
         clientService.save(client);
-        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(apiDetailsResponse);
+        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -248,10 +249,10 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен создать ордер с callback url сохраненным за клиентом.")
     void createOrder_shouldCreateOrderWithClientCallbackUrl(String url) {
         ApiDetailsResponse apiDetailsResponse = getDummyApiDetailsResponse();
-        when(merchantDetailsReceiver.getDetails(any(), any(), any())).thenReturn(apiDetailsResponse);
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(apiDetailsResponse);
         Client client = getDummyClient();
         client.setCallbackUrl(url);
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest());
+        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         assertEquals(url, orders.getFirst().getCallbackUrl());
