@@ -69,10 +69,10 @@ public class ApiMerchantDetailsGrpcService {
                 log.info("Не найдены реквизиты для {}", clientOrderRequest);
                 throw new MerchantDetailsNotFoundException();
             } else {
-                throw statusException;
+                throw new BaseException("Неизвестная ошибка GRPC " + code, statusException);
             }
         } catch (Exception ex) {
-            throw new RuntimeException("Непредвиденная ошибка: " + ex.getMessage(), ex);
+            throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
     }
 

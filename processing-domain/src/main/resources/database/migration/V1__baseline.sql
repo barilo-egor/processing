@@ -32,7 +32,6 @@ create table orders
     internal_id           varchar(255)  not null,
     status                varchar(30)   not null,
     amount                integer       not null,
-    enable_unique_amount  bit           not null,
     merchant              varchar(30)   not null,
     merchant_order_id     varchar(255)  not null,
     merchant_order_status varchar(255)  not null,

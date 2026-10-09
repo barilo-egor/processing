@@ -69,7 +69,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         UUID internalId = UUID.randomUUID();
         ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(clientId, orderId,
                 new CreateOrderRequest(
-                        internalId.toString(), 5042, Set.of(RequestMethod.CARD), true,
+                        internalId.toString(), 5042, Set.of(RequestMethod.CARD),
                         "https://example.com/callback", "534690"
                 ), 60
         );
@@ -91,7 +91,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     void getDetails_shouldThrowMerchantDetailsNotFoundExceptionIfNotFoundGrpcStatus() {
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
+                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
@@ -109,7 +109,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         Status status = Status.fromCodeValue(statusValue);
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(status));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
+                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
@@ -124,7 +124,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     void getDetails_shouldThrowBaseExceptionIfUnknownException() {
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new IllegalStateException("Illegal State"));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), true,
+                UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
@@ -159,7 +159,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
         CreateOrderRequest request = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
+                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
 

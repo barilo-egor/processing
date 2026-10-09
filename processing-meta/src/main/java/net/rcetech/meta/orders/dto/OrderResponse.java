@@ -23,7 +23,6 @@ public record OrderResponse(
         String internalId,
         OrderStatus status,
         Integer amount,
-        Boolean enableUniqueAmount,
         Merchant merchant,
         String merchantOrderId,
         String merchantOrderStatus,

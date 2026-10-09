@@ -98,7 +98,6 @@ class ClientOrderControllerTest {
                 {
                     "amount": 5000,
                     "methods":["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -119,7 +118,6 @@ class ClientOrderControllerTest {
                     "internalId": " ",
                     "amount": 5000,
                     "methods":["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -139,7 +137,6 @@ class ClientOrderControllerTest {
                 {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "methods":["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -160,7 +157,6 @@ class ClientOrderControllerTest {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": -5000,
                     "methods":["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -180,7 +176,6 @@ class ClientOrderControllerTest {
                 {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": 5000,
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -201,7 +196,6 @@ class ClientOrderControllerTest {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": 5000,
                     "methods": [],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086"
                 }""";
         mockMvc.perform(
@@ -228,7 +222,6 @@ class ClientOrderControllerTest {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": 5000,
                     "methods": ["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086",
                     "callbackUrl": "%s"
                 }""".formatted(callbackUrl);
@@ -261,7 +254,6 @@ class ClientOrderControllerTest {
                 () -> assertEquals(expected.internalId(), actual.internalId()),
                 () -> assertEquals(expected.amount(), actual.amount()),
                 () -> assertEquals(expected.methods(), actual.methods()),
-                () -> assertEquals(expected.enableUniqueAmount(), actual.enableUniqueAmount()),
                 () -> assertEquals(expected.callbackUrl(), actual.callbackUrl()),
                 () -> assertEquals(expected.userId(), actual.userId())
         );
@@ -276,7 +268,6 @@ class ClientOrderControllerTest {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": 5000,
                     "methods": ["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086",
                     "callbackUrl": "https://example.com/callback"
                 }""";
@@ -299,7 +290,6 @@ class ClientOrderControllerTest {
                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                     "amount": 5000,
                     "methods": ["CARD"],
-                    "enableUniqueAmount": true,
                     "userId": "163637435086",
                     "callbackUrl": "https://example.com/callback"
                 }""";
@@ -316,9 +306,9 @@ class ClientOrderControllerTest {
     static Stream<Arguments> createOrderRequestArguments() {
         return Stream.of(
                 Arguments.of(new CreateOrderRequest("76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
-                        Set.of(RequestMethod.SBP), false, null, null)),
+                        Set.of(RequestMethod.SBP), null, null)),
                 Arguments.of(new CreateOrderRequest("c0ce1a58-c5f1-4427-97fd-af10a0e2c97b", 1166,
-                        Set.of(RequestMethod.CARD, RequestMethod.SBP), true,
+                        Set.of(RequestMethod.CARD, RequestMethod.SBP),
                         "https://example.com/callback", "Q-123515"))
         );
     }
@@ -336,7 +326,7 @@ class ClientOrderControllerTest {
                                 .with(csrf())
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
-                                        Set.of(RequestMethod.SBP), false, null, null
+                                        Set.of(RequestMethod.SBP), null, null
                                 )))
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isCreated())
@@ -353,7 +343,6 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
-                .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
                 .andExpect(jsonPath("$.method").value(expected.method().name()))
                 .andExpect(jsonPath("$.details").value(expected.details()))
                 .andExpect(jsonPath("$.bank").value(expected.bank()))
@@ -363,10 +352,10 @@ class ClientOrderControllerTest {
     static Stream<Arguments> orderSummaryArguments() {
         return Stream.of(
                 Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.NEW, 5129, true, RequestMethod.CARD,
+                        OrderStatus.NEW, 5129, RequestMethod.CARD,
                         "1234 1234 1234 1234", "Альфа банк", "https://google.com/callback")),
                 Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.SUCCESS, 1250, false, RequestMethod.SBP,
+                        OrderStatus.SUCCESS, 1250, RequestMethod.SBP,
                         "+78971233212", "T-BANK", "https://example.com/path/callback"))
         );
     }
@@ -386,7 +375,6 @@ class ClientOrderControllerTest {
                                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                                     "amount": 5000,
                                     "methods": ["CARD"],
-                                    "enableUniqueAmount": true,
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
@@ -404,7 +392,6 @@ class ClientOrderControllerTest {
                                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                                     "amount": 5000,
                                     "methods": ["CARD"],
-                                    "enableUniqueAmount": true,
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
@@ -426,7 +413,6 @@ class ClientOrderControllerTest {
                                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                                     "amount": 5000,
                                     "methods": ["CARD"],
-                                    "enableUniqueAmount": true,
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
@@ -446,7 +432,6 @@ class ClientOrderControllerTest {
                                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                                     "amount": 5000,
                                     "methods": ["CARD"],
-                                    "enableUniqueAmount": true,
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
@@ -474,7 +459,6 @@ class ClientOrderControllerTest {
                                     "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
                                     "amount": 5000,
                                     "methods": ["CARD"],
-                                    "enableUniqueAmount": true,
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
@@ -506,7 +490,7 @@ class ClientOrderControllerTest {
                                 .with(csrf())
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
-                                        Set.of(RequestMethod.SBP), false, null, null
+                                        Set.of(RequestMethod.SBP), null, null
                                 )))
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isOk())
@@ -523,7 +507,6 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
-                .andExpect(jsonPath("$.enableUniqueAmount").value(expected.enableUniqueAmount()))
                 .andExpect(jsonPath("$.method").value(expected.method().name()))
                 .andExpect(jsonPath("$.details").value(expected.details()))
                 .andExpect(jsonPath("$.bank").value(expected.bank()))
@@ -534,7 +517,7 @@ class ClientOrderControllerTest {
     @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
     void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
         ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                OrderStatus.NEW, 5129, true, RequestMethod.CARD,
+                OrderStatus.NEW, 5129, RequestMethod.CARD,
                 "1234 1234 1234 1234", "Сбербанк", "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
@@ -561,7 +544,6 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.content[0].internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))
                 .andExpect(jsonPath("$.content[0].amount").value(expected.amount()))
-                .andExpect(jsonPath("$.content[0].enableUniqueAmount").value(expected.enableUniqueAmount()))
                 .andExpect(jsonPath("$.content[0].method").value(expected.method().name()))
                 .andExpect(jsonPath("$.content[0].details").value(expected.details()))
                 .andExpect(jsonPath("$.content[0].bank").value(expected.bank()))

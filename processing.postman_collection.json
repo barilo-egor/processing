@@ -158,7 +158,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n      \"createdAt\": 1791202963000,\n      \"internalId\": \"qwerty10000\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 5000,\n      \"enableUniqueAmount\": false,\n      \"method\": \"CARD\",\n      \"details\": \"1111 2222 3n3n3n3n 4444\",\n      \"bank\": \"T-BANK\",\n      \"callbackUrl\": \"https://example.com/callback\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n      \"createdAt\": 1791202963000,\n      \"internalId\": \"qwerty10000\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 5000,\n      \"method\": \"CARD\",\n      \"details\": \"1111 2222 3n3n3n3n 4444\",\n      \"bank\": \"T-BANK\",\n      \"callbackUrl\": \"https://example.com/callback\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -255,7 +255,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10000\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 5000,\n  \"enableUniqueAmount\": false,\n  \"method\": \"CARD\",\n  \"details\": \"1111 2222 3n3n3n3n 4444\",\n  \"bank\": \"T-BANK\",\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
+                  "body": "{\n  \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10000\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 5000,\n  \"method\": \"CARD\",\n  \"details\": \"1111 2222 3n3n3n3n 4444\",\n  \"bank\": \"T-BANK\",\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
                 }
               ]
             },
@@ -271,7 +271,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\"],\n    \"enableUniqueAmount\": false,\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                  "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2047,7 +2047,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"id\": \"f59dacef-b10e-11f1-a4b9-3654dc2f460f\",\n  \"createdAt\": 1789492123359,\n  \"expiresAt\": 1789495723359,\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"clientUsername\": \"client\",\n  \"internalId\": \"INT-001\",\n  \"status\": \"NEW\",\n  \"amount\": 1500,\n  \"enableUniqueAmount\": false,\n  \"merchant\": \"ALFA_TEAM\",\n  \"merchantOrderId\": \"M-ORD-1001\",\n  \"merchantOrderStatus\": \"PAID\",\n  \"method\": \"CARD\",\n  \"details\": \"1234 1234 1234 1234 \",\n  \"bank\": \"Bank_Alpha\",\n  \"callbackUrl\": \"http://example.com/callback\"\n}"
+                  "body": "{\n  \"id\": \"f59dacef-b10e-11f1-a4b9-3654dc2f460f\",\n  \"createdAt\": 1789492123359,\n  \"expiresAt\": 1789495723359,\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"clientUsername\": \"client\",\n  \"internalId\": \"INT-001\",\n  \"status\": \"NEW\",\n  \"amount\": 1500,\n  \"merchant\": \"ALFA_TEAM\",\n  \"merchantOrderId\": \"M-ORD-1001\",\n  \"merchantOrderStatus\": \"PAID\",\n  \"method\": \"CARD\",\n  \"details\": \"1234 1234 1234 1234 \",\n  \"bank\": \"Bank_Alpha\",\n  \"callbackUrl\": \"http://example.com/callback\"\n}"
                 }
               ]
             }

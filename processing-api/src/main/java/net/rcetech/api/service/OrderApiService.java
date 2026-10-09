@@ -65,7 +65,6 @@ public class OrderApiService {
                         ? detailsResponse.amount()
                         : createOrderRequest.amount()
         );
-        order.setEnableUniqueAmount(createOrderRequest.enableUniqueAmount());
         order.setMerchant(detailsResponse.merchant());
         order.setMerchantOrderId(detailsResponse.orderId());
         order.setMerchantOrderStatus(detailsResponse.orderStatus());

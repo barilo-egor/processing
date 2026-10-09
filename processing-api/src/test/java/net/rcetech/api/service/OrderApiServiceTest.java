@@ -115,7 +115,7 @@ class OrderApiServiceTest {
             clientService.save(getDummyClient());
         }
         CreateOrderRequest request = new CreateOrderRequest(
-                null, null, null, null, null, null
+                null, null, null, null, null
         );
         assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, request, 30));
     }
@@ -127,7 +127,7 @@ class OrderApiServiceTest {
         UUID clientId = client.getId();
         Order order = getDummyOrder(client);
         CreateOrderRequest request = new CreateOrderRequest(
-                order.getInternalId(), null, null, null, null, null
+                order.getInternalId(), null, null, null, null
         );
         assertThrows(
                 BadRequestException.class,
@@ -147,7 +147,7 @@ class OrderApiServiceTest {
 
     CreateOrderRequest getDummyCreateOrderRequest() {
         return new CreateOrderRequest(
-                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
+                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
                 null, "1235153208"
         );
     }
@@ -201,7 +201,6 @@ class OrderApiServiceTest {
         assertAll(
                 () -> assertEquals(createOrderRequest.internalId(), order.getInternalId()),
                 () -> assertEquals(createOrderRequest.amount(), order.getAmount()),
-                () -> assertEquals(createOrderRequest.enableUniqueAmount(), order.getEnableUniqueAmount()),
                 () -> assertEquals(createOrderRequest.callbackUrl(), order.getCallbackUrl())
         );
     }
@@ -210,13 +209,13 @@ class OrderApiServiceTest {
         return Stream.of(
                 Arguments.of(
                         new CreateOrderRequest(
-                                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD), true,
+                                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
                                 "https://example.com/callback", "1235153208"
                         )
                 ),
                 Arguments.of(
                         new CreateOrderRequest(
-                                UUID.randomUUID().toString(), 5452, Set.of(RequestMethod.CARD, RequestMethod.SBP), false,
+                                UUID.randomUUID().toString(), 5452, Set.of(RequestMethod.CARD, RequestMethod.SBP),
                                 "https://google.com/callback", UUID.randomUUID().toString()
                         )
                 )

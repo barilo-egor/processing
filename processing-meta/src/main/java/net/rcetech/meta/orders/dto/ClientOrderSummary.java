@@ -15,7 +15,6 @@ import java.util.UUID;
  * @param internalId идентификатор ордера в системе клиента
  * @param status статус ордера
  * @param amount сумма ордера
- * @param enableUniqueAmount признак того, была ли разрешена уникализация клиентом
  * @param details реквизиты
  * @param bank банк реквизитов
  * @param callbackUrl адрес отправки колл-бэков
@@ -27,7 +26,6 @@ public record ClientOrderSummary(
         String internalId,
         OrderStatus status,
         Integer amount,
-        boolean enableUniqueAmount,
         RequestMethod method,
         String details,
         String bank,

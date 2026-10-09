@@ -15,7 +15,6 @@ import java.util.Set;
  * @param internalId идентификатор ордера внутри системы апи клиента
  * @param amount сумма ордера
  * @param methods методы оплаты
- * @param enableUniqueAmount признак допустимости уникализации суммы
  * @param callbackUrl адрес для колл-бэков
  * @param userId идентификатор конечного пользователя, который будет совершать оплату
  */
@@ -24,7 +23,6 @@ public record CreateOrderRequest(
         @NotNull(message = "should be not empty")
         @Positive(message = "should be positive") Integer amount,
         @NotEmpty(message = "should contains at least one") Set<RequestMethod> methods,
-        Boolean enableUniqueAmount,
         @URL(protocol = "https", message = "should be valid and starts with https")
         String callbackUrl,
         String userId

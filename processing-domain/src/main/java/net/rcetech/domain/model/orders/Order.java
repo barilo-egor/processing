@@ -66,13 +66,6 @@ public class Order implements Persistable<UUID> {
     private Integer amount;
 
     /**
-     * Признак того, была ли разрешена уникализация клиентом.
-     */
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean enableUniqueAmount = false;
-
-    /**
      * Константа мерчанта, от которого были получены реквизиты.
      */
     @Enumerated(EnumType.STRING)

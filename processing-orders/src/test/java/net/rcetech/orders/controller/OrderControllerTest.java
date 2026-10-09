@@ -146,20 +146,20 @@ class OrderControllerTest {
     @ParameterizedTest
     @CsvSource(value = {
             "c63c69fb-e14c-47af-b64e-20bd1faf9c7a,1789122084461,1789122085461,1b3cd577-02a3-4f38-bad2-bfd98fb4e108," +
-                    "smokilolik,1245670,NEW,5400,true,ALFA_TEAM,17457424,PROCESSING,CARD,1234 1234 1234 1234,Альфа-Банк," +
+                    "smokilolik,1245670,NEW,5400,ALFA_TEAM,17457424,PROCESSING,CARD,1234 1234 1234 1234,Альфа-Банк," +
                     "https://example.com/callback",
             "33182fc8-ab84-43f6-847d-67c1d8679bbd,1789122089767,1789122090767,9d429ff1-e362-409a-b282-33a33856f20e," +
-                    "TG_SHOP,b1d61aa7-eb4c-40ce-a458-9192294e5ca0,SUCCESS,1200,false,ONLY_PAYS,b65aecec-781c-420f-a4b9-433f1da03ef4" +
+                    "TG_SHOP,b1d61aa7-eb4c-40ce-a458-9192294e5ca0,SUCCESS,1200,ONLY_PAYS,b65aecec-781c-420f-a4b9-433f1da03ef4" +
                     ",ACCEPTED,SBP,+78957623243,T-BANK,null"
     }, nullValues = {"null"})
     @DisplayName("Метод должен вернуть статус 200 и JSON ордера.")
     void getOrder_shouldReturn200WithOrder(UUID id, Long createdAt, Long expiresAt, UUID clientId, String clientUsername,
                                            String internalId, OrderStatus status, Integer amount,
-                                           Boolean enableUniqueAmount, Merchant merchant, String merchantOrderId,
+                                           Merchant merchant, String merchantOrderId,
                                            String merchantOrderStatus, RequestMethod method, String details,
                                            String bank, String callbackUrl) throws Exception {
         OrderResponse orderResponse = new OrderResponse(id, Instant.ofEpochMilli(createdAt), Instant.ofEpochMilli(expiresAt),
-                clientId, clientUsername, internalId, status, amount, enableUniqueAmount, merchant, merchantOrderId,
+                clientId, clientUsername, internalId, status, amount, merchant, merchantOrderId,
                 merchantOrderStatus, method, details, bank, callbackUrl);
         when(orderService.findById(any(), any())).thenReturn(Optional.of(orderResponse));
         mockMvc.perform(get("/api/private/order/" + id.toString())
@@ -171,7 +171,6 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.expiresAt").value(expiresAt))
                 .andExpect(jsonPath("$.clientId").value(UUID_MATCHER))
                 .andExpect(jsonPath("$.amount").value(amount))
-                .andExpect(jsonPath("$.enableUniqueAmount").value(enableUniqueAmount))
                 .andExpect(jsonPath("$.merchant").value(merchant.name()))
                 .andExpect(jsonPath("$.merchantOrderId").value(merchantOrderId))
                 .andExpect(jsonPath("$.merchantOrderStatus").value(merchantOrderStatus))
