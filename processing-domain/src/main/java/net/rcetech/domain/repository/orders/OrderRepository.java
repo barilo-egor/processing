@@ -17,4 +17,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     Optional<Order> findByMerchantOrderId(String merchantOrderId);
 
     List<Order> findAllByStatusAndExpiresAtBefore(OrderStatus status, Instant now);
+
+    boolean existsByInternalId(String internalId);
 }

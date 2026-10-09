@@ -44,6 +44,10 @@ public class OrderApiService {
     public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest, Integer timeoutSeconds) {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
+        if (orderService.existsByInternalId(createOrderRequest.internalId())) {
+            throw new BadRequestException("Внутренний идентификатор(internalId) должен быть уникальным, ордер с идентификатором "
+                    + createOrderRequest.internalId() + " уже присутствует в системе.");
+        }
         UUID orderId = UUID.randomUUID();
         ApiDetailsResponse detailsResponse = merchantDetailsReceiver.getDetails(
                 clientId, orderId, createOrderRequest, timeoutSeconds

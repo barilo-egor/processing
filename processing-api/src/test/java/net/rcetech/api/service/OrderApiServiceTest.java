@@ -114,7 +114,27 @@ class OrderApiServiceTest {
         for (int i = 0; i < 10; i++) {
             clientService.save(getDummyClient());
         }
-        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, null, 30));
+        CreateOrderRequest request = new CreateOrderRequest(
+                null, null, null, null, null, null
+        );
+        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, request, 30));
+    }
+
+    @RepeatedTest(value = 2)
+    @DisplayName("Метод должен бросить BadRequestException, если в системе уже существует ордер с переданным internalId.")
+    void createOrder_shouldThrowBadRequestExceptionIfInternalIdIsNotUnique() {
+        Client client = getDummyClient();
+        UUID clientId = client.getId();
+        Order order = getDummyOrder(client);
+        CreateOrderRequest request = new CreateOrderRequest(
+                order.getInternalId(), null, null, null, null, null
+        );
+        assertThrows(
+                BadRequestException.class,
+                () -> orderApiService.createOrder(clientId, request, 30),
+                "Внутренний идентификатор(internalId) должен быть уникальным, ордер с идентификатором "
+                        + order.getInternalId() + " уже присутствует в системе."
+        );
     }
 
     ApiDetailsResponse getDummyApiDetailsResponse() {
@@ -342,7 +362,7 @@ class OrderApiServiceTest {
         );
     }
 
-    @ValueSource(strings = { "TIMEOUT", "SUCCESS" })
+    @ValueSource(strings = {"TIMEOUT", "SUCCESS"})
     @ParameterizedTest
     @DisplayName("Метод должен вернуть отфильтрованные по статусу ордера.")
     void findAll_shouldFilterOrdersByStatus(OrderStatus status) {
@@ -361,7 +381,7 @@ class OrderApiServiceTest {
         assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
     }
 
-    @ValueSource(strings = { "SBP" })
+    @ValueSource(strings = {"SBP"})
     @ParameterizedTest
     @DisplayName("Метод должен вернуть отфильтрованные по методу ордера.")
     void findAll_shouldFilterOrdersByMethod(RequestMethod method) {

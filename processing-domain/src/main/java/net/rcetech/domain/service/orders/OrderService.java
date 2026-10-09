@@ -99,4 +99,8 @@ public class OrderService {
         order.setMerchantOrderStatus(merchantOrderStatus);
         eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
     }
+
+    public boolean existsByInternalId(String internalId) {
+        return orderRepository.existsByInternalId(internalId);
+    }
 }
