@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -118,7 +119,9 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$.callbackUrl").value(callbackUrl))
                 .andExpect(jsonPath("$.orderTimeoutSeconds").value(orderTimeoutSeconds))
                 .andExpect(jsonPath("$.commissionPercent").value(commissionPercent.doubleValue()))
-                .andExpect(jsonPath("$.balance").value(balance));
+                .andExpect(jsonPath("$.balance").value(balance))
+                .andExpect(jsonPath("$.comment").doesNotExist())
+                .andExpect(jsonPath("$.minWithdrawalAmount").doesNotExist());
     }
 
     @ParameterizedTest
@@ -128,6 +131,48 @@ class ClientControllerTest {
     })
     @DisplayName("Параметры запроса должны быть переданы в метод сервиса.")
     void update_shouldPassParameters(String json) throws Exception {
+        ClientProjection client = new ClientProjection() {
+            @Override
+            public UUID getId() {
+                return UUID.randomUUID();
+            }
+
+            @Override
+            public String getUsername() {
+                return "username";
+            }
+
+            @Override
+            public Instant getRegisteredAt() {
+                return Instant.now();
+            }
+
+            @Override
+            public String getCallbackUrl() {
+                return "https://example.com/callback";
+            }
+
+            @Override
+            public Integer getOrderTimeoutSeconds() {
+                return 900;
+            }
+
+            @Override
+            public BigDecimal getCommissionPercent() {
+                return new BigDecimal("20.5");
+            }
+
+            @Override
+            public Integer getBalance() {
+                return 154789;
+            }
+
+            @Override
+            public Set<RequestMethod> getMethods() {
+                return Set.of(RequestMethod.CARD, RequestMethod.SBP);
+            }
+        };
+        when(clientService.update(any(), any(ClientUpdateRequest.class))).thenReturn(client);
         ClientUpdateRequest expected = objectMapper.readValue(json, ClientUpdateRequest.class);
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/client")
@@ -135,7 +180,10 @@ class ClientControllerTest {
                 .with(user(clientId.toString()).roles("CLIENT"))
                         .header("Content-type", "application/json")
                 .content(json))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.comment").doesNotExist())
+                .andExpect(jsonPath("$.minWithdrawalAmount").doesNotExist());
         ArgumentCaptor<ClientUpdateRequest> captor = ArgumentCaptor.forClass(ClientUpdateRequest.class);
         verify(clientService).update(eq(clientId), captor.capture());
         assertEquals(expected.callbackUrl(), captor.getValue().callbackUrl());

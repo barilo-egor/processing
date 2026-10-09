@@ -6,7 +6,7 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
-import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.projection.SupportClientProjection;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -32,14 +32,14 @@ public class SupportClientController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public PagedModel<ClientProjection> getClients(ClientFilter filter,
-                                                    @PageableDefault(size = 20) Pageable pageable) {
-        return new PagedModel<>(clientService.findAll(filter, pageable, ClientProjection.class));
+    public PagedModel<SupportClientProjection> getClients(ClientFilter filter,
+                                                          @PageableDefault(size = 20) Pageable pageable) {
+        return new PagedModel<>(clientService.findAll(filter, pageable, SupportClientProjection.class));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ClientProjection> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
+    public ResponseEntity<SupportClientProjection> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
         return new ResponseEntity<>(clientService.update(id, updateClientDTO), HttpStatus.OK);
     }
 }

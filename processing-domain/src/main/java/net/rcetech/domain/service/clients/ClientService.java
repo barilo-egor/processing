@@ -10,6 +10,7 @@ import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,22 +58,22 @@ public class ClientService {
     }
 
     @Transactional
-    public ClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
-        return update(id, client -> clientMapper.updateNotNull(updateClientDTO, client));
+    public SupportClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
+        return update(id, client -> clientMapper.updateNotNull(updateClientDTO, client), SupportClientProjection.class);
     }
 
     @Transactional
     public ClientProjection update(UUID id, ClientUpdateRequest clientUpdateRequest) {
-        return update(id, client -> clientMapper.updateNotNull(clientUpdateRequest, client));
+        return update(id, client -> clientMapper.updateNotNull(clientUpdateRequest, client), ClientProjection.class);
     }
 
-    private ClientProjection update(UUID id, Consumer<Client> clientMapFunction) {
+    private <T> T update(UUID id, Consumer<Client> clientMapFunction, Class<T> projectionType) {
         Client client = findById(id).orElseThrow(
                 () -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id))
         );
         clientMapFunction.accept(client);
         clientRepository.save(client);
-        return findById(id, ClientProjection.class)
+        return findById(id, projectionType)
                 .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));
     }
 

@@ -9,5 +9,7 @@ import java.util.Set;
 public record UpdateClientDTO(
         @Min(0) BigDecimal commissionPercent,
         @Min(0) Integer orderTimeoutSeconds,
-        Set<RequestMethod> methods
+        Set<RequestMethod> methods,
+        String comment,
+        Integer minWithdrawalAmount
 ) {}

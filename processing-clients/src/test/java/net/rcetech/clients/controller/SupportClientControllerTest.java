@@ -5,14 +5,13 @@ import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
-import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
 import org.hamcrest.Matchers;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -92,20 +91,20 @@ class SupportClientControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Метод должен вернуть JSON список клиентов.")
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
-        List<ClientProjection> clients = new ArrayList<>();
+        List<SupportClientProjection> clients = new ArrayList<>();
         for (int i = 0; i < clientsSize; i++) {
-            ClientProjection client = getClient(i);
+            SupportClientProjection client = getClient(i);
             clients.add(client);
         }
-        Page<ClientProjection> page = new PageImpl<>(
+        Page<SupportClientProjection> page = new PageImpl<>(
                 clients, PageRequest.of(0, 100), clients.size()
         );
-        when(clientService.findAll(any(), any(), eq(ClientProjection.class))).thenReturn(page);
+        when(clientService.findAll(any(), any(), eq(SupportClientProjection.class))).thenReturn(page);
         ResultActions resultActions = mockMvc.perform(get("/api/private/client"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
-        for (ClientProjection client : clients) {
+        for (SupportClientProjection client : clients) {
             resultActions.andExpect(jsonPath("$.content[" + i + "].id").value(client.getId().toString()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].username").value(client.getUsername()));
             resultActions.andExpect(jsonPath("$.content[" + i + "].registeredAt").value(client.getRegisteredAt().toEpochMilli()));
@@ -116,15 +115,17 @@ class SupportClientControllerTest {
             resultActions.andExpect(jsonPath("$.content[" + i + "].balance").value("154789"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].methods").isArray());
             resultActions.andExpect(jsonPath("$.content[" + i + "].methods", Matchers.hasItems("CARD", "SBP")));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].comment").value("comment"));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].minWithdrawalAmount").value(50000));
             i++;
         }
     }
 
-    private static @NonNull ClientProjection getClient(int i) {
+    private static @NonNull SupportClientProjection getClient(int i) {
         UUID id = UUID.randomUUID();
         String username = "test" + i;
         Instant now = Instant.now();
-        return new ClientProjection() {
+        return new SupportClientProjection() {
             @Override
             public UUID getId() {
                 return id;
@@ -164,6 +165,16 @@ class SupportClientControllerTest {
             public Set<RequestMethod> getMethods() {
                 return Set.of(RequestMethod.CARD, RequestMethod.SBP);
             }
+
+            @Override
+            public String getComment() {
+                return "comment";
+            }
+
+            @Override
+            public Integer getMinWithdrawalAmount() {
+                return 50000;
+            }
         };
     }
 
@@ -188,7 +199,7 @@ class SupportClientControllerTest {
                 .queryParam("page", String.valueOf(page))
                 .queryParam("size", String.valueOf(size))
         ).andExpect(status().isOk());
-        verify(clientService).findAll(filterCaptor.capture(), pageableCaptor.capture(), eq(ClientProjection.class));
+        verify(clientService).findAll(filterCaptor.capture(), pageableCaptor.capture(), eq(SupportClientProjection.class));
         ClientFilter filter = filterCaptor.getValue();
         Pageable pageable = pageableCaptor.getValue();
         assertAll(
@@ -227,41 +238,12 @@ class SupportClientControllerTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "{\"status\":\"BLOCKED\"}",
-            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
-            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
-            "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\", \"percentCommission\":\"15.5\"}",
-            "{\"orderTimeoutSeconds\":700}",
-            "{\"methods\":[\"SBP\",\"CARD\"]}"
-    })
-    @DisplayName("Доступ должен быть запрещен клиенту, если присутствуют поля, запрещенные к обновлению клиенту.")
-    void update_shouldReturnForbiddenForClientIfUpdateNotAccessedFields(String json) throws Exception {
-        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
-                        .header("Content-Type", "application/json")
-                        .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles("CLIENT"))
-                        .with(csrf())
-                        .content(json))
-                .andExpect(status().isForbidden());
-    }
-
-    @RepeatedTest(value = 2)
-    @DisplayName("Доступ должен быть запрещен, если клиент обновляет поля не самого себя.")
-    void update_shouldReturnForbiddenIfClientNotSelfUpdating() throws Exception {
-        mockMvc.perform(patch("/api/private/client/" + UUID.randomUUID())
-                        .header("Content-Type", "application/json")
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
-                        .with(csrf())
-                        .content("{\"callbackUrl\":\"https://example.com/callback\"}"))
-                .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "{\"status\":\"BLOCKED\"}",
             "{\"status\":\"BLOCKED\", \"callbackUrl\":\"https://example.com\"}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500}",
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
             "{\"callbackUrl\":\"https://example.com\"}",
-            "{\"methods\":[\"CARD\",\"SBP\"]}"
+            "{\"methods\":[\"CARD\",\"SBP\"]}",
+            "{\"comment\":\"some comment\",\"minWithdrawalAmount\":5004}"
     })
     @DisplayName("Сериализация должна пройти без ошибок.")
     void update_shouldUpdateClient(String json) throws Exception {

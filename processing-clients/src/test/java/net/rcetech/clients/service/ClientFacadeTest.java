@@ -11,6 +11,7 @@ import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaExecutorSpringConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,18 +114,18 @@ class ClientFacadeTest {
     @Test
     @DisplayName("Метод должен повторить обновление клиента 3 раза, если был брошен OptimisticLockException.")
     void update_shouldRepeatUpdateUpdateClientDTOIfOptimisticLockExceptionThrown() {
-        ClientProjection clientProjection = mock(ClientProjection.class);
+        SupportClientProjection supportClientProjection = mock(SupportClientProjection.class);
         when(clientService.update(any(), any(UpdateClientDTO.class)))
                 .thenThrow(OptimisticLockException.class)
                 .thenThrow(OptimisticLockException.class)
-                .thenReturn(clientProjection);
+                .thenReturn(supportClientProjection);
 
-        ClientProjection actual = clientFacade.update(UUID.randomUUID(), new UpdateClientDTO(
-                null, null, null
+        SupportClientProjection actual = clientFacade.update(UUID.randomUUID(), new UpdateClientDTO(
+                null, null, null, null, null
                 )
         );
 
         verify(clientService, times(3)).update(any(), any(UpdateClientDTO.class));
-        assertEquals(clientProjection, actual);
+        assertEquals(supportClientProjection, actual);
     }
 }

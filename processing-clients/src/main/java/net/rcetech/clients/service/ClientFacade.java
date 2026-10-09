@@ -7,6 +7,7 @@ import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.exception.BaseException;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class ClientFacade {
         return clientService.update(id, clientUpdateRequest);
     }
 
-    public ClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
+    public SupportClientProjection update(UUID id, UpdateClientDTO updateClientDTO) {
         return clientService.update(id, updateClientDTO);
     }
 }

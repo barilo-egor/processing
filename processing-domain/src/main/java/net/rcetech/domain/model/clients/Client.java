@@ -101,6 +101,10 @@ public class Client implements Persistable<UUID> {
     @SortNatural
     private SortedSet<RequestMethod> methods = new TreeSet<>();
 
+    private String comment;
+
+    private Integer minWithdrawalAmount;
+
     @Transient
     private boolean isNew = true;
 

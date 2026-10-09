@@ -1329,11 +1329,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "210"
+                      "value": "231"
                     },
                     {
                       "key": "date",
-                      "value": "Sun, 27 Sep 2026 18:39:10 GMT"
+                      "value": "Fri, 09 Oct 2026 16:28:20 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -1345,7 +1345,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"username\": \"postman-admin12\"\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": null,\n  \"commissionPercent\": null,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [],\n  \"minWithdrawalAmount\": null,\n  \"orderTimeoutSeconds\": 900,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             },
@@ -2548,11 +2548,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "275"
+                      "value": "308"
                     },
                     {
                       "key": "date",
-                      "value": "Sun, 27 Sep 2026 18:37:38 GMT"
+                      "value": "Fri, 09 Oct 2026 16:53:44 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2564,7 +2564,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"commissionPercent\": null,\n      \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"methods\": [],\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1788022344000,\n      \"username\": \"postman-admin12\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": null,\n      \"commissionPercent\": null,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"methods\": [],\n      \"minWithdrawalAmount\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -2575,7 +2575,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"]\n}",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2596,7 +2596,7 @@
                   "variable": [
                     {
                       "key": "id",
-                      "value": "7321f213-6ab9-4d15-b950-9de1c756812a"
+                      "value": "8b2c3fe9-9507-42f9-839a-e84baf7e99bf"
                     }
                   ]
                 },
@@ -2610,7 +2610,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"]\n}",
+                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2631,7 +2631,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "7321f213-6ab9-4d15-b950-9de1c756812a"
+                          "value": "8b2c3fe9-9507-42f9-839a-e84baf7e99bf"
                         }
                       ]
                     }
@@ -2674,7 +2674,7 @@
                     },
                     {
                       "key": "date",
-                      "value": "Sun, 27 Sep 2026 18:38:03 GMT"
+                      "value": "Fri, 09 Oct 2026 16:54:43 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2686,7 +2686,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"commissionPercent\": 15.5,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1788022344000,\n  \"username\": \"postman-admin12\"\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             },
