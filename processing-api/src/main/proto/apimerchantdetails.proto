@@ -24,6 +24,7 @@ message DetailsRequestGrpc {
   int32 wait_timeout = 5;
   repeated string request_method = 6;
   string owner_id = 7;
+  string initiator_app = 8;
 }
 
 message DetailsResponseGrpc {
