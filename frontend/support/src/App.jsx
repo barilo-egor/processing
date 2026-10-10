@@ -1036,12 +1036,17 @@ function shortId(id) {
    «Отмена» закрывает окно без сохранения, после «Сохранить»
    окно тоже закрывается. */
 
+// Предел длины комментария к клиенту (ТЗ).
+const COMMENT_MAX = 1000;
+
 function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) {
   // Черновик настроек. Строки, а не числа: поле ввода всегда работает
   // со строкой, приведение и проверка — при сохранении.
   const initial = () => ({
     commission: client.commissionPercent ?? '',
     timeout: client.orderTimeoutSeconds ?? '',
+    minWithdrawal: client.minWithdrawalAmount ?? '',
+    comment: client.comment ?? '',
     methods: Array.isArray(client.methods) ? client.methods : [],
   });
 
@@ -1054,7 +1059,8 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
   const methodsKey = (client.methods || []).join(',');
   useEffect(() => { setForm(initial()); setErrors({}); },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [client.id, client.commissionPercent, client.orderTimeoutSeconds, methodsKey]);
+      [client.id, client.commissionPercent, client.orderTimeoutSeconds,
+        client.minWithdrawalAmount, client.comment, methodsKey]);
 
   // Раскрыт ли список методов: Escape тогда закрывает только его.
   const [methodsOpen, setMethodsOpen] = useState(false);
@@ -1095,6 +1101,23 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
     } else if (timeout !== Number(client.orderTimeoutSeconds)) {
       body.orderTimeoutSeconds = timeout;
     }
+
+    // Минимальная сумма вывода: целое число рублей от 0 (по ТЗ).
+    // Бэк обновляет только не-null поля, поэтому очистить уже заданное
+    // значение нельзя — пустое поле допустимо, только если суммы и не было.
+    const rawMin = String(form.minWithdrawal).trim();
+    const hadMin = client.minWithdrawalAmount != null && client.minWithdrawalAmount !== '';
+    if (rawMin === '') {
+      if (hadMin) errs.minWithdrawal = 'Укажите целое число не меньше нуля';
+    } else if (!/^\d+$/.test(rawMin)) {
+      errs.minWithdrawal = 'Укажите целое число не меньше нуля';
+    } else if (Number(rawMin) !== Number(client.minWithdrawalAmount)) {
+      body.minWithdrawalAmount = Number(rawMin);
+    }
+
+    // Комментарий: до 1000 символов (длинее ввести не даёт поле), пустой допустим.
+    // Пустая строка — не null, поэтому бэк её сохранит и комментарий очистится.
+    if (form.comment !== (client.comment ?? '')) body.comment = form.comment;
 
     // Способы оплаты: шлём весь выбранный набор, только если он изменился.
     // Пустой массив отвязывает все методы, отсутствие поля — ничего не меняет.
@@ -1213,6 +1236,19 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
                 </span>
                 </FieldRow>
 
+                <FieldRow label="Минимальная сумма вывода" error={errors.minWithdrawal}>
+                <span className="input-suffix">
+                  <input
+                      type="text" inputMode="numeric" placeholder="0"
+                      value={form.minWithdrawal}
+                      disabled={saving}
+                      className={errors.minWithdrawal ? 'invalid' : ''}
+                      onChange={(e) => setField('minWithdrawal', e.target.value)}
+                  />
+                  <span className="suffix">₽</span>
+                </span>
+                </FieldRow>
+
                 <FieldRow label="Методы">
                   <MethodsSelect
                       options={allMethods}
@@ -1224,6 +1260,23 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
                   />
                 </FieldRow>
               </section>
+            </div>
+
+            {/* ---------- Комментарий: во всю ширину под блоками ---------- */}
+            <div className="client-comment">
+              <label className="eyebrow" htmlFor="client-comment">Комментарий</label>
+              <textarea
+                  id="client-comment"
+                  rows={3}
+                  maxLength={COMMENT_MAX}
+                  placeholder="Заметка администратора о клиенте"
+                  value={form.comment}
+                  disabled={saving}
+                  onChange={(e) => setField('comment', e.target.value.slice(0, COMMENT_MAX))}
+              />
+              <span className={`char-count${form.comment.length >= COMMENT_MAX ? ' is-full' : ''}`}>
+                {form.comment.length} / {COMMENT_MAX}
+              </span>
             </div>
           </div>
 
