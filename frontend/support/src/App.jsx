@@ -33,6 +33,7 @@ const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
   { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
+  { id: 'merchantHistory', title: 'История мерчантов', icon: 'fa-solid fa-clock-rotate-left' },
   { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
   { id: 'callbacks', title: 'КБ мерчантов', icon: 'fa-solid fa-rotate' },
@@ -198,6 +199,9 @@ export default function App() {
                     showToast={showToast}
                     onPickClient={setConfigClient}
                 />
+            )}
+            {section === 'merchantHistory' && (
+                <MerchantHistorySection merchants={merchants} methods={methods} showToast={showToast} />
             )}
             {section === 'transactions' && (
                 <TransactionsSection
@@ -777,7 +781,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
                   <td className="mono">{o.internalId || '—'}</td>
                   <td>
                     <span className="cell-main">{o.clientUsername || '—'}</span>
-                    <span className="cell-sub mono">{o.clientId || '—'}</span>
+                    <span className="cell-sub"><CopyValue value={o.clientId} onCopy={copy} /></span>
                   </td>
                   <td className="c-right mono">{fmtAmount(o.amount)}</td>
                   <td>
@@ -2193,6 +2197,311 @@ function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
   );
 }
 
+/* ==================== Раздел «История мерчантов» ====================
+   Выдачи реквизитов мерчантами по запросам клиентов API (таблица
+   merchant_history, только записи initiator_app = processing — их
+   отбирает бэк). Только просмотр.
+   Сортирует бэк по всей выборке; по умолчанию — дата по убыванию. */
+
+const EMPTY_MH_FILTER = {
+  operationId: '', merchantOrderId: '', actorId: '',
+  merchants: [], details: '', amount: '',
+  dateMode: 'equal',
+  date: '', time: '',
+  dateFrom: '', timeFrom: '',
+  dateTo: '', timeTo: '',
+};
+
+const MH_DEFAULT_SORT = { field: 'createdAt', dir: 'desc' };
+
+/* Деньги в таблице — с копейками, без знака валюты (он в заголовке не нужен по макету). */
+function fmtMh(v) {
+  if (v == null || v === '') return '—';
+  const n = Number(v);
+  return Number.isFinite(n)
+      ? n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '—';
+}
+
+function MerchantHistorySection({ merchants, methods, showToast }) {
+  const [draft, setDraft] = useState(EMPTY_MH_FILTER);
+  const [applied, setApplied] = useState(EMPTY_MH_FILTER);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [sort, setSort] = useState(null); // null — сортировка по умолчанию
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0); // «Обновить» — тот же запрос заново
+
+  const load = useCallback(async (f, pageNum, srt) => {
+    setLoading(true);
+    try {
+      const range = f.dateMode === 'equal'
+          ? {
+            createdAtFrom: dateTimeToMs(f.date, f.time, 'start'),
+            createdAtTo: dateTimeToMs(f.date, f.time, 'end'),
+          }
+          : {
+            createdAtFrom: dateTimeToMs(f.dateFrom, f.timeFrom, 'start'),
+            createdAtTo: dateTimeToMs(f.dateTo, f.timeTo, 'end'),
+          };
+      const r = await api.merchantHistory({
+        page: pageNum,
+        size: PAGE_SIZE,
+        sort: sortParam(srt || MH_DEFAULT_SORT),
+        operationId: f.operationId.trim(),
+        // В API бэка ID у мерчанта называется orderId.
+        orderId: f.merchantOrderId.trim(),
+        actorId: f.actorId.trim(),
+        details: f.details.trim(),
+        merchants: f.merchants,
+        amount: f.amount,
+        ...range,
+      });
+      setRows(r.items);
+      setTotal(r.total);
+    } catch (e) {
+      setRows([]);
+      setTotal(0);
+      showToast(e.message || 'Не удалось загрузить историю', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, reloadKey, load]);
+
+  const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const search = () => { setPage(0); setApplied(draft); };
+  const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_MH_FILTER); setApplied(EMPTY_MH_FILTER); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
+  const refresh = () => setReloadKey((k) => k + 1);
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text ?? ''));
+      showToast('Скопировано', 'success');
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  };
+
+  const merchantLabel = (name) =>
+      merchants.find((m) => m.name === name)?.displayName || name || '—';
+  const methodLabel = (name) =>
+      methods.find((m) => m.name === name)?.description || name || '—';
+
+  const shownSort = sort || MH_DEFAULT_SORT;
+  const th = (field, title, tip, className) => (
+      <SortTh field={field} sort={shownSort} onSort={onSort} className={className}>
+        {tip ? <span title={tip}>{title}</span> : title}
+      </SortTh>
+  );
+
+  return (
+      <>
+        <div className="card filter-card">
+          <div className="filter-grid filter-grid-3">
+            <div className="field">
+              <label htmlFor="mh-op">ID ордера</label>
+              <input id="mh-op" value={draft.operationId} placeholder="UUID ордера в процессинге"
+                     onChange={(e) => set('operationId', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="mh-morder">ID у мерчанта</label>
+              <input id="mh-morder" value={draft.merchantOrderId} placeholder="Идентификатор заказа у мерчанта"
+                     onChange={(e) => set('merchantOrderId', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="mh-actor">Клиент</label>
+              <input id="mh-actor" value={draft.actorId} placeholder="UUID клиента"
+                     onChange={(e) => set('actorId', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="mh-merchant">Мерчант</label>
+              <MultiSelect
+                  id="mh-merchant"
+                  options={merchants.map((m) => ({ value: m.name, label: m.displayName || m.name }))}
+                  value={draft.merchants}
+                  onChange={(v) => set('merchants', v)}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="mh-details">Реквизиты</label>
+              <input id="mh-details" value={draft.details} placeholder="Банк или номер"
+                     onChange={(e) => set('details', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
+            <div className="field">
+              <label htmlFor="mh-amount">Сумма</label>
+              <input id="mh-amount" value={draft.amount} placeholder="целое число" inputMode="numeric"
+                     onChange={(e) => set('amount', e.target.value.replace(/\D/g, ''))} onKeyDown={onEnter} />
+            </div>
+
+            <div className={`date-group${draft.dateMode === 'range' ? ' date-group-range' : ''}`}>
+              <div className="field">
+                <label htmlFor="mh-mode">Дата создания</label>
+                <select id="mh-mode" value={draft.dateMode} onChange={(e) => set('dateMode', e.target.value)}>
+                  <option value="equal">Равна</option>
+                  <option value="range">Диапазон</option>
+                </select>
+              </div>
+
+              <div className="date-fields">
+                {draft.dateMode === 'equal' ? (
+                    <DateTimeField
+                        id="mh-date" label="Дата"
+                        date={draft.date} time={draft.time}
+                        onDate={(v) => set('date', v)} onTime={(v) => set('time', v)}
+                    />
+                ) : (
+                    <>
+                      <DateTimeField
+                          id="mh-from" label="С"
+                          date={draft.dateFrom} time={draft.timeFrom}
+                          onDate={(v) => set('dateFrom', v)} onTime={(v) => set('timeFrom', v)}
+                      />
+                      <DateTimeField
+                          id="mh-to" label="По"
+                          date={draft.dateTo} time={draft.timeTo}
+                          onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                      />
+                    </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-actions">
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+              <i className="fa-solid fa-magnifying-glass" />
+              Поиск
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
+              Сбросить
+            </button>
+          </div>
+        </div>
+
+        <div className="table-toolbar">
+          <button type="button" className="btn btn-secondary" onClick={refresh} disabled={loading}>
+            <i className={`fa-solid fa-rotate-right${loading ? ' fa-spin' : ''}`} />
+            Обновить
+          </button>
+        </div>
+
+        <div className="table-wrap">
+          <table className="grid grid-mh">
+            <thead>
+            <tr>
+              {th('operationId', 'ID ордера', 'Идентификатор ордера')}
+              {th('createdAt', 'Дата и время')}
+              {th('details', 'Реквизиты')}
+              {th('merchant', 'Мерчант')}
+              {th('merchantAmount', 'Мерч.сумма', 'Мерчантская сумма', 'c-right')}
+              {th('requestedAmount', 'Запр.сумма', 'Запрошенная сумма', 'c-right')}
+              {th('method', 'Метод')}
+              {th('merchantOrderId', 'ID у мерчанта', 'Идентификатор заказа у мерчанта')}
+              {th('actorId', 'Клиент', 'Идентификатор клиента API, запросившего реквизиты')}
+            </tr>
+            </thead>
+            <tbody>
+            {rows.map((r, i) => (
+                <tr key={`${r.operationId}-${r.createdAt}-${i}`} className="no-hover">
+                  <td className="c-id"><CopyValue value={r.operationId} onCopy={copy} /></td>
+                  <td className="mono nowrap">{fmtDateTime(r.createdAt)}</td>
+                  <td>{r.details || '—'}</td>
+                  <td>{merchantLabel(r.merchant)}</td>
+                  <td className="c-right mono">{fmtMh(r.merchantAmount)}</td>
+                  <td className="c-right mono">{fmtMh(r.requestedAmount)}</td>
+                  <td>{r.method ? <span className="badge badge-info">{methodLabel(r.method)}</span> : '—'}</td>
+                  <td className="c-id"><CopyValue value={r.merchantOrderId} onCopy={copy} /></td>
+                  <td className="c-id"><CopyValue value={r.actorId} onCopy={copy} /></td>
+                </tr>
+            ))}
+            </tbody>
+          </table>
+
+          {!loading && rows.length === 0 && (
+              <div className="table-empty">Записей не найдено</div>
+          )}
+          {loading && rows.length === 0 && (
+              <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
+          )}
+        </div>
+
+        <Pagination
+            page={page} total={total} busy={loading}
+            onPage={setPage} label="Всего записей"
+        />
+      </>
+  );
+}
+
+/* ---- Выпадающий список с множественным выбором ----
+   Кнопка с перечнем выбранного («Все», если ничего не отмечено) и
+   список с флажками и поиском — мерчантов больше 80. */
+function MultiSelect({ id, options, value, onChange, placeholder = 'Все' }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const toggle = (v) => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  const labels = options.filter((o) => value.includes(o.value)).map((o) => o.label);
+  const query = q.trim().toLowerCase();
+  const shown = query
+      ? options.filter((o) => o.label.toLowerCase().includes(query) || String(o.value).toLowerCase().includes(query))
+      : options;
+
+  return (
+      <div className="ms" ref={ref}>
+        <button id={id} type="button" className={`ms-control${value.length ? ' filled' : ''}`}
+                onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox"
+                title={labels.join(', ')}>
+          <span className="ms-value">{labels.length ? labels.join(', ') : placeholder}</span>
+          {value.length > 1 && <span className="ms-count">{value.length}</span>}
+        </button>
+        {open && (
+            <div className="ms-dropdown">
+              <input className="ms-search" value={q} placeholder="Поиск" autoFocus
+                     onChange={(e) => setQ(e.target.value)} />
+              {value.length > 0 && (
+                  <button type="button" className="ms-clear" onClick={() => onChange([])}>
+                    Сбросить выбор
+                  </button>
+              )}
+              <div className="ms-list" role="listbox" aria-multiselectable="true">
+                {shown.length === 0 && <div className="ms-empty">Ничего не найдено</div>}
+                {shown.map((o) => (
+                    <label key={o.value} className="ms-option">
+                      <input type="checkbox" checked={value.includes(o.value)} onChange={() => toggle(o.value)} />
+                      <span>{o.label}</span>
+                    </label>
+                ))}
+              </div>
+            </div>
+        )}
+      </div>
+  );
+}
+
 /* ==================== Раздел «Транзакции» ==================== */
 /* Транзакции всех клиентов (сервис billing): фильтр, таблица и ручная
    корректировка баланса. Устроен по образцу раздела «Ордера».
@@ -2266,6 +2575,15 @@ function TransactionsSection({ operations, txTypes, showToast }) {
   const search = () => { setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_TX_FILTER); setApplied(EMPTY_TX_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text ?? ''));
+      showToast('Скопировано', 'success');
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  };
 
   const opList = operations.length ? operations : FALLBACK_OPERATIONS;
   const opLabel = (name) => opList.find((o) => o.name === name)?.description || name || '—';
@@ -2365,7 +2683,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
                   >
                     <td>
                       <span className="cell-main">{t.clientUsername || '—'}</span>
-                      <span className="cell-sub mono">{t.clientId || '—'}</span>
+                      <span className="cell-sub"><CopyValue value={t.clientId} onCopy={copy} /></span>
                     </td>
                     <td className="mono nowrap">{fmtDateTime(t.createdAt)}</td>
                     <td className="nowrap">

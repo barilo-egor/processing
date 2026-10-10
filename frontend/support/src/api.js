@@ -22,6 +22,8 @@
            тип MANUAL_CORRECT бэк ставит сам
      GET   /api/private/support-user  -> { id, username, registeredAt } — вошедший администратор
      GET   /api/private/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
+     GET   /api/private/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
+           -> { content, page }; orderId здесь — ID у мерчанта
    ============================================================ */
 
 const API = '/api/private';
@@ -116,7 +118,12 @@ function buildUrl(url, params) {
   if (!params) return url;
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') q.append(k, v);
+    if (Array.isArray(v)) {
+      // Список — повтором параметра (merchants=A&merchants=B), так его понимает Spring.
+      v.forEach((x) => { if (x !== undefined && x !== null && x !== '') q.append(k, x); });
+    } else if (v !== undefined && v !== null && v !== '') {
+      q.append(k, v);
+    }
   });
   const s = q.toString();
   if (!s) return url;
@@ -199,6 +206,20 @@ export const api = {
     const d = await request(`${API}/merchant-callback`, {
       params: { sort: 'createdAt,desc', ...params },
     });
+    const items = Array.isArray(d?.content) ? d.content : [];
+    return {
+      items,
+      total: d?.page?.totalElements ?? items.length,
+      totalPages: d?.page?.totalPages ?? 1,
+    };
+  },
+
+  /* История мерчантов: выдачи реквизитов по запросам клиентов API
+     (сервис merchant_history, только записи processing). Возвращает { items, total, totalPages }.
+     Параметры (коллекция processing): operationId — ID ордера, orderId — ID у мерчанта (!),
+     actorId — ID клиента, details, merchants[], amount, createdAtFrom/To (мс), page, size, sort. */
+  async merchantHistory(params) {
+    const d = await request(`${API}/merchant-history`, { params });
     const items = Array.isArray(d?.content) ? d.content : [];
     return {
       items,
