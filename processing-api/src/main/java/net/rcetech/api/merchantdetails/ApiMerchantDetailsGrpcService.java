@@ -55,7 +55,7 @@ public class ApiMerchantDetailsGrpcService {
                     .setWaitTimeout(timeoutSeconds)
                     .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
                     .setOwnerId(clientId.toString())
-                    .setInitiatorApp("processing")
+                    .setInitiatorApp(applicationName)
                     .build();
             DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
                     detailsRequestGrpc
