@@ -188,7 +188,9 @@ export default function App() {
                   <ApiKeysBlock showToast={showToast} />
                 </>
             )}
-            {section === 'orders' && <OrdersSection dict={dict} showToast={showToast} />}
+            {section === 'orders' && (
+                <OrdersSection dict={dict} showToast={showToast} timeoutSec={profile?.orderTimeoutSeconds} />
+            )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
             {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} />}
           </main>
@@ -867,9 +869,10 @@ function Pager({ page, total, onPage }) {
 
 const EMPTY_ORDERS_FILTER = { status: '', method: '' };
 
-function OrdersSection({ dict, showToast }) {
+function OrdersSection({ dict, showToast, timeoutSec }) {
   const list = usePagedList(api.orders, showToast, 'Не удалось загрузить ордера');
   const [draft, setDraft] = useState(EMPTY_ORDERS_FILTER);
+  const [card, setCard] = useState(null); // открытый ордер
 
   const onSearch = () => list.search({ status: draft.status, method: draft.method });
   const onReset = () => { setDraft(EMPTY_ORDERS_FILTER); list.search({}); };
@@ -893,6 +896,8 @@ function OrdersSection({ dict, showToast }) {
           />
         </FilterPanel>
 
+        <p className="table-hint">Двойной клик по строке таблицы открывает карточку ордера.</p>
+
         <TableCard
             list={list}
             emptyText="Ордеров не найдено"
@@ -914,7 +919,7 @@ function OrdersSection({ dict, showToast }) {
             </thead>
             <tbody>
             {list.rows.map((o) => (
-                <tr key={o.id} className="no-hover">
+                <tr key={o.id} className="row-open" onDoubleClick={() => setCard(o)} title="Двойной клик — карточка ордера">
                   <td>
                     <CopyCell value={o.id} showToast={showToast} okText="ID ордера скопирован" />
                   </td>
@@ -939,7 +944,110 @@ function OrdersSection({ dict, showToast }) {
             </tbody>
           </table>
         </TableCard>
+
+        {card && (
+            <OrderCard
+                order={card} dict={dict} timeoutSec={timeoutSec}
+                showToast={showToast} onClose={() => setCard(null)}
+            />
+        )}
       </>
+  );
+}
+
+/* ---- Карточка ордера (только просмотр) ----
+   Данные — из строки таблицы: список GET /api/v1/order отдаёт все поля
+   карточки (id, amount, status, internalId, createdAt, method, bank,
+   details, callbackUrl). Статус и метод — подписи из словаря.
+   «Дата истечения» по ТЗ вычисляется: дата создания + время активности
+   ордеров клиента (orderTimeoutSeconds из профиля). */
+function OrderCard({ order, dict, timeoutSec, showToast, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const created = Number(order.createdAt);
+  const timeout = Number(timeoutSec);
+  const expiresAt = Number.isFinite(created) && created > 0 && Number.isFinite(timeout) && timeout >= 0
+      ? created + timeout * 1000
+      : null;
+
+  // Реквизиты ещё не выданы — в «Метод», «Банк», «Реквизиты» прочерк (ТЗ).
+  // Метод в базе обязателен и у такого ордера всё равно заполнен, поэтому
+  // признак — пустые реквизиты, а не пустой метод.
+  const noDetails = !String(order.details ?? '').trim();
+  const dash = <span className="dim">—</span>;
+  const copyBtn = (value, okText) => (
+      <button type="button" className="icon-btn icon-btn-sm" title="Скопировать" aria-label="Скопировать"
+              onClick={() => copyText(value, showToast, okText)}>
+        <i className="fa-regular fa-copy" />
+      </button>
+  );
+  const withCopy = (value, okText, mono = true) => (value
+      ? <span className="ocard-copy"><span className={mono ? 'code wrap' : 'wrap'}>{value}</span>{copyBtn(value, okText)}</span>
+      : dash);
+
+  return (
+      <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="modal ocard" role="dialog" aria-modal="true" aria-label="Карточка ордера">
+          <div className="ocard-head">
+            <span className="ocard-ico"><i className="fa-solid fa-receipt" /></span>
+            <div className="ocard-title">
+              <span className="ocard-eyebrow">Ордер</span>
+              {withCopy(order.id, 'ID ордера скопирован')}
+            </div>
+            <button type="button" className="close-x" onClick={onClose} aria-label="Закрыть">×</button>
+          </div>
+
+          <div className="ocard-band">
+            <div>
+              <span className="ocard-eyebrow">Сумма</span>
+              <span className="ocard-sum">{order.amount != null ? `${formatNumber(order.amount, 0)} ₽` : '—'}</span>
+            </div>
+            <div className="ocard-band-right">
+              <span className="ocard-eyebrow">Статус</span>
+              <Badge tone={orderStatusTone(order.status)}>{dictLabel(dict, 'OrderStatus', order.status)}</Badge>
+            </div>
+          </div>
+
+          <div className="ocard-grid">
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">ID в вашей системе</span>
+              {withCopy(order.internalId, 'ID скопирован')}
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Дата создания</span>
+              <span>{created ? formatDateTime(order.createdAt) : '—'}</span>
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Метод</span>
+              {!noDetails && order.method ? <span>{dictLabel(dict, 'RequestMethod', order.method)}</span> : dash}
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Дата истечения</span>
+              <span>{expiresAt ? formatDateTime(expiresAt) : '—'}</span>
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Банк</span>
+              {!noDetails && order.bank ? <span>{order.bank}</span> : dash}
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Callback URL</span>
+              {withCopy(order.callbackUrl, 'Callback URL скопирован', false)}
+            </div>
+            <div className="ocard-field">
+              <span className="ocard-eyebrow">Реквизиты</span>
+              {withCopy(order.details, 'Реквизиты скопированы')}
+            </div>
+          </div>
+
+          <div className="modal-foot">
+            <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
+          </div>
+        </div>
+      </div>
   );
 }
 

@@ -589,3 +589,42 @@ td.minus { color: var(--danger); }
     max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 }
+
+/* ==================== Карточка ордера ==================== */
+.table-hint { margin: 0 0 8px; font-size: 13px; color: var(--text-dim); }
+table.grid tbody tr.row-open { cursor: pointer; }
+
+.ocard { max-width: 640px; }
+.ocard-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 20px 16px;
+}
+.ocard-ico {
+  width: 42px; height: 42px; flex: none; border-radius: 10px;
+  display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-size: 17px;
+}
+.ocard-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.ocard-head .close-x { margin-left: auto; }
+.ocard-eyebrow {
+  display: block; margin-bottom: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ocard-copy { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.ocard-copy .wrap { overflow-wrap: anywhere; }
+.ocard-band {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; background: var(--surface-2);
+}
+.ocard-band-right { text-align: right; }
+.ocard-sum { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ocard-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 28px; padding: 20px;
+}
+.ocard-field { min-width: 0; font-size: 14px; }
+@media (max-width: 560px) {
+  .ocard-grid { grid-template-columns: 1fr; }
+  .ocard-sum { font-size: 22px; }
+}
