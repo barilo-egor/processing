@@ -133,6 +133,26 @@ class WithdrawalRequestServiceTest {
         );
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "5000,4999",
+            "1,0",
+            "25000,18500"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если минимальная сумма вывода больше запрошенной суммы.")
+    void create_shouldThrowBadRequestExceptionIfAmountLessThanClientMinWithdrawalAmount(Integer minWithdrawalAmount,
+                                                                                        Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        client.setMinWithdrawalAmount(minWithdrawalAmount);
+        clientRepository.save(client);
+        UUID clientId = client.getId();
+        assertThrows(
+                BadRequestException.class,
+                () -> withdrawalRequestService.create(clientId, amount, null),
+                "Запрошенная сумма на вывод меньше минимально допустимой."
+        );
+    }
+
     @Test
     @DisplayName("Метод должен бросить ServiceUnavailableException, если клиенту не установлен процент комиссии.")
     void create_shouldThrowServiceUnavailableExceptionIfClientCommissionPercentIsNull() {

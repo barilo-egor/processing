@@ -608,6 +608,84 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"instance\": \"/api/v1/withdrawal_request\",\n  \"status\": 503,\n  \"title\": \"Service Unavailable\",\n  \"type\": \"/docs/errors/service-unavailable\",\n  \"timestamp\": 1790085605702\n}"
+                },
+                {
+                  "name": "Запрошенная сумма меньше допустимой",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=10000&address=qwerty",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal-request"
+                      ],
+                      "query": [
+                        {
+                          "key": "amount",
+                          "value": "10000"
+                        },
+                        {
+                          "key": "address",
+                          "value": "qwerty"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 10 Oct 2026 17:42:24 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/v1/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1791654144187,\n  \"description\": \"Запрошенная сумма на вывод меньше минимально допустимой.\"\n}"
                 }
               ]
             },
@@ -2548,11 +2626,11 @@
                     },
                     {
                       "key": "content-length",
-                      "value": "308"
+                      "value": "331"
                     },
                     {
                       "key": "date",
-                      "value": "Fri, 09 Oct 2026 16:53:44 GMT"
+                      "value": "Sat, 10 Oct 2026 17:41:52 GMT"
                     },
                     {
                       "key": "keep-alive",
@@ -2564,7 +2642,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": null,\n      \"commissionPercent\": null,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"methods\": [],\n      \"minWithdrawalAmount\": null,\n      \"orderTimeoutSeconds\": 900,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": \"some comment\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"minWithdrawalAmount\": 15000,\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
