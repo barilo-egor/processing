@@ -61,6 +61,15 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Баланс в шапке берётся из того же профиля. Перечитываем его при каждой
+  // смене раздела: баланс меняется после ордеров и заявок на вывод, а
+  // кабинет может быть открыт долго. Ошибку фонового обновления не показываем.
+  useEffect(() => {
+    if (loadingProfile) return;
+    api.profile().then((p) => setProfile(p)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section]);
+
   useEffect(() => {
     let alive = true;
     api.profile()
@@ -163,7 +172,10 @@ export default function App() {
               </button>
               <h1>{current.title}</h1>
             </div>
-            <AccountMenu username={profile?.username} />
+            <div className="topbar-right">
+              <BalanceBadge value={profile?.balance} loading={loadingProfile && !profile} />
+              <AccountMenu username={profile?.username} />
+            </div>
           </header>
           <main className="content">
             {section === 'profile' && (
@@ -191,6 +203,26 @@ export default function App() {
 /* ==================== Меню аккаунта ==================== */
 /* Логин клиента в правом углу верхней панели. Клик раскрывает меню
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
+/* ---- Баланс клиента в шапке ----
+   Тот же баланс, что в карточке клиента у администратора (поле balance
+   профиля GET /api/v1/client). Формат по ТЗ: «125 001,00 ₽», ноль — «0,00 ₽». */
+function fmtBalance(v) {
+  const n = Number(v ?? 0);
+  return `${(Number.isFinite(n) ? n : 0).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ₽`;
+}
+
+function BalanceBadge({ value, loading }) {
+  return (
+      <div className="balance" title="Баланс">
+        <span className="balance-label">Баланс</span>
+        <span className="balance-value">{loading ? '…' : fmtBalance(value)}</span>
+      </div>
+  );
+}
+
 function AccountMenu({ username }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -225,6 +257,8 @@ function AccountMenu({ username }) {
 
         {open && (
             <div className="account-menu" role="menu">
+              {/* На телефоне логин в шапке скрыт (место занимает баланс) — показываем его здесь */}
+              <div className="account-menu-head">{username || 'Клиент'}</div>
               <a className="account-item" href="/logout" role="menuitem">
                 <i className="fa-solid fa-arrow-right-from-bracket" />
                 Выйти
