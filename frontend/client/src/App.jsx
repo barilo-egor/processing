@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  api, isValidCallbackUrl, isValidWalletAddress, isPositiveInt,
+  api, logout, isValidCallbackUrl, isValidWalletAddress, isPositiveInt,
   PAGE_SIZE, EMPTY_DATE_FILTER, dateFilterParams,
   dictItems, dictLabel, shorten, formatNumber, formatRate, formatDateTime,
 } from './api.js';
@@ -261,7 +261,13 @@ function AccountMenu({ username }) {
             <div className="account-menu" role="menu">
               {/* На телефоне логин в шапке скрыт (место занимает баланс) — показываем его здесь */}
               <div className="account-menu-head">{username || 'Клиент'}</div>
-              <a className="account-item" href="/logout" role="menuitem">
+              {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
+              <a
+                  className="account-item"
+                  href="/logout"
+                  role="menuitem"
+                  onClick={(e) => { e.preventDefault(); logout(); }}
+              >
                 <i className="fa-solid fa-arrow-right-from-bracket" />
                 Выйти
               </a>
