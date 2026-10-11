@@ -47,7 +47,11 @@ public class WithdrawalRequestService {
                 .orElseThrow(() -> new BaseException("Client with id " + clientId + " not found"));
         if (Objects.isNull(client.getCommissionPercent())) {
             // TODO Создание инцидента
-            throw new ServiceUnavailableException("Не установлен процент комисси для клиента " + client + ".");
+            throw new ServiceUnavailableException("Не установлен процент комисси для клиента " + client.getId() + ".");
+        }
+        if (Objects.isNull(client.getMinWithdrawalAmount())) {
+            // TODO Создание инцидента
+            throw new ServiceUnavailableException("Не установлена минимальная сумма вывода клиента " + client.getId() + ".");
         }
         if (amount < client.getMinWithdrawalAmount()) {
             throw new BadRequestException("Запрошенная сумма на вывод меньше минимально допустимой.");

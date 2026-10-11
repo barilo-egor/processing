@@ -9,6 +9,7 @@ import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
 import net.rcetech.meta.orders.RequestMethod;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,8 +38,15 @@ class ApiMerchantDetailsGrpcServiceTest {
     @Spy
     private DetailsMapper detailsMapper = Mappers.getMapper(DetailsMapper.class);
 
-    @InjectMocks
     private ApiMerchantDetailsGrpcService apiMerchantDetailsGrpcService;
+
+    @BeforeEach
+    void setUp() {
+        apiMerchantDetailsGrpcService =  new ApiMerchantDetailsGrpcService(
+                detailsMapper, detailsBlockingStub, "processing"
+        );
+    }
+
 
     @ParameterizedTest
     @CsvSource("""

@@ -87,6 +87,7 @@ class WithdrawalRequestServiceTest {
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
         client.setCommissionPercent(commissionPercent);
+        client.setMinWithdrawalAmount(1000);
         return clientRepository.save(client);
     }
 
@@ -129,6 +130,18 @@ class WithdrawalRequestServiceTest {
         UUID clientId = UUID.randomUUID();
         assertThrows(
                 BaseException.class,
+                () -> withdrawalRequestService.create(clientId, null, null)
+        );
+    }
+
+    @Test
+    void create_shouldThrowServiceUnavailableExIfMinWithdrawalAmountNull() {
+        Client client = getDummyClient(new BigDecimal(15));
+        client.setMinWithdrawalAmount(null);
+        clientRepository.save(client);
+        UUID clientId = client.getId();
+        assertThrows(
+                ServiceUnavailableException.class,
                 () -> withdrawalRequestService.create(clientId, null, null)
         );
     }

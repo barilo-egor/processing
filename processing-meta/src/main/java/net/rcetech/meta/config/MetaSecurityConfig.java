@@ -11,10 +11,11 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,12 @@ import java.util.Objects;
 @EnableMethodSecurity
 @Profile("!disable-security")
 public class MetaSecurityConfig {
+
+    private final ClientRegistrationRepository clientRegistrationRepository;
+
+    public MetaSecurityConfig(ClientRegistrationRepository clientRegistrationRepository) {
+        this.clientRegistrationRepository = clientRegistrationRepository;
+    }
 
     @Bean
     public SecurityFilterChain globalFilterChain(HttpSecurity http,
@@ -53,11 +60,19 @@ public class MetaSecurityConfig {
             );
         }
         http.csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                .spa()
                 .ignoringRequestMatchers(WebPath.PUBLIC_API_PATH + "/**")
+                .ignoringRequestMatchers(WebPath.V1_API_PATH + "/order/**")
         );
+        http.logout(logout -> logout.logoutSuccessHandler(oidcLogoutSuccessHandler()));
         return http.build();
+    }
+
+    private LogoutSuccessHandler oidcLogoutSuccessHandler() {
+        OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler =
+                new OidcClientInitiatedLogoutSuccessHandler(this.clientRegistrationRepository);
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
+        return oidcLogoutSuccessHandler;
     }
 
     @Bean
