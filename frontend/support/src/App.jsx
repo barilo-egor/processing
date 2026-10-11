@@ -948,9 +948,6 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
                 <Field label="Дата истечения">
                   <span className="mono">{fmtDateTime(full.expiresAt)}</span>
                 </Field>
-                <Field label="Уникализация суммы">
-                  {full.enableUniqueAmount ? 'Разрешена' : 'Не разрешена'}
-                </Field>
                 <Field label="Callback URL">
                   <span className="mono wrap">{full.callbackUrl || '—'}</span>
                 </Field>

@@ -913,7 +913,6 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
               <th>Статус</th>
               <th>Способ оплаты</th>
               <th className="num">Сумма, ₽</th>
-              <th>Уникализация</th>
               <th>Callback URL</th>
             </tr>
             </thead>
@@ -933,7 +932,6 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
                   {/* Поле method бэк пока не отдаёт — до тех пор здесь «-». */}
                   <td>{dictLabel(dict, 'RequestMethod', o.method)}</td>
                   <td className="num strong">{formatNumber(o.amount)}</td>
-                  <td>{o.enableUniqueAmount ? 'Да' : 'Нет'}</td>
                   <td className="url-cell">
                     {o.callbackUrl
                         ? <span className="ellipsis dim" title={o.callbackUrl}>{o.callbackUrl}</span>
