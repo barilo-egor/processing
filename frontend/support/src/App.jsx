@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  api, isUuid, fmtDateTime, fmtPercent, fmtMoney,
+  api, logout, isUuid, fmtDateTime, fmtPercent, fmtMoney,
   dateTimeToMs, shortValue, fmtRate,
 } from './api.js';
 
@@ -559,7 +559,13 @@ function AccountMenu() {
 
         {open && (
             <div className="account-menu" role="menu">
-              <a className="account-item" href="/logout" role="menuitem">
+              {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
+              <a
+                  className="account-item"
+                  href="/logout"
+                  role="menuitem"
+                  onClick={(e) => { e.preventDefault(); logout(); }}
+              >
                 <i className="fa-solid fa-right-from-bracket" />
                 Выйти
               </a>
@@ -1427,27 +1433,49 @@ function FieldRow({ label, error, hint, children }) {
 }
 
 /* ==================== Конфигурация мерчантов ==================== */
-/* Очерёдность (колонка «№», перетаскивание) пока не реализована:
-   бэк не отдаёт позицию мерчанта и не принимает её в PATCH.
-   Всё остальное из ТЗ работает: включение, суммы, поиск.
-   Пагинации по 25 тоже нет — эндпоинт отдаёт плоский массив без страниц. */
+/* Очерёдность: список всегда идёт по merchantOrder (у кого раньше
+   запрашиваются реквизиты). Порядок меняется перетаскиванием строки за
+   «ручку» или кнопками вверх/вниз; номер не показываем (решение бэка).
+   На одну перестановку — один PATCH { merchantOrder }: соседей бэк
+   сдвигает сам, после ответа список перечитываем.
+   Пока применён поиск, порядок менять нельзя — среди скрытых строк
+   непонятно, куда вставлять.
+   Страниц и сортировки по колонкам нет намеренно: иначе нельзя
+   перетаскивать между страницами (договорились с бэком). */
+
+// Мерчанты по очерёдности; без номера — в конец, в порядке от бэка.
+function byMerchantOrder(list) {
+  return list
+      .map((r, i) => ({ r, i }))
+      .sort((a, b) => {
+        const ao = a.r.merchantOrder ?? Infinity;
+        const bo = b.r.merchantOrder ?? Infinity;
+        return ao === bo ? a.i - b.i : ao - bo;
+      })
+      .map((x) => x.r);
+}
 
 function MerchantsSection({ client, showToast, onPickClient }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');   // что набрано в поле
   const [applied, setApplied] = useState(''); // что применено кнопкой
+  const [moving, setMoving] = useState(false);  // идёт сохранение очерёдности
+  const [armedId, setArmedId] = useState(null); // строка, взятая за «ручку»
+  const [dragId, setDragId] = useState(null);   // строка, которую тащим
+  const [drop, setDrop] = useState(null);       // { id, after } — куда вставим
 
-  const load = useCallback(async (clientId) => {
-    setLoading(true);
+  // silent — перечитать без спиннера (после перестановки).
+  const load = useCallback(async (clientId, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const d = await api.merchantConfigs(clientId);
-      setRows(Array.isArray(d) ? d : []);
+      setRows(byMerchantOrder(Array.isArray(d) ? d : []));
     } catch (e) {
       showToast(e.message || 'Не удалось загрузить конфигурацию', 'error');
-      setRows([]);
+      if (!silent) setRows([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
@@ -1491,6 +1519,55 @@ function MerchantsSection({ client, showToast, onPickClient }) {
     }
   };
 
+  // Перестановка строки с позиции from на позицию to (индексы в rows).
+  // Новый merchantOrder — номер, который сейчас занимает позиция to:
+  // так работает и при номерах не подряд. Строку двигаем сразу, при
+  // ошибке возвращаем как было.
+  const move = async (from, to) => {
+    if (moving || from === to || to < 0 || to >= rows.length) return;
+    const prev = rows;
+    const row = rows[from];
+    const merchantOrder = rows[to].merchantOrder ?? to + 1;
+    const next = [...rows];
+    next.splice(from, 1);
+    next.splice(to, 0, row);
+    setRows(next);
+    setMoving(true);
+    try {
+      await api.updateMerchantConfig(row.id, { merchantOrder });
+      await load(client.id, true);
+    } catch (e) {
+      setRows(prev);
+      showToast(e.message || 'Не удалось изменить очерёдность', 'error');
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  // ---- Перетаскивание (HTML5 drag-and-drop) ----
+  // Строка становится перетаскиваемой только пока зажата «ручка» —
+  // иначе мешало бы выделять текст и править суммы в ячейках.
+  const endDrag = () => { setArmedId(null); setDragId(null); setDrop(null); };
+
+  const onDragOver = (e, r) => {
+    if (dragId == null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const box = e.currentTarget.getBoundingClientRect();
+    const after = e.clientY > box.top + box.height / 2;
+    if (!drop || drop.id !== r.id || drop.after !== after) setDrop({ id: r.id, after });
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    if (dragId == null || !drop) { endDrag(); return; }
+    const from = rows.findIndex((x) => x.id === dragId);
+    let to = rows.findIndex((x) => x.id === drop.id) + (drop.after ? 1 : 0);
+    if (from < to) to -= 1; // строка ушла со своего места — индексы сдвинулись
+    endDrag();
+    move(from, to);
+  };
+
   if (!client) {
     return (
         <>
@@ -1506,6 +1583,7 @@ function MerchantsSection({ client, showToast, onPickClient }) {
   const list = applied
       ? rows.filter((r) => String(r.merchant || '').toLowerCase().includes(applied.toLowerCase()))
       : rows;
+  const canReorder = !applied && rows.length > 1;
 
   return (
       <>
@@ -1547,34 +1625,90 @@ function MerchantsSection({ client, showToast, onPickClient }) {
         ) : list.length === 0 ? (
             <div className="state"><i className="fa-solid fa-store-slash" /> Мерчанты не найдены</div>
         ) : (
-            <div className="table-wrap">
-              <table className="grid">
-                <thead>
-                <tr>
-                  <th className="c-act">Вкл.</th>
-                  <th>Мерчант</th>
-                  <th className="c-right">Мин. сумма</th>
-                  <th className="c-right">Макс. сумма</th>
-                </tr>
-                </thead>
-                <tbody>
-                {list.map((r) => (
-                    <tr key={r.id} className="no-hover">
-                      <td className="c-act">
-                        <label className="switch" title={r.isOn ? 'Отключить' : 'Включить'}>
-                          <input type="checkbox" checked={!!r.isOn} onChange={() => toggleOn(r)} />
-                          <span className="track" />
-                          <span className="thumb" />
-                        </label>
-                      </td>
-                      <td>{r.merchant || '—'}</td>
-                      <AmountCell row={r} field="minAmount" onSave={saveAmount} />
-                      <AmountCell row={r} field="maxAmount" onSave={saveAmount} />
-                    </tr>
-                ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <p className="table-hint">
+                {applied
+                    ? 'Очерёдность можно менять только без поиска — нажмите «Сбросить».'
+                    : 'Порядок строк — очерёдность запроса реквизитов. Перетащите строку за значок слева или используйте стрелки справа.'}
+              </p>
+              <div className="table-wrap">
+                <table className="grid grid-merchants">
+                  <thead>
+                  <tr>
+                    <th className="c-order" title="Очерёдность" aria-label="Очерёдность" />
+                    <th className="c-act">Вкл.</th>
+                    <th>Мерчант</th>
+                    <th className="c-right">Мин. сумма</th>
+                    <th className="c-right">Макс. сумма</th>
+                    <th className="c-move" title="Очерёдность" aria-label="Очерёдность" />
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {list.map((r, i) => (
+                      <tr
+                          key={r.id}
+                          className={[
+                            'no-hover',
+                            dragId === r.id ? 'is-dragging' : '',
+                            drop?.id === r.id && dragId !== r.id ? (drop.after ? 'drop-after' : 'drop-before') : '',
+                          ].filter(Boolean).join(' ')}
+                          draggable={canReorder && !moving && armedId === r.id}
+                          onDragStart={(e) => {
+                            setDragId(r.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', String(r.id)); // без этого Firefox не начнёт перетаскивание
+                          }}
+                          onDragOver={(e) => onDragOver(e, r)}
+                          onDrop={onDrop}
+                          onDragEnd={endDrag}
+                      >
+                        <td className="c-order">
+                        <span
+                            className={`drag-handle${canReorder && !moving ? '' : ' is-off'}`}
+                            title={canReorder ? 'Перетащите, чтобы изменить очерёдность' : undefined}
+                            onMouseDown={() => canReorder && !moving && setArmedId(r.id)}
+                            onMouseUp={() => setArmedId(null)}
+                        >
+                          <i className="fa-solid fa-grip-vertical" />
+                        </span>
+                        </td>
+                        <td className="c-act">
+                          <label className="switch" title={r.isOn ? 'Отключить' : 'Включить'}>
+                            <input type="checkbox" checked={!!r.isOn} onChange={() => toggleOn(r)} />
+                            <span className="track" />
+                            <span className="thumb" />
+                          </label>
+                        </td>
+                        <td>{r.merchant || '—'}</td>
+                        <AmountCell row={r} field="minAmount" onSave={saveAmount} />
+                        <AmountCell row={r} field="maxAmount" onSave={saveAmount} />
+                        {/* Кнопки вверх/вниз — как в вебаппе «Управление мерчантами» */}
+                        <td className="c-move">
+                          <div className="move-cell">
+                            <button
+                                type="button" className="icon-btn order-btn"
+                                title="Выше" aria-label="Выше"
+                                disabled={!canReorder || moving || i === 0}
+                                onClick={() => move(i, i - 1)}
+                            >
+                              <i className="fa-solid fa-chevron-up" />
+                            </button>
+                            <button
+                                type="button" className="icon-btn order-btn"
+                                title="Ниже" aria-label="Ниже"
+                                disabled={!canReorder || moving || i === list.length - 1}
+                                onClick={() => move(i, i + 1)}
+                            >
+                              <i className="fa-solid fa-chevron-down" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
         )}
       </>
   );

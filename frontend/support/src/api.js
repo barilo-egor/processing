@@ -40,6 +40,36 @@ function xsrfToken() {
   } catch { return ''; }
 }
 
+/* Выход: POST /logout с CSRF-токеном в поле формы _csrf.
+   Отправляем обычной формой, а не fetch: так браузер сам проходит все
+   редиректы после выхода (в т.ч. на Keycloak) и попадает на страницу входа.
+   Если куки XSRF-TOKEN ещё нет (бэк выдаёт её только в ответ на первый
+   изменяющий запрос), сначала шлём пустой POST /logout без токена: он
+   получит 403, но вместе с ним сервер поставит куку — после этого
+   отправляем форму уже с токеном. */
+export async function logout() {
+  let token = xsrfToken();
+  if (!token) {
+    try {
+      await fetch('/logout', { method: 'POST', credentials: 'include', redirect: 'manual' });
+    } catch { /* сеть недоступна — форма ниже всё равно попробует */ }
+    token = xsrfToken();
+  }
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/logout';
+  form.style.display = 'none';
+  if (token) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = '_csrf';
+    input.value = token;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+}
+
 /* Единая точка входа для запросов.
    options:
      method  — 'GET' по умолчанию

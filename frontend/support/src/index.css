@@ -842,3 +842,22 @@ table.grid-mh td { white-space: nowrap; }
 .char-count { align-self: flex-end; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 /* Достигнут предел — счётчик подсвечивается (ТЗ) */
 .char-count.is-full { color: var(--danger); font-weight: 700; }
+
+/* ===== Конфигурация мерчантов: очерёдность ===== */
+.grid-merchants th.c-order, .grid-merchants td.c-order { width: 1%; white-space: nowrap; padding-right: 0; }
+.grid-merchants th.c-move, .grid-merchants td.c-move { width: 1%; white-space: nowrap; padding-left: 8px; }
+.move-cell { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.drag-handle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 28px; color: var(--text-dim); cursor: grab; border-radius: var(--radius-sm);
+}
+.drag-handle:hover { color: var(--text); background: var(--row-hover); }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle.is-off { opacity: .35; cursor: default; pointer-events: none; }
+/* Стрелки очерёдности: акцентные, как в вебаппе; у крайних строк гаснут */
+.order-btn { width: 32px; height: 32px; font-size: 15px; color: var(--accent); }
+.order-btn:not(:disabled):hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.order-btn:disabled { color: var(--text-dim); opacity: .3; }
+.grid-merchants tr.is-dragging { opacity: .45; }
+.grid-merchants tr.drop-before td { box-shadow: inset 0 2px 0 var(--accent); }
+.grid-merchants tr.drop-after td { box-shadow: inset 0 -2px 0 var(--accent); }
