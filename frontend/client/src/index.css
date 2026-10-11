@@ -380,6 +380,9 @@ table.grid tbody tr:hover { background: var(--row-hover); }
 }
 .account-item:hover { background: var(--row-hover); }
 .account-item { white-space: nowrap; } /* «Управление аккаунтом» — в одну строку */
+/* «Выйти» — красным, как в кабинете администратора */
+.account-item.is-danger i { color: var(--danger); }
+.account-item.is-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
 .account-item i { width: 16px; text-align: center; color: var(--text-dim); }
 /* ============================================================
    Разделы-таблицы: «Ордера», «Транзакции», «Заявки на вывод»

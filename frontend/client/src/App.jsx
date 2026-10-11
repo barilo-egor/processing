@@ -275,7 +275,7 @@ function AccountMenu({ username }) {
               </a>
               {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
               <a
-                  className="account-item"
+                  className="account-item is-danger"
                   href="/logout"
                   role="menuitem"
                   onClick={(e) => { e.preventDefault(); logout(); }}
