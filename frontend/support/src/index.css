@@ -439,6 +439,7 @@ table.grid tbody tr.no-hover { cursor: default; }
   color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;
 }
 .account-item:hover { background: var(--row-hover); }
+.account-item { white-space: nowrap; } /* «Управление аккаунтом» — в одну строку */
 .account-item i { width: 16px; text-align: center; color: var(--text-dim); }
 
 /* ---- Таблица ордеров ---- */
@@ -552,8 +553,9 @@ table.grid-orders { min-width: 1080px; }
   padding: 7px 14px; background: var(--surface);
 }
 .account-btn:hover, .account-btn.is-open { background: var(--surface-2); border-color: var(--accent); }
-.account-item i { color: var(--danger); }
-.account-item:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+/* Красным выделяем только «Выйти», остальные пункты меню — обычные */
+.account-item.is-danger i { color: var(--danger); }
+.account-item.is-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
 /* ============================================================
    Раздел «Заявки на вывод»
    ============================================================ */

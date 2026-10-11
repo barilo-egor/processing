@@ -559,9 +559,21 @@ function AccountMenu() {
 
         {open && (
             <div className="account-menu" role="menu">
-              {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
+              {/* Управление аккаунтом (страница Keycloak) — в новой вкладке */}
               <a
                   className="account-item"
+                  href="/manage-account"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+              >
+                <i className="fa-solid fa-user-gear" />
+                Управление аккаунтом
+              </a>
+              {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
+              <a
+                  className="account-item is-danger"
                   href="/logout"
                   role="menuitem"
                   onClick={(e) => { e.preventDefault(); logout(); }}

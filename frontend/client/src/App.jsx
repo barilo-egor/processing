@@ -261,6 +261,18 @@ function AccountMenu({ username }) {
             <div className="account-menu" role="menu">
               {/* На телефоне логин в шапке скрыт (место занимает баланс) — показываем его здесь */}
               <div className="account-menu-head">{username || 'Клиент'}</div>
+              {/* Управление аккаунтом (страница Keycloak) — в новой вкладке */}
+              <a
+                  className="account-item"
+                  href="/manage-account"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+              >
+                <i className="fa-solid fa-user-gear" />
+                Управление аккаунтом
+              </a>
               {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
               <a
                   className="account-item"
