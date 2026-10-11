@@ -631,6 +631,7 @@ function DeleteTokenDialog({ row, onCancel, onApply }) {
 function usePagedList(fetchPage, showToast, errorText) {
   const [applied, setApplied] = useState({});
   const [page, setPage] = useState(0);
+  const [sort, setSort] = useState(null); // null — по умолчанию новые сверху
   const [data, setData] = useState({ rows: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -638,18 +639,22 @@ function usePagedList(fetchPage, showToast, errorText) {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    fetchPage({ ...applied, page })
+    // Без выбранной сортировки параметр не шлём — api подставит «новые сверху».
+    fetchPage({ ...applied, page, ...(sort ? { sort: sortParam(sort) } : {}) })
         .then((d) => { if (alive) setData(d); })
         .catch((e) => { if (alive) showToast(e.message || errorText, 'error'); })
         .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [fetchPage, applied, page, reloadKey, showToast, errorText]);
+  }, [fetchPage, applied, page, sort, reloadKey, showToast, errorText]);
 
   return {
     ...data,
     page,
     loading,
     setPage,
+    sort,
+    // Клик по заголовку: по возрастанию → по убыванию → по умолчанию; с первой страницы.
+    onSort: (field) => { setSort((s) => nextSort(s, field)); setPage(0); },
     // Новый поиск — всегда с первой страницы.
     search: (params) => { setApplied(params); setPage(0); setReloadKey((k) => k + 1); },
     // Перечитать текущую страницу с тем же фильтром.
@@ -657,6 +662,37 @@ function usePagedList(fetchPage, showToast, errorText) {
     // Перечитать с первой страницы (новая запись окажется сверху).
     reloadFirst: () => { setPage(0); setReloadKey((k) => k + 1); },
   };
+}
+
+/* ---- Сортировка по клику на заголовок ----
+   Сортирует бэк (sort=поле,asc|desc), поэтому порядок общий для всей
+   выборки с учётом фильтра, а не только для текущей страницы.
+   Так же, как в кабинете администратора. */
+function nextSort(sort, field) {
+  if (!sort || sort.field !== field) return { field, dir: 'asc' };
+  if (sort.dir === 'asc') return { field, dir: 'desc' };
+  return null;
+}
+
+function sortParam(sort) {
+  return sort ? `${sort.field},${sort.dir}` : undefined;
+}
+
+function SortTh({ field, list, className = '', children }) {
+  const { sort, onSort } = list;
+  const active = sort?.field === field;
+  const icon = !active ? 'fa-sort' : sort.dir === 'asc' ? 'fa-arrow-up-long' : 'fa-arrow-down-long';
+  return (
+      <th
+          className={`${className} th-sortable${active ? ' active' : ''}`.trim()}
+          aria-sort={!active ? 'none' : sort.dir === 'asc' ? 'ascending' : 'descending'}
+      >
+        <button type="button" className="th-sort" onClick={() => onSort(field)} title="Сортировать">
+          {children}
+          <i className={`fa-solid ${icon} sort-ico`} aria-hidden="true" />
+        </button>
+      </th>
+  );
 }
 
 /* Копирование в буфер с тостом. */
@@ -913,13 +949,13 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
           <table className="grid grid-orders">
             <thead>
             <tr>
-              <th>ID ордера</th>
-              <th>Создан</th>
-              <th>ID в вашей системе</th>
-              <th>Статус</th>
-              <th>Способ оплаты</th>
-              <th className="num">Сумма, ₽</th>
-              <th>Callback URL</th>
+              <SortTh field="id" list={list}>ID ордера</SortTh>
+              <SortTh field="createdAt" list={list}>Создан</SortTh>
+              <SortTh field="internalId" list={list}>ID в вашей системе</SortTh>
+              <SortTh field="status" list={list}>Статус</SortTh>
+              <SortTh field="method" list={list}>Способ оплаты</SortTh>
+              <SortTh field="amount" list={list} className="num">Сумма, ₽</SortTh>
+              <SortTh field="callbackUrl" list={list}>Callback URL</SortTh>
             </tr>
             </thead>
             <tbody>
@@ -1224,15 +1260,15 @@ function WithdrawalsSection({ dict, showToast }) {
           <table className="grid grid-wd">
             <thead>
             <tr>
-              <th>ID заявки</th>
-              <th>Статус</th>
-              <th>Создана</th>
-              <th className="num">Сумма заявки, ₽</th>
-              <th className="num">Комиссия</th>
-              <th className="num">К выводу, ₽</th>
-              <th className="num">Курс ₽/USDT</th>
-              <th className="num">Сумма, USDT</th>
-              <th>Адрес кошелька</th>
+              <SortTh field="id" list={list}>ID заявки</SortTh>
+              <SortTh field="status" list={list}>Статус</SortTh>
+              <SortTh field="createdAt" list={list}>Создана</SortTh>
+              <SortTh field="grossSourceAmount" list={list} className="num">Сумма заявки, ₽</SortTh>
+              <SortTh field="commissionPercent" list={list} className="num">Комиссия</SortTh>
+              <SortTh field="netSourceAmount" list={list} className="num">К выводу, ₽</SortTh>
+              <SortTh field="rate" list={list} className="num">Курс ₽/USDT</SortTh>
+              <SortTh field="targetAmount" list={list} className="num">Сумма, USDT</SortTh>
+              <SortTh field="address" list={list}>Адрес кошелька</SortTh>
               <th className="c-act" aria-label="Действия" />
             </tr>
             </thead>
