@@ -1845,10 +1845,11 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sort, setSort] = useState(null); // null — по умолчанию новые сверху
   const [confirm, setConfirm] = useState(null); // { row, action: 'approve' | 'cancel' }
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (f, pageNum) => {
+  const load = useCallback(async (f, pageNum, srt) => {
     setLoading(true);
     try {
       // «Равна» — одна дата разворачивается в границы; без времени это
@@ -1871,6 +1872,8 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
         status: f.status,
         address: f.address.trim(),
         ...range,
+        // Без выбранной сортировки параметр не шлём — api подставит «новые сверху».
+        ...(srt ? { sort: sortParam(srt) } : {}),
       });
       setRows(r.items);
       setTotal(r.total);
@@ -1883,7 +1886,9 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [applied, page, reloadKey, load]);
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, reloadKey, load]);
+
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
 
   const reload = () => setReloadKey((k) => k + 1);
 
@@ -2016,16 +2021,16 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
           <table className="grid grid-withdrawals">
             <thead>
             <tr>
-              <th>Клиент</th>
-              <th>ID заявки</th>
-              <th>Статус</th>
-              <th>Создана</th>
-              <th className="c-right">Сумма заявки, ₽</th>
-              <th className="c-right">Комиссия</th>
-              <th className="c-right">К выводу, ₽</th>
-              <th className="c-right">Курс ₽/USDT</th>
-              <th className="c-right">Сумма, USDT</th>
-              <th>Адрес кошелька</th>
+              <SortTh field="clientUsername" sort={sort} onSort={onSort}>Клиент</SortTh>
+              <SortTh field="id" sort={sort} onSort={onSort}>ID заявки</SortTh>
+              <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
+              <SortTh field="createdAt" sort={sort} onSort={onSort}>Создана</SortTh>
+              <SortTh field="grossSourceAmount" sort={sort} onSort={onSort} className="c-right">Сумма заявки, ₽</SortTh>
+              <SortTh field="commissionPercent" sort={sort} onSort={onSort} className="c-right">Комиссия</SortTh>
+              <SortTh field="netSourceAmount" sort={sort} onSort={onSort} className="c-right">К выводу, ₽</SortTh>
+              <SortTh field="rate" sort={sort} onSort={onSort} className="c-right">Курс ₽/USDT</SortTh>
+              <SortTh field="targetAmount" sort={sort} onSort={onSort} className="c-right">Сумма, USDT</SortTh>
+              <SortTh field="address" sort={sort} onSort={onSort}>Адрес кошелька</SortTh>
               <th className="c-act" aria-label="Действия" />
             </tr>
             </thead>
@@ -2124,8 +2129,9 @@ function CallbacksSection({ merchants, showToast }) {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState(null); // null — по умолчанию новые сверху
 
-  const load = useCallback(async (f, pageNum) => {
+  const load = useCallback(async (f, pageNum, srt) => {
     setLoading(true);
     try {
       // Даты — как в остальных разделах: «Равна» без времени — весь день,
@@ -2146,6 +2152,8 @@ function CallbacksSection({ merchants, showToast }) {
         merchantOrderId: f.merchantOrderId.trim(),
         merchant: f.merchant,
         ...range,
+        // Без выбранной сортировки параметр не шлём — api подставит «новые сверху».
+        ...(srt ? { sort: sortParam(srt) } : {}),
       });
       setRows(r.items);
       setTotal(r.total);
@@ -2158,7 +2166,9 @@ function CallbacksSection({ merchants, showToast }) {
     }
   }, [showToast]);
 
-  useEffect(() => { load(applied, page); }, [applied, page, load]);
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, load]);
+
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
 
   // orderId у бэка — UUID: неполный ID он не примет (ошибка конвертации),
   // поэтому проверяем формат до запроса, как в разделе «Клиенты».
@@ -2261,12 +2271,12 @@ function CallbacksSection({ merchants, showToast }) {
           <table className="grid grid-callbacks">
             <thead>
             <tr>
-              <th>Создан</th>
-              <th>ID ордера</th>
-              <th>Мерчант</th>
-              <th>ID у мерчанта</th>
-              <th>Статус</th>
-              <th>Описание статуса</th>
+              <SortTh field="createdAt" sort={sort} onSort={onSort}>Создан</SortTh>
+              <SortTh field="orderId" sort={sort} onSort={onSort}>ID ордера</SortTh>
+              <SortTh field="merchant" sort={sort} onSort={onSort}>Мерчант</SortTh>
+              <SortTh field="merchantOrderId" sort={sort} onSort={onSort}>ID у мерчанта</SortTh>
+              <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
+              <SortTh field="statusDescription" sort={sort} onSort={onSort}>Описание статуса</SortTh>
             </tr>
             </thead>
             <tbody>

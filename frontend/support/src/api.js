@@ -200,7 +200,7 @@ export const api = {
       request(`${API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
 
   /* Заявки на вывод всех клиентов. Возвращает { items, total, totalPages }.
-     Сортировку передаём явно: по ТЗ новые сверху. */
+     Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
   async withdrawals(params) {
     const d = await request(`${API}/withdrawal-request`, {
       params: { sort: 'createdAt,desc', ...params },
@@ -231,7 +231,7 @@ export const api = {
   supportUser: () => request(`${API}/support-user`),
 
   /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
-     Сортировку передаём явно: по ТЗ новые сверху. */
+     Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
   async merchantCallbacks(params) {
     const d = await request(`${API}/merchant-callback`, {
       params: { sort: 'createdAt,desc', ...params },
