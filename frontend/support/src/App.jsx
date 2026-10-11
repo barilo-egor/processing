@@ -1233,7 +1233,11 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
                 </span>
                 </FieldRow>
 
-                <FieldRow label="Минимальная сумма вывода" error={errors.minWithdrawal}>
+                <FieldRow
+                    label="Минимальная сумма вывода"
+                    error={errors.minWithdrawal}
+                    hint="Сумма указывается до применения комиссии"
+                >
                 <span className="input-suffix">
                   <input
                       type="text" inputMode="numeric" placeholder="0"
@@ -1410,12 +1414,14 @@ function MethodsSelect({ options, value, disabled, open, onOpenChange, onChange 
 }
 
 /* ---- Строка с полем ввода и сообщением об ошибке ---- */
-function FieldRow({ label, error, children }) {
+// hint — подсказка под полем; при ошибке вместо неё показывается текст ошибки.
+function FieldRow({ label, error, hint, children }) {
   return (
       <div className={`fitem fitem-field${error ? ' has-error' : ''}`}>
         <span className="eyebrow">{label}</span>
         <span className="fvalue">{children}</span>
         {error && <span className="field-error">{error}</span>}
+        {!error && hint && <span className="field-hint">{hint}</span>}
       </div>
   );
 }
