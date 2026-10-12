@@ -1,6 +1,7 @@
 package net.rcetech.api.merchantdetails;
 
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.grpc.generated.CancelOrderRequestGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.grpc.generated.MerchantCallbackGrpc;
@@ -29,6 +30,10 @@ public interface DetailsMapper {
     @Mapping(target = "ownerId", source = "clientId")
     @Mapping(target = "requestMethodList", source = "orderDTO.methods")
     DetailsRequestGrpc detailsRequestDTOToGrpc(UUID clientId, UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
+
+    @Mapping(target = "orderId", source = "merchantOrderId")
+    @Mapping(target = "method", source = "merchantMethod")
+    CancelOrderRequestGrpc cancelOrderDTOToGrpc(CancelOrderDTO cancelOrderDTO);
 
     MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
 

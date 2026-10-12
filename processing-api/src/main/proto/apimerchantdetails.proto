@@ -13,6 +13,7 @@ service ApiDetailsRequestService {
 
   rpc DetailsRequest (DetailsRequestGrpc) returns (DetailsResponseGrpc);
   rpc MerchantCallbackRequest (MerchantCallbackGrpc) returns (google.protobuf.Empty);
+  rpc CancelOrderRequest (CancelOrderRequestGrpc) returns (google.protobuf.Empty);
 
 }
 
@@ -47,4 +48,10 @@ message MerchantCallbackGrpc {
   string status = 2;
   string status_description = 3;
   string merchant = 4;
+}
+
+message CancelOrderRequestGrpc {
+  string merchant = 1;
+  string order_id = 2;
+  string method = 3;
 }
