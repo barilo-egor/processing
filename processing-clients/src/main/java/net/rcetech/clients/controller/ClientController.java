@@ -1,5 +1,6 @@
 package net.rcetech.clients.controller;
 
+import jakarta.validation.Valid;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
@@ -31,7 +32,7 @@ public class ClientController {
     }
 
     @PatchMapping
-    public ClientProjection patch(Principal principal, @RequestBody ClientUpdateRequest clientUpdateRequest) {
+    public ClientProjection patch(Principal principal, @Valid @RequestBody ClientUpdateRequest clientUpdateRequest) {
         return clientService.update(UUID.fromString(principal.getName()), clientUpdateRequest);
     }
 }
