@@ -1,0 +1,434 @@
+/* =========================================================
+   Управление аккаунтом (консоль keycloak.v3) в стиле личных кабинетов.
+   Палитра, шрифт, поля и кнопки — те же, что в теме входа
+   (login/resources/css/processing.css). Консоль — готовое React-
+   приложение Keycloak, поэтому только перекрашиваем PatternFly 5.
+   ========================================================= */
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../fonts/manrope-cyrillic-wght-normal.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../fonts/manrope-latin-wght-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---- Палитра ЛК: светлая ---- */
+:root {
+  --lk-bg: #f5f6f8;
+  --lk-surface: #ffffff;
+  --lk-surface-2: #f0f1f4;
+  --lk-text: #16181d;
+  --lk-text-dim: #6b7280;
+  --lk-border: #e2e4e9;
+  --lk-border-strong: #cfd3da;
+  --lk-accent: #2563eb;
+  --lk-accent-hover: #1d4ed8;
+  --lk-accent-text: #ffffff;
+  --lk-danger: #dc2626;
+  --lk-success: #16a34a;
+  --lk-warn: #b45309;
+  --lk-radius: 12px;
+  --lk-radius-sm: 8px;
+  --lk-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px rgba(16, 24, 40, .06);
+}
+
+/* ---- Палитра ЛК: тёмная (класс ставит сам Keycloak по настройке системы) ---- */
+:root.pf-v5-theme-dark {
+  --lk-bg: #14161a;
+  --lk-surface: #1c1f25;
+  --lk-surface-2: #23272e;
+  --lk-text: #e8eaed;
+  --lk-text-dim: #9aa1ac;
+  --lk-border: #2c313a;
+  --lk-border-strong: #3a404b;
+  --lk-accent: #4b8bf5;
+  --lk-accent-hover: #3b7ae8;
+  --lk-danger: #ef4444;
+  --lk-success: #22c55e;
+  --lk-warn: #fbbf24;
+  --lk-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+}
+
+/* ---- Глобальные переменные PatternFly → палитра ЛК ---- */
+:root, :root.pf-v5-theme-dark {
+  --pf-v5-global--FontFamily--text: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pf-v5-global--FontFamily--heading: var(--pf-v5-global--FontFamily--text);
+  --pf-v5-global--primary-color--100: var(--lk-accent);
+  --pf-v5-global--primary-color--200: var(--lk-accent-hover);
+  --pf-v5-global--link--Color: var(--lk-accent);
+  --pf-v5-global--link--Color--hover: var(--lk-accent-hover);
+  --pf-v5-global--Color--100: var(--lk-text);
+  --pf-v5-global--Color--200: var(--lk-text-dim);
+  --pf-v5-global--BackgroundColor--100: var(--lk-surface);
+  --pf-v5-global--BorderColor--100: var(--lk-border);
+  --pf-v5-global--danger-color--100: var(--lk-danger);
+  --pf-v5-global--success-color--100: var(--lk-success);
+  --keycloak-card-top-color: transparent;
+}
+
+/* ---- Подписи полей ---- */
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text {
+  font-size: 13px; font-weight: 600; color: var(--lk-text);
+}
+
+/* ---- Поля ввода: рамка со всех сторон и скругление, как в ЛК ---- */
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: var(--lk-bg);
+  --pf-v5-c-form-control--Color: var(--lk-text);
+  --pf-v5-c-form-control--BorderRadius: var(--lk-radius-sm);
+  --pf-v5-c-form-control--before--BorderTopColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderRightColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderLeftColor: var(--lk-border-strong);
+  /* у PatternFly нижняя граница рисуется отдельной полосой — делаем рамку одинаковой со всех сторон */
+  --pf-v5-c-form-control--before--BorderTopWidth: 1px;
+  --pf-v5-c-form-control--before--BorderRightWidth: 1px;
+  --pf-v5-c-form-control--before--BorderBottomWidth: 1px;
+  --pf-v5-c-form-control--before--BorderLeftWidth: 1px;
+  --pf-v5-c-form-control--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--focus-within--after--BorderBottomColor: transparent;
+  background-color: var(--lk-bg);
+  border-radius: var(--lk-radius-sm);
+  font-size: 14px;
+}
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select,
+.pf-v5-c-form-control > textarea {
+  font-family: inherit; color: var(--lk-text); background: transparent;
+  padding-block: 10px;
+}
+/* Фокус — синяя рамка целиком и мягкое свечение, как в ЛК; родной толстый outline убираем */
+.pf-v5-c-form-control > input:focus,
+.pf-v5-c-form-control > input:focus-visible,
+.pf-v5-c-form-control > select:focus,
+.pf-v5-c-form-control > select:focus-visible {
+  outline: none;
+}
+.pf-v5-c-form-control:focus-within::before {
+  border-color: var(--lk-accent);
+  border-width: 1px;
+}
+.pf-v5-c-form-control:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lk-accent) 18%, transparent);
+}
+/* Ошибка — красная рамка */
+.pf-v5-c-form-control.pf-m-error::before,
+.pf-v5-c-form-control:has(input[aria-invalid="true"])::before {
+  border-color: var(--lk-danger);
+}
+.pf-v5-c-form-control.pf-m-readonly {
+  --pf-v5-c-form-control--BackgroundColor: var(--lk-surface-2);
+  background-color: var(--lk-surface-2);
+}
+.pf-v5-c-form-control.pf-m-readonly::before {
+  border-color: var(--lk-border);
+}
+
+/* Поле пароля + кнопка «показать»: единый блок со скруглением */
+.pf-v5-c-input-group {
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control,
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control::before,
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control::after {
+  border-start-end-radius: 0; border-end-end-radius: 0;
+}
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:last-child .pf-v5-c-button.pf-m-control {
+  border-start-start-radius: 0; border-end-start-radius: 0;
+}
+.pf-v5-c-button.pf-m-control {
+  --pf-v5-c-button--m-control--BackgroundColor: var(--lk-surface-2);
+  --pf-v5-c-button--m-control--Color: var(--lk-text-dim);
+  --pf-v5-c-button--m-control--hover--Color: var(--lk-text);
+  --pf-v5-c-button--m-control--after--BorderTopColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderRightColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderLeftColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--hover--after--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--focus--after--BorderBottomColor: var(--lk-accent);
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-button.pf-m-control::after {
+  border-radius: inherit;
+  border-width: 1px;
+}
+
+/* ---- Кнопки ---- */
+.pf-v5-c-button {
+  font-family: inherit; font-weight: 600; font-size: 14px;
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--lk-accent);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--active--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--Color: var(--lk-accent-text);
+  --pf-v5-c-button--m-primary--hover--Color: var(--lk-accent-text);
+  padding-block: 11px;
+}
+.pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--m-secondary--BackgroundColor: var(--lk-surface-2);
+  --pf-v5-c-button--m-secondary--hover--BackgroundColor: var(--lk-border);
+  --pf-v5-c-button--m-secondary--Color: var(--lk-text);
+  --pf-v5-c-button--m-secondary--hover--Color: var(--lk-text);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--lk-border);
+  --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--lk-border-strong);
+}
+.pf-v5-c-button::after { border-radius: inherit; }
+.pf-v5-c-button.pf-m-link {
+  --pf-v5-c-button--m-link--Color: var(--lk-accent);
+  --pf-v5-c-button--m-link--hover--Color: var(--lk-accent-hover);
+}
+
+/* ---- Ссылки («Забыли пароль?», «Регистрация», «Назад к входу») ---- */
+.login-pf a,
+#kc-form-options a,
+#kc-registration a,
+#kc-info a {
+  color: var(--lk-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.login-pf a:hover { color: var(--lk-accent-hover); text-decoration: underline; }
+
+/* ---- «Запомнить меня» ---- */
+.pf-v5-c-check__input { accent-color: var(--lk-accent); width: 16px; height: 16px; }
+.pf-v5-c-check__label { font-size: 14px; color: var(--lk-text); }
+
+/* ---- Сообщения (ошибка входа, успех, предупреждение) ---- */
+.pf-v5-c-alert.pf-m-inline {
+  border-radius: var(--lk-radius-sm);
+  border: 1px solid transparent;
+  box-shadow: none;
+  --pf-v5-c-alert--m-inline--BorderTopWidth: 0;
+}
+.pf-v5-c-alert.pf-m-inline::before { display: none; }
+.pf-v5-c-alert.pf-m-danger {
+  background: color-mix(in srgb, var(--lk-danger) 10%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-danger) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-danger);
+  --pf-v5-c-alert__icon--Color: var(--lk-danger);
+}
+.pf-v5-c-alert.pf-m-success {
+  background: color-mix(in srgb, var(--lk-success) 10%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-success) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-success);
+  --pf-v5-c-alert__icon--Color: var(--lk-success);
+}
+.pf-v5-c-alert.pf-m-warning {
+  background: color-mix(in srgb, var(--lk-warn) 12%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-warn) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-warn);
+  --pf-v5-c-alert__icon--Color: var(--lk-warn);
+}
+.pf-v5-c-alert.pf-m-info {
+  background: color-mix(in srgb, var(--lk-accent) 8%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-accent) 25%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-accent);
+  --pf-v5-c-alert__icon--Color: var(--lk-accent);
+}
+.pf-v5-c-alert__title { font-weight: 600; font-size: 14px; }
+
+/* Текст ошибки под полем */
+.pf-v5-c-helper-text__item.pf-m-error,
+.kc-feedback-text.pf-m-error { color: var(--lk-danger); font-size: 12px; }
+
+
+/* ---- Каркас: фон страницы серый, контент — белыми карточками, как в ЛК ---- */
+body, #app, .pf-v5-c-page {
+  font-family: var(--pf-v5-global--FontFamily--text);
+  -webkit-font-smoothing: antialiased;
+}
+.pf-v5-c-page {
+  --pf-v5-c-page--BackgroundColor: var(--lk-bg);
+  background: var(--lk-bg);
+}
+.pf-v5-c-page__main { background: var(--lk-bg); }
+.pf-v5-c-page__main > .pf-v5-c-page__main-section {
+  --pf-v5-c-page__main-section--BackgroundColor: transparent;
+  background: transparent;
+  color: var(--lk-text);
+}
+/* Всё, что ниже заголовка страницы — карточкой */
+.pf-v5-c-page__main > .pf-v5-c-page__main-section + .pf-v5-c-page__main-section {
+  background: var(--lk-surface);
+  border: 1px solid var(--lk-border);
+  border-radius: var(--lk-radius);
+  margin: 0 24px 24px;
+}
+.pf-v5-c-page__main > .pf-v5-c-page__main-section:first-child { padding-block-end: 8px; }
+.pf-v5-c-title {
+  font-family: var(--pf-v5-global--FontFamily--text);
+  color: var(--lk-text);
+}
+.pf-v5-c-title.pf-m-2xl { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.pf-v5-c-title.pf-m-xl,
+.pf-v5-c-title.pf-m-lg { font-size: 17px; font-weight: 700; }
+.pf-v5-c-content, .pf-v5-c-content p { color: var(--lk-text-dim); }
+
+/* ---- Шапка: светлая полоса с рамкой снизу вместо чёрной ---- */
+.pf-v5-c-masthead {
+  --pf-v5-c-masthead--BackgroundColor: var(--lk-surface);
+  --pf-v5-c-masthead--Color: var(--lk-text);
+  --pf-v5-c-masthead__toggle--Color: var(--lk-text-dim);
+  background: var(--lk-surface);
+  color: var(--lk-text);
+  border-bottom: 1px solid var(--lk-border);
+}
+.pf-v5-c-masthead .pf-v5-c-button.pf-m-plain { color: var(--lk-text-dim); }
+.pf-v5-c-masthead .pf-v5-c-button.pf-m-plain:hover { color: var(--lk-text); }
+
+/* Правая часть шапки (панель с кнопкой пользователя) — без своего фона */
+.pf-v5-c-masthead .pf-v5-c-toolbar,
+.pf-v5-c-masthead .pf-v5-c-masthead__content {
+  --pf-v5-c-toolbar--BackgroundColor: transparent;
+  background: transparent;
+}
+
+/* Логотип: значок с ключом (img/logo.svg) + подпись, как в боковом меню ЛК */
+.pf-v5-c-masthead__brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--lk-text); text-decoration: none;
+}
+.pf-v5-c-masthead__brand img,
+.pf-v5-c-masthead__brand .pf-v5-c-brand {
+  height: 34px; width: 34px;
+}
+.pf-v5-c-masthead__brand::after {
+  content: 'Управление аккаунтом';
+  font-size: 15px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap;
+}
+
+/* Кнопка с именем пользователя справа — «пилюля», как кнопка аккаунта в ЛК */
+.pf-v5-c-masthead .pf-v5-c-menu-toggle:not(.pf-m-plain) {
+  --pf-v5-c-menu-toggle--BackgroundColor: var(--lk-surface);
+  --pf-v5-c-menu-toggle--Color: var(--lk-text);
+  border-radius: 999px;
+  font-weight: 600; font-size: 14px;
+}
+.pf-v5-c-masthead .pf-v5-c-menu-toggle:not(.pf-m-plain)::before {
+  border: 1px solid var(--lk-border-strong);
+  border-radius: 999px;
+}
+.pf-v5-c-masthead .pf-v5-c-menu-toggle:not(.pf-m-plain)::after { display: none; }
+.pf-v5-c-masthead .pf-v5-c-menu-toggle:not(.pf-m-plain):hover::before,
+.pf-v5-c-masthead .pf-v5-c-menu-toggle.pf-m-expanded::before { border-color: var(--lk-accent); }
+.pf-v5-c-menu-toggle .pf-v5-c-menu-toggle__toggle-icon { color: var(--lk-text-dim); }
+
+/* Выпадающие списки в формах (например, «Выбрать язык») — как поля ввода */
+.pf-v5-c-page__main .pf-v5-c-menu-toggle:not(.pf-m-plain) {
+  --pf-v5-c-menu-toggle--BackgroundColor: var(--lk-bg);
+  --pf-v5-c-menu-toggle--Color: var(--lk-text);
+  background: var(--lk-bg);
+  border-radius: var(--lk-radius-sm);
+  font-family: inherit; font-size: 14px;
+}
+.pf-v5-c-page__main .pf-v5-c-menu-toggle:not(.pf-m-plain)::before {
+  border: 1px solid var(--lk-border-strong);
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-page__main .pf-v5-c-menu-toggle:not(.pf-m-plain)::after { display: none; }
+.pf-v5-c-page__main .pf-v5-c-menu-toggle:not(.pf-m-plain):hover::before,
+.pf-v5-c-page__main .pf-v5-c-menu-toggle.pf-m-expanded::before { border-color: var(--lk-accent); }
+
+/* Выпадающие меню */
+.pf-v5-c-menu {
+  --pf-v5-c-menu--BackgroundColor: var(--lk-surface);
+  border: 1px solid var(--lk-border);
+  border-radius: var(--lk-radius-sm);
+  box-shadow: var(--lk-shadow);
+  font-family: inherit;
+}
+.pf-v5-c-menu__item { color: var(--lk-text); border-radius: 6px; }
+.pf-v5-c-menu__item:hover { background: var(--lk-surface-2); }
+
+/* ---- Боковое меню: светлое, активный пункт — синей плашкой ---- */
+.pf-v5-c-page__sidebar {
+  --pf-v5-c-page__sidebar--BackgroundColor: var(--lk-surface);
+  background: var(--lk-surface);
+  border-right: 1px solid var(--lk-border);
+  color: var(--lk-text);
+}
+.pf-v5-c-page__sidebar-body { padding: 14px 12px; }
+.pf-v5-c-nav {
+  --pf-v5-c-nav--BackgroundColor: transparent;
+  background: transparent;
+}
+.pf-v5-c-nav__list { display: flex; flex-direction: column; gap: 4px; }
+.pf-v5-c-nav__item { border: none; }
+.pf-v5-c-nav__item::before,
+.pf-v5-c-nav__item::after,
+.pf-v5-c-nav__link::before,
+.pf-v5-c-nav__link::after { border: none !important; display: none; }
+.pf-v5-c-nav__link {
+  --pf-v5-c-nav__link--Color: var(--lk-text-dim);
+  --pf-v5-c-nav__link--hover--Color: var(--lk-text);
+  --pf-v5-c-nav__link--BackgroundColor: transparent;
+  --pf-v5-c-nav__link--hover--BackgroundColor: transparent;
+  color: var(--lk-text-dim);
+  background: transparent;
+  border-radius: var(--lk-radius-sm);
+  padding: 10px 12px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+}
+.pf-v5-c-nav__link:hover { background: color-mix(in srgb, var(--lk-text) 5%, transparent); color: var(--lk-text); }
+.pf-v5-c-nav__link.pf-m-current,
+.pf-v5-c-nav__link.pf-m-current:hover {
+  --pf-v5-c-nav__link--m-current--Color: var(--lk-accent-text);
+  --pf-v5-c-nav__link--m-current--BackgroundColor: var(--lk-accent);
+  background: var(--lk-accent);
+  color: var(--lk-accent-text);
+}
+/* Раскрывающийся пункт «Безопасность» и его подпункты */
+.pf-v5-c-nav__item.pf-m-expanded > .pf-v5-c-nav__link { color: var(--lk-text); }
+.pf-v5-c-nav__subnav { padding-inline-start: 12px; margin-top: 4px; }
+.pf-v5-c-nav__toggle { color: var(--lk-text-dim); }
+
+/* «Перейти к разделу» справа от формы */
+.pf-v5-c-jump-links__link { color: var(--lk-text-dim); font-weight: 600; }
+.pf-v5-c-jump-links__item.pf-m-current .pf-v5-c-jump-links__link { color: var(--lk-accent); }
+.pf-v5-c-jump-links__list::before { border-color: var(--lk-border); }
+.pf-v5-c-jump-links__item.pf-m-current .pf-v5-c-jump-links__link::before { border-color: var(--lk-accent); }
+
+/* Списки и таблицы (Безопасность, Приложения) */
+.pf-v5-c-data-list,
+.pf-v5-c-table {
+  --pf-v5-c-data-list--BackgroundColor: transparent;
+  --pf-v5-c-table--BackgroundColor: transparent;
+  background: transparent;
+  font-family: inherit;
+}
+.pf-v5-c-data-list__item,
+.pf-v5-c-table tr { border-color: var(--lk-border) !important; }
+.pf-v5-c-table thead th {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--lk-text-dim);
+}
+.pf-v5-c-label { border-radius: 999px; font-weight: 600; }
+
+/* Поля формы в консоли — подписи слева жирнее */
+.pf-v5-c-form.pf-m-horizontal .pf-v5-c-form__label-text { font-weight: 600; }
+
+/* ---- Телефон ---- */
+@media (max-width: 575px) {
+  .pf-v5-c-page__main > .pf-v5-c-page__main-section + .pf-v5-c-page__main-section { margin: 0 12px 12px; }
+  .pf-v5-c-masthead__brand::after { content: 'Аккаунт'; }
+}

@@ -1,0 +1,329 @@
+/* =========================================================
+   Тема входа в стиле личных кабинетов.
+   Цвета, шрифт и радиусы — те же, что в index.css кабинетов
+   (support и client). Меняем переменные PatternFly 5 и пару
+   правил keycloak.v2; разметка страниц остаётся родной.
+   ========================================================= */
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../fonts/manrope-cyrillic-wght-normal.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../fonts/manrope-latin-wght-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---- Палитра ЛК: светлая ---- */
+:root {
+  --lk-bg: #f5f6f8;
+  --lk-surface: #ffffff;
+  --lk-surface-2: #f0f1f4;
+  --lk-text: #16181d;
+  --lk-text-dim: #6b7280;
+  --lk-border: #e2e4e9;
+  --lk-border-strong: #cfd3da;
+  --lk-accent: #2563eb;
+  --lk-accent-hover: #1d4ed8;
+  --lk-accent-text: #ffffff;
+  --lk-danger: #dc2626;
+  --lk-success: #16a34a;
+  --lk-warn: #b45309;
+  --lk-radius: 12px;
+  --lk-radius-sm: 8px;
+  --lk-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px rgba(16, 24, 40, .06);
+}
+
+/* ---- Палитра ЛК: тёмная (класс ставит сам Keycloak по настройке системы) ---- */
+:root.pf-v5-theme-dark {
+  --lk-bg: #14161a;
+  --lk-surface: #1c1f25;
+  --lk-surface-2: #23272e;
+  --lk-text: #e8eaed;
+  --lk-text-dim: #9aa1ac;
+  --lk-border: #2c313a;
+  --lk-border-strong: #3a404b;
+  --lk-accent: #4b8bf5;
+  --lk-accent-hover: #3b7ae8;
+  --lk-danger: #ef4444;
+  --lk-success: #22c55e;
+  --lk-warn: #fbbf24;
+  --lk-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+}
+
+/* ---- Глобальные переменные PatternFly → палитра ЛК ---- */
+:root, :root.pf-v5-theme-dark {
+  --pf-v5-global--FontFamily--text: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pf-v5-global--FontFamily--heading: var(--pf-v5-global--FontFamily--text);
+  --pf-v5-global--primary-color--100: var(--lk-accent);
+  --pf-v5-global--primary-color--200: var(--lk-accent-hover);
+  --pf-v5-global--link--Color: var(--lk-accent);
+  --pf-v5-global--link--Color--hover: var(--lk-accent-hover);
+  --pf-v5-global--Color--100: var(--lk-text);
+  --pf-v5-global--Color--200: var(--lk-text-dim);
+  --pf-v5-global--BackgroundColor--100: var(--lk-surface);
+  --pf-v5-global--BorderColor--100: var(--lk-border);
+  --pf-v5-global--danger-color--100: var(--lk-danger);
+  --pf-v5-global--success-color--100: var(--lk-success);
+  --keycloak-card-top-color: transparent;
+}
+
+/* ---- Фон страницы: ровный, как в ЛК, без картинки Keycloak ---- */
+.login-pf body,
+.login-pf body#keycloak-bg {
+  background: var(--lk-bg);
+  color: var(--lk-text);
+  font-family: var(--pf-v5-global--FontFamily--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.pf-v5-c-login__container {
+  grid-template-columns: minmax(0, 31rem);
+}
+
+/* ---- Шапка над карточкой: значок с ключом + название (как логотип в ЛК) ---- */
+#kc-header {
+  padding-block: 0 20px;
+  color: var(--lk-text); /* PatternFly красит шапку в белый — под тёмную картинку фона */
+}
+#kc-header-wrapper {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-family: var(--pf-v5-global--FontFamily--text);
+  font-size: 22px; font-weight: 800; letter-spacing: -0.01em;
+  text-transform: none; color: var(--lk-text) !important;
+  white-space: normal; line-height: 1.2;
+}
+#kc-header-wrapper::before {
+  content: '';
+  width: 40px; height: 40px; flex: none; border-radius: 11px;
+  background: var(--lk-accent) url(../img/logo-key.svg) center / 22px no-repeat;
+}
+
+/* ---- Карточка формы ---- */
+.pf-v5-c-login__main {
+  --pf-v5-c-login__main--BackgroundColor: var(--lk-surface);
+  background: var(--lk-surface);
+  border: 1px solid var(--lk-border);
+  border-radius: 16px;
+  box-shadow: var(--lk-shadow);
+  overflow: hidden;
+}
+.pf-v5-c-login__main-header {
+  border-top: none;
+  padding-block-start: 32px;
+}
+.pf-v5-c-login__main-header { column-gap: 16px; }
+#kc-page-title {
+  font-family: var(--pf-v5-global--FontFamily--text);
+  font-size: 22px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--lk-text);
+}
+
+/* ---- Подписи полей ---- */
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text {
+  font-size: 13px; font-weight: 600; color: var(--lk-text);
+}
+
+/* ---- Поля ввода: рамка со всех сторон и скругление, как в ЛК ---- */
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: var(--lk-bg);
+  --pf-v5-c-form-control--Color: var(--lk-text);
+  --pf-v5-c-form-control--BorderRadius: var(--lk-radius-sm);
+  --pf-v5-c-form-control--before--BorderTopColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderRightColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-form-control--before--BorderLeftColor: var(--lk-border-strong);
+  /* у PatternFly нижняя граница рисуется отдельной полосой — делаем рамку одинаковой со всех сторон */
+  --pf-v5-c-form-control--before--BorderTopWidth: 1px;
+  --pf-v5-c-form-control--before--BorderRightWidth: 1px;
+  --pf-v5-c-form-control--before--BorderBottomWidth: 1px;
+  --pf-v5-c-form-control--before--BorderLeftWidth: 1px;
+  --pf-v5-c-form-control--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--focus-within--after--BorderBottomColor: transparent;
+  background-color: var(--lk-bg);
+  border-radius: var(--lk-radius-sm);
+  font-size: 14px;
+}
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select,
+.pf-v5-c-form-control > textarea {
+  font-family: inherit; color: var(--lk-text); background: transparent;
+  padding-block: 10px;
+}
+/* Фокус — синяя рамка целиком и мягкое свечение, как в ЛК; родной толстый outline убираем */
+.pf-v5-c-form-control > input:focus,
+.pf-v5-c-form-control > input:focus-visible,
+.pf-v5-c-form-control > select:focus,
+.pf-v5-c-form-control > select:focus-visible {
+  outline: none;
+}
+.pf-v5-c-form-control:focus-within::before {
+  border-color: var(--lk-accent);
+  border-width: 1px;
+}
+.pf-v5-c-form-control:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lk-accent) 18%, transparent);
+}
+/* Ошибка — красная рамка */
+.pf-v5-c-form-control.pf-m-error::before,
+.pf-v5-c-form-control:has(input[aria-invalid="true"])::before {
+  border-color: var(--lk-danger);
+}
+.pf-v5-c-form-control.pf-m-readonly {
+  --pf-v5-c-form-control--BackgroundColor: var(--lk-surface-2);
+  background-color: var(--lk-surface-2);
+}
+.pf-v5-c-form-control.pf-m-readonly::before {
+  border-color: var(--lk-border);
+}
+
+/* Поле пароля + кнопка «показать»: единый блок со скруглением */
+.pf-v5-c-input-group {
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control,
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control::before,
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:not(:last-child) .pf-v5-c-form-control::after {
+  border-start-end-radius: 0; border-end-end-radius: 0;
+}
+.pf-v5-c-input-group > .pf-v5-c-input-group__item:last-child .pf-v5-c-button.pf-m-control {
+  border-start-start-radius: 0; border-end-start-radius: 0;
+}
+.pf-v5-c-button.pf-m-control {
+  --pf-v5-c-button--m-control--BackgroundColor: var(--lk-surface-2);
+  --pf-v5-c-button--m-control--Color: var(--lk-text-dim);
+  --pf-v5-c-button--m-control--hover--Color: var(--lk-text);
+  --pf-v5-c-button--m-control--after--BorderTopColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderRightColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--after--BorderLeftColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--hover--after--BorderBottomColor: var(--lk-border-strong);
+  --pf-v5-c-button--m-control--focus--after--BorderBottomColor: var(--lk-accent);
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-button.pf-m-control::after {
+  border-radius: inherit;
+  border-width: 1px;
+}
+
+/* ---- Кнопки ---- */
+.pf-v5-c-button {
+  font-family: inherit; font-weight: 600; font-size: 14px;
+  border-radius: var(--lk-radius-sm);
+}
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--lk-accent);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--active--BackgroundColor: var(--lk-accent-hover);
+  --pf-v5-c-button--m-primary--Color: var(--lk-accent-text);
+  --pf-v5-c-button--m-primary--hover--Color: var(--lk-accent-text);
+  padding-block: 11px;
+}
+.pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--m-secondary--BackgroundColor: var(--lk-surface-2);
+  --pf-v5-c-button--m-secondary--hover--BackgroundColor: var(--lk-border);
+  --pf-v5-c-button--m-secondary--Color: var(--lk-text);
+  --pf-v5-c-button--m-secondary--hover--Color: var(--lk-text);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--lk-border);
+  --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--lk-border-strong);
+}
+.pf-v5-c-button::after { border-radius: inherit; }
+.pf-v5-c-button.pf-m-link {
+  --pf-v5-c-button--m-link--Color: var(--lk-accent);
+  --pf-v5-c-button--m-link--hover--Color: var(--lk-accent-hover);
+}
+
+/* ---- Ссылки («Забыли пароль?», «Регистрация», «Назад к входу») ---- */
+.login-pf a,
+#kc-form-options a,
+#kc-registration a,
+#kc-info a {
+  color: var(--lk-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.login-pf a:hover { color: var(--lk-accent-hover); text-decoration: underline; }
+
+/* ---- «Запомнить меня» ---- */
+.pf-v5-c-check__input { accent-color: var(--lk-accent); width: 16px; height: 16px; }
+.pf-v5-c-check__label { font-size: 14px; color: var(--lk-text); }
+
+/* ---- Нижняя полоса карточки («Новый пользователь? Регистрация») ---- */
+.pf-v5-c-login__main-footer-band {
+  border-block-start: 1px solid var(--lk-border);
+  color: var(--lk-text-dim);
+  font-size: 14px;
+}
+
+/* ---- Сообщения (ошибка входа, успех, предупреждение) ---- */
+.pf-v5-c-alert.pf-m-inline {
+  border-radius: var(--lk-radius-sm);
+  border: 1px solid transparent;
+  box-shadow: none;
+  --pf-v5-c-alert--m-inline--BorderTopWidth: 0;
+}
+.pf-v5-c-alert.pf-m-inline::before { display: none; }
+.pf-v5-c-alert.pf-m-danger {
+  background: color-mix(in srgb, var(--lk-danger) 10%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-danger) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-danger);
+  --pf-v5-c-alert__icon--Color: var(--lk-danger);
+}
+.pf-v5-c-alert.pf-m-success {
+  background: color-mix(in srgb, var(--lk-success) 10%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-success) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-success);
+  --pf-v5-c-alert__icon--Color: var(--lk-success);
+}
+.pf-v5-c-alert.pf-m-warning {
+  background: color-mix(in srgb, var(--lk-warn) 12%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-warn) 30%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-warn);
+  --pf-v5-c-alert__icon--Color: var(--lk-warn);
+}
+.pf-v5-c-alert.pf-m-info {
+  background: color-mix(in srgb, var(--lk-accent) 8%, var(--lk-surface));
+  border-color: color-mix(in srgb, var(--lk-accent) 25%, transparent);
+  --pf-v5-c-alert__title--Color: var(--lk-accent);
+  --pf-v5-c-alert__icon--Color: var(--lk-accent);
+}
+.pf-v5-c-alert__title { font-weight: 600; font-size: 14px; }
+
+/* Текст ошибки под полем */
+.pf-v5-c-helper-text__item.pf-m-error,
+.kc-feedback-text.pf-m-error { color: var(--lk-danger); font-size: 12px; }
+
+/* Выбор языка — компактный, чтобы заголовок помещался в одну строку */
+.pf-v5-c-login__main-header-utilities .pf-v5-c-form-control > select {
+  padding-block: 7px; padding-inline-start: 10px; font-size: 13px;
+}
+
+/* ---- Телефон: карточка во всю ширину, без «парения» ---- */
+@media (max-width: 575px) {
+  .pf-v5-c-login__container { grid-template-columns: minmax(0, 1fr); padding-inline: 16px; }
+  .pf-v5-c-login__main { border-radius: 14px; }
+  #kc-header-wrapper { font-size: 19px; }
+  #kc-header-wrapper::before { width: 34px; height: 34px; border-radius: 9px; background-size: 18px; }
+}
+
+/* Подпись «* Обязательные поля» на регистрации — мелкая и серая, как подсказки в ЛК */
+.pf-v5-c-login__main-body .subtitle,
+.pf-v5-c-login__main-body .subtitle .pf-v5-c-helper-text__item-text {
+  font-size: 13px; color: var(--lk-text-dim);
+}
