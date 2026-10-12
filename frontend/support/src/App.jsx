@@ -516,6 +516,7 @@ function Pagination({ page, total, onPage, busy, label }) {
    бэк отдаст его (например, GET /api/private/support-user/current),
    достаточно подставить значение в состояние name. */
 function AccountMenu() {
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
   // Логин вошедшего администратора — из GET /support-user.
   // Пока ответа нет или запрос не удался — нейтральное «Администратор».
@@ -571,18 +572,54 @@ function AccountMenu() {
                 <i className="fa-solid fa-user-gear" />
                 Управление аккаунтом
               </a>
-              {/* Выход — POST /logout (см. logout в api.js); href оставлен как запасной вариант */}
+              {/* Выход — сначала окно подтверждения, затем POST /logout (см. logout в api.js); href — запасной вариант */}
               <a
                   className="account-item is-danger"
                   href="/logout"
                   role="menuitem"
-                  onClick={(e) => { e.preventDefault(); logout(); }}
+                  onClick={(e) => { e.preventDefault(); setOpen(false); setConfirmLogout(true); }}
               >
                 <i className="fa-solid fa-right-from-bracket" />
                 Выйти
               </a>
             </div>
         )}
+
+        {confirmLogout && <LogoutDialog onCancel={() => setConfirmLogout(false)} />}
+      </div>
+  );
+}
+
+/* Подтверждение выхода. Нужно, потому что выход идёт без стандартной
+   страницы подтверждения Spring (см. logout в api.js). */
+function LogoutDialog({ onCancel }) {
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, busy]);
+
+  const apply = () => { setBusy(true); logout(); }; // дальше страница уходит на выход сама
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm">
+          <div className="modal-head">
+            <h2>Выход из аккаунта</h2>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <p className="confirm-text">Выйти из личного кабинета?</p>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Отмена</button>
+            <button type="button" className="btn btn-danger" onClick={apply} disabled={busy}>
+              {busy ? 'Выходим…' : 'Выйти'}
+            </button>
+          </div>
+        </div>
       </div>
   );
 }

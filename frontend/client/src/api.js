@@ -42,32 +42,39 @@ function xsrfToken() {
   } catch { return ''; }
 }
 
-/* Выход: POST /logout с CSRF-токеном в поле формы _csrf.
-   Отправляем обычной формой, а не fetch: так браузер сам проходит все
-   редиректы после выхода (в т.ч. на Keycloak) и попадает на страницу входа.
-   Если куки XSRF-TOKEN ещё нет (бэк выдаёт её только в ответ на первый
-   изменяющий запрос), сначала шлём пустой POST /logout без токена: он
-   получит 403, но вместе с ним сервер поставит куку — после этого
-   отправляем форму уже с токеном. */
+/* Выход: POST /logout обычной формой, а не fetch — так браузер сам проходит
+   редирект бэка на выход из Keycloak (OIDC logout) и закрывается сессия и там.
+   CSRF: бэк настроен через .spa() — в поле формы _csrf он принимает только
+   замаскированный токен, а не значение куки XSRF-TOKEN. Замаскированный
+   токен берём со стандартной страницы подтверждения Spring (GET /logout):
+   в её форме есть <input name="_csrf">. Страницу пользователю не показываем.
+   Если токен не нашёлся (страницу отключили или поменяли) — просто переходим
+   на /logout: там будет та же страница подтверждения, выход всё равно сработает. */
 export async function logout() {
-  let token = xsrfToken();
+  let token = '';
+  try {
+    const res = await fetch('/logout', { credentials: 'include', headers: { Accept: 'text/html' } });
+    if (res.ok) {
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      token = doc.querySelector('input[name="_csrf"]')?.value || '';
+    }
+  } catch { /* сеть недоступна — ниже запасной вариант */ }
+
   if (!token) {
-    try {
-      await fetch('/logout', { method: 'POST', credentials: 'include', redirect: 'manual' });
-    } catch { /* сеть недоступна — форма ниже всё равно попробует */ }
-    token = xsrfToken();
+    window.location.href = '/logout';
+    return;
   }
+
   const form = document.createElement('form');
   form.method = 'POST';
   form.action = '/logout';
   form.style.display = 'none';
-  if (token) {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = '_csrf';
-    input.value = token;
-    form.appendChild(input);
-  }
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = '_csrf';
+  input.value = token;
+  form.appendChild(input);
   document.body.appendChild(form);
   form.submit();
 }
