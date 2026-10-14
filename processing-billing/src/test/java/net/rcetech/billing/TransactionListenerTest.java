@@ -1,6 +1,6 @@
-package net.rcetech.clients;
+package net.rcetech.billing;
 
-import net.rcetech.clients.service.ClientFacade;
+import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
@@ -23,16 +23,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -49,19 +47,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
-        OrderService.class, ClientService.class, ClientFacade.class, ClientEventListener.class,
+        OrderService.class, ClientService.class, ClientBalanceService.class, TransactionListener.class,
         TransactionService.class, IncidentService.class, SupportUserService.class, MetaWebConfig.class
 })
-class ClientEventListenerTest {
-
-    @TestConfiguration
-    static class Configuration {
-
-        @Bean
-        public ClientMapper clientMapper() {
-            return Mappers.getMapper(ClientMapper.class);
-        }
-    }
+class TransactionListenerTest {
 
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
@@ -73,6 +62,9 @@ class ClientEventListenerTest {
         registry.add("spring.datasource.password", mySQLContainer::getPassword);
         registry.add("spring.flyway.locations", () -> "classpath:database/migration");
     }
+
+    @MockitoBean
+    private ClientMapper clientMapper;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;

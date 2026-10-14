@@ -1,7 +1,7 @@
-package net.rcetech.clients;
+package net.rcetech.billing;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.clients.service.ClientFacade;
+import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.incidents.IncidentType;
@@ -13,14 +13,14 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @Slf4j
-public class ClientEventListener {
+public class TransactionListener {
 
-    private final ClientFacade clientFacade;
+    private final ClientBalanceService clientBalanceService;
 
     private final IncidentService incidentService;
 
-    public ClientEventListener(ClientFacade clientFacade, IncidentService incidentService) {
-        this.clientFacade = clientFacade;
+    public TransactionListener(ClientBalanceService clientBalanceService, IncidentService incidentService) {
+        this.clientBalanceService = clientBalanceService;
         this.incidentService = incidentService;
     }
 
@@ -28,7 +28,7 @@ public class ClientEventListener {
     @Async
     public void transactionCreated(TransactionCreatedEvent event) {
         try {
-            clientFacade.updateBalanceAfterTransaction(event.transactionId());
+            clientBalanceService.updateBalanceAfterTransaction(event.transactionId());
         }  catch (Exception e) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Ошибка обновления баланса пользователя после создания транзакции {}: {}",

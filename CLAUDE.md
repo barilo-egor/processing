@@ -54,7 +54,7 @@
   - `/api/public/**`: открыто, CSRF не проверяется.
   - Иерархия ролей: `ADMIN` включает `OPERATOR`.
 - **Словарь констант**: `/api/private/dictionary`. Чтобы добавить значение, реализуйте `net.rcetech.meta.DictionaryField` и зарегистрируйте как Spring-бин.
-- **Взаимодействие модулей**: модули общаются через Spring application events (классы `*Event` в meta, обрабатываются слушателями вроде `TransactionEventListener` и `ClientEventListener`) и через Kafka, а не через прямые вызовы внутренностей друг друга.
+- **Взаимодействие модулей**: модули общаются через Spring application events (классы `*Event` в meta, обрабатываются слушателями вроде `TransactionEventListener` и `TransactionListener`) и через Kafka, а не через прямые вызовы внутренностей друг друга.
 - **Метрики**: ключи метрик лежат в `net.rcetech.meta.MetricsConstants`.
 - **Postman-коллекция**: `processing.postman_collection.json` документирует HTTP API, в том числе как инициировать тестовые колбэки мерчантов.
 

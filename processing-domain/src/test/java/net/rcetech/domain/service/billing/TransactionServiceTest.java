@@ -321,4 +321,39 @@ class TransactionServiceTest {
 
         assertEquals(1, actual.getTotalElements());
     }
+
+    void saveTransaction(Client client, Operation operation, Integer amount) {
+        Transaction transaction = new Transaction();
+        transaction.setClient(client);
+        transaction.setOperation(operation);
+        transaction.setAmount(amount);
+        fillFields(transaction);
+        transactionRepository.save(transaction);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1000,300,700",
+            "250,4006,-3756"
+    })
+    @DisplayName("Метод должен посчитать баланс клиента: сумма пополнений минус сумма списаний.")
+    void calculateBalance_shouldSumCreditsMinusDebits(Integer credit, Integer debit, Integer expected) {
+        Client client = getDummyClient();
+        saveTransaction(client, Operation.CREDIT, credit);
+        saveTransaction(client, Operation.CREDIT, credit);
+        saveTransaction(client, Operation.DEBIT, debit);
+        saveTransaction(client, Operation.DEBIT, credit);
+        saveTransaction(getDummyClient(), Operation.CREDIT, credit);
+
+        assertEquals(expected, transactionService.calculateBalance(client.getId()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"16af5227-d690-424f-9e36-89fd8b955146", "77fb78d1-e61f-4522-847e-4533f703f8dc"})
+    @DisplayName("Метод должен вернуть 0, если у клиента нет транзакций.")
+    void calculateBalance_shouldReturnZeroIfNoTransactions(UUID clientId) {
+        saveTransaction(getDummyClient(), Operation.CREDIT, 1000);
+
+        assertEquals(0, transactionService.calculateBalance(clientId));
+    }
 }

@@ -91,6 +91,13 @@ public class ClientService {
         client.setBalance(client.getBalance() - creditAmount);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateBalance(UUID clientId, Integer balance) {
+        Client client = findById(clientId)
+                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
+        client.setBalance(balance);
+    }
+
     public void createIfNotExists(UUID id, String username) {
         if (clientRepository.existsById(id)) {
             return;

@@ -71,6 +71,11 @@ public class TransactionService {
         ));
     }
 
+    @Transactional(readOnly = true)
+    public Integer calculateBalance(UUID clientId) {
+        return transactionRepository.calculateBalance(clientId);
+    }
+
     public Optional<Transaction> findById(Long transactionId) {
         return transactionRepository.findById(transactionId);
     }
