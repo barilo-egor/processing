@@ -36,7 +36,8 @@ tasks.register('processingStartUp', Exec) {
         executable '/usr/local/bin/docker'
         args 'compose', 'up', '-d', '--build'
     }
-    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend')
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend',
+            'copyKeycloakFrontendToDocker')
 }
 
 tasks.register('processingShutdown', Exec) {
@@ -119,4 +120,9 @@ tasks.register('copyFrontendToDocker', Copy) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     into(new File(rootDir, 'docker/mount/processing'))
     mustRunAfter('installFrontend')
+}
+
+tasks.register('copyKeycloakFrontendToDocker', Sync) {
+    from(new File(rootDir, 'frontend-keycloak'))
+    into(new File(rootDir, 'docker/mount/keycloak/themes'))
 }

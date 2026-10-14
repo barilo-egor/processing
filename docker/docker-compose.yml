@@ -72,6 +72,7 @@ services:
     volumes:
       - ./mount/keycloak:/opt/keycloak/data
       - ./mount/keycloak_plugins:/opt/keycloak/providers:ro
+      - ./mount/keycloak/themes:/opt/keycloak/themes:ro
     healthcheck:
       test: [ "CMD-SHELL", "curl --head -fsS http://localhost:8081/health/ready | echo $?" ]
       interval: 30s
