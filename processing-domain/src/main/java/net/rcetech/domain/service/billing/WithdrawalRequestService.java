@@ -1,13 +1,16 @@
 package net.rcetech.domain.service.billing;
 
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.ServiceUnavailableException;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.ClientFieldNotSetErrorData;
 import net.rcetech.meta.util.CalculateUtil;
 import net.rcetech.rates.RatePair;
 import net.rcetech.rates.RateService;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class WithdrawalRequestService {
 
     private final WithdrawalRequestRepository withdrawalRequestRepository;
@@ -33,25 +37,39 @@ public class WithdrawalRequestService {
 
     private final RateService rateService;
 
+    private final IncidentService incidentService;
+
     public WithdrawalRequestService(WithdrawalRequestRepository withdrawalRequestRepository,
-                                    ClientService clientService, RateService rateService) {
+                                    ClientService clientService, RateService rateService, IncidentService incidentService) {
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.clientService = clientService;
         this.rateService = rateService;
+        this.incidentService = incidentService;
     }
-
 
     @Transactional
     public WithdrawalRequest create(UUID clientId, Integer amount, String address) {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Client with id " + clientId + " not found"));
         if (Objects.isNull(client.getCommissionPercent())) {
-            // TODO Создание инцидента
-            throw new ServiceUnavailableException("Не установлен процент комисси для клиента " + client.getId() + ".");
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Не установлен процент комиссии для клиента {}.", timestamp, clientId);
+            incidentService.save(
+                    IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET,
+                    new ClientFieldNotSetErrorData(clientId),
+                    timestamp
+            );
+            throw new BaseException("Не установлен процент комиссии для клиента " + client.getId() + ".", timestamp);
         }
         if (Objects.isNull(client.getMinWithdrawalAmount())) {
-            // TODO Создание инцидента
-            throw new ServiceUnavailableException("Не установлена минимальная сумма вывода клиента " + client.getId() + ".");
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Не установлена минимальная сумма вывода клиента {}.", timestamp, clientId);
+            incidentService.save(
+                    IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET,
+                    new ClientFieldNotSetErrorData(clientId),
+                    timestamp
+            );
+            throw new BaseException("Не установлена минимальная сумма вывода клиента " + client.getId() + ".", timestamp);
         }
         if (amount < client.getMinWithdrawalAmount()) {
             throw new BadRequestException("Запрошенная сумма на вывод меньше минимально допустимой.");
@@ -85,8 +103,9 @@ public class WithdrawalRequestService {
     /**
      * Отмена заявки клиентом, в связи с чем проверяется соответствие автора заявки и отправителя запроса.
      * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     *
      * @param clientId отправитель запроса отмены заявки
-     * @param id идентификатор заявки
+     * @param id       идентификатор заявки
      */
     @Transactional
     public void cancel(UUID clientId, UUID id) {
@@ -104,7 +123,8 @@ public class WithdrawalRequestService {
     /**
      * Обновление статуса заявки для сотрудников поддержки, так как отсутствует проверка автора заявки.
      * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
-     * @param id идентификатор заявки
+     *
+     * @param id     идентификатор заявки
      * @param status новый статус
      */
     @Transactional

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static net.rcetech.domain.util.SpecificationsUtil.*;
+
 @UtilityClass
 public class ClientSpecifications {
 
@@ -23,18 +25,9 @@ public class ClientSpecifications {
                 return builder.conjunction();
             }
             List<Predicate> predicates = new ArrayList<>();
-            if (clientFilter.id() != null) {
-                predicates.add(builder.equal(from.get(Client_.id), clientFilter.id()));
-            }
-            if (clientFilter.username() != null && !clientFilter.username().isBlank()) {
-                predicates.add(builder.equal(from.get(Client_.username), clientFilter.username()));
-            }
-            if (clientFilter.from() != null) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(Client_.registeredAt), clientFilter.from()));
-            }
-            if (clientFilter.to() != null) {
-                predicates.add(builder.lessThan(from.get(Client_.registeredAt), clientFilter.to()));
-            }
+            addSimpleEqual(predicates, builder, from.get(Client_.id), clientFilter.id());
+            addStringEqual(predicates, builder, from.get(Client_.username), clientFilter.username());
+            addDateRange(predicates, builder, from.get(Client_.registeredAt), clientFilter.from(), clientFilter.to());
             return builder.and(predicates);
         };
     }

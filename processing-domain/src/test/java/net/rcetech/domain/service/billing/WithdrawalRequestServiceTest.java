@@ -7,12 +7,14 @@ import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.ServiceUnavailableException;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.ClientFieldNotSetErrorData;
 import net.rcetech.rates.RatePair;
 import net.rcetech.rates.RateService;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -42,6 +45,8 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
@@ -71,6 +76,9 @@ class WithdrawalRequestServiceTest {
 
     @MockitoBean
     private RateService rateService;
+
+    @MockitoBean
+    private IncidentService incidentService;
 
     @Autowired
     private WithdrawalRequestService withdrawalRequestService;
@@ -124,6 +132,20 @@ class WithdrawalRequestServiceTest {
         }
     }
 
+    void assertIncidentSaved(IncidentType type, UUID clientId, BaseException exception, long before, long after) {
+        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
+        ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(incidentService).save(eq(type), dataCaptor.capture(), timestampCaptor.capture());
+        ClientFieldNotSetErrorData data = assertInstanceOf(ClientFieldNotSetErrorData.class, dataCaptor.getValue());
+        Long timestamp = timestampCaptor.getValue();
+        assertAll(
+                () -> assertEquals(clientId, data.clientId()),
+                () -> assertNotNull(timestamp),
+                () -> assertTrue(timestamp >= before && timestamp <= after),
+                () -> assertEquals(timestamp, exception.getTimestamp())
+        );
+    }
+
     @Test
     @DisplayName("Метод должен бросить BaseException, если клиент не найден.")
     void create_shouldThrowBaseExceptionIfClientNotFound() {
@@ -134,16 +156,24 @@ class WithdrawalRequestServiceTest {
         );
     }
 
-    @Test
-    void create_shouldThrowServiceUnavailableExIfMinWithdrawalAmountNull() {
-        Client client = getDummyClient(new BigDecimal(15));
+    @ParameterizedTest
+    @ValueSource(strings = {"15", "21.5"})
+    @DisplayName("Метод должен создать инцидент и бросить BaseException, если клиенту не установлена минимальная сумма вывода.")
+    void create_shouldCreateIncidentIfMinWithdrawalAmountNull(BigDecimal commissionPercent) {
+        Client client = getDummyClient(commissionPercent);
         client.setMinWithdrawalAmount(null);
         clientRepository.save(client);
         UUID clientId = client.getId();
-        assertThrows(
-                ServiceUnavailableException.class,
-                () -> withdrawalRequestService.create(clientId, null, null)
+        long before = System.currentTimeMillis();
+
+        BaseException exception = assertThrows(
+                BaseException.class,
+                () -> withdrawalRequestService.create(clientId, 5000, "TX9zFakeAddressTRC20usdtNotReal99x")
         );
+
+        long after = System.currentTimeMillis();
+        assertIncidentSaved(IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET, clientId, exception, before, after);
+        assertEquals(0, withdrawalRequestRepository.count());
     }
 
     @ParameterizedTest
@@ -166,15 +196,24 @@ class WithdrawalRequestServiceTest {
         );
     }
 
-    @Test
-    @DisplayName("Метод должен бросить ServiceUnavailableException, если клиенту не установлен процент комиссии.")
-    void create_shouldThrowServiceUnavailableExceptionIfClientCommissionPercentIsNull() {
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 25000})
+    @DisplayName("Метод должен создать инцидент и бросить BaseException, если клиенту не установлен процент комиссии.")
+    void create_shouldCreateIncidentIfClientCommissionPercentIsNull(Integer minWithdrawalAmount) {
         Client client = getDummyClient(null);
+        client.setMinWithdrawalAmount(minWithdrawalAmount);
+        clientRepository.save(client);
         UUID clientId = client.getId();
-        assertThrows(
-                ServiceUnavailableException.class,
-                () -> withdrawalRequestService.create(clientId, null, null)
+        long before = System.currentTimeMillis();
+
+        BaseException exception = assertThrows(
+                BaseException.class,
+                () -> withdrawalRequestService.create(clientId, 30000, "TX9zFakeAddressTRC20usdtNotReal99x")
         );
+
+        long after = System.currentTimeMillis();
+        assertIncidentSaved(IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET, clientId, exception, before, after);
+        assertEquals(0, withdrawalRequestRepository.count());
     }
 
     @ParameterizedTest

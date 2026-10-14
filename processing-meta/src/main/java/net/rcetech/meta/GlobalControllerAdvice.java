@@ -2,10 +2,7 @@ package net.rcetech.meta;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.meta.exception.BadRequestException;
-import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
-import net.rcetech.meta.exception.ServiceException;
-import net.rcetech.meta.exception.ServiceUnavailableException;
+import net.rcetech.meta.exception.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.*;
@@ -31,6 +28,11 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     private static final String TIMESTAMP = "timestamp";
     private static final String DESCRIPTION = "description";
     private static final String CONTACT_SUPPORT = "Contact support.";
+    private static final String NOT_HANDLED_ERROR_LOG = "{} Controller not handled error: {}";
+    private static final String INTERNAL_SERVER_ERROR_TITLE = "Internal Server Error";
+    private static final String INTERNAL_SERVER_ERROR_TYPE = "/errors/internal-server-error";
+    private static final String BAD_REQUEST_TITLE = "Bad Request";
+    private static final String BAD_REQUEST_TYPE = "/docs/errors/bad-request";
 
     @ExceptionHandler({ ServiceException.class })
     public ProblemDetail handle(ServiceException ex) {
@@ -38,8 +40,19 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         log.error("{} Controller business error: {}", epochMilli, ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problemDetail.setTitle(ex.getMessage());
-        problemDetail.setType(URI.create("/errors/internal-server-error"));
+        problemDetail.setType(URI.create(INTERNAL_SERVER_ERROR_TYPE));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
+        problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
+        return problemDetail;
+    }
+
+    @ExceptionHandler({ BaseException.class })
+    public ProblemDetail handleGenericException(BaseException ex) {
+        log.error(NOT_HANDLED_ERROR_LOG, ex.getTimestamp(), ex.getMessage(), ex);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problemDetail.setTitle(INTERNAL_SERVER_ERROR_TITLE);
+        problemDetail.setType(URI.create(INTERNAL_SERVER_ERROR_TYPE));
+        problemDetail.setProperty(TIMESTAMP, ex.getTimestamp());
         problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
         return problemDetail;
     }
@@ -47,10 +60,10 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler({ Exception.class })
     public ProblemDetail handleGenericException(Exception ex) {
         long epochMilli = Instant.now().toEpochMilli();
-        log.error("{} Controller not handled error: {}", epochMilli, ex.getMessage(), ex);
+        log.error(NOT_HANDLED_ERROR_LOG, epochMilli, ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-        problemDetail.setTitle("Internal Server Error");
-        problemDetail.setType(URI.create("/errors/internal-server-error"));
+        problemDetail.setTitle(INTERNAL_SERVER_ERROR_TITLE);
+        problemDetail.setType(URI.create(INTERNAL_SERVER_ERROR_TYPE));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
         problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
         return problemDetail;
@@ -76,8 +89,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     protected @Nullable ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         log.error("Method argument not valid error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setTitle("Bad Request");
-        problemDetail.setType(URI.create("/docs/errors/bad-request"));
+        problemDetail.setTitle(BAD_REQUEST_TITLE);
+        problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         StringBuilder message = new StringBuilder();
         for (FieldError error : ex.getFieldErrors()) {
@@ -89,8 +102,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     private ProblemDetail getBadRequestProblemDetail(Exception ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setTitle("Bad Request");
-        problemDetail.setType(URI.create("/docs/errors/bad-request"));
+        problemDetail.setTitle(BAD_REQUEST_TITLE);
+        problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         problemDetail.setProperty(DESCRIPTION, ex.getMessage());
         return problemDetail;
@@ -119,8 +132,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     public ProblemDetail handle(InvalidFormatException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setTitle("Bad Request");
-        problemDetail.setType(URI.create("/docs/errors/bad-request"));
+        problemDetail.setTitle(BAD_REQUEST_TITLE);
+        problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         problemDetail.setProperty(DESCRIPTION, "Unknown value '" + ex.getValue() + "'.");
         return problemDetail;

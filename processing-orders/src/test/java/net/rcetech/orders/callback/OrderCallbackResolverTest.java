@@ -6,6 +6,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BaseException;
@@ -28,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -78,6 +80,9 @@ class OrderCallbackResolverTest {
         registry.add("spring.datasource.password", mySQLContainer::getPassword);
         registry.add("spring.flyway.locations", () -> "classpath:database/migration");
     }
+
+    @MockitoBean
+    private IncidentService incidentService;
 
     @Autowired
     private OrderCallbackResolver orderCallbackResolver;
@@ -243,7 +248,7 @@ class OrderCallbackResolverTest {
         assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
         List<OrderStatusUpdatedEvent> actualEvents = applicationEvents.stream(OrderStatusUpdatedEvent.class).toList();
         assertEquals(1, actualEvents.size());
-        assertEquals(order.getId(), actualEvents.getFirst().getOrderId());
+        assertEquals(order.getId(), actualEvents.getFirst().orderId());
     }
 
     @ParameterizedTest

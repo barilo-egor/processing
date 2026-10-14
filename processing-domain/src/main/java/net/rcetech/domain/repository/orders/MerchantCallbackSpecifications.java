@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static net.rcetech.domain.util.SpecificationsUtil.*;
+
 @UtilityClass
 public class MerchantCallbackSpecifications {
 
@@ -24,18 +26,9 @@ public class MerchantCallbackSpecifications {
             if (Objects.nonNull(filter.orderId())) {
                 predicates.add(builder.equal(from.join(MerchantCallback_.order).get(Order_.id), filter.orderId()));
             }
-            if (Objects.nonNull(filter.merchant())) {
-                predicates.add(builder.equal(from.get(MerchantCallback_.merchant), filter.merchant()));
-            }
-            if (Objects.nonNull(filter.merchantOrderId()) && !filter.merchantOrderId().isBlank()) {
-                predicates.add(builder.equal(from.get(MerchantCallback_.merchantOrderId), filter.merchantOrderId()));
-            }
-            if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(MerchantCallback_.createdAt), filter.createdAtFrom()));
-            }
-            if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThan(from.get(MerchantCallback_.createdAt), filter.createdAtTo()));
-            }
+            addSimpleEqual(predicates, builder, from.get(MerchantCallback_.merchant), filter.merchant());
+            addStringEqual(predicates, builder, from.get(MerchantCallback_.merchantOrderId), filter.merchantOrderId());
+            addDateRange(predicates, builder, from.get(MerchantCallback_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
             return builder.and(predicates);
         });
     }

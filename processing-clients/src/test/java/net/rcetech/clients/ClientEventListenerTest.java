@@ -4,14 +4,22 @@ import net.rcetech.clients.service.ClientFacade;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
+import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
+import net.rcetech.meta.config.MetaWebConfig;
+import net.rcetech.meta.incidents.IncidentStatus;
+import net.rcetech.meta.incidents.IncidentType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -31,6 +39,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +48,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({OrderService.class, ClientService.class, ClientFacade.class, ClientEventListener.class, TransactionService.class})
+@Import({
+        OrderService.class, ClientService.class, ClientFacade.class, ClientEventListener.class,
+        TransactionService.class, IncidentService.class, SupportUserService.class, MetaWebConfig.class
+})
 class ClientEventListenerTest {
 
     @TestConfiguration
@@ -71,6 +83,15 @@ class ClientEventListenerTest {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private IncidentRepository incidentRepository;
+
+    @AfterEach
+    void cleanUp() {
+        // инциденты сохраняются в отдельной транзакции и не откатываются вместе с тестовой
+        incidentRepository.deleteAll();
+    }
+
     Client getDummyClient() {
         Client client = new Client();
         client.setId(UUID.randomUUID());
@@ -97,7 +118,7 @@ class ClientEventListenerTest {
         transaction.setComment("Подтверждение по ордеру 123. Транзакция создана системой.");
         transactionRepository.save(transaction);
         assertEquals(0, client.getBalance());
-        TransactionCreatedEvent event = new TransactionCreatedEvent(this, transaction.getId());
+        TransactionCreatedEvent event = new TransactionCreatedEvent(transaction.getId(), client.getId());
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -126,7 +147,7 @@ class ClientEventListenerTest {
         transaction.setAmount(amount);
         transaction.setComment("Подтверждение заявки на вывод 123. Транзакция создана системой.");
         transactionRepository.save(transaction);
-        TransactionCreatedEvent event = new TransactionCreatedEvent(this, transaction.getId());
+        TransactionCreatedEvent event = new TransactionCreatedEvent(transaction.getId(), client.getId());
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -135,6 +156,34 @@ class ClientEventListenerTest {
         Optional<Client> maybeClient = clientRepository.findById(client.getId());
         assertTrue(maybeClient.isPresent());
         assertEquals(1000, maybeClient.get().getBalance());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1000,c2cbb845-7313-4106-a1a3-e9e4b328bbd9",
+            "69643546,fe4a4710-9c2e-4f04-b274-06802fbf2012"
+    })
+    @DisplayName("Должен быть создан инцидент, если произошла ошибка при обновлении баланса.")
+    void transactionCreated_shouldCreateIncidentIfCantUpdateBalance(long transactionId, UUID clientId) {
+        TransactionCreatedEvent event = new TransactionCreatedEvent(transactionId, clientId);
+        long before = System.currentTimeMillis();
+        eventPublisher.publishEvent(event);
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+        long after = System.currentTimeMillis();
+        List<Incident> incidents = incidentRepository.findAll();
+        assertEquals(1, incidents.size());
+        Incident incident = incidents.getFirst();
+        assertAll(
+                () -> assertNotNull(incident.getId()),
+                () -> assertNotNull(incident.getCreatedAt()),
+                () -> assertNotNull(incident.getErrorTimestamp()),
+                () -> assertTrue(incident.getErrorTimestamp() >= before && incident.getErrorTimestamp() <= after),
+                () -> assertEquals(IncidentStatus.NEW, incident.getStatus()),
+                () -> assertEquals(IncidentType.BALANCE_UPDATE_ERROR, incident.getType()),
+                () -> assertEquals(transactionId, ((Number) incident.getData().get("transactionId")).longValue()),
+                () -> assertEquals(clientId.toString(), incident.getData().get("clientId"))
+        );
     }
 
 }

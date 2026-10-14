@@ -1,6 +1,9 @@
 package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.MerchantCallbackHandleErrorData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.orders.callback.OrderCallbackResolver;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -15,8 +18,11 @@ public class MerchantCallbackConsumer {
 
     private final OrderCallbackResolver orderCallbackResolver;
 
-    public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver) {
+    private final IncidentService incidentService;
+
+    public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver, IncidentService incidentService) {
         this.orderCallbackResolver = orderCallbackResolver;
+        this.incidentService = incidentService;
     }
 
     /**
@@ -35,9 +41,17 @@ public class MerchantCallbackConsumer {
         log.debug("Принят callback key={} : {}", consumerRecord.key(), consumerRecord.value());
         try {
             orderCallbackResolver.resolve(consumerRecord.value());
-        }  catch (Exception e) {
-            // TODO Создание инцидента
-            log.error("Ошибка обработки КБ мерчанта: {}", e.getMessage());
+        } catch (Exception e) {
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Ошибка обработки КБ мерчанта: {}", timestamp, e.getMessage(), e);
+            MerchantCallbackEvent event = consumerRecord.value();
+            incidentService.save(
+                    IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR,
+                    new MerchantCallbackHandleErrorData(
+                            event.getMerchant(), event.getStatus(), event.getStatusDescription(), event.getMerchantOrderId()
+                    ),
+                    timestamp
+            );
         }
     }
 

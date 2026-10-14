@@ -124,7 +124,7 @@ class CallbackSenderTest {
         String expectedJson = objectMapper.writeValueAsString(maybeOrder.get());
         stubFor(post("/callback").willReturn(status(statusCode)));
 
-        callbackSender.sendCallback(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
 
         WireMock.verify(1, postRequestedFor(urlEqualTo("/callback"))
                 .withHeader("Content-Type", equalTo("application/json"))
@@ -140,7 +140,7 @@ class CallbackSenderTest {
         assertTrue(maybeOrder.isPresent());
         stubFor(post("/callback").willReturn(WireMock.status(500)));
 
-        callbackSender.sendCallback(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
 
         WireMock.verify(3, postRequestedFor(urlEqualTo("/callback")));
     }

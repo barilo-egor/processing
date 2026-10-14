@@ -66,8 +66,8 @@ public class TransactionService {
     public void save(Transaction transaction) {
         transactionRepository.save(transaction);
         eventPublisher.publishEvent(new TransactionCreatedEvent(
-                this,
-                transaction.getId()
+                transaction.getId(),
+                transaction.getClient().getId()
         ));
     }
 

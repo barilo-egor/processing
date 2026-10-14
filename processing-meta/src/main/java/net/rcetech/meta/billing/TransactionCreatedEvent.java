@@ -1,15 +1,8 @@
 package net.rcetech.meta.billing;
 
-import lombok.Getter;
-import org.springframework.context.ApplicationEvent;
+import java.util.UUID;
 
-@Getter
-public class TransactionCreatedEvent extends ApplicationEvent {
-
-    private final Long transactionId;
-
-    public TransactionCreatedEvent(Object source, Long transactionId) {
-        super(source);
-        this.transactionId = transactionId;
-    }
-}
+public record TransactionCreatedEvent(
+        Long transactionId,
+        UUID clientId
+) {}

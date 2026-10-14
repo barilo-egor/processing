@@ -1,7 +1,5 @@
 package net.rcetech.domain.repository.orders;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
@@ -19,6 +17,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static net.rcetech.domain.util.SpecificationsUtil.*;
+
 @UtilityClass
 public class OrderSpecifications {
 
@@ -30,12 +30,8 @@ public class OrderSpecifications {
             if (Objects.isNull(filter)) {
                 return builder.and(predicates.toArray(new Predicate[0]));
             }
-            if (Objects.nonNull(filter.status())) {
-                predicates.add(builder.equal(from.get(Order_.status), filter.status()));
-            }
-            if (Objects.nonNull(filter.method())) {
-                predicates.add(builder.equal(from.get(Order_.method), filter.method()));
-            }
+            addSimpleEqual(predicates, builder, from.get(Order_.status), filter.status());
+            addSimpleEqual(predicates, builder, from.get(Order_.method), filter.method());
             return builder.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -53,13 +49,7 @@ public class OrderSpecifications {
             addSimpleEqual(predicates, builder, from.get(Order_.status), filter.status());
             addSimpleEqual(predicates, builder, from.get(Order_.merchant), filter.merchant());
             addStringEqual(predicates, builder, from.get(Order_.merchantOrderId), filter.merchantOrderId());
-
-            if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(Order_.createdAt), filter.createdAtFrom()));
-            }
-            if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThan(from.get(Order_.createdAt), filter.createdAtTo()));
-            }
+            addDateRange(predicates, builder, from.get(Order_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
 
             if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
                 predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Order_.client), builder));
@@ -67,19 +57,4 @@ public class OrderSpecifications {
             return builder.and(predicates);
         };
     }
-
-    private static <T> void addSimpleEqual(List<Predicate> predicates, CriteriaBuilder builder,
-                                           Expression<T> expression, T value) {
-        if (Objects.nonNull(value)) {
-            predicates.add(builder.equal(expression, value));
-        }
-    }
-
-    private static <T> void addStringEqual(List<Predicate> predicates, CriteriaBuilder builder,
-                                           Expression<T> expression, String value) {
-        if (Objects.nonNull(value) && !value.isBlank()) {
-            predicates.add(builder.equal(expression, value));
-        }
-    }
-
 }

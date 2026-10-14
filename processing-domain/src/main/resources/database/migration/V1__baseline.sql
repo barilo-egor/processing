@@ -1,11 +1,11 @@
 create table client
 (
     id                    binary(16)   not null,
-    version               bigint        not null,
-    username              varchar(255)  not null,
-    registered_at         timestamp(0)  not null,
+    version               bigint       not null,
+    username              varchar(255) not null,
+    registered_at         timestamp(0) not null,
     callback_url          varchar(255),
-    order_timeout_seconds integer       not null,
+    order_timeout_seconds integer      not null,
     commission_percent    decimal(3, 1),
     balance               bigint default 0 check (balance >= 0),
     comment               varchar(1000),
@@ -118,3 +118,18 @@ create table merchant_callback
 );
 alter table merchant_callback
     add constraint fk_merchant_callback_order foreign key (order_id) references orders (id) on delete cascade on update cascade;
+create table incident
+(
+    id             bigint       not null auto_increment,
+    created_at     timestamp(0) not null,
+    error_timestamp bigint,
+    status         varchar(30)  not null,
+    type           varchar(100)  not null,
+    data           JSON         not null,
+    resolved_by    binary(16),
+    resolved_at    timestamp(0),
+    comment        varchar(1000),
+    primary key (id)
+);
+alter table incident
+    add constraint fk_support_user foreign key (resolved_by) references support_user (id);

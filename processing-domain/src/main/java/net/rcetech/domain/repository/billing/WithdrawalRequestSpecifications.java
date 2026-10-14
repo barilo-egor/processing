@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static net.rcetech.domain.util.SpecificationsUtil.*;
+
 @UtilityClass
 public class WithdrawalRequestSpecifications {
 
@@ -31,21 +33,10 @@ public class WithdrawalRequestSpecifications {
                 predicates.add(ClientSpecifications.idOrUsername(filter.client(),
                         from.join(WithdrawalRequest_.client), builder));
             }
-            if (Objects.nonNull(filter.id())) {
-                predicates.add(builder.equal(from.get(WithdrawalRequest_.id), filter.id()));
-            }
-            if (Objects.nonNull(filter.status())) {
-                predicates.add(builder.equal(from.get(WithdrawalRequest_.status), filter.status()));
-            }
-            if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(WithdrawalRequest_.createdAt), filter.createdAtFrom()));
-            }
-            if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThan(from.get(WithdrawalRequest_.createdAt), filter.createdAtTo()));
-            }
-            if (Objects.nonNull(filter.address()) && !filter.address().isBlank()) {
-                predicates.add(builder.equal(from.get(WithdrawalRequest_.address), filter.address()));
-            }
+            addSimpleEqual(predicates, builder, from.get(WithdrawalRequest_.id), filter.id());
+            addSimpleEqual(predicates, builder, from.get(WithdrawalRequest_.status), filter.status());
+            addDateRange(predicates, builder, from.get(WithdrawalRequest_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
+            addStringEqual(predicates, builder, from.get(WithdrawalRequest_.address), filter.address());
             return builder.and(predicates);
         };
     }

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static net.rcetech.domain.util.SpecificationsUtil.addDateRange;
+
 /**
  * Утилита для формирования JPA-спецификаций сущности {@link Transaction}.
  */
@@ -30,12 +32,7 @@ public class TransactionSpecification {
             if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
                 predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Transaction_.client), builder));
             }
-            if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtFrom()));
-            }
-            if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThan(from.get(Transaction_.createdAt), filter.createdAtTo()));
-            }
+            addDateRange(predicates, builder, from.get(Transaction_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
             return builder.and(predicates);
         });
     }
@@ -47,12 +44,7 @@ public class TransactionSpecification {
             if (Objects.isNull(filter)) {
                 return builder.and(predicates.toArray(new Predicate[0]));
             }
-            if (Objects.nonNull(filter.createdAtFrom())) {
-                predicates.add(builder.greaterThanOrEqualTo(from.get(Transaction_.createdAt), filter.createdAtFrom()));
-            }
-            if (Objects.nonNull(filter.createdAtTo())) {
-                predicates.add(builder.lessThan(from.get(Transaction_.createdAt), filter.createdAtTo()));
-            }
+            addDateRange(predicates, builder, from.get(Transaction_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
             return builder.and(predicates.toArray(new Predicate[0]));
         };
     }

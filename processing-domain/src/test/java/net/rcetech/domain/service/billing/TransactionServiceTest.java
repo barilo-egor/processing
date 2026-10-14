@@ -144,12 +144,12 @@ class TransactionServiceTest {
                         transaction.getComment()
                 )
         );
-        Optional<TransactionCreatedEvent> maybeEvent = applicationEvents.stream()
-                .filter(TransactionCreatedEvent.class::isInstance)
-                .map(e -> (TransactionCreatedEvent) e)
-                .findFirst();
+        Optional<TransactionCreatedEvent> maybeEvent = applicationEvents.stream(TransactionCreatedEvent.class).findFirst();
         assertTrue(maybeEvent.isPresent());
-        assertEquals(transaction.getId(), maybeEvent.get().getTransactionId());
+        assertAll(
+                () -> assertEquals(transaction.getId(), maybeEvent.get().transactionId()),
+                () -> assertEquals(transaction.getClient().getId(), maybeEvent.get().clientId())
+        );
     }
 
     @Test

@@ -68,7 +68,7 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.SUCCESS);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -76,7 +76,7 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.CANCELED);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -89,7 +89,7 @@ public class OrderService {
         if (Objects.nonNull(merchantOrderStatus)) {
             order.setMerchantOrderStatus(merchantOrderStatus);
         }
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
     }
 
     @Transactional
@@ -97,7 +97,7 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         order.setStatus(OrderStatus.DISPUTE);
         order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(this, order.getId(), order.getStatus()));
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
     }
 
     public boolean existsByInternalId(String internalId) {
