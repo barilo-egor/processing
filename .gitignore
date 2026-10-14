@@ -45,3 +45,4 @@ frontend/client/node_modules/**
 frontend/support/node_modules/**
 frontend/dist/**
 node_modules/
+.DS_Store

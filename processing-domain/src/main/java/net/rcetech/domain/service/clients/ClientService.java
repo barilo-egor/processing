@@ -77,25 +77,10 @@ public class ClientService {
                 .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, id)));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void creditBalance(UUID clientId, Integer creditAmount) {
-        Client client = findById(clientId)
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Client findForUpdate(UUID clientId) {
+        return clientRepository.findForUpdateById(clientId)
                 .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
-        client.setBalance(client.getBalance() + creditAmount);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void debitBalance(UUID clientId, Integer creditAmount) {
-        Client client = findById(clientId)
-                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
-        client.setBalance(client.getBalance() - creditAmount);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateBalance(UUID clientId, Integer balance) {
-        Client client = findById(clientId)
-                .orElseThrow(() -> new BadRequestException(String.format(CLIENT_NOT_FOUND, clientId.toString())));
-        client.setBalance(balance);
     }
 
     public void createIfNotExists(UUID id, String username) {

@@ -27,6 +27,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
@@ -34,6 +39,7 @@ import org.testcontainers.mysql.MySQLContainer;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,6 +73,9 @@ class ClientServiceTest {
 
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Test
     @DisplayName("Клиент должен быть сохранен с дефолтными значениями.")
@@ -468,5 +477,98 @@ class ClientServiceTest {
         assertEquals(1, actual.size());
         assertEquals(id, actual.getFirst().getId());
         assertEquals(username, actual.getFirst().getUsername());
+    }
+
+    @ValueSource(strings = {
+            "185975b3-094a-43fb-a1a5-7128c39b39ab",
+            "c44cc597-7142-4636-b5f6-799d352fd631"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод блокировки должен выбросить исключение, если клиент по переданному id не найден.")
+    void findForUpdate_shouldThrowBadRequestIfClientNotFound(UUID id) {
+        clientRepository.save(getDummyClient());
+        assertThrows(BadRequestException.class, () -> clientService.findForUpdate(id));
+    }
+
+    @ValueSource(strings = {
+            "185975b3-094a-43fb-a1a5-7128c39b39ab",
+            "c44cc597-7142-4636-b5f6-799d352fd631"
+    })
+    @ParameterizedTest
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("Метод блокировки должен выбросить исключение, если вызван вне транзакции.")
+    void findForUpdate_shouldThrowIfNoTransaction(UUID id) {
+        assertThrows(IllegalTransactionStateException.class, () -> clientService.findForUpdate(id));
+    }
+
+    @CsvSource({
+            "4e0f5b8a-6c1d-4f3e-9a2b-7d8c9e0f1a2b,0",
+            "a1b2c3d4-e5f6-4789-8abc-def012345678,7300"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть клиента по id.")
+    void findForUpdate_shouldReturnClient(UUID id, Integer balance) {
+        Client client = new Client();
+        client.setId(id);
+        client.setBalance(balance);
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        clientRepository.save(getDummyClient());
+
+        Client actual = clientService.findForUpdate(id);
+
+        assertAll(
+                () -> assertEquals(id, actual.getId()),
+                () -> assertEquals(balance, actual.getBalance())
+        );
+    }
+
+    @CsvSource({"150,700", "3000,25"})
+    @ParameterizedTest
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("Блокировка клиента должна ждать коммита транзакции, удерживающей блокировку, и видеть её изменения.")
+    void findForUpdate_shouldWaitForHolderCommit(Integer holderBalance, Integer waiterBalance) throws Exception {
+        Client client = clientRepository.save(getDummyClient());
+        UUID clientId = client.getId();
+        assertNotNull(clientId);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            Future<?> holder = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                clientService.findForUpdate(clientId).setBalance(holderBalance);
+                locked.countDown();
+                awaitUninterruptibly(release);
+            }));
+            assertTrue(locked.await(10, TimeUnit.SECONDS));
+
+            Future<Integer> waiter = executor.submit(() -> transactionTemplate.execute(status -> {
+                Client lockedClient = clientService.findForUpdate(clientId);
+                Integer seenBalance = lockedClient.getBalance();
+                lockedClient.setBalance(waiterBalance);
+                return seenBalance;
+            }));
+            assertThrows(TimeoutException.class, () -> waiter.get(500, TimeUnit.MILLISECONDS),
+                    "Вторая транзакция не должна получить блокировку, пока первая не закоммичена.");
+
+            release.countDown();
+            holder.get(10, TimeUnit.SECONDS);
+            assertEquals(holderBalance, waiter.get(10, TimeUnit.SECONDS));
+            assertEquals(waiterBalance, clientRepository.findById(clientId).orElseThrow().getBalance());
+        } finally {
+            release.countDown();
+            clientRepository.deleteById(clientId);
+        }
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Не дождались сигнала на освобождение блокировки.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 }

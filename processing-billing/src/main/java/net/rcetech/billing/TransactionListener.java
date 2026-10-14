@@ -28,7 +28,7 @@ public class TransactionListener {
     @Async
     public void transactionCreated(TransactionCreatedEvent event) {
         try {
-            clientBalanceService.updateBalanceAfterTransaction(event.transactionId());
+            clientBalanceService.recalculate(event.clientId());
         }  catch (Exception e) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Ошибка обновления баланса пользователя после создания транзакции {}: {}",

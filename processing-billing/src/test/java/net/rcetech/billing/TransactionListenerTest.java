@@ -38,7 +38,6 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,7 +79,6 @@ class TransactionListenerTest {
 
     @AfterEach
     void cleanUp() {
-        // инциденты сохраняются в отдельной транзакции и не откатываются вместе с тестовой
         incidentRepository.deleteAll();
     }
 
@@ -92,33 +90,45 @@ class TransactionListenerTest {
         return clientRepository.save(client);
     }
 
+    Transaction saveTransaction(Client client, TransactionType type, Operation operation, Integer amount) {
+        Transaction transaction = new Transaction();
+        transaction.setClient(client);
+        transaction.setCreatedAt(Instant.now());
+        transaction.setType(type);
+        transaction.setOperation(operation);
+        transaction.setAmount(amount);
+        transaction.setComment("Транзакция создана тестом.");
+        return transactionRepository.save(transaction);
+    }
+
+    void publishAndCommit(Transaction transaction, int times) {
+        for (int i = 0; i < times; i++) {
+            eventPublisher.publishEvent(new TransactionCreatedEvent(transaction.getId(), transaction.getClient().getId()));
+        }
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+        TestTransaction.start();
+    }
+
+    Integer actualBalance(Client client) {
+        assertNotNull(client.getId());
+        return clientRepository.findById(client.getId()).orElseThrow().getBalance();
+    }
+
     @ParameterizedTest
     @CsvSource("""
             ORDER_CONFIRMATION,500
             MANUAL_CORRECT,489990
             MANUAL_CORRECT,1
             """)
-    @DisplayName("После создания транзакции на пополнение баланс должен быть увеличен.")
-    void transactionCreated_shouldCreditBalance(TransactionType transactionType, Integer amount) {
+    @DisplayName("После создания транзакции на пополнение баланс должен быть пересчитан с её учётом.")
+    void transactionCreated_shouldRecalculateBalanceAfterCredit(TransactionType transactionType, Integer amount) {
         Client client = getDummyClient();
-        Transaction transaction = new Transaction();
-        transaction.setClient(client);
-        transaction.setCreatedAt(Instant.now());
-        transaction.setType(transactionType);
-        transaction.setOperation(Operation.CREDIT);
-        transaction.setAmount(amount);
-        transaction.setComment("Подтверждение по ордеру 123. Транзакция создана системой.");
-        transactionRepository.save(transaction);
-        assertEquals(0, client.getBalance());
-        TransactionCreatedEvent event = new TransactionCreatedEvent(transaction.getId(), client.getId());
-        eventPublisher.publishEvent(event);
-        TestTransaction.flagForCommit();
-        TestTransaction.end();
-        TestTransaction.start();
-        assertNotNull(client.getId());
-        Optional<Client> maybeClient = clientRepository.findById(client.getId());
-        assertTrue(maybeClient.isPresent());
-        assertEquals(amount, maybeClient.get().getBalance());
+        Transaction transaction = saveTransaction(client, transactionType, Operation.CREDIT, amount);
+
+        publishAndCommit(transaction, 1);
+
+        assertEquals(amount, actualBalance(client));
     }
 
     @ParameterizedTest
@@ -127,27 +137,47 @@ class TransactionListenerTest {
             MANUAL_CORRECT,4006
             MANUAL_CORRECT,2066
             """)
-    @DisplayName("После создания транзакции на списание баланс должен быть уменьшен.")
-    void transactionCreated_shouldDebitBalance(TransactionType transactionType, Integer amount) {
+    @DisplayName("После создания транзакции на списание баланс должен быть пересчитан с её учётом.")
+    void transactionCreated_shouldRecalculateBalanceAfterDebit(TransactionType transactionType, Integer amount) {
         Client client = getDummyClient();
-        client.setBalance(amount + 1000);
-        Transaction transaction = new Transaction();
-        transaction.setClient(client);
-        transaction.setCreatedAt(Instant.now());
-        transaction.setType(transactionType);
-        transaction.setOperation(Operation.DEBIT);
-        transaction.setAmount(amount);
-        transaction.setComment("Подтверждение заявки на вывод 123. Транзакция создана системой.");
-        transactionRepository.save(transaction);
-        TransactionCreatedEvent event = new TransactionCreatedEvent(transaction.getId(), client.getId());
-        eventPublisher.publishEvent(event);
-        TestTransaction.flagForCommit();
-        TestTransaction.end();
-        TestTransaction.start();
-        assertNotNull(client.getId());
-        Optional<Client> maybeClient = clientRepository.findById(client.getId());
-        assertTrue(maybeClient.isPresent());
-        assertEquals(1000, maybeClient.get().getBalance());
+        saveTransaction(client, TransactionType.MANUAL_CORRECT, Operation.CREDIT, amount + 1000);
+        Transaction transaction = saveTransaction(client, transactionType, Operation.DEBIT, amount);
+
+        publishAndCommit(transaction, 1);
+
+        assertEquals(1000, actualBalance(client));
+    }
+
+    @ParameterizedTest
+    @CsvSource("""
+            700,93000
+            15,0
+            """)
+    @DisplayName("После создания транзакции баланс должен стать равным сумме транзакций, даже если до этого был неверным.")
+    void transactionCreated_shouldFixWrongBalance(Integer amount, Integer wrongBalance) {
+        Client client = getDummyClient();
+        client.setBalance(wrongBalance);
+        saveTransaction(client, TransactionType.MANUAL_CORRECT, Operation.CREDIT, 5000);
+        Transaction transaction = saveTransaction(client, TransactionType.CLIENT_WITHDRAWAL, Operation.DEBIT, amount);
+
+        publishAndCommit(transaction, 1);
+
+        assertEquals(5000 - amount, actualBalance(client));
+    }
+
+    @ParameterizedTest
+    @CsvSource("""
+            320,2
+            8150,3
+            """)
+    @DisplayName("Повторная обработка события о транзакции не должна менять баланс.")
+    void transactionCreated_shouldBeIdempotent(Integer amount, int times) {
+        Client client = getDummyClient();
+        Transaction transaction = saveTransaction(client, TransactionType.ORDER_CONFIRMATION, Operation.CREDIT, amount);
+
+        publishAndCommit(transaction, times);
+
+        assertEquals(amount, actualBalance(client));
     }
 
     @ParameterizedTest
