@@ -3,6 +3,7 @@ package net.rcetech.billing.service;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.exception.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -11,9 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
@@ -49,5 +51,48 @@ class ClientBalanceServiceTest {
         inOrder.verify(clientService).findForUpdate(clientId);
         inOrder.verify(transactionService).calculateBalance(clientId);
         assertEquals(balance, client.getBalance());
+    }
+
+    record BalanceProjection(UUID id, Integer balance) {}
+
+    @ParameterizedTest
+    @CsvSource({
+            "16af5227-d690-424f-9e36-89fd8b955146,70664",
+            "77fb78d1-e61f-4522-847e-4533f703f8dc,-2105"
+    })
+    @DisplayName("Метод должен пересчитать баланс и после этого вернуть проекцию клиента.")
+    void recalculate_shouldReturnProjectionAfterRecalculation(UUID clientId, Integer balance) {
+        Client client = new Client();
+        client.setId(clientId);
+        client.setBalance(12345);
+        BalanceProjection projection = new BalanceProjection(clientId, balance);
+        when(clientService.findForUpdate(clientId)).thenReturn(client);
+        when(transactionService.calculateBalance(clientId)).thenReturn(balance);
+        when(clientService.findById(clientId, BalanceProjection.class)).thenReturn(Optional.of(projection));
+
+        BalanceProjection actual = clientBalanceService.recalculate(clientId, BalanceProjection.class);
+
+        InOrder inOrder = inOrder(clientService, transactionService);
+        inOrder.verify(clientService).findForUpdate(clientId);
+        inOrder.verify(transactionService).calculateBalance(clientId);
+        inOrder.verify(clientService).findById(clientId, BalanceProjection.class);
+        assertAll(
+                () -> assertEquals(balance, client.getBalance()),
+                () -> assertSame(projection, actual)
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "16af5227-d690-424f-9e36-89fd8b955146,70664",
+            "77fb78d1-e61f-4522-847e-4533f703f8dc,0"
+    })
+    @DisplayName("Метод должен выбросить исключение, если проекция клиента не найдена.")
+    void recalculate_shouldThrowIfProjectionNotFound(UUID clientId, Integer balance) {
+        when(clientService.findForUpdate(clientId)).thenReturn(new Client());
+        when(transactionService.calculateBalance(clientId)).thenReturn(balance);
+        when(clientService.findById(clientId, BalanceProjection.class)).thenReturn(Optional.empty());
+
+        assertThrows(BadRequestException.class, () -> clientBalanceService.recalculate(clientId, BalanceProjection.class));
     }
 }

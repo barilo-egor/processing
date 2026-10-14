@@ -2769,6 +2769,74 @@
               ]
             },
             {
+              "name": "Пересчёт баланса клиента",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_url}}/api/private/client/:id/balance/recalculation",
+                  "host": [
+                    "{{processing_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "private",
+                    "client",
+                    ":id",
+                    "balance",
+                    "recalculation"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "8b2c3fe9-9507-42f9-839a-e84baf7e99bf"
+                    }
+                  ]
+                },
+                "description": "Пересчитывает баланс клиента по сумме его транзакций и сохраняет результат. Возвращает клиента после пересчёта.\n\nДоступно ролям `ADMIN` и `OPERATOR`.\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **id** | `uuid` | Идентификатор клиента (path). | Если клиент не найден — `400` |"
+              },
+              "response": [
+                {
+                  "name": "Баланс пересчитан",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_url}}/api/private/client/:id/balance/recalculation",
+                      "host": [
+                        "{{processing_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "private",
+                        "client",
+                        ":id",
+                        "balance",
+                        "recalculation"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "8b2c3fe9-9507-42f9-839a-e84baf7e99bf"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
+                }
+              ]
+            },
+            {
               "name": "Создание токена",
               "request": {
                 "method": "POST",
