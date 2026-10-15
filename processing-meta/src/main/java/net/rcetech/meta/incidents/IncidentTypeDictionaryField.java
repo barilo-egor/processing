@@ -20,6 +20,7 @@ public class IncidentTypeDictionaryField implements DictionaryField {
         return Arrays.stream(IncidentType.values())
                 .map(type -> Map.<String, Object>of(
                         "name", type.name(),
+                        "summary", type.getSummary(),
                         "description", type.getDescription())
                 ).toList();
     }
