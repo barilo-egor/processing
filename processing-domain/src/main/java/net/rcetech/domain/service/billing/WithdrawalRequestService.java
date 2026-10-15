@@ -39,12 +39,16 @@ public class WithdrawalRequestService {
 
     private final IncidentService incidentService;
 
+    private final TransactionService transactionService;
+
     public WithdrawalRequestService(WithdrawalRequestRepository withdrawalRequestRepository,
-                                    ClientService clientService, RateService rateService, IncidentService incidentService) {
+                                    ClientService clientService, RateService rateService, IncidentService incidentService,
+                                    TransactionService transactionService) {
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.clientService = clientService;
         this.rateService = rateService;
         this.incidentService = incidentService;
+        this.transactionService = transactionService;
     }
 
     @Transactional
@@ -73,6 +77,10 @@ public class WithdrawalRequestService {
         }
         if (amount < client.getMinWithdrawalAmount()) {
             throw new BadRequestException("Запрошенная сумма на вывод меньше минимально допустимой.");
+        }
+        Integer balance = transactionService.calculateBalance(clientId);
+        if (amount > balance) {
+            throw new BadRequestException("На балансе недостаточно средств.");
         }
         WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
         withdrawalRequest.setId(UUID.randomUUID());

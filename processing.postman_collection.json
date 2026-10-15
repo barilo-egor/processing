@@ -639,8 +639,8 @@
                       ]
                     }
                   },
-                  "status": "OK",
-                  "code": 200,
+                  "status": "Bad Request",
+                  "code": 400,
                   "_postman_previewlanguage": "json",
                   "header": [
                     {
@@ -686,6 +686,84 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"instance\": \"/api/v1/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1791654144187,\n  \"description\": \"Запрошенная сумма на вывод меньше минимально допустимой.\"\n}"
+                },
+                {
+                  "name": "Недостаточно средств на балансе",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=50000&address=qwerty",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "withdrawal-request"
+                      ],
+                      "query": [
+                        {
+                          "key": "amount",
+                          "value": "50000"
+                        },
+                        {
+                          "key": "address",
+                          "value": "qwerty"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 15 Oct 2026 10:12:37 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/v1/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792059157412,\n  \"description\": \"На балансе недостаточно средств.\"\n}"
                 }
               ]
             },

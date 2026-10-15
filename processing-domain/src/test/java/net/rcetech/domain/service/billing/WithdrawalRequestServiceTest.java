@@ -17,6 +17,7 @@ import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.ClientFieldNotSetErrorData;
 import net.rcetech.rates.RatePair;
 import net.rcetech.rates.RateService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,9 @@ class WithdrawalRequestServiceTest {
     @MockitoBean
     private IncidentService incidentService;
 
+    @MockitoBean
+    private TransactionService transactionService;
+
     @Autowired
     private WithdrawalRequestService withdrawalRequestService;
 
@@ -88,6 +93,11 @@ class WithdrawalRequestServiceTest {
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @BeforeEach
+    void setUp() {
+        when(transactionService.calculateBalance(any())).thenReturn(Integer.MAX_VALUE);
+    }
 
     Client getDummyClient(BigDecimal commissionPercent) {
         Client client = new Client();
@@ -194,6 +204,42 @@ class WithdrawalRequestServiceTest {
                 () -> withdrawalRequestService.create(clientId, amount, null),
                 "Запрошенная сумма на вывод меньше минимально допустимой."
         );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "4999,5000",
+            "0,1000",
+            "-300,2500",
+            "18500,25000"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если запрошенная сумма больше баланса клиента.")
+    void create_shouldThrowBadRequestExceptionIfAmountGreaterThanBalance(Integer balance, Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        UUID clientId = client.getId();
+        when(transactionService.calculateBalance(clientId)).thenReturn(balance);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> withdrawalRequestService.create(clientId, amount, "TX9zFakeAddressTRC20usdtNotReal99x")
+        );
+
+        assertEquals("На балансе недостаточно средств.", exception.getMessage());
+        assertEquals(0, withdrawalRequestRepository.count());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 74320})
+    @DisplayName("Метод должен создать заявку, если запрошенная сумма равна балансу клиента.")
+    void create_shouldCreateRequestIfAmountEqualsBalance(Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        when(transactionService.calculateBalance(client.getId())).thenReturn(amount);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
+
+        WithdrawalRequest actual = withdrawalRequestService.create(client.getId(), amount, "TX9zFakeAddressTRC20usdtNotReal99x");
+
+        assertEquals(amount, actual.getGrossSourceAmount());
+        assertEquals(1, withdrawalRequestRepository.count());
     }
 
     @ParameterizedTest
