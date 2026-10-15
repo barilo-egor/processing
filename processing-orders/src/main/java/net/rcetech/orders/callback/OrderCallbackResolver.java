@@ -2,8 +2,12 @@ package net.rcetech.orders.callback;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.orders.OrderFacade;
@@ -26,10 +30,13 @@ public class OrderCallbackResolver {
 
     private final MerchantCallbackService merchantCallbackService;
 
+    private final IncidentService incidentService;
+
     public OrderCallbackResolver(List<OrderStatusResolver> orderStatusResolver, OrderFacade orderFacade,
-                                 MerchantCallbackService merchantCallbackService) {
+                                 MerchantCallbackService merchantCallbackService, IncidentService incidentService) {
         this.orderFacade = orderFacade;
         this.merchantCallbackService = merchantCallbackService;
+        this.incidentService = incidentService;
         this.statusResolversMap = new EnumMap<>(Merchant.class);
         for (OrderStatusResolver resolver : orderStatusResolver) {
             for (Merchant merchant : resolver.getMerchants()) {
@@ -64,6 +71,21 @@ public class OrderCallbackResolver {
                     + ", merchant order id " + merchantCallbackEvent.getMerchantOrderId()
                     + ", order id " + order.getId());
         }
-        orderFacade.routeOrder(maybeStatus.get(), order, merchantCallbackEvent.getStatus());
+        try {
+            orderFacade.routeOrder(maybeStatus.get(), order, merchantCallbackEvent.getStatus());
+        } catch (OrderStatusUpdateException e) {
+            long timestamp = System.currentTimeMillis();
+            log.warn("{} Переход ордера {} из статуса {} в статус {} по КБ мерчанта {} (статус {}) отклонён.",
+                    timestamp, order.getId(), e.getStatusFrom(), e.getStatusTo(),
+                    merchantCallbackEvent.getMerchant(), merchantCallbackEvent.getStatus());
+            incidentService.save(
+                    IncidentType.ORDER_STATUS_TRANSITION_REJECTED,
+                    new OrderStatusTransitionRejectedData(
+                            order.getId(), e.getStatusFrom().getDescription(), e.getStatusTo().getDescription(),
+                            merchantCallbackEvent.getMerchant(), merchantCallbackEvent.getStatus()
+                    ),
+                    timestamp
+            );
+        }
     }
 }

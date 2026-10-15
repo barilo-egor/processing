@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Example;
@@ -65,39 +67,42 @@ public class OrderService {
 
     @Transactional
     public void confirm(UUID id, String merchantOrderStatus) {
-        Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
-        order.setStatus(OrderStatus.SUCCESS);
-        order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        updateStatus(id, OrderStatus.SUCCESS, merchantOrderStatus);
     }
 
     @Transactional
     public void cancel(UUID id, String merchantOrderStatus) {
-        Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
-        order.setStatus(OrderStatus.CANCELED);
-        order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        updateStatus(id, OrderStatus.CANCELED, merchantOrderStatus);
     }
 
     @Transactional
     public void timeout(UUID id, String merchantOrderStatus) {
-        Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
-        if (!OrderStatus.NEW.equals(order.getStatus())) {
-            return;
-        }
-        order.setStatus(OrderStatus.TIMEOUT);
-        if (Objects.nonNull(merchantOrderStatus)) {
-            order.setMerchantOrderStatus(merchantOrderStatus);
-        }
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        updateStatus(id, OrderStatus.TIMEOUT, merchantOrderStatus);
     }
 
     @Transactional
     public void dispute(UUID id, String merchantOrderStatus) {
+        updateStatus(id, OrderStatus.DISPUTE, merchantOrderStatus);
+    }
+
+    private void updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
-        order.setStatus(OrderStatus.DISPUTE);
-        order.setMerchantOrderStatus(merchantOrderStatus);
-        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        OrderStatus statusFrom = order.getStatus();
+        switch (OrderStatusTransition.of(statusFrom, statusTo)) {
+            case ALLOWED -> {
+                order.setStatus(statusTo);
+                if (Objects.nonNull(merchantOrderStatus)) {
+                    order.setMerchantOrderStatus(merchantOrderStatus);
+                }
+                eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+            }
+            case SKIPPED -> log.info("Переход ордера {} из статуса {} в статус {} пропущен.",
+                    order.getId(), statusFrom, statusTo);
+            case REJECTED -> throw new OrderStatusUpdateException(
+                    "Переход ордера из статуса «" + statusFrom.getDescription() + "» в статус «"
+                            + statusTo.getDescription() + "» запрещён.",
+                    statusFrom, statusTo);
+        }
     }
 
     public boolean existsByInternalId(String internalId) {

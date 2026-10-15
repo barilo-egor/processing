@@ -10,6 +10,8 @@ import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -44,8 +47,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -65,8 +68,10 @@ class OrderCallbackResolverTest {
         @Bean
         public OrderCallbackResolver orderCallbackService(BridgePayOrderStatusResolver bridgePayOrderStatusResolver,
                                                           OrderFacade orderFacade,
-                                                          MerchantCallbackService merchantCallbackService) {
-            return new OrderCallbackResolver(List.of(bridgePayOrderStatusResolver), orderFacade, merchantCallbackService);
+                                                          MerchantCallbackService merchantCallbackService,
+                                                          IncidentService incidentService) {
+            return new OrderCallbackResolver(List.of(bridgePayOrderStatusResolver), orderFacade, merchantCallbackService,
+                    incidentService);
         }
     }
 
@@ -411,5 +416,109 @@ class OrderCallbackResolverTest {
                 () -> assertEquals(event.getStatus(), actual.getStatus()),
                 () -> assertEquals(event.getStatusDescription(), actual.getStatusDescription())
         );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "7de063f7-720f-4078-9cde-c8d1ff924283,OLD_PAID",
+            "d958fbca-5c3d-4941-8918-4c74e144d8e2,SUCCESS"
+    })
+    @DisplayName("Метод должен пропустить КБ с успешным статусом без исключения, если ордер уже подтверждён.")
+    void resolve_shouldSkipIfOrderAlreadyConfirmed(UUID id, String merchantOrderStatus) {
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(OrderStatus.SUCCESS);
+        order.setMerchantOrderStatus(merchantOrderStatus);
+        fillFields(order, client);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus("PAID");
+        event.setStatusDescription("Status");
+        event.setMerchant(Merchant.ALFA_TEAM);
+        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
+
+        Optional<Order> maybeOrder = orderRepository.findById(id);
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
+        assertEquals(merchantOrderStatus, maybeOrder.get().getMerchantOrderStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CANCELED,CANCELED,ALFA_TEAM",
+            "TIMEOUT,CANCELED,DEORA",
+            "CANCELED,EXPIRED,DEORA",
+            "TIMEOUT,EXPIRED,ALFA_TEAM",
+            "DISPUTE,DISPUTE,ALFA_TEAM"
+    })
+    @DisplayName("Метод должен пропустить КБ без исключения, если статусы перехода совпадают или ордер просрочен и пришла отмена.")
+    void resolve_shouldSkipIfTransitionSkippable(OrderStatus status, String callbackStatus, Merchant merchant) {
+        UUID id = UUID.randomUUID();
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(status);
+        order.setMerchantOrderStatus("OLD");
+        fillFields(order, client);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus(callbackStatus);
+        event.setStatusDescription("Status");
+        event.setMerchant(merchant);
+        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
+
+        Optional<Order> maybeOrder = orderRepository.findById(id);
+        assertTrue(maybeOrder.isPresent());
+        assertEquals(status, maybeOrder.get().getStatus());
+        verifyNoInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CANCELED,ALFA_TEAM,Отменен",
+            "CANCELED,DEORA,Отменен",
+            "DISPUTE,ALFA_TEAM,В споре",
+            "DISPUTE,DEORA,В споре"
+    })
+    @DisplayName("Метод должен создать инцидент об отклонённом переходе без исключения, если КБ на отмену или спор пришёл для подтверждённого ордера.")
+    void resolve_shouldCreateIncidentIfTransitionRejected(String callbackStatus, Merchant merchant,
+                                                          String expectedStatusTo) {
+        UUID id = UUID.randomUUID();
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(OrderStatus.SUCCESS);
+        order.setMerchantOrderStatus("PAID");
+        fillFields(order, client);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus(callbackStatus);
+        event.setStatusDescription("Status");
+        event.setMerchant(merchant);
+        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
+
+        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(incidentService).save(eq(IncidentType.ORDER_STATUS_TRANSITION_REJECTED), dataCaptor.capture(),
+                anyLong());
+        OrderStatusTransitionRejectedData data = assertInstanceOf(OrderStatusTransitionRejectedData.class,
+                dataCaptor.getValue());
+        assertAll(
+                () -> assertEquals(id, data.orderId()),
+                () -> assertEquals("Успешный", data.statusFrom()),
+                () -> assertEquals(expectedStatusTo, data.statusTo()),
+                () -> assertEquals(merchant, data.merchant()),
+                () -> assertEquals(callbackStatus, data.merchantOrderStatus())
+        );
+        Order actual = orderRepository.findById(id).orElseThrow();
+        assertEquals(OrderStatus.SUCCESS, actual.getStatus());
+        assertEquals("PAID", actual.getMerchantOrderStatus());
     }
 }

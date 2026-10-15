@@ -5,7 +5,9 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
+import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -22,21 +25,24 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(OrderService.class)
 @Testcontainers
+@RecordApplicationEvents
 class OrderServiceTest {
 
     @Autowired
@@ -57,6 +63,9 @@ class OrderServiceTest {
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -423,5 +432,114 @@ class OrderServiceTest {
         );
 
         assertEquals(2, actual.getTotalElements());
+    }
+
+    void changeStatus(OrderStatus statusTo, UUID id, String merchantOrderStatus) {
+        switch (statusTo) {
+            case SUCCESS -> orderService.confirm(id, merchantOrderStatus);
+            case CANCELED -> orderService.cancel(id, merchantOrderStatus);
+            case TIMEOUT -> orderService.timeout(id, merchantOrderStatus);
+            case DISPUTE -> orderService.dispute(id, merchantOrderStatus);
+            case NEW -> throw new IllegalArgumentException("Нет метода перехода в статус NEW.");
+        }
+    }
+
+    Order saveOrder(OrderStatus status, String merchantOrderStatus) {
+        Order order = new Order();
+        order.setStatus(status);
+        order.setMerchantOrderStatus(merchantOrderStatus);
+        fillFields(order, getDummyClient());
+        return orderRepository.save(order);
+    }
+
+    @CsvSource({
+            "NEW,SUCCESS,PAID",
+            "NEW,CANCELED,DECLINED",
+            "NEW,TIMEOUT,EXPIRED",
+            "NEW,DISPUTE,ARBITRATION",
+            "CANCELED,SUCCESS,PAID",
+            "CANCELED,DISPUTE,DISPUTE",
+            "TIMEOUT,SUCCESS,SUCCESS",
+            "TIMEOUT,DISPUTE,ARBITRATION",
+            "DISPUTE,SUCCESS,PAID",
+            "DISPUTE,CANCELED,REJECTED"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен перевести ордер в новый статус, сохранить статус мерчанта и опубликовать событие, если переход разрешён.")
+    void changeStatus_shouldApplyAllowedTransition(OrderStatus statusFrom, OrderStatus statusTo,
+                                                   String merchantOrderStatus) {
+        Order order = saveOrder(statusFrom, "OLD");
+
+        changeStatus(statusTo, order.getId(), merchantOrderStatus);
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(statusTo, actual.getStatus());
+        assertEquals(merchantOrderStatus, actual.getMerchantOrderStatus());
+        List<OrderStatusUpdatedEvent> events = applicationEvents.stream(OrderStatusUpdatedEvent.class).toList();
+        assertEquals(1, events.size());
+        assertEquals(order.getId(), events.getFirst().orderId());
+        assertEquals(statusTo, events.getFirst().orderStatus());
+    }
+
+    @CsvSource({
+            "SUCCESS,SUCCESS,PAID",
+            "SUCCESS,TIMEOUT,EXPIRED",
+            "CANCELED,CANCELED,DECLINED",
+            "CANCELED,TIMEOUT,EXPIRED",
+            "TIMEOUT,CANCELED,DECLINED",
+            "TIMEOUT,TIMEOUT,EXPIRED",
+            "DISPUTE,TIMEOUT,EXPIRED",
+            "DISPUTE,DISPUTE,ARBITRATION"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен пропустить переход без исключения, изменения ордера и события, если переход пропускается.")
+    void changeStatus_shouldSkipTransition(OrderStatus statusFrom, OrderStatus statusTo, String merchantOrderStatus) {
+        Order order = saveOrder(statusFrom, "OLD");
+
+        assertDoesNotThrow(() -> changeStatus(statusTo, order.getId(), merchantOrderStatus));
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(statusFrom, actual.getStatus());
+        assertEquals("OLD", actual.getMerchantOrderStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @CsvSource({
+            "CANCELED,DECLINED,Переход ордера из статуса «Успешный» в статус «Отменен» запрещён.",
+            "DISPUTE,ARBITRATION,Переход ордера из статуса «Успешный» в статус «В споре» запрещён."
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен выбросить OrderStatusUpdateException и не менять ордер, если переход запрещён.")
+    void changeStatus_shouldThrowIfTransitionRejected(OrderStatus statusTo, String merchantOrderStatus,
+                                                      String expectedMessage) {
+        Order order = saveOrder(OrderStatus.SUCCESS, "PAID");
+        UUID orderId = order.getId();
+
+        OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
+                () -> changeStatus(statusTo, orderId, merchantOrderStatus));
+
+        assertEquals(OrderStatus.SUCCESS, exception.getStatusFrom());
+        assertEquals(statusTo, exception.getStatusTo());
+        assertEquals(expectedMessage, exception.getMessage());
+        Order actual = orderRepository.findById(orderId).orElseThrow();
+        assertEquals(OrderStatus.SUCCESS, actual.getStatus());
+        assertEquals("PAID", actual.getMerchantOrderStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @ValueSource(strings = {
+            "NEW",
+            "WAITING"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен перевести ордер в TIMEOUT без изменения статуса мерчанта, если статус мерчанта не передан.")
+    void timeout_shouldKeepMerchantOrderStatusIfNull(String merchantOrderStatus) {
+        Order order = saveOrder(OrderStatus.NEW, merchantOrderStatus);
+
+        orderService.timeout(order.getId(), null);
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(OrderStatus.TIMEOUT, actual.getStatus());
+        assertEquals(merchantOrderStatus, actual.getMerchantOrderStatus());
     }
 }

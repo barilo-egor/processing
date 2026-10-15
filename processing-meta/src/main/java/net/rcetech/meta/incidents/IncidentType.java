@@ -25,9 +25,10 @@ public enum IncidentType {
                     "- ${statusDescription}, идентификатор ордера в системе мерчанта - ${merchantOrderId}",
             "Найти КБ мерчанта, определить итоговый статус ордера исходя из статуса мерчанта и провести, " +
                     "при необходимости, ордер по маршруту."),
-    MERCHANT_CALLBACK_STATUS_NOT_RESOLVED("Для статуса ${orderStatus}(статус мерчанта ${merchantOrderStatus}) " +
-            "ордера ${orderId} не определен маршрут.",
-            "Провести ордер по маршруту вручную, сообщить разработчику.");
+    ORDER_STATUS_TRANSITION_REJECTED("Переход ордера ${orderId} из статуса «${statusFrom}» в статус «${statusTo}» " +
+            "был отклонён (КБ мерчанта ${merchant}, статус мерчанта ${merchantOrderStatus}).",
+            "Требуется ручное разрешение ситуации: проверить КБ мерчанта и ордер, определить корректный " +
+                    "итоговый статус и, при необходимости, провести ордер по маршруту вручную.");
 
     private final String description;
     private final String guide;
