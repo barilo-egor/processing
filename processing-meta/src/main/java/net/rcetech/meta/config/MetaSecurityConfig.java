@@ -4,6 +4,7 @@ import net.rcetech.meta.SpringSecurityConfigurer;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.user.Role;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import java.util.List;
 import java.util.Objects;
@@ -28,8 +30,12 @@ public class MetaSecurityConfig {
 
     private final ClientRegistrationRepository clientRegistrationRepository;
 
-    public MetaSecurityConfig(ClientRegistrationRepository clientRegistrationRepository) {
+    private final boolean secureCookies;
+
+    public MetaSecurityConfig(ClientRegistrationRepository clientRegistrationRepository,
+                              @Value("${server.servlet.session.cookie.secure:true}") boolean secureCookies) {
         this.clientRegistrationRepository = clientRegistrationRepository;
+        this.secureCookies = secureCookies;
     }
 
     @Bean
@@ -60,8 +66,11 @@ public class MetaSecurityConfig {
                     oAuth2.successHandler(successHandler)
             );
         }
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.secure(secureCookies));
         http.csrf(csrf -> csrf
                 .spa()
+                .csrfTokenRepository(csrfTokenRepository)
                 .ignoringRequestMatchers(WebPath.PUBLIC_API_PATH + "/**")
                 .ignoringRequestMatchers(WebPath.V1_API_PATH + "/order/**")
         );

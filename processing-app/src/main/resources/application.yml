@@ -12,3 +12,8 @@ spring:
   web:
     resources:
       static-locations: 'file:config/frontend/'
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
