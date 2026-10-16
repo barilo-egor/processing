@@ -2,6 +2,7 @@ package net.rcetech.orders;
 
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,7 @@ public class OrderExpirationProcessor {
     public void checkExpiredOrders() {
         List<Order> newOrders = orderService.findAllExpired();
         for (Order order : newOrders) {
-            orderFacade.timeoutOrder(order.getId());
+            orderFacade.routeOrder(OrderStatus.TIMEOUT, order.getId(), null);
         }
     }
 }

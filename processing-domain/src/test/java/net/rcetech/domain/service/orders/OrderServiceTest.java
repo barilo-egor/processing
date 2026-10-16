@@ -434,16 +434,6 @@ class OrderServiceTest {
         assertEquals(2, actual.getTotalElements());
     }
 
-    void changeStatus(OrderStatus statusTo, UUID id, String merchantOrderStatus) {
-        switch (statusTo) {
-            case SUCCESS -> orderService.confirm(id, merchantOrderStatus);
-            case CANCELED -> orderService.cancel(id, merchantOrderStatus);
-            case TIMEOUT -> orderService.timeout(id, merchantOrderStatus);
-            case DISPUTE -> orderService.dispute(id, merchantOrderStatus);
-            case NEW -> throw new IllegalArgumentException("Нет метода перехода в статус NEW.");
-        }
-    }
-
     Order saveOrder(OrderStatus status, String merchantOrderStatus) {
         Order order = new Order();
         order.setStatus(status);
@@ -466,11 +456,11 @@ class OrderServiceTest {
     })
     @ParameterizedTest
     @DisplayName("Метод должен перевести ордер в новый статус, сохранить статус мерчанта и опубликовать событие, если переход разрешён.")
-    void changeStatus_shouldApplyAllowedTransition(OrderStatus statusFrom, OrderStatus statusTo,
+    void updateStatus_shouldApplyAllowedTransition(OrderStatus statusFrom, OrderStatus statusTo,
                                                    String merchantOrderStatus) {
         Order order = saveOrder(statusFrom, "OLD");
 
-        changeStatus(statusTo, order.getId(), merchantOrderStatus);
+        orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus);
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(statusTo, actual.getStatus());
@@ -493,10 +483,10 @@ class OrderServiceTest {
     })
     @ParameterizedTest
     @DisplayName("Метод должен пропустить переход без исключения, изменения ордера и события, если переход пропускается.")
-    void changeStatus_shouldSkipTransition(OrderStatus statusFrom, OrderStatus statusTo, String merchantOrderStatus) {
+    void updateStatus_shouldSkipTransition(OrderStatus statusFrom, OrderStatus statusTo, String merchantOrderStatus) {
         Order order = saveOrder(statusFrom, "OLD");
 
-        assertDoesNotThrow(() -> changeStatus(statusTo, order.getId(), merchantOrderStatus));
+        assertDoesNotThrow(() -> orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus));
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(statusFrom, actual.getStatus());
@@ -510,13 +500,13 @@ class OrderServiceTest {
     })
     @ParameterizedTest
     @DisplayName("Метод должен выбросить OrderStatusUpdateException и не менять ордер, если переход запрещён.")
-    void changeStatus_shouldThrowIfTransitionRejected(OrderStatus statusTo, String merchantOrderStatus,
+    void updateStatus_shouldThrowIfTransitionRejected(OrderStatus statusTo, String merchantOrderStatus,
                                                       String expectedMessage) {
         Order order = saveOrder(OrderStatus.SUCCESS, "PAID");
         UUID orderId = order.getId();
 
         OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
-                () -> changeStatus(statusTo, orderId, merchantOrderStatus));
+                () -> orderService.updateStatus(orderId, statusTo, merchantOrderStatus));
 
         assertEquals(OrderStatus.SUCCESS, exception.getStatusFrom());
         assertEquals(statusTo, exception.getStatusTo());
@@ -533,10 +523,10 @@ class OrderServiceTest {
     })
     @ParameterizedTest
     @DisplayName("Метод должен перевести ордер в TIMEOUT без изменения статуса мерчанта, если статус мерчанта не передан.")
-    void timeout_shouldKeepMerchantOrderStatusIfNull(String merchantOrderStatus) {
+    void updateStatus_shouldKeepMerchantOrderStatusIfNull(String merchantOrderStatus) {
         Order order = saveOrder(OrderStatus.NEW, merchantOrderStatus);
 
-        orderService.timeout(order.getId(), null);
+        orderService.updateStatus(order.getId(), OrderStatus.TIMEOUT, null);
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.TIMEOUT, actual.getStatus());

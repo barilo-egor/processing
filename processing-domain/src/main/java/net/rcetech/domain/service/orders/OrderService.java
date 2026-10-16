@@ -66,26 +66,7 @@ public class OrderService {
     }
 
     @Transactional
-    public void confirm(UUID id, String merchantOrderStatus) {
-        updateStatus(id, OrderStatus.SUCCESS, merchantOrderStatus);
-    }
-
-    @Transactional
-    public void cancel(UUID id, String merchantOrderStatus) {
-        updateStatus(id, OrderStatus.CANCELED, merchantOrderStatus);
-    }
-
-    @Transactional
-    public void timeout(UUID id, String merchantOrderStatus) {
-        updateStatus(id, OrderStatus.TIMEOUT, merchantOrderStatus);
-    }
-
-    @Transactional
-    public void dispute(UUID id, String merchantOrderStatus) {
-        updateStatus(id, OrderStatus.DISPUTE, merchantOrderStatus);
-    }
-
-    private void updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
+    public void updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         OrderStatus statusFrom = order.getStatus();
         switch (OrderStatusTransition.of(statusFrom, statusTo)) {
@@ -103,6 +84,10 @@ public class OrderService {
                             + statusTo.getDescription() + "» запрещён.",
                     statusFrom, statusTo);
         }
+    }
+
+    public boolean existsById(UUID id) {
+        return orderRepository.existsById(id);
     }
 
     public boolean existsByInternalId(String internalId) {

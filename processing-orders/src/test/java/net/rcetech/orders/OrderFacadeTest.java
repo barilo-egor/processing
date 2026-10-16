@@ -146,7 +146,7 @@ class OrderFacadeTest {
             AtomicReference<Throwable> error = new AtomicReference<>();
             Thread concurrent = Thread.ofPlatform().start(() -> {
                 try {
-                    orderFacade.routeOrder(concurrentStatus, order, concurrentMerchantStatus);
+                    orderFacade.routeOrder(concurrentStatus, order.getId(), concurrentMerchantStatus);
                 } catch (Throwable e) {
                     error.set(e);
                 }
@@ -184,7 +184,7 @@ class OrderFacadeTest {
         Order order = createNewOrder();
         runConcurrently(order, concurrentStatus, concurrentMerchantStatus);
 
-        assertDoesNotThrow(() -> orderFacade.routeOrder(status, order, merchantStatus));
+        assertDoesNotThrow(() -> orderFacade.routeOrder(status, order.getId(), merchantStatus));
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(expectedStatus, actual.getStatus());
@@ -202,12 +202,13 @@ class OrderFacadeTest {
         Order order = createNewOrder();
         runConcurrently(order, OrderStatus.SUCCESS, "PAID");
 
+        UUID orderId = order.getId();
         OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
-                () -> orderFacade.routeOrder(status, order, merchantStatus));
+                () -> orderFacade.routeOrder(status, orderId, merchantStatus));
 
         assertEquals(OrderStatus.SUCCESS, exception.getStatusFrom());
         assertEquals(status, exception.getStatusTo());
-        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        Order actual = orderRepository.findById(orderId).orElseThrow();
         assertEquals(OrderStatus.SUCCESS, actual.getStatus());
         assertEquals("PAID", actual.getMerchantOrderStatus());
         assertEquals(List.of(OrderStatus.SUCCESS), orderEventsRecorder.committedStatuses);
@@ -222,7 +223,7 @@ class OrderFacadeTest {
     void routeOrder_shouldIgnoreNewStatus(String merchantOrderStatus) {
         Order order = createNewOrder();
 
-        orderFacade.routeOrder(OrderStatus.NEW, order, merchantOrderStatus);
+        orderFacade.routeOrder(OrderStatus.NEW, order.getId(), merchantOrderStatus);
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.NEW, actual.getStatus());

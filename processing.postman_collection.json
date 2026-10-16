@@ -2206,6 +2206,254 @@
                   "body": "{\n  \"id\": \"f59dacef-b10e-11f1-a4b9-3654dc2f460f\",\n  \"createdAt\": 1789492123359,\n  \"expiresAt\": 1789495723359,\n  \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"clientUsername\": \"client\",\n  \"internalId\": \"INT-001\",\n  \"status\": \"NEW\",\n  \"amount\": 1500,\n  \"merchant\": \"ALFA_TEAM\",\n  \"merchantOrderId\": \"M-ORD-1001\",\n  \"merchantOrderStatus\": \"PAID\",\n  \"method\": \"CARD\",\n  \"details\": \"1234 1234 1234 1234 \",\n  \"bank\": \"Bank_Alpha\",\n  \"callbackUrl\": \"http://example.com/callback\"\n}"
                 }
               ]
+            },
+            {
+              "name": "Изменение статуса ордера",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"CANCELED\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "order",
+                    "{{orderId}}"
+                  ]
+                },
+                "description": "Метод для ручной смены статуса ордера поддержкой. Переход проверяется по таблице маршрутов ордеров (см. документацию «Маршруты ордеров»). Статус мерчанта при ручной смене не меняется.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| status | `string` | Новый статус ордера. | Обязательный; допустимые значения: `SUCCESS` (Успешный), `CANCELED` (Отменен), `DISPUTE` (В споре). Статусы `NEW` и `TIMEOUT` вручную не устанавливаются |\n\nОшибки `400`:\n\n- ордер не найден;\n- статус не передан или не входит в список допустимых;\n- переход запрещён таблицей маршрутов (например, из «Успешный» в «Отменен»)."
+              },
+              "response": [
+                {
+                  "name": "Статус изменён",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"status\": \"CANCELED\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "order",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "plain",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "0"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Fri, 16 Oct 2026 11:20:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "Переход запрещён",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"status\": \"CANCELED\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "order",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Fri, 16 Oct 2026 11:20:00 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/private/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"Переход ордера из статуса «Успешный» в статус «Отменен» запрещён.\"\n}"
+                },
+                {
+                  "name": "Недопустимый статус",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"status\": \"TIMEOUT\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "host": [
+                        "{{processing_private_api_url}}"
+                      ],
+                      "path": [
+                        "order",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Fri, 16 Oct 2026 11:20:00 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/private/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"field 'status' Недопустимый статус ордера.;\"\n}"
+                }
+              ]
             }
           ]
         },

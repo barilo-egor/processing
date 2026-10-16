@@ -1,7 +1,6 @@
 package net.rcetech.orders;
 
 import jakarta.persistence.OptimisticLockException;
-import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.orders.OrderStatus;
@@ -13,7 +12,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Slf4j
 public class OrderFacade {
     
     private final OrderService orderService;
@@ -36,20 +34,7 @@ public class OrderFacade {
 
     @Retryable(value = {OptimisticLockException.class, OptimisticLockingFailureException.class},
             jitter = 200, delay = 500, maxDelay = 600)
-    public void routeOrder(OrderStatus orderStatus, Order order, String merchantOrderStatus) {
-        switch (orderStatus) {
-            case SUCCESS -> orderService.confirm(order.getId(), merchantOrderStatus);
-            case CANCELED -> orderService.cancel(order.getId(), merchantOrderStatus);
-            case TIMEOUT -> orderService.timeout(order.getId(), merchantOrderStatus);
-            case DISPUTE ->  orderService.dispute(order.getId(), merchantOrderStatus);
-            case NEW -> log.info("Ордер {}: статус {} (статус мерчанта {}) проигнорирован.",
-                    order.getId(), orderStatus, merchantOrderStatus);
-        }
-    }
-
-    @Retryable(value = {OptimisticLockException.class, OptimisticLockingFailureException.class},
-            jitter = 200, delay = 500, maxDelay = 600)
-    public void timeoutOrder(UUID orderId) {
-        orderService.timeout(orderId, null);
+    public void routeOrder(OrderStatus orderStatus, UUID orderId, String merchantOrderStatus) {
+        orderService.updateStatus(orderId, orderStatus, merchantOrderStatus);
     }
 }

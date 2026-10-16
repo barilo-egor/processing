@@ -72,7 +72,7 @@ public class OrderCallbackResolver {
                     + ", order id " + order.getId());
         }
         try {
-            orderFacade.routeOrder(maybeStatus.get(), order, merchantCallbackEvent.getStatus());
+            orderFacade.routeOrder(maybeStatus.get(), order.getId(), merchantCallbackEvent.getStatus());
         } catch (OrderStatusUpdateException e) {
             long timestamp = System.currentTimeMillis();
             log.warn("{} Переход ордера {} из статуса {} в статус {} по КБ мерчанта {} (статус {}) отклонён.",

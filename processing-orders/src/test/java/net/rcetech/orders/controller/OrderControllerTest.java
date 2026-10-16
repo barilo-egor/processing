@@ -4,10 +4,12 @@ import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
+import net.rcetech.orders.OrderFacade;
 import org.hamcrest.CustomMatcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +20,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,11 +31,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +57,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private OrderService orderService;
+
+    @MockitoBean
+    private OrderFacade orderFacade;
 
     @Autowired
     private MockMvc mockMvc;
@@ -192,5 +199,102 @@ class OrderControllerTest {
                 .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
                 .with(csrf()))
                 .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "7b0f1c52-4f3e-4d8a-9a51-2f6c1d9e8a10,SUCCESS,ADMIN",
+            "e3a9d6b4-1c2f-4b7e-8d05-6a4f9c3b2e71,CANCELED,OPERATOR",
+                        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,DISPUTE,OPERATOR"
+    })
+    @DisplayName("Метод должен вернуть статус 200 и направить ордер по маршруту в переданный статус.")
+    void update_shouldReturn200AndRouteOrder(UUID id, OrderStatus status, String role) throws Exception {
+        when(orderService.existsById(id)).thenReturn(true);
+        mockMvc.perform(patch("/api/private/order/" + id)
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + status.name() + "\"}"))
+                .andExpect(status().isOk());
+        verify(orderFacade).routeOrder(eq(status), eq(id), isNull());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f,SUCCESS,CANCELED",
+            "9f8e7d6c-5b4a-4398-a7b6-c5d4e3f2a1b0,SUCCESS,DISPUTE"
+    })
+    @DisplayName("Метод должен вернуть статус 400, если маршрут ордера невозможен.")
+    void update_shouldReturn400IfRouteRejected(UUID id, OrderStatus statusFrom, OrderStatus statusTo) throws Exception {
+        when(orderService.existsById(id)).thenReturn(true);
+        doThrow(new OrderStatusUpdateException("Переход запрещён.", statusFrom, statusTo))
+                .when(orderFacade).routeOrder(eq(statusTo), eq(id), isNull());
+        mockMvc.perform(patch("/api/private/order/" + id)
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + statusTo.name() + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7,SUCCESS",
+            "b7a6f5e4-d3c2-4b1a-9f0e-d8c7b6a5f4e3,CANCELED"
+    })
+    @DisplayName("Метод должен вернуть статус 400, если ордер не найден.")
+    void update_shouldReturn400IfOrderNotFound(UUID id, OrderStatus status) throws Exception {
+        when(orderService.existsById(id)).thenReturn(false);
+        mockMvc.perform(patch("/api/private/order/" + id)
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + status.name() + "\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(orderFacade);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d,NEW",
+            "d9c8b7a6-f5e4-4d3c-9b2a-1f0e9d8c7b6a,TIMEOUT"
+    })
+    @DisplayName("Метод должен вернуть статус 400, если статус не входит в список допустимых для ручной смены.")
+    void update_shouldReturn400IfStatusNotAllowed(UUID id, OrderStatus status) throws Exception {
+        when(orderService.existsById(id)).thenReturn(true);
+        mockMvc.perform(patch("/api/private/order/" + id)
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + status.name() + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("field 'status' Недопустимый статус ордера.;"));
+        verifyNoInteractions(orderFacade);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"status\":null}", "{\"status\":\"PAID\"}"})
+    @DisplayName("Метод должен вернуть статус 400, если статус в теле запроса отсутствует или некорректен.")
+    void update_shouldReturn400IfStatusInvalid(String body) throws Exception {
+        mockMvc.perform(patch("/api/private/order/" + UUID.randomUUID())
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(orderFacade);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CLIENT", "USER"})
+    @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не админ или оператор.")
+    void update_shouldReturn403IfNotAdminOrOperator(String role) throws Exception {
+        mockMvc.perform(patch("/api/private/order/" + UUID.randomUUID())
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SUCCESS\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(orderFacade);
     }
 }
