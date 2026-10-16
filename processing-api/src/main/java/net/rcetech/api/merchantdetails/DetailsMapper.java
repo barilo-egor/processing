@@ -32,7 +32,7 @@ public interface DetailsMapper {
     DetailsRequestGrpc detailsRequestDTOToGrpc(UUID clientId, UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
 
     @Mapping(target = "orderId", source = "merchantOrderId")
-    @Mapping(target = "method", source = "merchantMethod")
+    @Mapping(target = "method", source = "requestMethod")
     CancelOrderRequestGrpc cancelOrderDTOToGrpc(CancelOrderDTO cancelOrderDTO);
 
     MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
