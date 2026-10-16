@@ -1,6 +1,5 @@
 package net.rcetech.meta.config;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.core.StreamWriteFeature;
@@ -9,7 +8,6 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
-@EnableConfigurationProperties({ProcessingConfigurationProperties.class})
 public class MetaWebConfig {
 
     @Bean

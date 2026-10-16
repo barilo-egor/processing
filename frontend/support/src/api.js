@@ -6,27 +6,31 @@
    не нужны: это обычный сайт, а не Mini App.
 
    Эндпоинты (подтверждены коллекцией Postman):
-     GET   /api/private/client?id&username&from&to&page&size
+     GET   /api/support/client?id&username&from&to&page&size
            -> { content: [...], page: {size, number, totalElements, totalPages} }
            статуса у клиента больше нет; methods — массив кодов RequestMethod
-     PATCH /api/private/client/{id}   <- { orderTimeoutSeconds?, commissionPercent?, methods? }
+     PATCH /api/support/client/{id}   <- { orderTimeoutSeconds?, commissionPercent?, methods? }
            обновляются только поля, не равные null;
            methods: [] отвязывает все способы оплаты
-     GET   /api/private/dictionary    -> { RequestMethod: [{name, description}], ... }
-     GET   /api/private/merchant-config/{clientId}
-     PATCH /api/private/merchant-config/{id}
-     GET   /api/private/withdrawal-request?client&id&status&address&createdAtFrom&createdAtTo&page&size&sort
-     PATCH /api/private/withdrawal-request/{id}?status=APPROVED|CANCELED
-     GET   /api/private/transaction?client&createdAtFrom&createdAtTo&page&size&sort
-     POST  /api/private/transaction   <- { clientId, operation, amount, comment }
+     GET   /api/common/dictionary     -> { RequestMethod: [{name, description}], ... }
+     GET   /api/support/merchant-config/{clientId}
+     PATCH /api/support/merchant-config/{id}
+     GET   /api/support/withdrawal-request?client&id&status&address&createdAtFrom&createdAtTo&page&size&sort
+     PATCH /api/support/withdrawal-request/{id}?status=APPROVED|CANCELED
+     GET   /api/support/transaction?client&createdAtFrom&createdAtTo&page&size&sort
+     POST  /api/support/transaction   <- { clientId, operation, amount, comment }
            тип MANUAL_CORRECT бэк ставит сам
-     GET   /api/private/support-user  -> { id, username, registeredAt } — вошедший администратор
-     GET   /api/private/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
-     GET   /api/private/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
+     GET   /api/support/support-user  -> { id, username, registeredAt } — вошедший администратор
+     GET   /api/support/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
+     GET   /api/support/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
            -> { content, page }; orderId здесь — ID у мерчанта
    ============================================================ */
 
-const API = '/api/private';
+// API поддержки ({{processing_support_api_url}} в коллекции).
+const SUPPORT_API = '/api/support';
+
+// Общее API для всех вошедших пользователей: словарь.
+const COMMON_API = '/api/common';
 
 /* Защита от подделки запросов (CSRF).
    Сервер кладёт секрет в куку XSRF-TOKEN и требует то же значение
@@ -170,7 +174,7 @@ function buildUrl(url, params) {
 export const api = {
   // Список клиентов. Возвращает { items, total, totalPages }.
   async clients(params) {
-    const d = await request(`${API}/client`, { params });
+    const d = await request(`${SUPPORT_API}/client`, { params });
     const items = Array.isArray(d?.content) ? d.content : [];
     return {
       items,
@@ -182,15 +186,15 @@ export const api = {
   // Обновление клиента. Шлём ТОЛЬКО изменённое поле:
   // бэк обновляет всё, что не null, поэтому лишние поля перезапишут данные.
   updateClient: (id, body) =>
-      request(`${API}/client/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+      request(`${SUPPORT_API}/client/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
 
   // Справочники (ClientStatus, OrderStatus и другие перечисления).
-  dictionary: () => request(`${API}/dictionary`),
+  dictionary: () => request(`${COMMON_API}/dictionary`),
 
   /* Ордера. Только чтение: список с фильтром и одна запись.
      Возвращает { items, total, totalPages } — как и клиенты. */
   async orders(params) {
-    const d = await request(`${API}/order`, { params });
+    const d = await request(`${SUPPORT_API}/order`, { params });
     const items = Array.isArray(d?.content) ? d.content : [];
     return {
       items,
@@ -199,17 +203,17 @@ export const api = {
     };
   },
 
-  order: (id) => request(`${API}/order/${encodeURIComponent(id)}`),
+  order: (id) => request(`${SUPPORT_API}/order/${encodeURIComponent(id)}`),
 
   merchantConfigs: (clientId) =>
-      request(`${API}/merchant-config/${encodeURIComponent(clientId)}`),
+      request(`${SUPPORT_API}/merchant-config/${encodeURIComponent(clientId)}`),
   updateMerchantConfig: (id, body) =>
-      request(`${API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+      request(`${SUPPORT_API}/merchant-config/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
 
   /* Заявки на вывод всех клиентов. Возвращает { items, total, totalPages }.
      Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
   async withdrawals(params) {
-    const d = await request(`${API}/withdrawal-request`, {
+    const d = await request(`${SUPPORT_API}/withdrawal-request`, {
       params: { sort: 'createdAt,desc', ...params },
     });
     const items = Array.isArray(d?.content) ? d.content : [];
@@ -223,7 +227,7 @@ export const api = {
   /* Транзакции всех клиентов (сервис billing). Возвращает { items, total, totalPages }.
      Сортировку передаём явно: по ТЗ новые сверху. */
   async transactions(params) {
-    const d = await request(`${API}/transaction`, {
+    const d = await request(`${SUPPORT_API}/transaction`, {
       params: { sort: 'createdAt,desc', ...params },
     });
     const items = Array.isArray(d?.content) ? d.content : [];
@@ -235,12 +239,12 @@ export const api = {
   },
 
   // Вошедший администратор (для шапки): { id, username, registeredAt }.
-  supportUser: () => request(`${API}/support-user`),
+  supportUser: () => request(`${SUPPORT_API}/support-user`),
 
   /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
      Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
   async merchantCallbacks(params) {
-    const d = await request(`${API}/merchant-callback`, {
+    const d = await request(`${SUPPORT_API}/merchant-callback`, {
       params: { sort: 'createdAt,desc', ...params },
     });
     const items = Array.isArray(d?.content) ? d.content : [];
@@ -256,7 +260,7 @@ export const api = {
      Параметры (коллекция processing): operationId — ID ордера, orderId — ID у мерчанта (!),
      actorId — ID клиента, details, merchants[], amount, createdAtFrom/To (мс), page, size, sort. */
   async merchantHistory(params) {
-    const d = await request(`${API}/merchant-history`, { params });
+    const d = await request(`${SUPPORT_API}/merchant-history`, { params });
     const items = Array.isArray(d?.content) ? d.content : [];
     return {
       items,
@@ -268,13 +272,13 @@ export const api = {
   /* Ручная корректировка баланса: { clientId, operation, amount, comment }.
      Тип «Ручная корректировка» (MANUAL_CORRECT) бэк проставляет сам. */
   createTransaction: (body) =>
-      request(`${API}/transaction`, { method: 'POST', body }),
+      request(`${SUPPORT_API}/transaction`, { method: 'POST', body }),
 
   /* Подтверждение (APPROVED) или отмена (CANCELED) заявки.
      Статус уходит параметром в адресе, тела нет. Если заявка уже
      не в статусе NEW, бэк отвечает 400. */
   setWithdrawalStatus: (id, status) =>
-      request(`${API}/withdrawal-request/${encodeURIComponent(id)}`, {
+      request(`${SUPPORT_API}/withdrawal-request/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         params: { status },
       }),

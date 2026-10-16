@@ -18,7 +18,7 @@ import java.security.Principal;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.V1_API_PATH + "/withdrawal-request")
+@RequestMapping(WebPath.CLIENT_API_PATH + "/withdrawal-request")
 @ClientAccess
 public class ClientWithdrawalRequestController {
 

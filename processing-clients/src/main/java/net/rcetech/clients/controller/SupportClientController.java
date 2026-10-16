@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @Slf4j
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/client")
 @Validated
 public class SupportClientController {
 

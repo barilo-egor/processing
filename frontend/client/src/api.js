@@ -5,28 +5,28 @@
    всех запросах credentials: 'include'.
 
    Эндпоинты (из коллекции processing.postman_collection).
-   Всё клиентское API — под /api/v1, словарь — общий, в /api/private:
-     GET    /api/v1/client                  -> {id, username, callbackUrl, ...}
-     PATCH  /api/v1/client                  <- {callbackUrl}  (клиент меняет только его)
-     GET    /api/v1/api-key                 -> [{id, name, preview}]
-     POST   /api/v1/api-key?name=           -> строка с полным токеном
-            (в коллекции пока нет — путь по аналогии, ждём от бэка)
-     DELETE /api/v1/api-key/{id}
-     GET    /api/v1/order?status&method&page&size&sort
-     GET    /api/v1/transaction?createdAtFrom&createdAtTo&page&size&sort
-     GET    /api/v1/withdrawal-request?id&status&address&createdAtFrom&createdAtTo&page&size&sort
-     POST   /api/v1/withdrawal-request?amount=&address=   — создание
-     PATCH  /api/v1/withdrawal-request/{id}               — отмена
-     GET    /api/private/dictionary         -> {ИмяПеречисления: [...]}
+   Всё API кабинета — под /api/client, словарь — общий, в /api/common:
+     GET    /api/client/profile             -> {id, username, callbackUrl, ...}
+     PATCH  /api/client/profile             <- {callbackUrl}  (клиент меняет только его)
+     GET    /api/client/api-key             -> [{id, name, preview}]
+     POST   /api/client/api-key?name=       -> строка с полным токеном
+     DELETE /api/client/api-key/{id}
+     GET    /api/client/order?status&method&page&size&sort
+     GET    /api/client/transaction?createdAtFrom&createdAtTo&page&size&sort
+     GET    /api/client/withdrawal-request?id&status&address&createdAtFrom&createdAtTo&page&size&sort
+     POST   /api/client/withdrawal-request?amount=&address=   — создание
+     PATCH  /api/client/withdrawal-request/{id}               — отмена
+     GET    /api/common/dictionary          -> {ИмяПеречисления: [...]}
 
    Ошибки 400 бэк отдаёт с понятным текстом в description — его и
    показываем пользователю.
    ============================================================ */
 
-const API = '/api/private';
+// API кабинета клиента ({{processing_client_api_url}} в коллекции).
+const CLIENT_API = '/api/client';
 
-// Клиентское API ({{processing_v1_api_url}} в коллекции).
-const API_V1 = '/api/v1';
+// Общее API для всех вошедших пользователей: словарь.
+const COMMON_API = '/api/common';
 
 // Все списки разделов: по 25 записей, новые сверху.
 export const PAGE_SIZE = 25;
@@ -171,56 +171,56 @@ function buildUrl(url, params) {
 
 export const api = {
   // Профиль текущего клиента: один объект, клиент определяется на бэке.
-  profile: () => request(`${API_V1}/client`),
+  profile: () => request(`${CLIENT_API}/profile`),
 
   // Сохранение Callback URL. Клиент сам себе меняет только это поле;
   // id не нужен — бэк берёт его из сессии.
   saveCallbackUrl: (callbackUrl) =>
-      request(`${API_V1}/client`, {
+      request(`${CLIENT_API}/profile`, {
         method: 'PATCH',
         body: { callbackUrl },
       }),
 
   // Список токенов: [{id, name, preview}].
   async apiKeys() {
-    const d = await request(`${API_V1}/api-key`);
+    const d = await request(`${CLIENT_API}/api-key`);
     return Array.isArray(d) ? d : [];
   },
 
   // Создание токена. Ответ — строка с полным значением,
   // показывается один раз и больше не доступна.
   createApiKey: (name) =>
-      request(`${API_V1}/api-key`, { method: 'POST', params: { name }, raw: true }),
+      request(`${CLIENT_API}/api-key`, { method: 'POST', params: { name }, raw: true }),
 
   deleteApiKey: (id) =>
-      request(`${API_V1}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      request(`${CLIENT_API}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   // Словари перечислений: статусы, способы оплаты, операции и т.д.
   async dictionary() {
-    const d = await request(`${API}/dictionary`);
+    const d = await request(`${COMMON_API}/dictionary`);
     return d && typeof d === 'object' ? d : {};
   },
 
   // Ордера клиента. Фильтр: status, method.
-  orders: (params) => pageRequest(`${API_V1}/order`, params),
+  orders: (params) => pageRequest(`${CLIENT_API}/order`, params),
 
   // Транзакции. Фильтр: createdAtFrom, createdAtTo.
-  transactions: (params) => pageRequest(`${API_V1}/transaction`, params),
+  transactions: (params) => pageRequest(`${CLIENT_API}/transaction`, params),
 
   // Заявки на вывод. Фильтр: id и address (подстрока), status,
   // createdAtFrom, createdAtTo.
-  withdrawals: (params) => pageRequest(`${API_V1}/withdrawal-request`, params),
+  withdrawals: (params) => pageRequest(`${CLIENT_API}/withdrawal-request`, params),
 
   // Создание заявки: сумма в рублях и адрес — query-параметрами.
   createWithdrawal: (amount, address) =>
-      request(`${API_V1}/withdrawal-request`, {
+      request(`${CLIENT_API}/withdrawal-request`, {
         method: 'POST',
         params: { amount, address },
       }),
 
   // Отмена заявки. Возможна только в статусе NEW, иначе бэк отвечает 400.
   cancelWithdrawal: (id) =>
-      request(`${API_V1}/withdrawal-request/${encodeURIComponent(id)}`, { method: 'PATCH' }),
+      request(`${CLIENT_API}/withdrawal-request/${encodeURIComponent(id)}`, { method: 'PATCH' }),
 };
 
 /* Запрос страницы списка. Размер и сортировка общие для всех

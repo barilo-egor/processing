@@ -48,12 +48,14 @@
 
 Сквозные паттерны:
 
-- **Безопасность**: `MetaSecurityConfig` строит единственный `SecurityFilterChain` с правилами URL→роль. Модули дополняют эту цепочку, регистрируя бины `SpringSecurityConfigurer`, а не создавая собственные цепочки. Префиксы URL берутся из `WebPath`:
-  - `/api/private/**`: сотрудники и клиенты.
-  - `/api/v1/**`: роль `CLIENT`, API мерчантов.
+- **Безопасность**: `MetaSecurityConfig` строит основной `SecurityFilterChain` с правилами URL→роль. Модули дополняют эту цепочку, регистрируя бины `SpringSecurityConfigurer`; отдельная цепочка есть только у `/api/v1/**`. Префиксы URL берутся из `WebPath`:
+  - `/api/support/**`: роли `ADMIN`/`OPERATOR`, сессия + CSRF.
+  - `/api/client/**`: роль `CLIENT`, кабинет клиента, сессия + CSRF.
+  - `/api/common/**`: любой вошедший пользователь (словарь).
+  - `/api/v1/**`: программное API мерчантов, отдельная stateless-цепочка `ApiSecurityConfig`, только заголовок `Api-Key`; сессия игнорируется, CSRF не проверяется.
   - `/api/public/**`: открыто, CSRF не проверяется.
   - Иерархия ролей: `ADMIN` включает `OPERATOR`.
-- **Словарь констант**: `/api/private/dictionary`. Чтобы добавить значение, реализуйте `net.rcetech.meta.DictionaryField` и зарегистрируйте как Spring-бин.
+- **Словарь констант**: `/api/common/dictionary`. Чтобы добавить значение, реализуйте `net.rcetech.meta.DictionaryField` и зарегистрируйте как Spring-бин.
 - **Взаимодействие модулей**: модули общаются через Spring application events (классы `*Event` в meta, обрабатываются слушателями вроде `TransactionEventListener` и `TransactionListener`) и через Kafka, а не через прямые вызовы внутренностей друг друга.
 - **Метрики**: ключи метрик лежат в `net.rcetech.meta.MetricsConstants`.
 - **Postman-коллекция**: `processing.postman_collection.json` документирует HTTP API, в том числе как инициировать тестовые колбэки мерчантов.

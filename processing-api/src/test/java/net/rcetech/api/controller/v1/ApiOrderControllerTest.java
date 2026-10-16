@@ -10,7 +10,6 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -26,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -56,7 +54,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ApiOrderController.class)
 @Import({MetaSecurityConfig.class, ApiSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ApiOrderControllerTest {
 
     @Autowired

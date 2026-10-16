@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/client/order")
+@RequestMapping(WebPath.CLIENT_API_PATH + "/order")
 @ClientAccess
 public class ClientOrderController {
 

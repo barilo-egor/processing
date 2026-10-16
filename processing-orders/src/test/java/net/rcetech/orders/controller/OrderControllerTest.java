@@ -1,9 +1,7 @@
 package net.rcetech.orders.controller;
 
-import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
@@ -20,7 +18,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -45,8 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderController.class)
-@Import({ClientsSecurityConfig.class, MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
+@Import(MetaSecurityConfig.class)
 class OrderControllerTest {
 
     private static final CustomMatcher<String> UUID_MATCHER = new CustomMatcher<>("is valid UUID") {
@@ -125,7 +121,7 @@ class OrderControllerTest {
             }
         };
         when(orderService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(orderSummary)));
-        mockMvc.perform(get("/api/private/order")
+        mockMvc.perform(get("/api/support/order")
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf()))
                 .andExpect(status().isOk())
@@ -148,7 +144,7 @@ class OrderControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не админ или оператор.")
     void getOrders_ShouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
-        mockMvc.perform(get("/api/private/order")
+        mockMvc.perform(get("/api/support/order")
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role.name()))
                         .with(csrf()))
                 .andExpect(status().isForbidden());
@@ -158,7 +154,7 @@ class OrderControllerTest {
     @ValueSource(strings = {"USER", "TRADER"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void getOrders_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(get("/api/private/order")
+        mockMvc.perform(get("/api/support/order")
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
                         .with(csrf()))
                 .andExpect(status().isForbidden());
@@ -183,7 +179,7 @@ class OrderControllerTest {
                 clientId, clientUsername, internalId, status, amount, merchant, merchantOrderId,
                 merchantOrderStatus, method, details, bank, callbackUrl);
         when(orderService.findById(any(), any())).thenReturn(Optional.of(orderResponse));
-        mockMvc.perform(get("/api/private/order/" + id.toString())
+        mockMvc.perform(get("/api/support/order/" + id.toString())
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf()))
                 .andExpect(status().isOk())
@@ -209,7 +205,7 @@ class OrderControllerTest {
     @DisplayName("Метод должен вернуть статус 400, если ордер не найден.")
     void getOrderShouldReturn400IfOrderNotFound(UUID id) throws Exception {
         when(orderService.findById(any(), any())).thenReturn(Optional.empty());
-        mockMvc.perform(get("/api/private/order/" + id.toString())
+        mockMvc.perform(get("/api/support/order/" + id.toString())
                 .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                 .with(csrf()))
                 .andExpect(status().isBadRequest());
@@ -227,7 +223,7 @@ class OrderControllerTest {
         when(orderService.existsById(id)).thenReturn(true);
         when(orderFacade.routeOrder(eq(status), eq(id), isNull()))
                 .thenReturn(new OrderStatusChange(statusFrom, status, OrderStatusTransition.ALLOWED));
-        mockMvc.perform(patch("/api/private/order/" + id)
+        mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -246,7 +242,7 @@ class OrderControllerTest {
         when(orderService.existsById(id)).thenReturn(true);
         doThrow(new OrderStatusUpdateException("Переход запрещён.", statusFrom, statusTo))
                 .when(orderFacade).routeOrder(eq(statusTo), eq(id), isNull());
-        mockMvc.perform(patch("/api/private/order/" + id)
+        mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -267,7 +263,7 @@ class OrderControllerTest {
         when(orderService.existsById(id)).thenReturn(true);
         when(orderFacade.routeOrder(eq(statusTo), eq(id), isNull()))
                 .thenReturn(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.SKIPPED));
-        mockMvc.perform(patch("/api/private/order/" + id)
+        mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -284,7 +280,7 @@ class OrderControllerTest {
     @DisplayName("Метод должен вернуть статус 400, если ордер не найден.")
     void update_shouldReturn400IfOrderNotFound(UUID id, OrderStatus status) throws Exception {
         when(orderService.existsById(id)).thenReturn(false);
-        mockMvc.perform(patch("/api/private/order/" + id)
+        mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -301,7 +297,7 @@ class OrderControllerTest {
     @DisplayName("Метод должен вернуть статус 400, если статус не входит в список допустимых для ручной смены.")
     void update_shouldReturn400IfStatusNotAllowed(UUID id, OrderStatus status) throws Exception {
         when(orderService.existsById(id)).thenReturn(true);
-        mockMvc.perform(patch("/api/private/order/" + id)
+        mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -315,7 +311,7 @@ class OrderControllerTest {
     @ValueSource(strings = {"{}", "{\"status\":null}", "{\"status\":\"PAID\"}"})
     @DisplayName("Метод должен вернуть статус 400, если статус в теле запроса отсутствует или некорректен.")
     void update_shouldReturn400IfStatusInvalid(String body) throws Exception {
-        mockMvc.perform(patch("/api/private/order/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/support/order/" + UUID.randomUUID())
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -328,7 +324,7 @@ class OrderControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не админ или оператор.")
     void update_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
-        mockMvc.perform(patch("/api/private/order/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/support/order/" + UUID.randomUUID())
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role.name()))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -341,7 +337,7 @@ class OrderControllerTest {
     @ValueSource(strings = {"USER", "TRADER"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void update_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(patch("/api/private/order/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/support/order/" + UUID.randomUUID())
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

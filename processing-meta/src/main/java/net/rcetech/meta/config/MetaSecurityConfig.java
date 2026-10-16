@@ -44,16 +44,14 @@ public class MetaSecurityConfig {
                                                  @Autowired(required = false)
                                                  AuthenticationSuccessHandler successHandler) {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                        WebPath.PRIVATE_API_PATH + "/order/**",
-                        WebPath.PRIVATE_API_PATH + "/transaction/**",
-                        WebPath.PRIVATE_API_PATH + "/withdrawal-request/**",
-                        WebPath.PRIVATE_API_PATH + "/merchant-callback/**"
-                ).hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name())
-                .requestMatchers(WebPath.PRIVATE_API_PATH + "/client/**")
-                .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name(), Role.CLIENT.name())
-                .requestMatchers(WebPath.V1_API_PATH + "/**")
+                .requestMatchers(WebPath.SUPPORT_API_PATH + "/**")
+                .hasAnyRole(Role.ADMIN.name(), Role.OPERATOR.name())
+                .requestMatchers(WebPath.CLIENT_API_PATH + "/**")
                 .hasRole(Role.CLIENT.name())
+                .requestMatchers(WebPath.COMMON_API_PATH + "/**")
+                .authenticated()
+                .requestMatchers(WebPath.V1_API_PATH + "/**")
+                .denyAll()
                 .requestMatchers(WebPath.PUBLIC_API_PATH + "/**")
                 .permitAll()
                 .anyRequest().authenticated()

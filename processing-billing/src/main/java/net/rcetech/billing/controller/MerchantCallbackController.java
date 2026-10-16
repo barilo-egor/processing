@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/merchant-callback")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/merchant-callback")
 @SupportAccess
 public class MerchantCallbackController {
 

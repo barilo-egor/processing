@@ -13,7 +13,7 @@ import java.security.Principal;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/support-user")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/support-user")
 @SupportAccess
 public class SupportUserController {
 

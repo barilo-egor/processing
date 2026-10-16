@@ -4,7 +4,6 @@ import net.rcetech.api.merchantdetails.ApiMerchantDetailsGrpcService;
 import net.rcetech.api.merchantdetails.MerchantCallbackDTO;
 import net.rcetech.meta.Profiles;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -29,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(MerchantTestCallbackController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class MerchantTestCallbackControllerTest {
 
     @Autowired

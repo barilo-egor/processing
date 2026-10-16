@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  api, logout, isUuid, fmtDateTime, fmtPercent, fmtMoney,
-  dateTimeToMs, shortValue, fmtRate,
-} from './api.js';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
 
 /* ============================================================
    Личный кабинет администратора API.
@@ -513,7 +510,7 @@ function Pagination({ page, total, onPage, busy, label }) {
 
    ВНИМАНИЕ: эндпоинта «текущий пользователь» в коллекции нет, поэтому
    логин пока не запрашивается — показывается общая подпись. Как только
-   бэк отдаст его (например, GET /api/private/support-user/current),
+   бэк отдаст его (например, GET /api/support/support-user/current),
    достаточно подставить значение в состояние name. */
 function AccountMenu() {
   const [confirmLogout, setConfirmLogout] = useState(false);

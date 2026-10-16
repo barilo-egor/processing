@@ -3,7 +3,6 @@ package net.rcetech.billing.controller;
 import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
@@ -12,7 +11,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -33,10 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ClientBalanceController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ClientBalanceControllerTest {
 
-    private static final String RECALCULATION_PATH = "/api/private/client/{id}/balance/recalculation";
+    private static final String RECALCULATION_PATH = "/api/support/client/{id}/balance/recalculation";
 
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;

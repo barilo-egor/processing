@@ -24,12 +24,11 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/client/order?status=&method=&page=&size=&sort=",
+                  "raw": "{{processing_client_api_url}}/order?status=&method=&page=&size=&sort=",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client",
                     "order"
                   ],
                   "query": [
@@ -73,12 +72,11 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/client/order?status=&method=&page=&size=&sort=",
+                      "raw": "{{processing_client_api_url}}/order?status=&method=&page=&size=&sort=",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
-                        "client",
                         "order"
                       ],
                       "query": [
@@ -175,12 +173,11 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/client/order/{{id}}",
+                  "raw": "{{processing_client_api_url}}/order/{{id}}",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client",
                     "order",
                     "{{id}}"
                   ]
@@ -198,12 +195,11 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/client/order/{{id}}",
+                      "raw": "{{processing_client_api_url}}/order/{{id}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
-                        "client",
                         "order",
                         "{{id}}"
                       ]
@@ -283,12 +279,11 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_private_api_url}}/client/order",
+                  "raw": "{{processing_client_api_url}}/order",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client",
                     "order"
                   ]
                 }
@@ -306,12 +301,11 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/client/order/{{id}}",
+                  "raw": "{{processing_client_api_url}}/order/{{id}}",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client",
                     "order",
                     "{{id}}"
                   ]
@@ -335,9 +329,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/transaction?createdAtFrom&createdAtTo&page&size&sort",
+                  "raw": "{{processing_client_api_url}}/transaction?createdAtFrom&createdAtTo&page&size&sort",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "transaction"
@@ -383,9 +377,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/transaction",
+                      "raw": "{{processing_client_api_url}}/transaction",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "transaction"
@@ -462,9 +456,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=&address=",
+                  "raw": "{{processing_client_api_url}}/withdrawal-request?amount=&address=",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "withdrawal-request"
@@ -493,9 +487,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=50000&address=TX9zFakeAddressTRC20usdtNotReal99x",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request?amount=50000&address=TX9zFakeAddressTRC20usdtNotReal99x",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -571,9 +565,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=10000&address=qwe",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request?amount=10000&address=qwe",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -636,7 +630,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/v1/withdrawal_request\",\n  \"status\": 503,\n  \"title\": \"Service Unavailable\",\n  \"type\": \"/docs/errors/service-unavailable\",\n  \"timestamp\": 1790085605702\n}"
+                  "body": "{\n  \"instance\": \"/api/client/withdrawal-request\",\n  \"status\": 503,\n  \"title\": \"Service Unavailable\",\n  \"type\": \"/docs/errors/service-unavailable\",\n  \"timestamp\": 1790085605702\n}"
                 },
                 {
                   "name": "Запрошенная сумма меньше допустимой",
@@ -649,9 +643,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=10000&address=qwerty",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request?amount=10000&address=qwerty",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -714,7 +708,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/v1/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1791654144187,\n  \"description\": \"Запрошенная сумма на вывод меньше минимально допустимой.\"\n}"
+                  "body": "{\n  \"instance\": \"/api/client/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1791654144187,\n  \"description\": \"Запрошенная сумма на вывод меньше минимально допустимой.\"\n}"
                 },
                 {
                   "name": "Недостаточно средств на балансе",
@@ -727,9 +721,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request?amount=50000&address=qwerty",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request?amount=50000&address=qwerty",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -792,7 +786,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/v1/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792059157412,\n  \"description\": \"На балансе недостаточно средств.\"\n}"
+                  "body": "{\n  \"instance\": \"/api/client/withdrawal-request\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792059157412,\n  \"description\": \"На балансе недостаточно средств.\"\n}"
                 }
               ]
             },
@@ -807,9 +801,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/withdrawal-request?id&status&createdAtFrom&createdAtTo&address&page&size&sort",
+                  "raw": "{{processing_client_api_url}}/withdrawal-request?id&status&createdAtFrom&createdAtTo&address&page&size&sort",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "withdrawal-request"
@@ -870,9 +864,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -944,9 +938,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/withdrawal-request/{{id}}",
+                  "raw": "{{processing_client_api_url}}/withdrawal-request/{{id}}",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "withdrawal-request",
@@ -966,9 +960,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request/{{id}}",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request/{{id}}",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request",
@@ -1035,9 +1029,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/withdrawal-request/{{id}}",
+                      "raw": "{{processing_client_api_url}}/withdrawal-request/{{id}}",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request",
@@ -1091,7 +1085,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/v1/withdrawal-request/10aea067-153e-44bc-9fc5-06818f5bd2f4\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1790182729640,\n  \"description\": \"Заявка должна быть в статусе \\\"Новая\\\".\"\n}"
+                  "body": "{\n  \"instance\": \"/api/client/withdrawal-request/10aea067-153e-44bc-9fc5-06818f5bd2f4\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1790182729640,\n  \"description\": \"Заявка должна быть в статусе \\\"Новая\\\".\"\n}"
                 }
               ]
             }
@@ -1100,6 +1094,298 @@
         {
           "name": "api-key",
           "item": [
+            {
+              "name": "Создание апи ключа клиента",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_client_api_url}}/api-key?name=key2",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "api-key"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "key2"
+                    }
+                  ]
+                },
+                "description": "Клиент, выполняющий запрос, для связки с ключом идентифицируется на бэке."
+              },
+              "response": [
+                {
+                  "name": "Апи ключ создан",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_ADMIN"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client/api-key?name=key1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "api-key"
+                      ],
+                      "query": [
+                        {
+                          "key": "name",
+                          "value": "key1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "text",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "text/plain;charset=UTF-8"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "43"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 29 Aug 2026 20:37:08 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "eXZNxzIJqBj0mVkwQjy1utWrbz7iO7u0rXieOdQroTc"
+                },
+                {
+                  "name": "Апи ключ уже существует",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client/api-key?name=key1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "api-key"
+                      ],
+                      "query": [
+                        {
+                          "key": "name",
+                          "value": "key1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 29 Aug 2026 21:26:46 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038806026,\n  \"description\": \"Апи ключ с именем key1 уже существует.\"\n}"
+                },
+                {
+                  "name": "Параметр name отсутствует, либо пуст",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client/api-key?name=",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "api-key"
+                      ],
+                      "query": [
+                        {
+                          "key": "name",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 29 Aug 2026 21:27:02 GMT"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "close"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038822590,\n  \"description\": \"createApiKey.name: must not be blank\"\n}"
+                }
+              ]
+            },
             {
               "name": "Получение апи ключей клиента",
               "request": {
@@ -1120,9 +1406,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/api-key",
+                  "raw": "{{processing_client_api_url}}/api-key",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "api-key"
@@ -1151,13 +1437,11 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_url}}/api/private/api-key",
+                      "raw": "{{processing_support_api_url}}/api-key",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "api-key"
                       ]
                     }
@@ -1234,13 +1518,11 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_url}}/api/private/api-key",
+                      "raw": "{{processing_support_api_url}}/api-key",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "api-key"
                       ]
                     }
@@ -1310,9 +1592,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/api-key/{{id}}",
+                  "raw": "{{processing_client_api_url}}/api-key/{{id}}",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
                     "api-key",
@@ -1333,9 +1615,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/api-key/{{id}}",
+                      "raw": "{{processing_support_api_url}}/api-key/{{id}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "api-key",
@@ -1450,12 +1732,12 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/client",
+                  "raw": "{{processing_client_api_url}}/profile",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client"
+                    "profile"
                   ]
                 }
               },
@@ -1471,12 +1753,12 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/client",
+                      "raw": "{{processing_client_api_url}}/profile",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
-                        "client"
+                        "profile"
                       ]
                     }
                   },
@@ -1554,12 +1836,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/client",
+                  "raw": "{{processing_client_api_url}}/profile",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_client_api_url}}"
                   ],
                   "path": [
-                    "client"
+                    "profile"
                   ]
                 },
                 "description": "Метод для обновления клиента. Обновляются поля не равные `null`.\n\nПринимаемые параметры запроса:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| **status** | `string` | Новый статус клиента. | Перечисление (`enum`): `ACTIVE`, `BLOCKED` |\n| **orderTimeoutSeconds** | `integer` | Количество секунд активности ордера. | Минимальное значение: `0` |\n| methods | array | Набор констант RequestMethod: пустой массив для удаления привязок, null в случае если методы без изменений. |  |"
@@ -1585,12 +1867,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/client",
+                      "raw": "{{processing_client_api_url}}/profile",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_client_api_url}}"
                       ],
                       "path": [
-                        "client"
+                        "profile"
                       ]
                     }
                   },
@@ -1995,9 +2277,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/transaction?client=&createdAtFrom=&createdAtTo=&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/transaction?client=&createdAtFrom=&createdAtTo=&page&size&sort",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "transaction"
@@ -2043,9 +2325,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/transaction?client&createdAtFrom&createdAtTo",
+                      "raw": "{{processing_support_api_url}}/transaction?client&createdAtFrom&createdAtTo",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "transaction"
@@ -2144,9 +2426,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_private_api_url}}/transaction",
+                  "raw": "{{processing_support_api_url}}/transaction",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "transaction"
@@ -2174,9 +2456,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/transaction",
+                      "raw": "{{processing_support_api_url}}/transaction",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "transaction"
@@ -2244,9 +2526,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/order?id=&createdAtFrom=&createdAtTo=&client=&internalId=&status=&merchantOrderId=&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/order?id=&createdAtFrom=&createdAtTo=&client=&internalId=&status=&merchantOrderId=&page&size&sort",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "order"
@@ -2312,9 +2594,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order?merchant=ALFA_TEAM",
+                      "raw": "{{processing_support_api_url}}/order?merchant=ALFA_TEAM",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order"
@@ -2422,9 +2704,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                  "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "order",
@@ -2439,9 +2721,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2495,7 +2777,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/order/82d23e24-16ce-4671-b882-7a4aa2533b42\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1789141377703,\n  \"description\": \"Order not found\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/order/82d23e24-16ce-4671-b882-7a4aa2533b42\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1789141377703,\n  \"description\": \"Order not found\"\n}"
                 },
                 {
                   "name": "Ордер получен",
@@ -2503,9 +2785,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2582,9 +2864,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                  "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "order",
@@ -2609,9 +2891,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2682,9 +2964,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2738,7 +3020,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"Переход ордера из статуса «Успешный» в статус «Отменен» запрещён.\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"Переход ордера из статуса «Успешный» в статус «Отменен» запрещён.\"\n}"
                 },
                 {
                   "name": "Ордер уже в статусе",
@@ -2755,9 +3037,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2811,7 +3093,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"Ордер уже в статусе «Отменен».\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"Ордер уже в статусе «Отменен».\"\n}"
                 },
                 {
                   "name": "Недопустимый статус",
@@ -2828,9 +3110,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/order/{{orderId}}",
+                      "raw": "{{processing_support_api_url}}/order/{{orderId}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "order",
@@ -2884,7 +3166,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"field 'status' Недопустимый статус ордера.;\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/order/3f1c2b7a-9d4e-4c8a-b6f1-2e7d9a0c5b13\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792149600000,\n  \"description\": \"field 'status' Недопустимый статус ордера.;\"\n}"
                 }
               ]
             }
@@ -2899,9 +3181,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/merchant-config/:clientId",
+                  "raw": "{{processing_support_api_url}}/merchant-config/:clientId",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "merchant-config",
@@ -2923,9 +3205,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/merchant-config/:clientId",
+                      "raw": "{{processing_support_api_url}}/merchant-config/:clientId",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "merchant-config",
@@ -3009,9 +3291,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_private_api_url}}/merchant-config/:id",
+                  "raw": "{{processing_support_api_url}}/merchant-config/:id",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "merchant-config",
@@ -3043,9 +3325,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/merchant-config/:id",
+                      "raw": "{{processing_support_api_url}}/merchant-config/:id",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "merchant-config",
@@ -3131,13 +3413,11 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=&sort",
+                  "raw": "{{processing_support_api_url}}/client?id=&username=&status=&from=&to=&page=&size=&sort",
                   "host": [
-                    "{{processing_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
-                    "api",
-                    "private",
                     "client"
                   ],
                   "query": [
@@ -3192,13 +3472,11 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=",
+                      "raw": "{{processing_support_api_url}}/client?id=&username=&status=&from=&to=&page=&size=",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "client"
                       ],
                       "query": [
@@ -3298,13 +3576,11 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_url}}/api/private/client?id=&username=&status=&from=&to=&page=&size=&sort",
+                      "raw": "{{processing_support_api_url}}/client?id=&username=&status=&from=&to=&page=&size=&sort",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "client"
                       ],
                       "query": [
@@ -3420,13 +3696,11 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_url}}/api/private/client/:id",
+                  "raw": "{{processing_support_api_url}}/client/:id",
                   "host": [
-                    "{{processing_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
-                    "api",
-                    "private",
                     "client",
                     ":id"
                   ],
@@ -3455,13 +3729,11 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_url}}/api/private/client/:id",
+                      "raw": "{{processing_support_api_url}}/client/:id",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "client",
                         ":id"
                       ],
@@ -3533,13 +3805,11 @@
                 "method": "POST",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_url}}/api/private/client/:id/balance/recalculation",
+                  "raw": "{{processing_support_api_url}}/client/:id/balance/recalculation",
                   "host": [
-                    "{{processing_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
-                    "api",
-                    "private",
                     "client",
                     ":id",
                     "balance",
@@ -3561,13 +3831,11 @@
                     "method": "POST",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_url}}/api/private/client/:id/balance/recalculation",
+                      "raw": "{{processing_support_api_url}}/client/:id/balance/recalculation",
                       "host": [
-                        "{{processing_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
-                        "api",
-                        "private",
                         "client",
                         ":id",
                         "balance",
@@ -3592,309 +3860,6 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Создание токена",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Test-User",
-                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{processing_url}}/api/private/api-key?name=key2",
-                  "host": [
-                    "{{processing_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "private",
-                    "api-key"
-                  ],
-                  "query": [
-                    {
-                      "key": "name",
-                      "value": "key2"
-                    }
-                  ]
-                },
-                "description": "Клиент, выполняющий запрос, для связки с ключом идентифицируется на бэке."
-              },
-              "response": [
-                {
-                  "name": "Апи ключ создан",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Test-User",
-                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_ADMIN"
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{processing_url}}/api/private/client/api-key?name=key1",
-                      "host": [
-                        "{{processing_url}}"
-                      ],
-                      "path": [
-                        "api",
-                        "private",
-                        "client",
-                        "api-key"
-                      ],
-                      "query": [
-                        {
-                          "key": "name",
-                          "value": "key1"
-                        }
-                      ]
-                    }
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "text",
-                  "header": [
-                    {
-                      "key": "x-content-type-options",
-                      "value": "nosniff"
-                    },
-                    {
-                      "key": "x-xss-protection",
-                      "value": "0"
-                    },
-                    {
-                      "key": "cache-control",
-                      "value": "no-cache, no-store, max-age=0, must-revalidate"
-                    },
-                    {
-                      "key": "pragma",
-                      "value": "no-cache"
-                    },
-                    {
-                      "key": "expires",
-                      "value": "0"
-                    },
-                    {
-                      "key": "x-frame-options",
-                      "value": "DENY"
-                    },
-                    {
-                      "key": "content-type",
-                      "value": "text/plain;charset=UTF-8"
-                    },
-                    {
-                      "key": "content-length",
-                      "value": "43"
-                    },
-                    {
-                      "key": "date",
-                      "value": "Sat, 29 Aug 2026 20:37:08 GMT"
-                    },
-                    {
-                      "key": "keep-alive",
-                      "value": "timeout=60"
-                    },
-                    {
-                      "key": "connection",
-                      "value": "keep-alive"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "eXZNxzIJqBj0mVkwQjy1utWrbz7iO7u0rXieOdQroTc"
-                },
-                {
-                  "name": "Апи ключ уже существует",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Test-User",
-                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{processing_url}}/api/private/client/api-key?name=key1",
-                      "host": [
-                        "{{processing_url}}"
-                      ],
-                      "path": [
-                        "api",
-                        "private",
-                        "client",
-                        "api-key"
-                      ],
-                      "query": [
-                        {
-                          "key": "name",
-                          "value": "key1"
-                        }
-                      ]
-                    }
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "x-content-type-options",
-                      "value": "nosniff"
-                    },
-                    {
-                      "key": "x-xss-protection",
-                      "value": "0"
-                    },
-                    {
-                      "key": "cache-control",
-                      "value": "no-cache, no-store, max-age=0, must-revalidate"
-                    },
-                    {
-                      "key": "pragma",
-                      "value": "no-cache"
-                    },
-                    {
-                      "key": "expires",
-                      "value": "0"
-                    },
-                    {
-                      "key": "x-frame-options",
-                      "value": "DENY"
-                    },
-                    {
-                      "key": "content-type",
-                      "value": "application/problem+json"
-                    },
-                    {
-                      "key": "transfer-encoding",
-                      "value": "chunked"
-                    },
-                    {
-                      "key": "date",
-                      "value": "Sat, 29 Aug 2026 21:26:46 GMT"
-                    },
-                    {
-                      "key": "connection",
-                      "value": "close"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038806026,\n  \"description\": \"Апи ключ с именем key1 уже существует.\"\n}"
-                },
-                {
-                  "name": "Параметр name отсутствует, либо пуст",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Test-User",
-                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{processing_url}}/api/private/client/api-key?name=",
-                      "host": [
-                        "{{processing_url}}"
-                      ],
-                      "path": [
-                        "api",
-                        "private",
-                        "client",
-                        "api-key"
-                      ],
-                      "query": [
-                        {
-                          "key": "name",
-                          "value": ""
-                        }
-                      ]
-                    }
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "x-content-type-options",
-                      "value": "nosniff"
-                    },
-                    {
-                      "key": "x-xss-protection",
-                      "value": "0"
-                    },
-                    {
-                      "key": "cache-control",
-                      "value": "no-cache, no-store, max-age=0, must-revalidate"
-                    },
-                    {
-                      "key": "pragma",
-                      "value": "no-cache"
-                    },
-                    {
-                      "key": "expires",
-                      "value": "0"
-                    },
-                    {
-                      "key": "x-frame-options",
-                      "value": "DENY"
-                    },
-                    {
-                      "key": "content-type",
-                      "value": "application/problem+json"
-                    },
-                    {
-                      "key": "transfer-encoding",
-                      "value": "chunked"
-                    },
-                    {
-                      "key": "date",
-                      "value": "Sat, 29 Aug 2026 21:27:02 GMT"
-                    },
-                    {
-                      "key": "connection",
-                      "value": "close"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/client/api-key\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1788038822590,\n  \"description\": \"createApiKey.name: must not be blank\"\n}"
                 }
               ]
             }
@@ -3950,9 +3915,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/withdrawal-request?client&id&status&createdAtFrom&createdAtTo&address&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/withdrawal-request?client&id&status&createdAtFrom&createdAtTo&address&page&size&sort",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "withdrawal-request"
@@ -4013,9 +3978,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/withdrawal-request?client&id&status&createdAtFrom&createdAtTo&address&page&size&sort",
+                      "raw": "{{processing_support_api_url}}/withdrawal-request?client&id&status&createdAtFrom&createdAtTo&address&page&size&sort",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request"
@@ -4129,9 +4094,9 @@
                 "method": "PATCH",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/withdrawal-request/{{id}}?status=",
+                  "raw": "{{processing_support_api_url}}/withdrawal-request/{{id}}?status=",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "withdrawal-request",
@@ -4153,9 +4118,9 @@
                     "method": "PATCH",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/withdrawal-request/{{id}}?status=APPROVED",
+                      "raw": "{{processing_support_api_url}}/withdrawal-request/{{id}}?status=APPROVED",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request",
@@ -4224,9 +4189,9 @@
                     "method": "PATCH",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/withdrawal-request/{{id}}?status=APPROVED",
+                      "raw": "{{processing_support_api_url}}/withdrawal-request/{{id}}?status=APPROVED",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "withdrawal-request",
@@ -4287,7 +4252,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/withdrawal-request/10aea067-153e-44bc-9fc5-06818f5bd2f4\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1790182987522,\n  \"description\": \"Заявка должна быть в статусе \\\"Новая\\\".\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/withdrawal-request/10aea067-153e-44bc-9fc5-06818f5bd2f4\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1790182987522,\n  \"description\": \"Заявка должна быть в статусе \\\"Новая\\\".\"\n}"
                 }
               ]
             }
@@ -4302,9 +4267,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "merchant-callback"
@@ -4360,9 +4325,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/merchant-callback",
+                      "raw": "{{processing_support_api_url}}/merchant-callback",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "merchant-callback"
@@ -4440,9 +4405,9 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/support-user",
+                  "raw": "{{processing_support_api_url}}/support-user",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "support-user"
@@ -4461,9 +4426,9 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/support-user",
+                      "raw": "{{processing_support_api_url}}/support-user",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "support-user"
@@ -4535,9 +4500,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/merchant-history?orderId&operationId&actorId&createdAtFrom&createdAtTo&details&merchants&amount",
+                  "raw": "{{processing_support_api_url}}/merchant-history?orderId&operationId&actorId&createdAtFrom&createdAtTo&details&merchants&amount",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "merchant-history"
@@ -4593,9 +4558,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/merchant-history",
+                      "raw": "{{processing_support_api_url}}/merchant-history",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "merchant-history"
@@ -4667,9 +4632,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_private_api_url}}/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "incident"
@@ -4735,9 +4700,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_private_api_url}}/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort",
+                      "raw": "{{processing_support_api_url}}/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "incident"
@@ -4865,9 +4830,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_private_api_url}}/incident/{{id}}",
+                  "raw": "{{processing_support_api_url}}/incident/{{id}}",
                   "host": [
-                    "{{processing_private_api_url}}"
+                    "{{processing_support_api_url}}"
                   ],
                   "path": [
                     "incident",
@@ -4892,9 +4857,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/incident/{{id}}",
+                      "raw": "{{processing_support_api_url}}/incident/{{id}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "incident",
@@ -4969,9 +4934,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/incident/999",
+                      "raw": "{{processing_support_api_url}}/incident/999",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "incident",
@@ -5025,7 +4990,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/incident/999\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792062000000,\n  \"description\": \"Инцидент с идентификатором 999 не найден.\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/incident/999\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1792062000000,\n  \"description\": \"Инцидент с идентификатором 999 не найден.\"\n}"
                 },
                 {
                   "name": "Инцидент уже обработан",
@@ -5042,9 +5007,9 @@
                       }
                     },
                     "url": {
-                      "raw": "{{processing_private_api_url}}/incident/{{id}}",
+                      "raw": "{{processing_support_api_url}}/incident/{{id}}",
                       "host": [
-                        "{{processing_private_api_url}}"
+                        "{{processing_support_api_url}}"
                       ],
                       "path": [
                         "incident",
@@ -5098,7 +5063,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"instance\": \"/api/private/incident/2\",\n  \"status\": 500,\n  \"title\": \"Internal Server Error\",\n  \"type\": \"/errors/internal-server-error\",\n  \"timestamp\": 1792062000000,\n  \"description\": \"Contact support.\"\n}"
+                  "body": "{\n  \"instance\": \"/api/support/incident/2\",\n  \"status\": 500,\n  \"title\": \"Internal Server Error\",\n  \"type\": \"/errors/internal-server-error\",\n  \"timestamp\": 1792062000000,\n  \"description\": \"Contact support.\"\n}"
                 }
               ]
             }
@@ -5153,13 +5118,13 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{processing_url}}/api/private/dictionary",
+          "raw": "{{processing_url}}/api/common/dictionary",
           "host": [
             "{{processing_url}}"
           ],
           "path": [
             "api",
-            "private",
+            "common",
             "dictionary"
           ]
         }
@@ -5171,13 +5136,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{processing_url}}/api/private/dictionary",
+              "raw": "{{processing_url}}/api/common/dictionary",
               "host": [
                 "{{processing_url}}"
               ],
               "path": [
                 "api",
-                "private",
+                "common",
                 "dictionary"
               ]
             }

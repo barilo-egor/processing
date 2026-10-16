@@ -1,7 +1,6 @@
 package net.rcetech.support.controller;
 
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import net.rcetech.support.service.MerchantConfigService;
 import org.junit.jupiter.api.DisplayName;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -26,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(MerchantConfigController.class)
 @Import({ MetaSecurityConfig.class })
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class MerchantConfigControllerTest {
 
     @MockitoBean
@@ -43,7 +40,7 @@ class MerchantConfigControllerTest {
     void get_ShouldReturnConfigs() throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID adminId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-config/" + merchantId)
+        mockMvc.perform(get("/api/support/merchant-config/" + merchantId)
                 .with(user(adminId.toString()).roles(Role.ADMIN.name()))
                 .with(csrf()))
                 .andExpect(status().isOk());
@@ -56,7 +53,7 @@ class MerchantConfigControllerTest {
     void get_shouldReturn403IfNotAdmin(Role role) throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-config/" + merchantId)
+        mockMvc.perform(get("/api/support/merchant-config/" + merchantId)
                         .with(user(userId.toString()).roles(role.name()))
                         .with(csrf()))
                 .andExpect(status().isForbidden());

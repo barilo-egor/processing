@@ -2,7 +2,6 @@ package net.rcetech.support.controller;
 
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.support.dto.SupportUserResponse;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
@@ -11,7 +10,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -32,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(SupportUserController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class SupportUserControllerTest {
 
     @Autowired
@@ -59,7 +56,7 @@ class SupportUserControllerTest {
         );
         when(supportUserService.findById(id, SupportUserResponse.class)).thenReturn(Optional.of(supportUserResponse));
 
-        mockMvc.perform(get("/api/private/support-user")
+        mockMvc.perform(get("/api/support/support-user")
                         .with(csrf())
                         .with(user(id.toString()).roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
@@ -72,7 +69,7 @@ class SupportUserControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403 для не пользователей поддержки.")
     void get_shouldReturn403IfNotSupportUser(Role role) throws Exception {
-        mockMvc.perform(get("/api/private/support-user")
+        mockMvc.perform(get("/api/support/support-user")
                 .with(csrf())
                 .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role.name())))
                 .andExpect(status().isForbidden());
@@ -82,7 +79,7 @@ class SupportUserControllerTest {
     @ValueSource(strings = {"TRADER", "GUEST"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void get_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(get("/api/private/support-user")
+        mockMvc.perform(get("/api/support/support-user")
                 .with(csrf())
                 .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role)))
                 .andExpect(status().isForbidden());

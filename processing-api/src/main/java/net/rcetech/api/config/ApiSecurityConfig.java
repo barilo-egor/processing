@@ -23,9 +23,9 @@ public class ApiSecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, ApiKeyService apiKeyService) {
-        http.securityMatcher(WebPath.V1_API_PATH + "/order/**")
+        http.securityMatcher(WebPath.V1_API_PATH + "/**")
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(WebPath.V1_API_PATH + "/order/**").hasRole(Role.CLIENT.name()))
+                        auth.anyRequest().hasRole(Role.CLIENT.name()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .securityContext(context ->
                         context.securityContextRepository(new RequestAttributeSecurityContextRepository()))

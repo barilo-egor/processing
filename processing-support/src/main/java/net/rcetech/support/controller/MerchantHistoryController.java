@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/merchant-history")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/merchant-history")
 @SupportAccess
 public class MerchantHistoryController {
 

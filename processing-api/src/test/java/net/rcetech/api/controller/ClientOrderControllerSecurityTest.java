@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ClientOrderControllerSecurityTest {
 
-    private static final String BASE_PATH = WebPath.PRIVATE_API_PATH + "/client/order";
+    private static final String BASE_PATH = WebPath.CLIENT_API_PATH + "/order";
 
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;

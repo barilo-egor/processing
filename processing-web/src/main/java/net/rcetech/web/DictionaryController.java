@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/dictionary")
+@RequestMapping(WebPath.COMMON_API_PATH + "/dictionary")
 public class DictionaryController {
 
     private final Map<String, List<Map<String, Object>>> dictionary;

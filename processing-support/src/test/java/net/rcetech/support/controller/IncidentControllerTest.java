@@ -3,7 +3,6 @@ package net.rcetech.support.controller;
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.IncidentFilter;
@@ -19,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -48,7 +46,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(IncidentController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class IncidentControllerTest {
 
     @Autowired
@@ -67,7 +64,7 @@ class IncidentControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если роль пользователя не админ и не оператор.")
     void get_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
-        mockMvc.perform(get("/api/private/incident")
+        mockMvc.perform(get("/api/support/incident")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role.name())))
                 .andExpect(status().isForbidden());
@@ -78,7 +75,7 @@ class IncidentControllerTest {
     @ValueSource(strings = {"TRADER", "GUEST"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void get_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(get("/api/private/incident")
+        mockMvc.perform(get("/api/support/incident")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role)))
                 .andExpect(status().isForbidden());
@@ -101,7 +98,7 @@ class IncidentControllerTest {
         when(incidentService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(mock(IncidentResponse.class))));
         try (MockedStatic<IncidentSpecifications> mockedSpecifications
                      = Mockito.mockStatic(IncidentSpecifications.class)) {
-            mockMvc.perform(get("/api/private/incident")
+            mockMvc.perform(get("/api/support/incident")
                     .with(csrf())
                     .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name()))
                     .queryParam("id", String.valueOf(id))
@@ -132,7 +129,7 @@ class IncidentControllerTest {
     void get_shouldUseDefaultPageSize() throws Exception {
         when(incidentService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        mockMvc.perform(get("/api/private/incident")
+        mockMvc.perform(get("/api/support/incident")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.OPERATOR.name())))
                 .andExpect(status().isOk());
@@ -160,7 +157,7 @@ class IncidentControllerTest {
         );
         when(incidentService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(response)));
 
-        mockMvc.perform(get("/api/private/incident")
+        mockMvc.perform(get("/api/support/incident")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
@@ -180,7 +177,7 @@ class IncidentControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод обновления должен вернуть 403, если роль пользователя не админ и не оператор.")
     void update_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
-        mockMvc.perform(patch("/api/private/incident/1")
+        mockMvc.perform(patch("/api/support/incident/1")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role.name()))
                         .header("Content-type", "application/json")
@@ -193,7 +190,7 @@ class IncidentControllerTest {
     @ValueSource(strings = {"TRADER", "GUEST"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void update_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(patch("/api/private/incident/1")
+        mockMvc.perform(patch("/api/support/incident/1")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role))
                         .header("Content-type", "application/json")
@@ -212,7 +209,7 @@ class IncidentControllerTest {
         IncidentResponse response = mock(IncidentResponse.class);
         when(incidentService.resolve(any(), any(), any())).thenReturn(response);
 
-        mockMvc.perform(patch("/api/private/incident/" + id)
+        mockMvc.perform(patch("/api/support/incident/" + id)
                         .with(csrf())
                         .with(user(supportUserId.toString()).roles(role))
                         .header("Content-type", "application/json")
@@ -237,7 +234,7 @@ class IncidentControllerTest {
         );
         when(incidentService.resolve(id, supportUserId, comment)).thenReturn(response);
 
-        mockMvc.perform(patch("/api/private/incident/" + id)
+        mockMvc.perform(patch("/api/support/incident/" + id)
                         .with(csrf())
                         .with(user(supportUserId.toString()).roles(role))
                         .header("Content-type", "application/json")

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/withdrawal-request")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/withdrawal-request")
 @SupportAccess
 public class WithdrawalRequestController {
 

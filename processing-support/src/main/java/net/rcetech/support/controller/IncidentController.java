@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @RestController
 @SupportAccess
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/incident")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/incident")
 public class IncidentController {
 
     private final IncidentService incidentService;

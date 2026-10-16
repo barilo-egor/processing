@@ -1,13 +1,11 @@
 package net.rcetech.clients.controller;
 
-import net.rcetech.clients.config.ClientsSecurityConfig;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
@@ -20,7 +18,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -52,8 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SupportClientController.class)
-@Import({ClientsSecurityConfig.class, MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
+@Import(MetaSecurityConfig.class)
 class SupportClientControllerTest {
 
     @MockitoBean
@@ -74,7 +70,7 @@ class SupportClientControllerTest {
     @DisplayName("Метод должен вернуть пустой массив.")
     void getClients_shouldReturnEmptyArray() throws Exception {
         when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name()))
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
                         .queryParam("username", "test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -99,7 +95,7 @@ class SupportClientControllerTest {
                 clients, PageRequest.of(0, 100), clients.size()
         );
         when(clientService.findAll(any(), any(), eq(SupportClientProjection.class))).thenReturn(page);
-        ResultActions resultActions = mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name())))
+        ResultActions resultActions = mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
@@ -188,7 +184,7 @@ class SupportClientControllerTest {
         when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         ArgumentCaptor<ClientFilter> filterCaptor = ArgumentCaptor.forClass(ClientFilter.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name()))
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
                 .queryParam("id", id)
                 .queryParam("username", username)
                 .queryParam("status", status)
@@ -214,7 +210,7 @@ class SupportClientControllerTest {
     @ParameterizedTest
     @DisplayName("Доступ должен быть запрещен для ролей отличных от ADMIN.")
     void getClients_shouldReturnForbiddenForNotAdmin(Role role) throws Exception {
-        mockMvc.perform(get("/api/private/client")
+        mockMvc.perform(get("/api/support/client")
                         .with(user("user").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
@@ -223,7 +219,7 @@ class SupportClientControllerTest {
     @ParameterizedTest
     @DisplayName("Доступ должен быть запрещен для всех кроме администратора.")
     void update_shouldReturnForbiddenIfNotAdmin(Role role) throws Exception {
-        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+        mockMvc.perform(patch("/api/support/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
                         .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
@@ -232,7 +228,7 @@ class SupportClientControllerTest {
     @ParameterizedTest
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void update_shouldReturnForbiddenIfUnknownRole(String role) throws Exception {
-        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+        mockMvc.perform(patch("/api/support/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
                         .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role)))
                 .andExpect(status().isForbidden());
     }
@@ -251,7 +247,7 @@ class SupportClientControllerTest {
     void update_shouldUpdateClient(String json) throws Exception {
         UpdateClientDTO expected = objectMapper.readValue(json, UpdateClientDTO.class);
         UUID clientId = UUID.randomUUID();
-        mockMvc.perform(patch("/api/private/client/" + clientId)
+        mockMvc.perform(patch("/api/support/client/" + clientId)
                         .header("Content-Type", "application/json")
                         .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
                         .with(csrf())
@@ -268,7 +264,7 @@ class SupportClientControllerTest {
         String json = "{\"callbackUrl\":\"https://example.com\"}";
         UpdateClientDTO expected = objectMapper.readValue(json, UpdateClientDTO.class);
         UUID clientId = UUID.randomUUID();
-        mockMvc.perform(patch("/api/private/client/" + clientId)
+        mockMvc.perform(patch("/api/support/client/" + clientId)
                         .header("Content-Type", "application/json")
                         .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
                         .with(csrf())

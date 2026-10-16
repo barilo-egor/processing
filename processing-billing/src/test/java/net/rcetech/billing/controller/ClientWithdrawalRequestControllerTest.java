@@ -7,7 +7,6 @@ import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.WithdrawalRequestResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -44,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ClientWithdrawalRequestController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ClientWithdrawalRequestControllerTest {
 
     @MockitoBean
@@ -69,7 +66,7 @@ class ClientWithdrawalRequestControllerTest {
         when(withdrawalRequestService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(withdrawalRequestResponse)));
         UUID clientId = UUID.randomUUID();
         try (MockedStatic<WithdrawalRequestSpecifications> mockedSpecifications = Mockito.mockStatic(WithdrawalRequestSpecifications.class)) {
-            mockMvc.perform(get("/api/v1/withdrawal-request")
+            mockMvc.perform(get("/api/client/withdrawal-request")
                     .with(csrf())
                     .with(user(clientId.toString()).roles(Role.CLIENT.name()))
                     .queryParam("id", id.toString())
@@ -116,7 +113,7 @@ class ClientWithdrawalRequestControllerTest {
         );
         when(withdrawalRequestService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(withdrawalRequestResponse)));
 
-        mockMvc.perform(get("/api/v1/withdrawal-request")
+        mockMvc.perform(get("/api/client/withdrawal-request")
                         .with(csrf())
                         .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles(Role.CLIENT.name())))
                 .andExpect(status().isOk())
@@ -134,7 +131,7 @@ class ClientWithdrawalRequestControllerTest {
     @Test
     @DisplayName("Метод должен вернуть 400, если отсутствует параметр amount.")
     void create_shouldReturn400IfNoAmount() throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
+        mockMvc.perform(post("/api/client/withdrawal-request")
                 .with(csrf())
                 .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
                 .andExpect(status().isBadRequest())
@@ -144,7 +141,7 @@ class ClientWithdrawalRequestControllerTest {
     @Test
     @DisplayName("Метод должен вернуть 400, если отсутствует параметр address.")
     void create_shouldReturn400IfNoAddress() throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
+        mockMvc.perform(post("/api/client/withdrawal-request")
                         .queryParam("amount", "100")
                         .with(csrf())
                         .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
@@ -156,7 +153,7 @@ class ClientWithdrawalRequestControllerTest {
     @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
     void create_shouldReturn403IfNotClient(Role role) throws Exception {
-        mockMvc.perform(post("/api/v1/withdrawal-request")
+        mockMvc.perform(post("/api/client/withdrawal-request")
                 .queryParam("amount", "100")
                 .queryParam("address", "TX9zFakeAddressTRC20usdtNotReal99x")
                 .with(csrf())
@@ -172,7 +169,7 @@ class ClientWithdrawalRequestControllerTest {
     @DisplayName("Метод должен передать параметры в метод сервиса.")
     void create_shouldPassParametersToService(Integer amount, String address) throws Exception {
         UUID clientId = UUID.randomUUID();
-        mockMvc.perform(post("/api/v1/withdrawal-request")
+        mockMvc.perform(post("/api/client/withdrawal-request")
                         .queryParam("amount", amount.toString())
                         .queryParam("address", address)
                         .with(csrf())
@@ -186,7 +183,7 @@ class ClientWithdrawalRequestControllerTest {
     @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
     void cancel_shouldReturn403IfNotClient(Role role) throws Exception {
-        mockMvc.perform(patch("/api/v1/withdrawal-request")
+        mockMvc.perform(patch("/api/client/withdrawal-request")
                         .with(csrf())
                         .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role.name())))
                 .andExpect(status().isForbidden());
@@ -199,7 +196,7 @@ class ClientWithdrawalRequestControllerTest {
     })
     @DisplayName("Метод должен передать параметры в метод сервиса.")
     void cancel_shouldPassParametersToService(UUID clientId, UUID id) throws Exception {
-        mockMvc.perform(patch("/api/v1/withdrawal-request/" + id.toString())
+        mockMvc.perform(patch("/api/client/withdrawal-request/" + id.toString())
                         .with(csrf())
                         .with(user(clientId.toString()).roles(Role.CLIENT.name())))
                 .andExpect(status().isOk());

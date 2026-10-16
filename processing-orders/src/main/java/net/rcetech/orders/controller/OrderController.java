@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/order")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/order")
 @SupportAccess
 public class OrderController {
 

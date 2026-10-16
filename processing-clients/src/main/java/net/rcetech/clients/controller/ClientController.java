@@ -13,7 +13,7 @@ import java.security.Principal;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.V1_API_PATH + "/client")
+@RequestMapping(WebPath.CLIENT_API_PATH + "/profile")
 @ClientAccess
 public class ClientController {
 

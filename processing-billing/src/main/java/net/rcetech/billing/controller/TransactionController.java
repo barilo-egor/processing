@@ -18,7 +18,7 @@ import java.security.Principal;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/transaction")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/transaction")
 @SupportAccess
 public class TransactionController {
 

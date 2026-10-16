@@ -1,8 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
-  api, logout, isValidCallbackUrl, isValidWalletAddress, isPositiveInt,
-  PAGE_SIZE, EMPTY_DATE_FILTER, dateFilterParams,
-  dictItems, dictLabel, shorten, formatNumber, formatRate, formatDateTime,
+  api,
+  dateFilterParams,
+  dictItems,
+  dictLabel,
+  EMPTY_DATE_FILTER,
+  formatDateTime,
+  formatNumber,
+  formatRate,
+  isPositiveInt,
+  isValidCallbackUrl,
+  isValidWalletAddress,
+  logout,
+  PAGE_SIZE,
+  shorten,
 } from './api.js';
 
 /* ============================================================
@@ -207,7 +218,7 @@ export default function App() {
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
 /* ---- Баланс клиента в шапке ----
    Тот же баланс, что в карточке клиента у администратора (поле balance
-   профиля GET /api/v1/client). Формат по ТЗ: «125 001,00 ₽», ноль — «0,00 ₽». */
+   профиля GET /api/client/profile). Формат по ТЗ: «125 001,00 ₽», ноль — «0,00 ₽». */
 function fmtBalance(v) {
   const n = Number(v ?? 0);
   return `${(Number.isFinite(n) ? n : 0).toLocaleString('ru-RU', {
@@ -1045,7 +1056,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 }
 
 /* ---- Карточка ордера (только просмотр) ----
-   Данные — из строки таблицы: список GET /api/v1/order отдаёт все поля
+   Данные — из строки таблицы: список GET /api/client/order отдаёт все поля
    карточки (id, amount, status, internalId, createdAt, method, bank,
    details, callbackUrl). Статус и метод — подписи из словаря.
    «Дата истечения» по ТЗ вычисляется: дата создания + время активности

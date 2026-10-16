@@ -1,7 +1,6 @@
 package net.rcetech.support.controller;
 
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import net.rcetech.support.service.MerchantHistoryService;
 import org.junit.jupiter.api.DisplayName;
@@ -10,7 +9,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(MerchantHistoryController.class)
 @Import({ MetaSecurityConfig.class })
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class MerchantHistoryControllerTest {
 
     @MockitoBean
@@ -45,7 +42,7 @@ class MerchantHistoryControllerTest {
     @DisplayName("Метод должен вызвать сервис истории для роли ADMIN")
     void get_shouldCallServiceForAdmin() throws Exception {
         UUID adminId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-history")
+        mockMvc.perform(get("/api/support/merchant-history")
                         .with(user(adminId.toString()).roles(Role.ADMIN.name()))
                         .with(csrf()))
                 .andExpect(status().isOk());
@@ -56,7 +53,7 @@ class MerchantHistoryControllerTest {
     @DisplayName("Метод должен вызвать сервис истории для роли OPERATOR")
     void get_shouldCallServiceForOperator() throws Exception {
         UUID operatorId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-history")
+        mockMvc.perform(get("/api/support/merchant-history")
                         .with(user(operatorId.toString()).roles(Role.OPERATOR.name()))
                         .with(csrf()))
                 .andExpect(status().isOk());
@@ -68,7 +65,7 @@ class MerchantHistoryControllerTest {
     @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не ADMIN и не OPERATOR")
     void get_shouldReturn403ForForbiddenRoles(Role role) throws Exception {
         UUID userId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-history")
+        mockMvc.perform(get("/api/support/merchant-history")
                         .with(user(userId.toString()).roles(role.name()))
                         .with(csrf()))
                 .andExpect(status().isForbidden());
@@ -79,7 +76,7 @@ class MerchantHistoryControllerTest {
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void get_shouldReturn403IfUnknownRole(String role) throws Exception {
         UUID userId = UUID.randomUUID();
-        mockMvc.perform(get("/api/private/merchant-history")
+        mockMvc.perform(get("/api/support/merchant-history")
                         .with(user(userId.toString()).roles(role))
                         .with(csrf()))
                 .andExpect(status().isForbidden());

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/merchant-config")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/merchant-config")
 public class MerchantConfigController {
 
     private final MerchantConfigService merchantConfigService;

@@ -40,7 +40,7 @@ class DictionaryControllerTest {
     @Test
     @DisplayName("Должен быть возвращен список полей словаря, находящихся в spring контексте.")
     void getDictionary() throws Exception {
-        ResultActions resultActions = mockMvc.perform(get("/api/private/dictionary"))
+        ResultActions resultActions = mockMvc.perform(get("/api/common/dictionary"))
                 .andExpect(status().isOk());
         resultActions
                 .andExpect(jsonPath("$.OrderStatus").isArray())

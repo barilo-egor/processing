@@ -5,7 +5,6 @@ import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.meta.billing.dto.MerchantCallbackFilter;
 import net.rcetech.meta.billing.dto.MerchantCallbackResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -42,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(MerchantCallbackController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class MerchantCallbackControllerTest {
 
     @MockitoBean
@@ -58,7 +55,7 @@ class MerchantCallbackControllerTest {
     @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если роль пользователя не админ и не оператор.")
     void get_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
-        mockMvc.perform(get("/api/private/merchant-callback")
+        mockMvc.perform(get("/api/support/merchant-callback")
                 .with(csrf())
                 .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role.name()))
         ).andExpect(status().isForbidden());
@@ -68,7 +65,7 @@ class MerchantCallbackControllerTest {
     @ValueSource(strings = {"TRADER", "GUEST"})
     @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
     void get_shouldReturn403IfUnknownRole(String role) throws Exception {
-        mockMvc.perform(get("/api/private/merchant-callback")
+        mockMvc.perform(get("/api/support/merchant-callback")
                 .with(csrf())
                 .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role))
         ).andExpect(status().isForbidden());
@@ -88,7 +85,7 @@ class MerchantCallbackControllerTest {
         when(merchantCallbackService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(mock(MerchantCallbackResponse.class))));
         try (MockedStatic<MerchantCallbackSpecifications> mockedSpecifications
                      = Mockito.mockStatic(MerchantCallbackSpecifications.class)) {
-            mockMvc.perform(get("/api/private/merchant-callback")
+            mockMvc.perform(get("/api/support/merchant-callback")
                     .with(csrf())
                     .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name()))
                     .queryParam("orderId", orderId.toString())
@@ -123,7 +120,7 @@ class MerchantCallbackControllerTest {
         );
         when(merchantCallbackService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(response)));
 
-        mockMvc.perform(get("/api/private/merchant-callback")
+        mockMvc.perform(get("/api/support/merchant-callback")
                 .with(csrf())
                 .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())

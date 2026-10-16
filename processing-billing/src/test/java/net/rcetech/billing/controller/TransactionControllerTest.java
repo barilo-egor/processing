@@ -7,7 +7,6 @@ import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.dto.TransactionFilter;
 import net.rcetech.meta.billing.dto.TransactionResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -44,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(TransactionController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class TransactionControllerTest {
 
     @MockitoBean
@@ -58,7 +55,7 @@ class TransactionControllerTest {
 
     @Test
     void get_shouldNotHaveAccessForClient() throws Exception {
-        mockMvc.perform(get("/api/private/transaction")
+        mockMvc.perform(get("/api/support/transaction")
                 .with(csrf())
                 .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(Role.CLIENT.name())))
                 .andExpect(status().isForbidden());
@@ -66,7 +63,7 @@ class TransactionControllerTest {
 
     @Test
     void createManualCorrection_shouldNotHaveAccessForClient() throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(Role.CLIENT.name()))
                 )
@@ -91,7 +88,7 @@ class TransactionControllerTest {
         when(transactionResponse.type()).thenReturn(type);
         when(transactionResponse.comment()).thenReturn(comment);
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(transactionResponse, transactionResponse)));
-        mockMvc.perform(get("/api/private/transaction").with(user("user").roles(Role.ADMIN.name())))
+        mockMvc.perform(get("/api/support/transaction").with(user("user").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].clientId").value(clientId.toString()))
@@ -113,7 +110,7 @@ class TransactionControllerTest {
     void get_shouldPassFilterParameters(String client, long millisFrom, long millisTo) throws Exception {
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         try (MockedStatic<TransactionSpecification> transactionSpecification = Mockito.mockStatic(TransactionSpecification.class)) {
-            mockMvc.perform(get("/api/private/transaction").with(user("user").roles(Role.OPERATOR.name()))
+            mockMvc.perform(get("/api/support/transaction").with(user("user").roles(Role.OPERATOR.name()))
                     .queryParam("client", client)
                     .queryParam("createdAtFrom", String.valueOf(millisFrom))
                     .queryParam("createdAtTo", String.valueOf(millisTo))
@@ -135,7 +132,7 @@ class TransactionControllerTest {
     })
     @ParameterizedTest
     void createManualCorrect_shouldReturn400IfClientIdIsNull(String json) throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(
                                 user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7")
@@ -153,7 +150,7 @@ class TransactionControllerTest {
     })
     @ParameterizedTest
     void createManualCorrect_shouldReturn400IfOperationIsNull(String json) throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                 .with(csrf())
                 .with(
                         user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7")
@@ -171,7 +168,7 @@ class TransactionControllerTest {
     })
     @ParameterizedTest
     void createManualCorrect_shouldReturn400IfAmountIsNull(String json) throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(
                                 user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7")
@@ -189,7 +186,7 @@ class TransactionControllerTest {
     })
     @ParameterizedTest
     void createManualCorrect_shouldReturn400IfAmountIsNegative(String json) throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(
                                 user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7")
@@ -209,7 +206,7 @@ class TransactionControllerTest {
     })
     @ParameterizedTest
     void createManualCorrect_shouldReturn400IfCommentIsBlank(String json) throws Exception {
-        mockMvc.perform(post("/api/private/transaction")
+        mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(
                                 user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7")

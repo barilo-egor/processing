@@ -4,7 +4,6 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +13,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -43,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ClientController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ClientControllerTest {
 
     @MockitoBean
@@ -111,7 +108,7 @@ class ClientControllerTest {
 
         when(clientService.findById(id, ClientProjection.class)).thenReturn(Optional.of(clientResponseDTO));
 
-        mockMvc.perform(get("/api/v1/client")
+        mockMvc.perform(get("/api/client/profile")
                         .with(csrf())
                         .with(user(id.toString()).roles(Role.CLIENT.name()))
                 )
@@ -178,7 +175,7 @@ class ClientControllerTest {
         when(clientService.update(any(), any(ClientUpdateRequest.class))).thenReturn(client);
         ClientUpdateRequest expected = objectMapper.readValue(json, ClientUpdateRequest.class);
         UUID clientId = UUID.randomUUID();
-        mockMvc.perform(patch("/api/v1/client")
+        mockMvc.perform(patch("/api/client/profile")
                 .with(csrf())
                 .with(user(clientId.toString()).roles(Role.CLIENT.name()))
                         .header("Content-type", "application/json")
@@ -196,7 +193,7 @@ class ClientControllerTest {
     @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
     void update_shouldReturn403IfNotClient(Role role) throws Exception {
-        mockMvc.perform(patch("/api/v1/client")
+        mockMvc.perform(patch("/api/client/profile")
                         .with(csrf())
                         .with(user(UUID.randomUUID().toString()).roles(role.name())))
                 .andExpect(status().isForbidden());
@@ -210,7 +207,7 @@ class ClientControllerTest {
     })
     @DisplayName("Метод должен вернуть статус 400, если callbackUrl невалиден.")
     void update_shouldReturn400IfNotValidUrl(String callbackUrl) throws Exception {
-        mockMvc.perform(patch("/api/v1/client")
+        mockMvc.perform(patch("/api/client/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf())
                         .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))

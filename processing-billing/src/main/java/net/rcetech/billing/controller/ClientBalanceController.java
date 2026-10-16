@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/client")
 @SupportAccess
 public class ClientBalanceController {
 

@@ -7,7 +7,6 @@ import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.dto.ClientTransactionFilter;
 import net.rcetech.meta.billing.dto.ClientTransactionResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -16,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -42,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ClientTransactionController.class)
 @Import({MetaSecurityConfig.class})
-@EnableConfigurationProperties(ProcessingConfigurationProperties.class)
 class ClientTransactionControllerTest {
 
     @MockitoBean
@@ -57,7 +54,7 @@ class ClientTransactionControllerTest {
     @ParameterizedTest
     @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     void get_shouldNotHaveAccessForNotClient(Role role) throws Exception {
-        mockMvc.perform(get("/api/v1/transaction")
+        mockMvc.perform(get("/api/client/transaction")
                         .with(csrf())
                         .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(role.name())))
                 .andExpect(status().isForbidden());
@@ -79,7 +76,7 @@ class ClientTransactionControllerTest {
         when(transactionResponse.type()).thenReturn(type);
         when(transactionResponse.comment()).thenReturn(comment);
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(transactionResponse, transactionResponse)));
-        mockMvc.perform(get("/api/v1/transaction")
+        mockMvc.perform(get("/api/client/transaction")
                         .with(user(clientId.toString()).roles(Role.CLIENT.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -102,7 +99,7 @@ class ClientTransactionControllerTest {
     void get_shouldPassFilterParameters(UUID clientId, long millisFrom, long millisTo) throws Exception {
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         try (MockedStatic<TransactionSpecification> transactionSpecification = Mockito.mockStatic(TransactionSpecification.class)) {
-            mockMvc.perform(get("/api/v1/transaction")
+            mockMvc.perform(get("/api/client/transaction")
                     .queryParam("createdAtFrom", String.valueOf(millisFrom))
                     .queryParam("createdAtTo", String.valueOf(millisTo))
                     .with(user(clientId.toString()).roles(Role.CLIENT.name()))

@@ -77,11 +77,6 @@ kafka:
   topic:
     merchant-details:
       callback: 'merchant-details-callback-v1'
-processing:
-  keycloak:
-    webhook:
-      username: 'webhook_user'
-      password: '{noop}webhook_password'
 logging:
   level:
     org.springframework.security: DEBUG
@@ -120,7 +115,7 @@ logging:
     <li>Место взаимодействия с микросервисом истории мерчантов(merchant-history) будут возвращены тестовые данные.</li>
 <hr>
 <h1>Словарь констант</h1>
-Доступен по адресу <code>/api/private/dictionary</code>. Для добавления нового значения необходимо 
+Доступен по адресу <code>/api/common/dictionary</code>. Для добавления нового значения необходимо 
 создать реализацию интерфейса <code>net.rcetech.meta.DictionaryField</code> и поместить ее в spring контекст.
 
 
