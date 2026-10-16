@@ -84,12 +84,6 @@ tasks.register('copyConfigToDockerDir', Copy) {
     mustRunAfter('installFrontend')
 }
 
-tasks.register('copyPluginsToDockerMountDir', Copy) {
-    from(new File(rootDir, 'docker'))
-    include('keycloak-webhook-provider-core.jar', 'keycloak-webhook-provider-http.jar')
-    into(new File(rootDir, 'docker/mount/keycloak_plugins'))
-}
-
 node {
     download = true
     version = '26.8.1'
