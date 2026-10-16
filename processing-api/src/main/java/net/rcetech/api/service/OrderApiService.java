@@ -11,9 +11,11 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.orders.OrderCanceledEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,11 +36,14 @@ public class OrderApiService {
 
     private final OrderService orderService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     public OrderApiService(MerchantDetailsReceiver merchantDetailsReceiver, ClientService clientService,
-                           OrderService orderService) {
+                           OrderService orderService, ApplicationEventPublisher eventPublisher) {
         this.merchantDetailsReceiver = merchantDetailsReceiver;
         this.clientService = clientService;
         this.orderService = orderService;
+        this.eventPublisher = eventPublisher;
     }
 
     public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest, Integer timeoutSeconds) {
@@ -92,6 +97,9 @@ public class OrderApiService {
         Order order = findByIdAndClientId(clientId, id);
         order.setStatus(OrderStatus.CANCELED);
         orderService.save(order);
+        eventPublisher.publishEvent(
+                new OrderCanceledEvent(order.getMerchant(), order.getMerchantOrderId(), order.getMethod())
+        );
     }
 
     public Page<ClientOrderSummary> findAll(UUID clientId, ClientOrderFilter filter, Pageable pageable) {

@@ -12,6 +12,7 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.orders.OrderCanceledEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
@@ -31,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -38,6 +41,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
@@ -59,6 +64,7 @@ import static org.mockito.Mockito.when;
 @Import(OrderService.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
+@RecordApplicationEvents
 class OrderApiServiceTest {
 
     @TestConfiguration
@@ -97,11 +103,17 @@ class OrderApiServiceTest {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
+
     private OrderApiService orderApiService;
 
     @BeforeEach
     void setUp() {
-        orderApiService = new OrderApiService(merchantDetailsReceiver, clientService, orderService);
+        orderApiService = new OrderApiService(merchantDetailsReceiver, clientService, orderService, eventPublisher);
     }
 
     @ParameterizedTest
@@ -340,6 +352,38 @@ class OrderApiServiceTest {
                 assertEquals(OrderStatus.NEW, order.getStatus());
             }
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ALFA_TEAM,CARD",
+            "STORM_TRADE,SBP"
+    })
+    @DisplayName("После отмены ордера должно быть опубликовано событие с мерчантом, идентификатором ордера мерчанта и методом.")
+    void cancelOrder_shouldPublishOrderCanceledEvent(Merchant merchant, RequestMethod method) {
+        Client client = getDummyClient();
+        Order order = getDummyOrder(client);
+        order.setMerchant(merchant);
+        order.setMethod(method);
+        orderRepository.save(order);
+        orderApiService.cancelOrder(client.getId(), order.getId());
+        List<OrderCanceledEvent> events = applicationEvents.stream(OrderCanceledEvent.class).toList();
+        assertEquals(1, events.size());
+        assertEquals(new OrderCanceledEvent(merchant, order.getMerchantOrderId(), method), events.getFirst());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "0f0d5d0c-2a44-4c31-9d43-5d3b4c9f6a11",
+            "7b8e2c61-41b5-4c0e-8f7a-2e9d6c3a1b54"
+    })
+    @DisplayName("Событие отмены не должно публиковаться, если ордер не найден у клиента.")
+    void cancelOrder_shouldNotPublishEventIfOrderNotFound(UUID orderId) {
+        Client client = getDummyClient();
+        getDummyOrder(client);
+        UUID clientId = client.getId();
+        assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(clientId, orderId));
+        assertEquals(0, applicationEvents.stream(OrderCanceledEvent.class).count());
     }
 
     @Test

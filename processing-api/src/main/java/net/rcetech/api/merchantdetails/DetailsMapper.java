@@ -5,6 +5,7 @@ import net.rcetech.grpc.generated.CancelOrderRequestGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.grpc.generated.MerchantCallbackGrpc;
+import net.rcetech.meta.orders.OrderCanceledEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.InjectionStrategy;
@@ -32,8 +33,10 @@ public interface DetailsMapper {
     DetailsRequestGrpc detailsRequestDTOToGrpc(UUID clientId, UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
 
     @Mapping(target = "orderId", source = "merchantOrderId")
-    @Mapping(target = "method", source = "requestMethod")
+    @Mapping(target = "method", source = "method")
     CancelOrderRequestGrpc cancelOrderDTOToGrpc(CancelOrderDTO cancelOrderDTO);
+
+    CancelOrderDTO orderCanceledEventToDTO(OrderCanceledEvent event);
 
     MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
 
