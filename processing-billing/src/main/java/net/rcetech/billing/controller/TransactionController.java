@@ -7,11 +7,11 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
 import net.rcetech.meta.billing.dto.TransactionFilter;
 import net.rcetech.meta.billing.dto.TransactionResponse;
+import net.rcetech.meta.user.SupportAccess;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(WebPath.PRIVATE_API_PATH + "/transaction")
-@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+@SupportAccess
 public class TransactionController {
 
     private final TransactionService transactionService;

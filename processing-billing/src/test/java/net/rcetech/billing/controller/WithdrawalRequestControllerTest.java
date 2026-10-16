@@ -7,9 +7,11 @@ import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.WithdrawalRequestResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
@@ -53,12 +55,19 @@ class WithdrawalRequestControllerTest {
     private WithdrawalRequestService withdrawalRequestService;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "CLIENT",
-            "TRADER"
-    })
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если роль пользователя не ADMIN и OPERATOR.")
-    void get_shouldReturn403IfNotAdminOrOperator(String role) throws Exception {
+    void get_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
+        mockMvc.perform(get("/api/private/withdrawal-request")
+                .with(csrf())
+                .with(user("673dd1e7-b780-4a8f-871c-01b61bbbc1c1").roles(role.name()))
+        ).andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "GUEST"})
+    @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
+    void get_shouldReturn403IfUnknownRole(String role) throws Exception {
         mockMvc.perform(get("/api/private/withdrawal-request")
                 .with(csrf())
                 .with(user("673dd1e7-b780-4a8f-871c-01b61bbbc1c1").roles(role))
@@ -80,7 +89,7 @@ class WithdrawalRequestControllerTest {
         try (MockedStatic<WithdrawalRequestSpecifications> mockedSpecifications = Mockito.mockStatic(WithdrawalRequestSpecifications.class)) {
             mockMvc.perform(get("/api/private/withdrawal-request")
                     .with(csrf())
-                    .with(user(clientId.toString()).roles("ADMIN"))
+                    .with(user(clientId.toString()).roles(Role.ADMIN.name()))
                     .queryParam("id", id.toString())
                     .queryParam("client", client)
                     .queryParam("status", status.toString())
@@ -129,7 +138,7 @@ class WithdrawalRequestControllerTest {
 
         mockMvc.perform(get("/api/private/withdrawal-request")
                 .with(csrf())
-                .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles("ADMIN")))
+                .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].clientId").value(clientId.toString()))
                 .andExpect(jsonPath("$.content[0].clientUsername").value(clientUsername))

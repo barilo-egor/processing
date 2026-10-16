@@ -2,6 +2,7 @@ package net.rcetech.api.config;
 
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
+import net.rcetech.meta.user.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -22,7 +23,7 @@ public class ApiSecurityConfig {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, ApiKeyService apiKeyService) {
         http.securityMatcher(WebPath.V1_API_PATH + "/order/**")
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(WebPath.V1_API_PATH + "/order/**").hasRole("CLIENT"))
+                        auth.requestMatchers(WebPath.V1_API_PATH + "/order/**").hasRole(Role.CLIENT.name()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(
                         new ApiKeyAuthenticationFilter(apiKeyService),

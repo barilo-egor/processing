@@ -7,11 +7,11 @@ import net.rcetech.domain.service.billing.WithdrawalRequestService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
+import net.rcetech.meta.user.ClientAccess;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(WebPath.V1_API_PATH + "/withdrawal-request")
-@PreAuthorize("hasRole('CLIENT')")
+@ClientAccess
 public class ClientWithdrawalRequestController {
 
     private final WithdrawalRequestService withdrawalRequestService;

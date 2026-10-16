@@ -1,6 +1,7 @@
 package net.rcetech.support.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import net.rcetech.meta.user.Role;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,7 @@ public class SupportViewController {
 
     @GetMapping
     public String view(HttpServletRequest request) {
-        if (!request.isUserInRole("ADMIN") && !request.isUserInRole("OPERATOR")) {
+        if (!request.isUserInRole(Role.ADMIN.name()) && !request.isUserInRole(Role.OPERATOR.name())) {
             throw new AuthorizationDeniedException("Access denied");
         }
         return "forward:/support/index.html";

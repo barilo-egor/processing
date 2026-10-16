@@ -3,9 +3,9 @@ package net.rcetech.support.controller;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
+import net.rcetech.meta.user.AdminAccess;
 import net.rcetech.support.service.MerchantConfigService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,13 +22,13 @@ public class MerchantConfigController {
     }
 
     @GetMapping("/{clientId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminAccess
     public ResponseEntity<List<MerchantConfigResponseDTO>> get(@PathVariable UUID clientId) {
         return ResponseEntity.ok(merchantConfigService.findAll(clientId));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminAccess
     public ResponseEntity<MerchantConfigResponseDTO> update(@PathVariable Long id,
             @RequestBody MerchantConfigUpdateDTO updateDTO) {
         return ResponseEntity.ok(merchantConfigService.update(id, updateDTO));

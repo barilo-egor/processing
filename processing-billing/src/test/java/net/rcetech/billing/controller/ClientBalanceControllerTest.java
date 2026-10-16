@@ -6,6 +6,7 @@ import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -55,7 +56,7 @@ class ClientBalanceControllerTest {
     void recalculate_shouldNotHaveAccessForClient(UUID id) throws Exception {
         mockMvc.perform(post(RECALCULATION_PATH, id)
                         .with(csrf())
-                        .with(user(id.toString()).roles("CLIENT")))
+                        .with(user(id.toString()).roles(Role.CLIENT.name())))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(clientBalanceService);
     }

@@ -7,9 +7,9 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ApiKeyResponseDTO;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.user.ClientAccess;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -31,19 +31,19 @@ public class ApiKeyController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('CLIENT')")
+    @ClientAccess
     public ResponseEntity<String> createApiKey(@RequestParam @NotBlank String name, Principal principal) {
         return new ResponseEntity<>(apiKeyService.create(name, getClient(principal)), HttpStatus.CREATED);
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('CLIENT')")
+    @ClientAccess
     public ResponseEntity<List<ApiKeyResponseDTO>> getApiKey(Principal principal) {
         return new ResponseEntity<>(apiKeyService.findAllByClientId(getClient(principal)), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('CLIENT')")
+    @ClientAccess
     public ResponseEntity<List<ApiKeyResponseDTO>> delete(Principal principal, @PathVariable Long id) {
         apiKeyService.delete(getClient(principal), id);
         return new ResponseEntity<>(HttpStatus.OK);

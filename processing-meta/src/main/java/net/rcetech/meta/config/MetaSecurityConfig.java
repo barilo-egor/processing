@@ -80,7 +80,7 @@ public class MetaSecurityConfig {
     @Bean
     static RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.withDefaultRolePrefix()
-                .role("ADMIN").implies("OPERATOR")
+                .role(Role.ADMIN.name()).implies(Role.OPERATOR.name())
                 .build();
     }
 }

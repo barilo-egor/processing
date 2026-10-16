@@ -9,12 +9,12 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
+import net.rcetech.meta.user.ClientAccess;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -23,7 +23,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping(WebPath.V1_API_PATH + "/order")
-@PreAuthorize("hasRole('CLIENT')")
+@ClientAccess
 public class ClientOrderController {
 
     private final OrderApiService orderApiService;

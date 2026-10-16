@@ -6,9 +6,11 @@ import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,7 +113,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/v1/client")
                         .with(csrf())
-                        .with(user(id.toString()).roles("CLIENT"))
+                        .with(user(id.toString()).roles(Role.CLIENT.name()))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
@@ -178,7 +180,7 @@ class ClientControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/client")
                 .with(csrf())
-                .with(user(clientId.toString()).roles("CLIENT"))
+                .with(user(clientId.toString()).roles(Role.CLIENT.name()))
                         .header("Content-type", "application/json")
                 .content(json))
                 .andExpect(status().isOk())
@@ -191,14 +193,12 @@ class ClientControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
-    void update_shouldReturn403IfNotClient(String role) throws Exception {
+    void update_shouldReturn403IfNotClient(Role role) throws Exception {
         mockMvc.perform(patch("/api/v1/client")
                         .with(csrf())
-                        .with(user(UUID.randomUUID().toString()).roles(role)))
+                        .with(user(UUID.randomUUID().toString()).roles(role.name())))
                 .andExpect(status().isForbidden());
     }
 
@@ -213,7 +213,7 @@ class ClientControllerTest {
         mockMvc.perform(patch("/api/v1/client")
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf())
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                         .content("{\"callbackUrl\":\"%s\"}".formatted(callbackUrl)))
                 .andExpect(status().isBadRequest());
     }

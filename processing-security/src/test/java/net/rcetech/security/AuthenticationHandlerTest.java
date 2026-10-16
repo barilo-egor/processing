@@ -3,6 +3,7 @@ package net.rcetech.security;
 import jakarta.servlet.http.HttpServletResponse;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.support.SupportUserService;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,14 +65,14 @@ class AuthenticationHandlerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "5560783c-ad7f-4395-b734-74b2ceaf5897,ROLE_ADMIN,test1",
-            "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,ROLE_OPERATOR,smokilolik"
+            "5560783c-ad7f-4395-b734-74b2ceaf5897,ADMIN,test1",
+            "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,OPERATOR,smokilolik"
     })
     @DisplayName("Метод должен создать запись пользователя поддержки.")
-    void onAuthenticationSuccess_shouldCreateSupportUserIfAdminOrOperator(UUID name, String role, String username) throws IOException {
+    void onAuthenticationSuccess_shouldCreateSupportUserIfAdminOrOperator(UUID name, Role role, String username) throws IOException {
         Collection<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         GrantedAuthority grantedAuthority = mock(GrantedAuthority.class);
-        when(grantedAuthority.getAuthority()).thenReturn(role);
+        when(grantedAuthority.getAuthority()).thenReturn(role.withPrefix());
         grantedAuthorities.add(grantedAuthority);
         Map<String, Object> claims = Map.of(
                 "sub", name.toString(),
@@ -99,14 +100,14 @@ class AuthenticationHandlerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "5560783c-ad7f-4395-b734-74b2ceaf5897,ROLE_CLIENT,tgshop",
-            "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,ROLE_CLIENT,terminator"
+            "5560783c-ad7f-4395-b734-74b2ceaf5897,CLIENT,tgshop",
+            "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,CLIENT,terminator"
     })
     @DisplayName("Метод должен создать запись клиента.")
-    void onAuthenticationSuccess_shouldCreateClientIfRoleClient(UUID name, String role, String username) throws IOException {
+    void onAuthenticationSuccess_shouldCreateClientIfRoleClient(UUID name, Role role, String username) throws IOException {
         Collection<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         GrantedAuthority grantedAuthority = mock(GrantedAuthority.class);
-        when(grantedAuthority.getAuthority()).thenReturn(role);
+        when(grantedAuthority.getAuthority()).thenReturn(role.withPrefix());
         grantedAuthorities.add(grantedAuthority);
         Map<String, Object> claims = Map.of(
                 "sub", name.toString(),

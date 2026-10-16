@@ -8,10 +8,12 @@ import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.IncidentFilter;
 import net.rcetech.meta.incidents.dto.IncidentResponse;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
@@ -62,9 +64,20 @@ class IncidentControllerTest {
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @ParameterizedTest
-    @ValueSource(strings = {"CLIENT", "TRADER"})
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если роль пользователя не админ и не оператор.")
-    void get_shouldReturn403IfNotAdminOrOperator(String role) throws Exception {
+    void get_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
+        mockMvc.perform(get("/api/private/incident")
+                        .with(csrf())
+                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role.name())))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "GUEST"})
+    @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
+    void get_shouldReturn403IfUnknownRole(String role) throws Exception {
         mockMvc.perform(get("/api/private/incident")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role)))
@@ -90,7 +103,7 @@ class IncidentControllerTest {
                      = Mockito.mockStatic(IncidentSpecifications.class)) {
             mockMvc.perform(get("/api/private/incident")
                     .with(csrf())
-                    .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles("ADMIN"))
+                    .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name()))
                     .queryParam("id", String.valueOf(id))
                     .queryParam("createdAtFrom", String.valueOf(createdAtFrom))
                     .queryParam("createdAtTo", String.valueOf(createdAtTo))
@@ -121,7 +134,7 @@ class IncidentControllerTest {
 
         mockMvc.perform(get("/api/private/incident")
                         .with(csrf())
-                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles("OPERATOR")))
+                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.OPERATOR.name())))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
@@ -149,7 +162,7 @@ class IncidentControllerTest {
 
         mockMvc.perform(get("/api/private/incident")
                         .with(csrf())
-                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles("ADMIN")))
+                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(String.valueOf(id)))
                 .andExpect(jsonPath("$.content[0].createdAt").value(String.valueOf(createdAt)))
@@ -164,9 +177,22 @@ class IncidentControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"CLIENT", "TRADER"})
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод обновления должен вернуть 403, если роль пользователя не админ и не оператор.")
-    void update_shouldReturn403IfNotAdminOrOperator(String role) throws Exception {
+    void update_shouldReturn403IfNotAdminOrOperator(Role role) throws Exception {
+        mockMvc.perform(patch("/api/private/incident/1")
+                        .with(csrf())
+                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role.name()))
+                        .header("Content-type", "application/json")
+                        .content("{\"comment\": \"Решено\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "GUEST"})
+    @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
+    void update_shouldReturn403IfUnknownRole(String role) throws Exception {
         mockMvc.perform(patch("/api/private/incident/1")
                         .with(csrf())
                         .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(role))

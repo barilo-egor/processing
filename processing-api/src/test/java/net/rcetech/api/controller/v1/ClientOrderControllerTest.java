@@ -14,12 +14,14 @@ import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
+import net.rcetech.meta.user.Role;
 import org.hamcrest.CustomMatcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -78,7 +80,7 @@ class ClientOrderControllerTest {
     @DisplayName("Метод должен вернуть 400 если отсутствует тело.")
     void createOrder_shouldReturn400IfNoBody() throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                        .with(user("someClient").roles("CLIENT"))
+                        .with(user("someClient").roles(Role.CLIENT.name()))
                         .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Failed to read request"))
@@ -102,7 +104,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -122,7 +124,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -141,7 +143,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -161,7 +163,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -180,7 +182,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -200,7 +202,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -227,7 +229,7 @@ class ClientOrderControllerTest {
                 }""".formatted(callbackUrl);
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles("CLIENT"))
+                                .with(user("test").roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(content)
                                 .header("Content-Type", "application/json")
@@ -243,7 +245,7 @@ class ClientOrderControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(clientId.toString()).roles("CLIENT"))
+                        .with(user(clientId.toString()).roles(Role.CLIENT.name()))
                         .with(csrf())
                         .content(objectMapper.writeValueAsString(expected))
                         .header("Content-Type", "application/json")
@@ -273,7 +275,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                         .with(csrf())
                         .content(content)
                         .header("Content-Type", "application/json")
@@ -295,7 +297,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                         .with(csrf())
                         .content(content)
                         .header("Content-Type", "application/json")
@@ -322,7 +324,7 @@ class ClientOrderControllerTest {
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                                .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
@@ -361,14 +363,12 @@ class ClientOrderControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Доступ должен быть ограничен для всех кроме клиентов.")
-    void createOrder_shouldReturn403IfNotClient(String role) throws Exception {
+    void createOrder_shouldReturn403IfNotClient(Role role) throws Exception {
         mockMvc.perform(post("/api/v1/order")
                         .with(csrf())
-                        .with(user(UUID.randomUUID().toString()).roles(role))
+                        .with(user(UUID.randomUUID().toString()).roles(role.name()))
                         .header("Content-Type", "application/json")
                         .content("""
                                 {
@@ -473,7 +473,7 @@ class ClientOrderControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/order/" + orderId)
                 .with(csrf())
-                .with(user(clientId.toString()).roles("CLIENT")));
+                .with(user(clientId.toString()).roles(Role.CLIENT.name())));
         verify(orderApiService).cancelOrder(clientId, orderId);
     }
 
@@ -486,7 +486,7 @@ class ClientOrderControllerTest {
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         MockMvcRequestBuilders.get("/api/v1/order/" + expected.id())
-                                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                                .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                                 .with(csrf())
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
@@ -522,7 +522,7 @@ class ClientOrderControllerTest {
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
                         .with(csrf())
-                        .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                         .header("Content-Type", "application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())

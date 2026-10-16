@@ -8,6 +8,7 @@ import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientPrincipal;
+import net.rcetech.meta.user.Role;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.AntPathMatcher;
@@ -44,7 +45,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
                     var authentication = new ApiKeyAuthenticationToken(
                             new ClientPrincipal(clientKey.getClient().getId()),
                             apiKey,
-                            List.of(new SimpleGrantedAuthority("ROLE_CLIENT"))
+                            List.of(new SimpleGrantedAuthority(Role.CLIENT.withPrefix()))
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {

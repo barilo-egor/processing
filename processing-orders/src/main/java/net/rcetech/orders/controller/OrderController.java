@@ -12,18 +12,18 @@ import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import net.rcetech.meta.orders.dto.OrderUpdateRequest;
+import net.rcetech.meta.user.SupportAccess;
 import net.rcetech.orders.OrderFacade;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping(WebPath.PRIVATE_API_PATH + "/order")
-@PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+@SupportAccess
 public class OrderController {
 
     private final OrderService orderService;

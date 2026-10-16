@@ -8,6 +8,7 @@ import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -68,9 +69,19 @@ class SupportUserControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"CLIENT", "TRADER"})
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403 для не пользователей поддержки.")
-    void get_shouldReturn403IfNotSupportUser(String role) throws Exception {
+    void get_shouldReturn403IfNotSupportUser(Role role) throws Exception {
+        mockMvc.perform(get("/api/private/support-user")
+                .with(csrf())
+                .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role.name())))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "GUEST"})
+    @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
+    void get_shouldReturn403IfUnknownRole(String role) throws Exception {
         mockMvc.perform(get("/api/private/support-user")
                 .with(csrf())
                 .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role)))

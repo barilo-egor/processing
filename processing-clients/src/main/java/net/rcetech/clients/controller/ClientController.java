@@ -6,7 +6,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.exception.BaseException;
-import org.springframework.security.access.prepost.PreAuthorize;
+import net.rcetech.meta.user.ClientAccess;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(WebPath.V1_API_PATH + "/client")
-@PreAuthorize("hasRole('CLIENT')")
+@ClientAccess
 public class ClientController {
 
     private final ClientService clientService;

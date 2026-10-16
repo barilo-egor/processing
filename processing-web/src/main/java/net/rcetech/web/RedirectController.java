@@ -1,6 +1,7 @@
 package net.rcetech.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import net.rcetech.meta.user.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +17,7 @@ public class RedirectController {
 
     @GetMapping("/")
     public String redirect(HttpServletRequest request) {
-        if (request.isUserInRole("ADMIN") || request.isUserInRole("OPERATOR")) {
+        if (request.isUserInRole(Role.ADMIN.name()) || request.isUserInRole(Role.OPERATOR.name())) {
             return  "redirect:/support/dashboard";
         }
         return "redirect:/client/dashboard";

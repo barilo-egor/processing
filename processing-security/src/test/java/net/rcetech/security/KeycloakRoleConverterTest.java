@@ -1,5 +1,6 @@
 package net.rcetech.security;
 
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -54,25 +55,25 @@ class KeycloakRoleConverterTest {
 
     static Stream<Arguments> realmRolesArguments() {
         return Stream.of(
-                Arguments.of(List.of("admin", "operator"), List.of("ROLE_ADMIN", "ROLE_OPERATOR")),
-                Arguments.of(List.of("Client"), List.of("ROLE_CLIENT")),
-                Arguments.of(List.of("ROLE_admin", "role_client"), List.of("ROLE_ADMIN", "ROLE_CLIENT")),
-                Arguments.of(List.of("ROLE_OPERATOR", "offline_access"), List.of("ROLE_OPERATOR", "ROLE_OFFLINE_ACCESS"))
+                Arguments.of(List.of("admin", "operator"), List.of(Role.ADMIN.withPrefix(), Role.OPERATOR.withPrefix())),
+                Arguments.of(List.of("Client"), List.of(Role.CLIENT.withPrefix())),
+                Arguments.of(List.of("ROLE_admin", "role_client"), List.of(Role.ADMIN.withPrefix(), Role.CLIENT.withPrefix())),
+                Arguments.of(List.of("ROLE_OPERATOR", "offline_access"), List.of(Role.OPERATOR.withPrefix(), "ROLE_OFFLINE_ACCESS"))
         );
     }
 
     @ParameterizedTest
     @CsvSource({
-            "admin,ROLE_ADMIN,ROLE_ADMIN",
-            "client,Role_Client,ROLE_CLIENT"
+            "admin,ROLE_ADMIN,ADMIN",
+            "client,Role_Client,CLIENT"
     })
     @DisplayName("Метод должен убрать дубликаты ролей после нормализации.")
-    void mapAuthorities_shouldDeduplicateRoles(String role, String duplicate, String expectedRole) {
+    void mapAuthorities_shouldDeduplicateRoles(String role, String duplicate, Role expectedRole) {
         OidcUserAuthority oidcAuthority = oidcAuthority(Map.of("realm_access", Map.of("roles", List.of(role, duplicate))));
 
         Collection<GrantedAuthority> result = List.copyOf(converter.mapAuthorities(List.of(oidcAuthority)));
 
-        assertThat(result).containsExactlyInAnyOrderElementsOf(expected(oidcAuthority, List.of(expectedRole)));
+        assertThat(result).containsExactlyInAnyOrderElementsOf(expected(oidcAuthority, List.of(expectedRole.withPrefix())));
     }
 
     @ParameterizedTest
@@ -88,8 +89,8 @@ class KeycloakRoleConverterTest {
 
     static Stream<Arguments> nonStringRolesArguments() {
         return Stream.of(
-                Arguments.of(List.of("admin", 42), List.of("ROLE_ADMIN")),
-                Arguments.of(List.of(Map.of("name", "client"), true, "operator"), List.of("ROLE_OPERATOR"))
+                Arguments.of(List.of("admin", 42), List.of(Role.ADMIN.withPrefix())),
+                Arguments.of(List.of(Map.of("name", "client"), true, "operator"), List.of(Role.OPERATOR.withPrefix()))
         );
     }
 
@@ -127,7 +128,7 @@ class KeycloakRoleConverterTest {
         assertThat(result).containsExactlyInAnyOrder(
                 oidcAuthority,
                 scopeAuthority,
-                new SimpleGrantedAuthority("ROLE_CLIENT")
+                new SimpleGrantedAuthority(Role.CLIENT.withPrefix())
         );
     }
 

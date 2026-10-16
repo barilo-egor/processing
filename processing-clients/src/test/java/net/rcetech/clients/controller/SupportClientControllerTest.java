@@ -9,12 +9,14 @@ import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +28,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -70,11 +71,10 @@ class SupportClientControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("Метод должен вернуть пустой массив.")
     void getClients_shouldReturnEmptyArray() throws Exception {
         when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        mockMvc.perform(get("/api/private/client")
+        mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name()))
                         .queryParam("username", "test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -88,7 +88,6 @@ class SupportClientControllerTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 5})
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("Метод должен вернуть JSON список клиентов.")
     void getClients_shouldReturnClients(int clientsSize) throws Exception {
         List<SupportClientProjection> clients = new ArrayList<>();
@@ -100,7 +99,7 @@ class SupportClientControllerTest {
                 clients, PageRequest.of(0, 100), clients.size()
         );
         when(clientService.findAll(any(), any(), eq(SupportClientProjection.class))).thenReturn(page);
-        ResultActions resultActions = mockMvc.perform(get("/api/private/client"))
+        ResultActions resultActions = mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
         int i = 0;
@@ -183,14 +182,13 @@ class SupportClientControllerTest {
             c6e5d372-9436-4cdb-a6c4-dc33c0fc8d7a,user_poser,BLOCKED,1787659000000,1787659000987,20,10
             """)
     @ParameterizedTest
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("Метод должен передать параметры фильтрации в метод сервиса.")
     void getClients_shouldPassParametersToMethod(String id, String username, String status, long from, long to,
                                                  int size, int page) throws Exception {
         when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         ArgumentCaptor<ClientFilter> filterCaptor = ArgumentCaptor.forClass(ClientFilter.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        mockMvc.perform(get("/api/private/client")
+        mockMvc.perform(get("/api/private/client").with(user("user").roles(Role.ADMIN.name()))
                 .queryParam("id", id)
                 .queryParam("username", username)
                 .queryParam("status", status)
@@ -212,24 +210,28 @@ class SupportClientControllerTest {
         );
     }
 
-    @ValueSource(strings = {
-            "CLIENT",
-            "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"CLIENT", "OPERATOR"})
     @ParameterizedTest
     @DisplayName("Доступ должен быть запрещен для ролей отличных от ADMIN.")
-    void getClients_shouldReturnForbiddenForNotAdmin(String role) throws Exception {
+    void getClients_shouldReturnForbiddenForNotAdmin(Role role) throws Exception {
         mockMvc.perform(get("/api/private/client")
-                        .with(user("user").roles(role)))
+                        .with(user("user").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
 
-    @ValueSource(strings = {
-            "OPERATOR", "USER"
-    })
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN"})
     @ParameterizedTest
-    @DisplayName("Доступ должен быть запрещен для всех кроме администратора и оператора.")
-    void update_shouldReturnForbiddenIfNotAdminOrClient(String role) throws Exception {
+    @DisplayName("Доступ должен быть запрещен для всех кроме администратора.")
+    void update_shouldReturnForbiddenIfNotAdmin(Role role) throws Exception {
+        mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+                        .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role.name())))
+                .andExpect(status().isForbidden());
+    }
+
+    @ValueSource(strings = {"USER", "TRADER"})
+    @ParameterizedTest
+    @DisplayName("Доступ должен быть запрещен для несуществующей роли.")
+    void update_shouldReturnForbiddenIfUnknownRole(String role) throws Exception {
         mockMvc.perform(patch("/api/private/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
                         .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role)))
                 .andExpect(status().isForbidden());
@@ -251,7 +253,7 @@ class SupportClientControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/private/client/" + clientId)
                         .header("Content-Type", "application/json")
-                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles("ADMIN"))
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .content(json))
                 .andExpect(status().isOk());
@@ -268,7 +270,7 @@ class SupportClientControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/private/client/" + clientId)
                         .header("Content-Type", "application/json")
-                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles("ADMIN"))
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
                         .with(csrf())
                         .content(json))
                 .andExpect(status().isOk());

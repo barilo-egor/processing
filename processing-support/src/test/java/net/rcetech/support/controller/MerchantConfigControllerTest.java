@@ -2,11 +2,12 @@ package net.rcetech.support.controller;
 
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.user.Role;
 import net.rcetech.support.service.MerchantConfigService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -43,22 +44,20 @@ class MerchantConfigControllerTest {
         UUID merchantId = UUID.randomUUID();
         UUID adminId = UUID.randomUUID();
         mockMvc.perform(get("/api/private/merchant-config/" + merchantId)
-                .with(user(adminId.toString()).roles("ADMIN"))
+                .with(user(adminId.toString()).roles(Role.ADMIN.name()))
                 .with(csrf()))
                 .andExpect(status().isOk());
         verify(merchantConfigService).findAll(merchantId);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "CLIENT", "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"CLIENT", "OPERATOR"})
     @DisplayName("Метод должен вернуть статус 403, если запрос выполняется не клиентом или оператором.")
-    void get_shouldReturn403IfNotAdmin(String role) throws Exception {
+    void get_shouldReturn403IfNotAdmin(Role role) throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         mockMvc.perform(get("/api/private/merchant-config/" + merchantId)
-                        .with(user(userId.toString()).roles(role))
+                        .with(user(userId.toString()).roles(role.name()))
                         .with(csrf()))
                 .andExpect(status().isForbidden());
     }

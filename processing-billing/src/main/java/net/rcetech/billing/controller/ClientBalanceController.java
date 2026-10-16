@@ -3,7 +3,7 @@ package net.rcetech.billing.controller;
 import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
-import org.springframework.security.access.prepost.PreAuthorize;
+import net.rcetech.meta.user.SupportAccess;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(WebPath.PRIVATE_API_PATH + "/client")
-@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+@SupportAccess
 public class ClientBalanceController {
 
     private final ClientBalanceService clientBalanceService;

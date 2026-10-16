@@ -4,6 +4,7 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +79,7 @@ class ApiSecurityConfigTest {
     @DisplayName("Запросы с любой авторизацией должны иметь доступ к пути по /order.")
     void authWithApiKeyShouldNotHaveAccessToWithdrawalRequestsPath() throws Exception {
         mockMvc.perform(get(WebPath.V1_API_PATH + "/order")
-                .with(user(UUID.randomUUID().toString()).roles("CLIENT"))
+                .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
         ).andExpect(status().isOk());
     }
 }

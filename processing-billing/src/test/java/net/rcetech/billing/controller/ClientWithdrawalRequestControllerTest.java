@@ -14,7 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -71,7 +71,7 @@ class ClientWithdrawalRequestControllerTest {
         try (MockedStatic<WithdrawalRequestSpecifications> mockedSpecifications = Mockito.mockStatic(WithdrawalRequestSpecifications.class)) {
             mockMvc.perform(get("/api/v1/withdrawal-request")
                     .with(csrf())
-                    .with(user(clientId.toString()).roles("CLIENT"))
+                    .with(user(clientId.toString()).roles(Role.CLIENT.name()))
                     .queryParam("id", id.toString())
                     .queryParam("status", status.toString())
                     .queryParam("createdAtFrom", String.valueOf(createdAtFrom))
@@ -118,7 +118,7 @@ class ClientWithdrawalRequestControllerTest {
 
         mockMvc.perform(get("/api/v1/withdrawal-request")
                         .with(csrf())
-                        .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles("CLIENT")))
+                        .with(user("46c7f3fd-a6af-40d3-b843-f0052790518a").roles(Role.CLIENT.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(id.toString()))
                 .andExpect(jsonPath("$.content[0].status").value(status.name()))
@@ -153,16 +153,14 @@ class ClientWithdrawalRequestControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
-    void create_shouldReturn403IfNotClient(String role) throws Exception {
+    void create_shouldReturn403IfNotClient(Role role) throws Exception {
         mockMvc.perform(post("/api/v1/withdrawal-request")
                 .queryParam("amount", "100")
                 .queryParam("address", "TX9zFakeAddressTRC20usdtNotReal99x")
                 .with(csrf())
-                .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role)))
+                .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role.name())))
         .andExpect(status().isForbidden());
     }
 
@@ -185,14 +183,12 @@ class ClientWithdrawalRequestControllerTest {
 
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
+    @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
     @DisplayName("Метод должен вернуть 403, если запрос выполняет не клиент.")
-    void cancel_shouldReturn403IfNotClient(String role) throws Exception {
+    void cancel_shouldReturn403IfNotClient(Role role) throws Exception {
         mockMvc.perform(patch("/api/v1/withdrawal-request")
                         .with(csrf())
-                        .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role)))
+                        .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
 
@@ -205,7 +201,7 @@ class ClientWithdrawalRequestControllerTest {
     void cancel_shouldPassParametersToService(UUID clientId, UUID id) throws Exception {
         mockMvc.perform(patch("/api/v1/withdrawal-request/" + id.toString())
                         .with(csrf())
-                        .with(user(clientId.toString()).roles("CLIENT")))
+                        .with(user(clientId.toString()).roles(Role.CLIENT.name())))
                 .andExpect(status().isOk());
         verify(withdrawalRequestService).cancel(clientId, id);
     }

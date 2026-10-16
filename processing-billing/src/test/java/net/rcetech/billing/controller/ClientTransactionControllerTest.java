@@ -8,9 +8,10 @@ import net.rcetech.meta.billing.dto.ClientTransactionFilter;
 import net.rcetech.meta.billing.dto.ClientTransactionResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
+import net.rcetech.meta.user.Role;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -54,13 +55,11 @@ class ClientTransactionControllerTest {
     private MockMvc mockMvc;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "ADMIN", "OPERATOR"
-    })
-    void get_shouldNotHaveAccessForNotClient(String role) throws Exception {
+    @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
+    void get_shouldNotHaveAccessForNotClient(Role role) throws Exception {
         mockMvc.perform(get("/api/v1/transaction")
                         .with(csrf())
-                        .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(role)))
+                        .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
 
@@ -81,7 +80,7 @@ class ClientTransactionControllerTest {
         when(transactionResponse.comment()).thenReturn(comment);
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(transactionResponse, transactionResponse)));
         mockMvc.perform(get("/api/v1/transaction")
-                        .with(user(clientId.toString()).roles("CLIENT")))
+                        .with(user(clientId.toString()).roles(Role.CLIENT.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].clientId").doesNotExist())
@@ -106,7 +105,7 @@ class ClientTransactionControllerTest {
             mockMvc.perform(get("/api/v1/transaction")
                     .queryParam("createdAtFrom", String.valueOf(millisFrom))
                     .queryParam("createdAtTo", String.valueOf(millisTo))
-                    .with(user(clientId.toString()).roles("CLIENT"))
+                    .with(user(clientId.toString()).roles(Role.CLIENT.name()))
             ).andExpect(status().isOk());
             ArgumentCaptor<ClientTransactionFilter> captor = ArgumentCaptor.forClass(ClientTransactionFilter.class);
             transactionSpecification.verify(() -> TransactionSpecification.matches(eq(clientId), captor.capture()));
