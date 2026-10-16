@@ -6,6 +6,8 @@ import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.ProcessingConfigurationProperties;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChange;
+import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
@@ -203,13 +205,16 @@ class OrderControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "7b0f1c52-4f3e-4d8a-9a51-2f6c1d9e8a10,SUCCESS,ADMIN",
-            "e3a9d6b4-1c2f-4b7e-8d05-6a4f9c3b2e71,CANCELED,OPERATOR",
-                        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,DISPUTE,OPERATOR"
+            "7b0f1c52-4f3e-4d8a-9a51-2f6c1d9e8a10,NEW,SUCCESS,ADMIN",
+            "e3a9d6b4-1c2f-4b7e-8d05-6a4f9c3b2e71,DISPUTE,CANCELED,OPERATOR",
+            "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,TIMEOUT,DISPUTE,OPERATOR"
     })
     @DisplayName("Метод должен вернуть статус 200 и направить ордер по маршруту в переданный статус.")
-    void update_shouldReturn200AndRouteOrder(UUID id, OrderStatus status, String role) throws Exception {
+    void update_shouldReturn200AndRouteOrder(UUID id, OrderStatus statusFrom, OrderStatus status, String role)
+            throws Exception {
         when(orderService.existsById(id)).thenReturn(true);
+        when(orderFacade.routeOrder(eq(status), eq(id), isNull()))
+                .thenReturn(new OrderStatusChange(statusFrom, status, OrderStatusTransition.ALLOWED));
         mockMvc.perform(patch("/api/private/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
                         .with(csrf())
@@ -235,6 +240,28 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"" + statusTo.name() + "\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1f2e3d4c-5b6a-4798-8a7b-6c5d4e3f2a1b,SUCCESS,SUCCESS,Ордер уже в статусе «Успешный».",
+            "8e9f0a1b-2c3d-4e5f-9a6b-7c8d9e0f1a2b,CANCELED,CANCELED,Ордер уже в статусе «Отменен».",
+            "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a,DISPUTE,DISPUTE,Ордер уже в статусе «В споре».",
+            "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d,TIMEOUT,CANCELED,Переход ордера из статуса «Просрочен» в статус «Отменен» не выполняется."
+    })
+    @DisplayName("Метод должен вернуть статус 400, если переход ордера пропущен.")
+    void update_shouldReturn400IfTransitionSkipped(UUID id, OrderStatus statusFrom, OrderStatus statusTo,
+                                                   String expectedDescription) throws Exception {
+        when(orderService.existsById(id)).thenReturn(true);
+        when(orderFacade.routeOrder(eq(statusTo), eq(id), isNull()))
+                .thenReturn(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.SKIPPED));
+        mockMvc.perform(patch("/api/private/order/" + id)
+                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + statusTo.name() + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(expectedDescription));
     }
 
     @ParameterizedTest

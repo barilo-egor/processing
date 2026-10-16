@@ -6,9 +6,7 @@ import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
-import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
-import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.orders.*;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.junit.jupiter.api.DisplayName;
@@ -460,8 +458,9 @@ class OrderServiceTest {
                                                    String merchantOrderStatus) {
         Order order = saveOrder(statusFrom, "OLD");
 
-        orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus);
+        OrderStatusChange change = orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus);
 
+        assertEquals(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.ALLOWED), change);
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(statusTo, actual.getStatus());
         assertEquals(merchantOrderStatus, actual.getMerchantOrderStatus());
@@ -486,8 +485,10 @@ class OrderServiceTest {
     void updateStatus_shouldSkipTransition(OrderStatus statusFrom, OrderStatus statusTo, String merchantOrderStatus) {
         Order order = saveOrder(statusFrom, "OLD");
 
-        assertDoesNotThrow(() -> orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus));
+        OrderStatusChange change = assertDoesNotThrow(
+                () -> orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus));
 
+        assertEquals(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.SKIPPED), change);
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(statusFrom, actual.getStatus());
         assertEquals("OLD", actual.getMerchantOrderStatus());

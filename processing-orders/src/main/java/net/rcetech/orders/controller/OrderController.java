@@ -5,6 +5,9 @@ import net.rcetech.domain.repository.orders.OrderSpecifications;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.orders.OrderStatusChange;
+import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
@@ -48,6 +51,13 @@ public class OrderController {
         if (!orderService.existsById(id)) {
             throw new BadRequestException("Ордер не найден.");
         }
-        orderFacade.routeOrder(request.status(), id, null);
+        OrderStatusChange change = orderFacade.routeOrder(request.status(), id, null);
+        if (OrderStatusTransition.SKIPPED.equals(change.transition())) {
+            String message = change.from().equals(change.to())
+                    ? "Ордер уже в статусе «" + change.to().getDescription() + "»."
+                    : "Переход ордера из статуса «" + change.from().getDescription() + "» в статус «"
+                    + change.to().getDescription() + "» не выполняется.";
+            throw new OrderStatusUpdateException(message, change.from(), change.to());
+        }
     }
 }

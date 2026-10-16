@@ -6,6 +6,7 @@ import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -66,10 +67,11 @@ public class OrderService {
     }
 
     @Transactional
-    public void updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
+    public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         OrderStatus statusFrom = order.getStatus();
-        switch (OrderStatusTransition.of(statusFrom, statusTo)) {
+        OrderStatusTransition transition = OrderStatusTransition.of(statusFrom, statusTo);
+        switch (transition) {
             case ALLOWED -> {
                 order.setStatus(statusTo);
                 if (Objects.nonNull(merchantOrderStatus)) {
@@ -84,6 +86,7 @@ public class OrderService {
                             + statusTo.getDescription() + "» запрещён.",
                     statusFrom, statusTo);
         }
+        return new OrderStatusChange(statusFrom, statusTo, transition);
     }
 
     public boolean existsById(UUID id) {

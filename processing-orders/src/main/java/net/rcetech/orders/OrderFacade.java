@@ -4,6 +4,7 @@ import jakarta.persistence.OptimisticLockException;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChange;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class OrderFacade {
 
     @Retryable(value = {OptimisticLockException.class, OptimisticLockingFailureException.class},
             jitter = 200, delay = 500, maxDelay = 600)
-    public void routeOrder(OrderStatus orderStatus, UUID orderId, String merchantOrderStatus) {
-        orderService.updateStatus(orderId, orderStatus, merchantOrderStatus);
+    public OrderStatusChange routeOrder(OrderStatus orderStatus, UUID orderId, String merchantOrderStatus) {
+        return orderService.updateStatus(orderId, orderStatus, merchantOrderStatus);
     }
 }
