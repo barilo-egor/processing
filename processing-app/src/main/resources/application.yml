@@ -13,6 +13,7 @@ spring:
     resources:
       static-locations: 'file:config/frontend/'
 server:
+  forward-headers-strategy: native
   servlet:
     session:
       cookie:

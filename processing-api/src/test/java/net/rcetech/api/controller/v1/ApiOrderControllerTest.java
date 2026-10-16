@@ -1,7 +1,7 @@
 package net.rcetech.api.controller.v1;
 
 import net.rcetech.api.config.ApiSecurityConfig;
-import net.rcetech.api.controller.ClientOrderController;
+import net.rcetech.api.controller.ApiOrderController;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.mapping.orders.OrderMapper;
@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -48,16 +49,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ClientOrderController.class)
+@WebMvcTest(ApiOrderController.class)
 @Import({MetaSecurityConfig.class, ApiSecurityConfig.class})
 @EnableConfigurationProperties(ProcessingConfigurationProperties.class)
-class ClientOrderControllerTest {
+class ApiOrderControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -76,12 +76,24 @@ class ClientOrderControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private RequestPostProcessor apiKeyOf(UUID clientId) {
+        String headerApiKey = "key-" + clientId;
+        Client client = new Client();
+        client.setId(clientId);
+        ApiKey apiKey = new ApiKey();
+        apiKey.setClient(client);
+        when(apiKeyService.findByKey(headerApiKey)).thenReturn(Optional.of(apiKey));
+        return request -> {
+            request.addHeader("Api-Key", headerApiKey);
+            return request;
+        };
+    }
+
     @Test
     @DisplayName("Метод должен вернуть 400 если отсутствует тело.")
     void createOrder_shouldReturn400IfNoBody() throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                        .with(user("someClient").roles(Role.CLIENT.name()))
-                        .with(csrf()))
+                        .with(apiKeyOf(UUID.randomUUID())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Failed to read request"))
                 .andExpect(jsonPath("$.instance").value("/api/v1/order"))
@@ -104,8 +116,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -124,8 +135,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -143,8 +153,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -163,8 +172,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -182,8 +190,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -202,8 +209,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -229,8 +235,7 @@ class ClientOrderControllerTest {
                 }""".formatted(callbackUrl);
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user("test").roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
@@ -245,8 +250,7 @@ class ClientOrderControllerTest {
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(clientId.toString()).roles(Role.CLIENT.name()))
-                        .with(csrf())
+                        .with(apiKeyOf(clientId))
                         .content(objectMapper.writeValueAsString(expected))
                         .header("Content-Type", "application/json")
         ).andExpect(status().isCreated());
@@ -275,8 +279,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
-                        .with(csrf())
+                        .with(apiKeyOf(UUID.randomUUID()))
                         .content(content)
                         .header("Content-Type", "application/json")
                         .header("Search-Timeout-Seconds", timeoutSeconds)
@@ -297,8 +300,7 @@ class ClientOrderControllerTest {
                 }""";
         mockMvc.perform(
                 post("/api/v1/order")
-                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
-                        .with(csrf())
+                        .with(apiKeyOf(UUID.randomUUID()))
                         .content(content)
                         .header("Content-Type", "application/json")
         ).andExpect(status().isCreated());
@@ -324,8 +326,7 @@ class ClientOrderControllerTest {
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
-                                .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
                                         Set.of(RequestMethod.SBP), null, null
@@ -364,10 +365,9 @@ class ClientOrderControllerTest {
 
     @ParameterizedTest
     @EnumSource(value = Role.class, names = {"ADMIN", "OPERATOR"})
-    @DisplayName("Доступ должен быть ограничен для всех кроме клиентов.")
-    void createOrder_shouldReturn403IfNotClient(Role role) throws Exception {
+    @DisplayName("Сессия пользователя поддержки без апи ключа должна получить 401.")
+    void createOrder_shouldReturn401IfSupportUserSessionWithoutApiKey(Role role) throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                        .with(csrf())
                         .with(user(UUID.randomUUID().toString()).roles(role.name()))
                         .header("Content-Type", "application/json")
                         .content("""
@@ -378,14 +378,13 @@ class ClientOrderControllerTest {
                                     "userId": "163637435086",
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("Метод должен вернуть 401, если заголовок Api-Key отсутствует.")
     void createOrder_shouldReturn401IfNoApiKey() throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                        .with(csrf())
                         .header("Content-Type", "application/json")
                         .content("""
                                 {
@@ -405,7 +404,6 @@ class ClientOrderControllerTest {
     @DisplayName("Метод должен вернуть 401, если заголовок Api-Key пустой.")
     void createOrder_shouldReturn401IfApiKeyIsEmpty(String apiKey) throws Exception {
         mockMvc.perform(post("/api/v1/order")
-                        .with(csrf())
                         .header("Content-Type", "application/json")
                         .header("Api-Key", apiKey)
                         .content("""
@@ -424,7 +422,6 @@ class ClientOrderControllerTest {
     void createOrder_shouldReturn401IfApiKeyNotFound() throws Exception {
         when(apiKeyService.findByKey(any())).thenReturn(Optional.empty());
         mockMvc.perform(post("/api/v1/order")
-                        .with(csrf())
                         .header("Content-Type", "application/json")
                         .header("Api-Key", "iTTnB770i985XpfFWtJBYH1FXCLkCQxo")
                         .content("""
@@ -451,7 +448,6 @@ class ClientOrderControllerTest {
         when(client.getId()).thenReturn(clientId);
         when(apiKey.getClient()).thenReturn(client);
         mockMvc.perform(post("/api/v1/order")
-                        .with(csrf())
                         .header("Content-Type", "application/json")
                         .header("Api-Key", headerApiKey)
                         .content("""
@@ -472,8 +468,7 @@ class ClientOrderControllerTest {
         UUID orderId = UUID.randomUUID();
         UUID clientId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/order/" + orderId)
-                .with(csrf())
-                .with(user(clientId.toString()).roles(Role.CLIENT.name())));
+                .with(apiKeyOf(clientId)));
         verify(orderApiService).cancelOrder(clientId, orderId);
     }
 
@@ -486,8 +481,7 @@ class ClientOrderControllerTest {
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         MockMvcRequestBuilders.get("/api/v1/order/" + expected.id())
-                                .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
-                                .with(csrf())
+                                .with(apiKeyOf(UUID.randomUUID()))
                                 .content(objectMapper.writeValueAsString(new CreateOrderRequest(
                                         "76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
                                         Set.of(RequestMethod.SBP), null, null
@@ -521,8 +515,7 @@ class ClientOrderControllerTest {
                 "1234 1234 1234 1234", "Сбербанк", "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
-                        .with(csrf())
-                        .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
+                        .with(apiKeyOf(UUID.randomUUID()))
                         .header("Content-Type", "application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())

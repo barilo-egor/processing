@@ -72,7 +72,6 @@ public class MetaSecurityConfig {
                 .spa()
                 .csrfTokenRepository(csrfTokenRepository)
                 .ignoringRequestMatchers(WebPath.PUBLIC_API_PATH + "/**")
-                .ignoringRequestMatchers(WebPath.V1_API_PATH + "/order/**")
         );
         http.logout(logout -> logout.logoutSuccessHandler(oidcLogoutSuccessHandler()));
         http.oidcLogout(oidc -> oidc.backChannel(Customizer.withDefaults()));

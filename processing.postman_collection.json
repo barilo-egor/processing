@@ -24,11 +24,12 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
+                  "raw": "{{processing_private_api_url}}/client/order?status=&method=&page=&size=&sort=",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_private_api_url}}"
                   ],
                   "path": [
+                    "client",
                     "order"
                   ],
                   "query": [
@@ -72,11 +73,12 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
+                      "raw": "{{processing_private_api_url}}/client/order?status=&method=&page=&size=&sort=",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_private_api_url}}"
                       ],
                       "path": [
+                        "client",
                         "order"
                       ],
                       "query": [
@@ -173,11 +175,12 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                  "raw": "{{processing_private_api_url}}/client/order/{{id}}",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_private_api_url}}"
                   ],
                   "path": [
+                    "client",
                     "order",
                     "{{id}}"
                   ]
@@ -195,11 +198,12 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                      "raw": "{{processing_private_api_url}}/client/order/{{id}}",
                       "host": [
-                        "{{processing_v1_api_url}}"
+                        "{{processing_private_api_url}}"
                       ],
                       "path": [
+                        "client",
                         "order",
                         "{{id}}"
                       ]
@@ -265,8 +269,8 @@
                 "method": "POST",
                 "header": [
                   {
-                    "key": "Api-Key",
-                    "value": "{{api_key}}"
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
                   }
                 ],
                 "body": {
@@ -279,12 +283,37 @@
                   }
                 },
                 "url": {
-                  "raw": "{{processing_v1_api_url}}/order",
+                  "raw": "{{processing_private_api_url}}/client/order",
                   "host": [
-                    "{{processing_v1_api_url}}"
+                    "{{processing_private_api_url}}"
                   ],
                   "path": [
+                    "client",
                     "order"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Отмена ордера",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_private_api_url}}/client/order/{{id}}",
+                  "host": [
+                    "{{processing_private_api_url}}"
+                  ],
+                  "path": [
+                    "client",
+                    "order",
+                    "{{id}}"
                   ]
                 }
               },
@@ -1618,6 +1647,337 @@
                   "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": \"https://google.com/callback\",\n  \"commissionPercent\": null,\n  \"id\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n  \"methods\": [],\n  \"orderTimeoutSeconds\": 900,\n  \"registeredAt\": 1788022344000,\n  \"status\": \"ACTIVE\",\n  \"username\": \"postman-admin12\"\n}"
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Программное API v1",
+      "description": "API для интеграции мерчантов. Авторизация по заголовку `Api-Key`, сессия и CSRF токен не используются: запросы с кукой `JSESSIONID` без ключа получают 401.",
+      "item": [
+        {
+          "name": "orders",
+          "item": [
+            {
+              "name": "Получение ордеров",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  },
+                  {
+                    "key": "Api-Key",
+                    "value": "{{api_key}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "Статус ордера"
+                    },
+                    {
+                      "key": "method",
+                      "value": "",
+                      "description": "Метод ордера"
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                    },
+                    {
+                      "key": "size",
+                      "value": "",
+                      "description": "Размер страницы(по умолчанию 20)"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Ордера получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      },
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order?status=&method=&page=&size=&sort=",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ],
+                      "query": [
+                        {
+                          "key": "status",
+                          "value": "",
+                          "description": "Статус ордера"
+                        },
+                        {
+                          "key": "method",
+                          "value": "",
+                          "description": "Метод ордера"
+                        },
+                        {
+                          "key": "page",
+                          "value": "",
+                          "description": "Номер страницы, начиная с 0(по умолчанию 0)"
+                        },
+                        {
+                          "key": "size",
+                          "value": "",
+                          "description": "Размер страницы(по умолчанию 20)"
+                        },
+                        {
+                          "key": "sort",
+                          "value": "",
+                          "description": "Сортировка: sort=field1,asc&sort=field2,desc"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "348"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 08 Oct 2026 16:46:12 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n      \"createdAt\": 1791202963000,\n      \"internalId\": \"qwerty10000\",\n      \"status\": \"SUCCESS\",\n      \"amount\": 5000,\n      \"method\": \"CARD\",\n      \"details\": \"1111 2222 3n3n3n3n 4444\",\n      \"bank\": \"T-BANK\",\n      \"callbackUrl\": \"https://example.com/callback\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Получение ордера",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  },
+                  {
+                    "key": "Api-Key",
+                    "value": "{{api_key}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Ордер получен",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      },
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "transfer-encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 08 Oct 2026 16:48:03 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10000\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 5000,\n  \"method\": \"CARD\",\n  \"details\": \"1111 2222 3n3n3n3n 4444\",\n  \"bank\": \"T-BANK\",\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Создание ордера",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Api-Key",
+                    "value": "{{api_key}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Отмена ордера",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  },
+                  {
+                    "key": "Api-Key",
+                    "value": "{{api_key}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                  "host": [
+                    "{{processing_v1_api_url}}"
+                  ],
+                  "path": [
+                    "order",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         }
