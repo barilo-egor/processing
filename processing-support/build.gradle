@@ -14,14 +14,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     testImplementation 'org.springframework.security:spring-security-oauth2-client'
 
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
-
     implementation 'org.springframework.kafka:spring-kafka'
 
     implementation platform('org.springframework.grpc:spring-grpc-dependencies:1.0.3')
     implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
 
     implementation 'commons-codec:commons-codec:1.18.0'
+    implementation 'org.apache.commons:commons-lang3'
 
     implementation 'org.semver4j:semver4j:6.0.0'
     implementation 'tgb.cryptoexchange:common-api:1.1.0'

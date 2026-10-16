@@ -41,6 +41,10 @@ dependencies {
     implementation 'tgb.cryptoexchange:commons:1.0'
 }
 
+configurations.configureEach {
+    exclude group: 'org.springdoc'
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += [
             '-parameters',
