@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.UUID;
 
 @RestController
@@ -39,7 +40,10 @@ public class SupportClientController {
 
     @PatchMapping("/{id}")
     @AdminAccess
-    public ResponseEntity<SupportClientProjection> update(@PathVariable UUID id, @Valid @RequestBody UpdateClientDTO updateClientDTO) {
-        return new ResponseEntity<>(clientService.update(id, updateClientDTO), HttpStatus.OK);
+    public ResponseEntity<SupportClientProjection> update(Principal principal, @PathVariable UUID id,
+                                                          @Valid @RequestBody UpdateClientDTO updateClientDTO) {
+        SupportClientProjection client = clientService.update(id, updateClientDTO);
+        log.info("Сотрудник поддержки {} обновил настройки клиента {}: {}.", principal.getName(), id, updateClientDTO);
+        return new ResponseEntity<>(client, HttpStatus.OK);
     }
 }

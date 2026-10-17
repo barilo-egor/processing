@@ -1,6 +1,7 @@
 package net.rcetech.domain.service.clients;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.clients.Client_;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+@Slf4j
 @Service
 public class ClientService {
 
@@ -92,5 +94,6 @@ public class ClientService {
         client.setRegisteredAt(Instant.now());
         client.setUsername(username);
         clientRepository.save(client);
+        log.info("Зарегистрирован клиент {} ({}).", id, username);
     }
 }

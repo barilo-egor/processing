@@ -1,6 +1,7 @@
 package net.rcetech.clients.controller;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientService;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.CLIENT_API_PATH + "/api-key")
 public class ApiKeyController {
@@ -33,7 +35,9 @@ public class ApiKeyController {
     @PostMapping
     @ClientAccess
     public ResponseEntity<String> createApiKey(@RequestParam @NotBlank String name, Principal principal) {
-        return new ResponseEntity<>(apiKeyService.create(name, getClient(principal)), HttpStatus.CREATED);
+        String apiKey = apiKeyService.create(name, getClient(principal));
+        log.info("Клиент {} создал API-ключ «{}».", principal.getName(), name);
+        return new ResponseEntity<>(apiKey, HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -46,6 +50,7 @@ public class ApiKeyController {
     @ClientAccess
     public ResponseEntity<List<ApiKeyResponseDTO>> delete(Principal principal, @PathVariable Long id) {
         apiKeyService.delete(getClient(principal), id);
+        log.info("Клиент {} удалил API-ключ {}.", principal.getName(), id);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

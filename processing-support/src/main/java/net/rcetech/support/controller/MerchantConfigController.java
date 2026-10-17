@@ -1,5 +1,6 @@
 package net.rcetech.support.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
 import net.rcetech.meta.support.dto.MerchantConfigUpdateDTO;
@@ -8,9 +9,11 @@ import net.rcetech.support.service.MerchantConfigService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.SUPPORT_API_PATH + "/merchant-config")
 public class MerchantConfigController {
@@ -29,8 +32,10 @@ public class MerchantConfigController {
 
     @PatchMapping("/{id}")
     @AdminAccess
-    public ResponseEntity<MerchantConfigResponseDTO> update(@PathVariable Long id,
+    public ResponseEntity<MerchantConfigResponseDTO> update(Principal principal, @PathVariable Long id,
             @RequestBody MerchantConfigUpdateDTO updateDTO) {
-        return ResponseEntity.ok(merchantConfigService.update(id, updateDTO));
+        MerchantConfigResponseDTO merchantConfig = merchantConfigService.update(id, updateDTO);
+        log.info("Сотрудник поддержки {} обновил настройку мерчанта {}: {}.", principal.getName(), id, updateDTO);
+        return ResponseEntity.ok(merchantConfig);
     }
 }

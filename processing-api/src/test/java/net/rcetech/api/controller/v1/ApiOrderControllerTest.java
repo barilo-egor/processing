@@ -15,6 +15,7 @@ import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.CustomMatcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,11 @@ class ApiOrderControllerTest {
     private ApiKeyService apiKeyService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        when(orderApiService.createOrder(any(), any(), any())).thenReturn(new Order());
+    }
 
     private RequestPostProcessor apiKeyOf(UUID clientId) {
         String headerApiKey = "key-" + clientId;

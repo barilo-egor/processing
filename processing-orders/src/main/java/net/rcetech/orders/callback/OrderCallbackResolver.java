@@ -10,6 +10,8 @@ import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChange;
+import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.orders.OrderFacade;
 import net.rcetech.orders.status.OrderStatusResolver;
 import org.springframework.stereotype.Service;
@@ -72,7 +74,13 @@ public class OrderCallbackResolver {
                     + ", order id " + order.getId());
         }
         try {
-            orderFacade.routeOrder(maybeStatus.get(), order.getId(), merchantCallbackEvent.getStatus());
+            OrderStatusChange change = orderFacade.routeOrder(
+                    maybeStatus.get(), order.getId(), merchantCallbackEvent.getStatus());
+            if (OrderStatusTransition.ALLOWED.equals(change.transition())) {
+                log.info("Ордер {} переведён из статуса {} в статус {} по КБ мерчанта {} (статус {}).",
+                        order.getId(), change.from(), change.to(),
+                        merchantCallbackEvent.getMerchant(), merchantCallbackEvent.getStatus());
+            }
         } catch (OrderStatusUpdateException e) {
             long timestamp = System.currentTimeMillis();
             log.warn("{} Переход ордера {} из статуса {} в статус {} по КБ мерчанта {} (статус {}) отклонён.",

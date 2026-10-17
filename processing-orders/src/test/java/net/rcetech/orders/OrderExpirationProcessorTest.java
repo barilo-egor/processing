@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 
 @DataJpaTest
@@ -133,7 +134,7 @@ class OrderExpirationProcessorTest {
             orderRepository.save(order);
         }
         Instant now = Instant.ofEpochMilli(millis - 100000);
-        try (MockedStatic<Instant> mockedInstant = mockStatic(Instant.class)) {
+        try (MockedStatic<Instant> mockedInstant = mockStatic(Instant.class, CALLS_REAL_METHODS)) {
             mockedInstant.when(Instant::now).thenReturn(now);
             orderExpirationProcessor.checkExpiredOrders();
         }
@@ -155,7 +156,7 @@ class OrderExpirationProcessorTest {
             orderRepository.save(order);
         }
         Instant now = Instant.ofEpochMilli(millis + 100000);
-        try (MockedStatic<Instant> mockedInstant = mockStatic(Instant.class)) {
+        try (MockedStatic<Instant> mockedInstant = mockStatic(Instant.class, CALLS_REAL_METHODS)) {
             mockedInstant.when(Instant::now).thenReturn(now);
             orderExpirationProcessor.checkExpiredOrders();
         }

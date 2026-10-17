@@ -1,6 +1,7 @@
 package net.rcetech.billing.controller;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.repository.billing.TransactionSpecification;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.meta.WebPath;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.SUPPORT_API_PATH + "/transaction")
 @SupportAccess
@@ -40,6 +42,8 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     public void createManualCorrect(Principal principal, @Valid @RequestBody ManualCorrectTransaction manualCorrectTransaction) {
         transactionService.createManualCorrect(UUID.fromString(principal.getName()), manualCorrectTransaction);
+        log.info("Сотрудник поддержки {} создал ручную корректировку баланса: {}.",
+                principal.getName(), manualCorrectTransaction);
     }
 
 }

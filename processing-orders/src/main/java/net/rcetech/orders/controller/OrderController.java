@@ -1,6 +1,7 @@
 package net.rcetech.orders.controller;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.WebPath;
@@ -19,8 +20,10 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.SUPPORT_API_PATH + "/order")
 @SupportAccess
@@ -47,7 +50,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}")
-    public void update(@PathVariable UUID id, @Valid @RequestBody OrderUpdateRequest request) {
+    public void update(Principal principal, @PathVariable UUID id, @Valid @RequestBody OrderUpdateRequest request) {
         if (!orderService.existsById(id)) {
             throw new BadRequestException("Ордер не найден.");
         }
@@ -59,5 +62,7 @@ public class OrderController {
                     + change.to().getDescription() + "» не выполняется.";
             throw new OrderStatusUpdateException(message, change.from(), change.to());
         }
+        log.info("Сотрудник поддержки {} перевёл ордер {} из статуса {} в статус {}.",
+                principal.getName(), id, change.from(), change.to());
     }
 }

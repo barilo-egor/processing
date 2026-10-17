@@ -1,6 +1,7 @@
 package net.rcetech.clients.controller;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.CLIENT_API_PATH + "/profile")
 @ClientAccess
@@ -33,6 +35,8 @@ public class ClientController {
 
     @PatchMapping
     public ClientProjection patch(Principal principal, @Valid @RequestBody ClientUpdateRequest clientUpdateRequest) {
-        return clientService.update(UUID.fromString(principal.getName()), clientUpdateRequest);
+        ClientProjection client = clientService.update(UUID.fromString(principal.getName()), clientUpdateRequest);
+        log.info("Клиент {} обновил профиль: {}.", principal.getName(), clientUpdateRequest);
+        return client;
     }
 }

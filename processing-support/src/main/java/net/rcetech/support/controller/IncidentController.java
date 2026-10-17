@@ -1,5 +1,6 @@
 package net.rcetech.support.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.WebPath;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @SupportAccess
 @RequestMapping(WebPath.SUPPORT_API_PATH + "/incident")
@@ -37,6 +39,9 @@ public class IncidentController {
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public IncidentResponse update(Principal principal, @PathVariable Long id, @RequestBody UpdateIncidentRequest request) {
-        return incidentService.resolve(id, UUID.fromString(principal.getName()), request.comment());
+        IncidentResponse incident = incidentService.resolve(id, UUID.fromString(principal.getName()), request.comment());
+        log.info("Сотрудник поддержки {} закрыл инцидент {} с комментарием: {}.",
+                principal.getName(), id, request.comment());
+        return incident;
     }
 }

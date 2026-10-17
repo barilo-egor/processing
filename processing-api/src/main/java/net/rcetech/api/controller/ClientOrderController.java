@@ -42,6 +42,9 @@ public class ClientOrderController {
                                                                   Integer timeoutSeconds,
                                                           Principal principal) {
         Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds);
+        log.info("Клиент {} создал ордер {} (internalId={}, сумма={}, методы={}).",
+                principal.getName(), order.getId(), clientRequest.internalId(), clientRequest.amount(),
+                clientRequest.methods());
         return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 
@@ -57,6 +60,7 @@ public class ClientOrderController {
     @ResponseStatus(HttpStatus.OK)
     public void cancelOrder(@PathVariable UUID id, Principal principal) {
         orderApiService.cancelOrder(UUID.fromString(principal.getName()), id);
+        log.info("Клиент {} отменил ордер {}.", principal.getName(), id);
     }
 
     @GetMapping

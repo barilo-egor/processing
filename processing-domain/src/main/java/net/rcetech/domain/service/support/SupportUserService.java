@@ -1,6 +1,7 @@
 package net.rcetech.domain.service.support;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.domain.model.support.SupportUser_;
 import net.rcetech.domain.repository.support.SupportUserRepository;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class SupportUserService {
 
@@ -35,6 +37,7 @@ public class SupportUserService {
         supportUser.setRegisteredAt(Instant.now());
         supportUser.setUsername(username);
         supportUserRepository.save(supportUser);
+        log.info("Зарегистрирован сотрудник поддержки {} ({}).", id, username);
     }
 
 }

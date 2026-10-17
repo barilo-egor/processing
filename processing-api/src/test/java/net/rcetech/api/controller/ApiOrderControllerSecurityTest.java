@@ -3,6 +3,7 @@ package net.rcetech.api.controller;
 import jakarta.servlet.http.Cookie;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
@@ -82,6 +83,7 @@ class ApiOrderControllerSecurityTest {
     @BeforeEach
     void setUp() {
         when(orderApiService.findAll(any(), any(), any())).thenReturn(Page.empty());
+        when(orderApiService.createOrder(any(), any(), any())).thenReturn(new Order());
     }
 
     private Client createClient() {

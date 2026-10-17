@@ -1,5 +1,6 @@
 package net.rcetech.billing.controller;
 
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.service.billing.WithdrawalRequestService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
@@ -169,6 +170,7 @@ class ClientWithdrawalRequestControllerTest {
     @DisplayName("Метод должен передать параметры в метод сервиса.")
     void create_shouldPassParametersToService(Integer amount, String address) throws Exception {
         UUID clientId = UUID.randomUUID();
+        when(withdrawalRequestService.create(clientId, amount, address)).thenReturn(new WithdrawalRequest());
         mockMvc.perform(post("/api/client/withdrawal-request")
                         .queryParam("amount", amount.toString())
                         .queryParam("address", address)

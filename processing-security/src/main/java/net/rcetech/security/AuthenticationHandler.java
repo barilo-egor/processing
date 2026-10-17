@@ -2,6 +2,7 @@ package net.rcetech.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.user.Role;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class AuthenticationHandler implements AuthenticationSuccessHandler {
 
@@ -37,15 +39,19 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
         if (roles.stream().anyMatch(Role.SUPPORT_USERS_WITH_PREFIX::contains)) {
-            supportUserService.createIfNotExists(UUID.fromString(authentication.getName()),
-                    ((OidcUser) Objects.requireNonNull(authentication.getPrincipal())).getAttribute("preferred_username"));
+            String username = getUsername(authentication);
+            supportUserService.createIfNotExists(UUID.fromString(authentication.getName()), username);
+            log.info("Вход сотрудника поддержки {} ({}), роли {}.", authentication.getName(), username, roles);
             response.sendRedirect("/");
         } else if (roles.contains(Role.CLIENT.withPrefix())) {
-            clientService.createIfNotExists(
-                    UUID.fromString(authentication.getName()),
-                    ((OidcUser) Objects.requireNonNull(authentication.getPrincipal())).getAttribute("preferred_username")
-            );
+            String username = getUsername(authentication);
+            clientService.createIfNotExists(UUID.fromString(authentication.getName()), username);
+            log.info("Вход клиента {} ({}).", authentication.getName(), username);
             response.sendRedirect("/");
         }
+    }
+
+    private String getUsername(Authentication authentication) {
+        return ((OidcUser) Objects.requireNonNull(authentication.getPrincipal())).getAttribute("preferred_username");
     }
 }

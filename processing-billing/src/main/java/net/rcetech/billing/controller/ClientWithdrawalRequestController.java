@@ -2,6 +2,8 @@ package net.rcetech.billing.controller;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.service.billing.WithdrawalRequestService;
 import net.rcetech.meta.WebPath;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(WebPath.CLIENT_API_PATH + "/withdrawal-request")
 @ClientAccess
@@ -33,7 +36,10 @@ public class ClientWithdrawalRequestController {
     public void create(Principal principal,
                        @RequestParam @Positive Integer amount,
                        @RequestParam @NotBlank String address) {
-        withdrawalRequestService.create(UUID.fromString(principal.getName()), amount, address);
+        WithdrawalRequest withdrawalRequest = withdrawalRequestService.create(
+                UUID.fromString(principal.getName()), amount, address);
+        log.info("Клиент {} создал заявку на вывод {} (сумма={}, адрес={}).",
+                principal.getName(), withdrawalRequest.getId(), amount, address);
     }
 
     @GetMapping
@@ -50,5 +56,6 @@ public class ClientWithdrawalRequestController {
     @ResponseStatus(HttpStatus.OK)
     public void cancel(Principal principal, @PathVariable UUID id) {
         withdrawalRequestService.cancel(UUID.fromString(principal.getName()), id);
+        log.info("Клиент {} отменил заявку на вывод {}.", principal.getName(), id);
     }
 }
