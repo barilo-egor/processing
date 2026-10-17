@@ -18,3 +18,4 @@ server:
     session:
       cookie:
         secure: true
+        same-site: lax

@@ -32,10 +32,14 @@ public class MetaSecurityConfig {
 
     private final boolean secureCookies;
 
+    private final String cookieSameSite;
+
     public MetaSecurityConfig(ClientRegistrationRepository clientRegistrationRepository,
-                              @Value("${server.servlet.session.cookie.secure:true}") boolean secureCookies) {
+                              @Value("${server.servlet.session.cookie.secure:true}") boolean secureCookies,
+                              @Value("${server.servlet.session.cookie.same-site:lax}") String cookieSameSite) {
         this.clientRegistrationRepository = clientRegistrationRepository;
         this.secureCookies = secureCookies;
+        this.cookieSameSite = cookieSameSite;
     }
 
     @Bean
@@ -65,7 +69,7 @@ public class MetaSecurityConfig {
             );
         }
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.secure(secureCookies));
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.secure(secureCookies).sameSite(cookieSameSite));
         http.csrf(csrf -> csrf
                 .spa()
                 .csrfTokenRepository(csrfTokenRepository)
