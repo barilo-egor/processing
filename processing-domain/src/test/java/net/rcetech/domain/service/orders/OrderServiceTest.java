@@ -241,6 +241,63 @@ class OrderServiceTest {
         assertEquals(order.getId(), actual.getContent().getFirst().getId());
     }
 
+    @ValueSource(longs = {
+            1789401782000L, 1789401733000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен включать границу даты создания ОТ.")
+    void findAll_shouldIncludeCreatedFromBoundary(long millis) {
+        Instant from = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        Order order = saveOrder(client, from);
+        saveOrder(client, from.minusSeconds(1));
+
+        OrderFilter orderFilter = new OrderFilter(
+                null, from, null, null, null,
+                null, null, null
+        );
+        Page<OrderSummary> actual = orderService.findAll(
+                OrderSpecifications.matches(orderFilter),
+                PageRequest.of(0, 10),
+                OrderSummary.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(order.getId(), actual.getContent().getFirst().getId());
+    }
+
+    @ValueSource(longs = {
+            1789401782000L, 1789401733000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен исключать границу даты создания ДО.")
+    void findAll_shouldExcludeCreatedToBoundary(long millis) {
+        Instant to = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveOrder(client, to);
+        Order order = saveOrder(client, to.minusSeconds(1));
+
+        OrderFilter orderFilter = new OrderFilter(
+                null, null, to, null, null,
+                null, null, null
+        );
+        Page<OrderSummary> actual = orderService.findAll(
+                OrderSpecifications.matches(orderFilter),
+                PageRequest.of(0, 10),
+                OrderSummary.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(order.getId(), actual.getContent().getFirst().getId());
+    }
+
+    Order saveOrder(Client client, Instant createdAt) {
+        Order order = new Order();
+        order.setCreatedAt(createdAt);
+        fillFields(order, client);
+        return orderRepository.save(order);
+    }
+
     @RepeatedTest(value = 2)
     @DisplayName("Метод должен вернуть ордера, отфильтрованные по идентификатору клиента.")
     void findAll_shouldReturnOrderByClientId() {

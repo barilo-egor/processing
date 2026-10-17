@@ -339,4 +339,58 @@ class MerchantCallbackServiceTest {
         assertEquals(1, callbacks.getTotalElements());
         assertEquals(targetCallback.getId(), callbacks.getContent().getFirst().id());
     }
+
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068000L, 1790262062000L
+    })
+    @DisplayName("Метод должен включать границу createdAt ОТ.")
+    void findAll_shouldIncludeCreatedAtFromBoundary(long millis) {
+        Instant from = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        MerchantCallback targetCallback = saveCallback(client, from);
+        saveCallback(client, from.minusSeconds(1));
+
+        Page<MerchantCallbackResponse> callbacks = merchantCallbackService.findAll(
+                MerchantCallbackSpecifications.matches(new MerchantCallbackFilter(
+                        null, null, null, from, null
+                )),
+                PageRequest.of(0, 20),
+                MerchantCallbackResponse.class
+        );
+
+        assertEquals(1, callbacks.getTotalElements());
+        assertEquals(targetCallback.getId(), callbacks.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068000L, 1790262062000L
+    })
+    @DisplayName("Метод должен исключать границу createdAt ДО.")
+    void findAll_shouldExcludeCreatedAtToBoundary(long millis) {
+        Instant to = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveCallback(client, to);
+        MerchantCallback targetCallback = saveCallback(client, to.minusSeconds(1));
+
+        Page<MerchantCallbackResponse> callbacks = merchantCallbackService.findAll(
+                MerchantCallbackSpecifications.matches(new MerchantCallbackFilter(
+                        null, null, null, null, to
+                )),
+                PageRequest.of(0, 20),
+                MerchantCallbackResponse.class
+        );
+
+        assertEquals(1, callbacks.getTotalElements());
+        assertEquals(targetCallback.getId(), callbacks.getContent().getFirst().id());
+    }
+
+    MerchantCallback saveCallback(Client client, Instant createdAt) {
+        MerchantCallback callback = new MerchantCallback();
+        callback.setCreatedAt(createdAt);
+        callback.setOrder(getDummyOrder(client));
+        fillFields(callback);
+        return merchantCallbackRepository.save(callback);
+    }
 }

@@ -511,6 +511,58 @@ class WithdrawalRequestServiceTest {
     }
 
     @ParameterizedTest
+    @ValueSource(longs = {
+            1790083135000L, 1790073336000L
+    })
+    @DisplayName("Метод должен включать границу даты создания ОТ.")
+    void findAll_shouldIncludeCreatedFromBoundary(long millis) {
+        Instant from = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient(BigDecimal.ONE);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
+        WithdrawalRequest expected = saveRequest(client, from);
+        saveRequest(client, from.minusSeconds(1));
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null, null, null, from, null, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790083135000L, 1790073336000L
+    })
+    @DisplayName("Метод должен исключать границу даты создания ДО.")
+    void findAll_shouldExcludeCreatedToBoundary(long millis) {
+        Instant to = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient(BigDecimal.ONE);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
+        saveRequest(client, to);
+        WithdrawalRequest expected = saveRequest(client, to.minusSeconds(1));
+        Page<ClientWithdrawalRequestResponse> actual = withdrawalRequestService.findAll(
+                WithdrawalRequestSpecifications.matches(client.getId(), new WithdrawalRequestFilter(
+                        null, null, null, null, to, null
+                )),
+                Pageable.ofSize(20),
+                ClientWithdrawalRequestResponse.class
+        );
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(expected.getId(), actual.getContent().getFirst().id());
+    }
+
+    WithdrawalRequest saveRequest(Client client, Instant createdAt) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setCreatedAt(createdAt);
+        withdrawalRequest.setClient(client);
+        fillFields(withdrawalRequest);
+        return withdrawalRequestRepository.save(withdrawalRequest);
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {
             "TX9zFakeAddressTRC20usdtNotReal99x", "TF7y6fakeTronAddressUSDT88888xxxx1"
     })

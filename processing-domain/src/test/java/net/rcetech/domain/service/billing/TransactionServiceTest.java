@@ -322,6 +322,98 @@ class TransactionServiceTest {
         assertEquals(1, actual.getTotalElements());
     }
 
+    @ValueSource(longs = {
+            1789912612000L, 1789912713000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен включать границу createdAt ОТ в фильтре TransactionFilter.")
+    void findAllTransactionFilter_shouldIncludeCreatedAtFromBoundary(long millis) {
+        Instant from = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveTransaction(client, from);
+        saveTransaction(client, from.minusSeconds(1));
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(new TransactionFilter(null, from, null)),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(from, actual.getContent().getFirst().createdAt());
+    }
+
+    @ValueSource(longs = {
+            1789912612000L, 1789912713000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен исключать границу createdAt ДО в фильтре TransactionFilter.")
+    void findAllTransactionFilter_shouldExcludeCreatedAtToBoundary(long millis) {
+        Instant to = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveTransaction(client, to);
+        saveTransaction(client, to.minusSeconds(1));
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(new TransactionFilter(null, null, to)),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(to.minusSeconds(1), actual.getContent().getFirst().createdAt());
+    }
+
+    @ValueSource(longs = {
+            1789912612000L, 1789912713000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен включать границу createdAt ОТ в фильтре ClientTransactionFilter.")
+    void findAllClientTransactionFilter_shouldIncludeCreatedAtFromBoundary(long millis) {
+        Instant from = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveTransaction(client, from);
+        saveTransaction(client, from.minusSeconds(1));
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(from, null)),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(from, actual.getContent().getFirst().createdAt());
+    }
+
+    @ValueSource(longs = {
+            1789912612000L, 1789912713000L
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен исключать границу createdAt ДО в фильтре ClientTransactionFilter.")
+    void findAllClientTransactionFilter_shouldExcludeCreatedAtToBoundary(long millis) {
+        Instant to = Instant.ofEpochMilli(millis);
+        Client client = getDummyClient();
+        saveTransaction(client, to);
+        saveTransaction(client, to.minusSeconds(1));
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, to)),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(to.minusSeconds(1), actual.getContent().getFirst().createdAt());
+    }
+
+    void saveTransaction(Client client, Instant createdAt) {
+        Transaction transaction = new Transaction();
+        transaction.setClient(client);
+        transaction.setCreatedAt(createdAt);
+        fillFields(transaction);
+        transactionRepository.save(transaction);
+    }
+
     void saveTransaction(Client client, Operation operation, Integer amount) {
         Transaction transaction = new Transaction();
         transaction.setClient(client);

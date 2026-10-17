@@ -247,16 +247,22 @@ class IncidentServiceTest {
         assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068L, 1790262062L
+    })
     @DisplayName("Метод должен включать границу createdAt ОТ.")
-    void findAll_shouldIncludeCreatedAtFromBoundary() {
-        Instant createdAt = Instant.ofEpochSecond(1_790_262_068L);
+    void findAll_shouldIncludeCreatedAtFromBoundary(long seconds) {
+        Instant from = Instant.ofEpochSecond(seconds);
         Incident targetIncident = new Incident();
-        targetIncident.setCreatedAt(createdAt);
+        targetIncident.setCreatedAt(from);
         saveDummyIncident(targetIncident);
+        Incident incident = new Incident();
+        incident.setCreatedAt(from.minusSeconds(1));
+        saveDummyIncident(incident);
 
         Page<Incident> incidents = findAll(new IncidentFilter(
-                null, createdAt, null, null, null, null, null
+                null, from, null, null, null, null, null
         ));
 
         assertEquals(1, incidents.getTotalElements());
@@ -284,19 +290,26 @@ class IncidentServiceTest {
         assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068L, 1790262062L
+    })
     @DisplayName("Метод должен исключать границу createdAt ДО.")
-    void findAll_shouldExcludeCreatedAtToBoundary() {
-        Instant createdAt = Instant.ofEpochSecond(1_790_262_068L);
+    void findAll_shouldExcludeCreatedAtToBoundary(long seconds) {
+        Instant to = Instant.ofEpochSecond(seconds);
         Incident incident = new Incident();
-        incident.setCreatedAt(createdAt);
+        incident.setCreatedAt(to);
         saveDummyIncident(incident);
+        Incident targetIncident = new Incident();
+        targetIncident.setCreatedAt(to.minusSeconds(1));
+        saveDummyIncident(targetIncident);
 
         Page<Incident> incidents = findAll(new IncidentFilter(
-                null, null, createdAt, null, null, null, null
+                null, null, to, null, null, null, null
         ));
 
-        assertEquals(0, incidents.getTotalElements());
+        assertEquals(1, incidents.getTotalElements());
+        assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
     }
 
     @ParameterizedTest
@@ -347,12 +360,8 @@ class IncidentServiceTest {
     })
     @DisplayName("Метод должен найти инцидент по resolvedAt ОТ.")
     void findAll_shouldFindIncidentByResolvedAtFrom(long millis) {
-        Incident targetIncident = new Incident();
-        targetIncident.setResolvedAt(Instant.ofEpochMilli(millis + 50000L));
-        saveDummyIncident(targetIncident);
-        Incident incident = new Incident();
-        incident.setResolvedAt(Instant.ofEpochMilli(millis - 2000L));
-        saveDummyIncident(incident);
+        Incident targetIncident = saveResolvedIncident(Instant.ofEpochMilli(millis + 50000L));
+        saveResolvedIncident(Instant.ofEpochMilli(millis - 2000L));
         saveDummyIncident(new Incident());
 
         Page<Incident> incidents = findAll(new IncidentFilter(
@@ -369,12 +378,8 @@ class IncidentServiceTest {
     })
     @DisplayName("Метод должен найти инцидент по resolvedAt ДО.")
     void findAll_shouldFindIncidentByResolvedAtTo(long millis) {
-        Incident targetIncident = new Incident();
-        targetIncident.setResolvedAt(Instant.ofEpochMilli(millis - 50000L));
-        saveDummyIncident(targetIncident);
-        Incident incident = new Incident();
-        incident.setResolvedAt(Instant.ofEpochMilli(millis + 2000L));
-        saveDummyIncident(incident);
+        Incident targetIncident = saveResolvedIncident(Instant.ofEpochMilli(millis - 50000L));
+        saveResolvedIncident(Instant.ofEpochMilli(millis + 2000L));
         saveDummyIncident(new Incident());
 
         Page<Incident> incidents = findAll(new IncidentFilter(
@@ -383,6 +388,51 @@ class IncidentServiceTest {
 
         assertEquals(1, incidents.getTotalElements());
         assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068L, 1790262062L
+    })
+    @DisplayName("Метод должен включать границу resolvedAt ОТ.")
+    void findAll_shouldIncludeResolvedAtFromBoundary(long seconds) {
+        Instant from = Instant.ofEpochSecond(seconds);
+        Incident targetIncident = saveResolvedIncident(from);
+        saveResolvedIncident(from.minusSeconds(1));
+
+        Page<Incident> incidents = findAll(new IncidentFilter(
+                null, null, null, null, null, from, null
+        ));
+
+        assertEquals(1, incidents.getTotalElements());
+        assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {
+            1790262068L, 1790262062L
+    })
+    @DisplayName("Метод должен исключать границу resolvedAt ДО.")
+    void findAll_shouldExcludeResolvedAtToBoundary(long seconds) {
+        Instant to = Instant.ofEpochSecond(seconds);
+        saveResolvedIncident(to);
+        Incident targetIncident = saveResolvedIncident(to.minusSeconds(1));
+
+        Page<Incident> incidents = findAll(new IncidentFilter(
+                null, null, null, null, null, null, to
+        ));
+
+        assertEquals(1, incidents.getTotalElements());
+        assertEquals(targetIncident.getId(), incidents.getContent().getFirst().getId());
+    }
+
+    Incident saveResolvedIncident(Instant resolvedAt) {
+        Incident incident = new Incident();
+        incident.setCreatedAt(resolvedAt);
+        incident.setStatus(IncidentStatus.RESOLVED);
+        incident.setResolvedBy(saveDummySupportUser());
+        incident.setResolvedAt(resolvedAt);
+        return saveDummyIncident(incident);
     }
 
     @Test
