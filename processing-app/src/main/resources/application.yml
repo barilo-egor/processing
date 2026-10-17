@@ -19,3 +19,6 @@ server:
       cookie:
         secure: true
         same-site: lax
+management:
+  server:
+    port: 8091

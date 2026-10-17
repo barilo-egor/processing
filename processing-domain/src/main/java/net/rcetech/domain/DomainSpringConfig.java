@@ -1,6 +1,7 @@
 package net.rcetech.domain;
 
 import jakarta.annotation.PostConstruct;
+import net.rcetech.meta.Profiles;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
@@ -19,7 +20,7 @@ public class DomainSpringConfig {
     public void init() {
         String hbm2ddl = env.getProperty("spring.jpa.hibernate.ddl-auto");
         String[] profile = env.getActiveProfiles();
-        if (Arrays.stream(profile).noneMatch("dev"::equals) && !"validate".equals(hbm2ddl)) {
+        if (Arrays.stream(profile).noneMatch(Profiles.DEV::equals) && !"validate".equals(hbm2ddl)) {
             throw new IllegalStateException(
                     "Свойство spring.jpa.hibernate.ddl-auto вне профиля dev может быть установлено только в режим validate."
             );

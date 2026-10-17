@@ -3,6 +3,7 @@ package net.rcetech.orders.kafka;
 import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.Profiles;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @SpringBootTest
-@ActiveProfiles("dev")
+@ActiveProfiles(Profiles.DEV)
 @ImportAutoConfiguration(KafkaAutoConfiguration.class)
 class MerchantCallbackConsumerTest {
 

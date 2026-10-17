@@ -92,6 +92,7 @@ logging:
 <h3>dev:</h3>
 <ul>
   <li>Допускает значения для <code>spring.jpa.hibernate.ddl-auto</code> отличные от <code>validate</code>.</li>
+  <li>Допускает запуск, когда actuator слушает порт приложения: <code>management.server.port</code> не задан или совпадает с <code>server.port</code>. Вне профиля <code>dev</code> приложение в этом случае не стартует, чтобы <code>/actuator/health</code> и <code>/actuator/prometheus</code> не оказались открыты на основном порту.</li>
 </ul>
 <h3>disable-security:</h3>
 <ul>

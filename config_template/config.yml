@@ -37,3 +37,14 @@ kafka:
   topic:
     merchant-details:
       callback:
+# Actuator (health, метрики Prometheus) слушает отдельный порт 8091 из application.yml, на основном порту приложения его нет.
+# Порт не проксируется через nginx и должен быть доступен только из внутреннего VPN.
+management:
+  server:
+    # Адрес интерфейса, на котором слушает порт actuator. В проде указать адрес сервера во внутреннем VPN.
+    # Если приложение запущено в Docker, оставить 0.0.0.0 и публиковать порт только на VPN-адрес: "<vpn-ip>:8091:8091".
+    address: 0.0.0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

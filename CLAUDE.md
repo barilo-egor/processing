@@ -33,7 +33,7 @@
 
 - `processing-app/src/main/resources/application.yml` импортирует `file:config/config.yml` (в .gitignore, у каждого разработчика свой) и `classpath:application-domain.yml`. Шаблон локального конфига — `config_template/config.yml`. В README.md описана первичная настройка Keycloak: реалм `processing`, роли `ADMIN`/`OPERATOR`/`CLIENT`, client secret.
 - Spring-профили (см. README и `net.rcetech.meta.Profiles`):
-  - `dev`: допускает значения `ddl-auto`, отличные от `validate`.
+  - `dev`: допускает значения `ddl-auto`, отличные от `validate`, и запуск без отдельного порта actuator (`management.server.port`).
   - `disable-security`: всё открыто без авторизации, заголовок `Test-User: <keycloakId>;ROLE_X` подставляет principal.
   - `md-test-details`, `md-test-callback`, `mh-test`: заглушки внешних микросервисов merchant-details и merchant-history.
 - Изменения схемы БД — только Flyway-миграциями в `processing-domain/src/main/resources/database/migration` (`ddl-auto: validate`).

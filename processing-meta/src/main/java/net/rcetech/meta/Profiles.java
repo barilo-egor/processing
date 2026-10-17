@@ -4,6 +4,8 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class Profiles {
+    public static final String DEV = "dev";
+
     /**
      * Профили взаимодействия с merchant-details
      */
