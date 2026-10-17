@@ -99,10 +99,18 @@ class IncidentServiceTest {
 
     void fillFields(Incident incident) {
         if (Objects.isNull(incident.getCreatedAt())) {
-            incident.setCreatedAt(Instant.now());
+            incident.setCreatedAt(Objects.isNull(incident.getResolvedAt()) ? Instant.now() : incident.getResolvedAt());
         }
         if (Objects.isNull(incident.getStatus())) {
             incident.setStatus(IncidentStatus.NEW);
+        }
+        if (IncidentStatus.RESOLVED.equals(incident.getStatus())) {
+            if (Objects.isNull(incident.getResolvedBy())) {
+                incident.setResolvedBy(saveDummySupportUser());
+            }
+            if (Objects.isNull(incident.getResolvedAt())) {
+                incident.setResolvedAt(incident.getCreatedAt());
+            }
         }
         if (Objects.isNull(incident.getType())) {
             incident.setType(IncidentType.BALANCE_UPDATE_ERROR);

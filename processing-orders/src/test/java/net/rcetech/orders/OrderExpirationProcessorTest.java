@@ -78,7 +78,7 @@ class OrderExpirationProcessorTest {
             order.setId(UUID.randomUUID());
         }
         if (order.getCreatedAt() == null) {
-            order.setCreatedAt(Instant.now());
+            order.setCreatedAt(order.getExpiresAt() == null ? Instant.now() : order.getExpiresAt().minusSeconds(900));
         }
         if (order.getExpiresAt() == null) {
             order.setExpiresAt(Instant.now().plusSeconds(900));

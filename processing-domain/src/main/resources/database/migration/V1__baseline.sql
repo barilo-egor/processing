@@ -7,22 +7,24 @@ create table client
     callback_url          varchar(255),
     order_timeout_seconds integer      not null,
     commission_percent    decimal(3, 1),
-    balance               bigint default 0 check (balance >= 0),
+    balance               bigint       not null default 0,
     comment               varchar(1000),
     min_withdrawal_amount bigint,
-    primary key (id)
-) engine = InnoDB;
-alter table client
-    add constraint unique_username unique (username);
+    primary key (id),
+    constraint unique_username unique (username),
+    constraint check_client_balance check (balance >= 0),
+    constraint check_client_order_timeout_seconds check (order_timeout_seconds > 0),
+    constraint check_client_commission_percent check (commission_percent >= 0 and commission_percent < 100),
+    constraint check_client_min_withdrawal_amount check (min_withdrawal_amount > 0)
+);
 
 create table client_method
 (
     client_id binary(16)  not null,
     method    varchar(30) not null,
-    primary key (client_id, method)
+    primary key (client_id, method),
+    constraint fk_client_method foreign key (client_id) references client (id) on delete cascade
 );
-alter table client_method
-    add constraint fk_client_method foreign key (client_id) references client (id) on delete cascade;
 
 create table orders
 (
@@ -41,25 +43,22 @@ create table orders
     details               varchar(1000) not null,
     bank                  varchar(255)  not null,
     callback_url          varchar(255),
-    primary key (id)
-) engine = InnoDB;
-alter table orders
-    add constraint unique_internal_id unique (internal_id),
-    add constraint unique_merchant_order_id unique (merchant_order_id),
-    add constraint fk_orders_client foreign key (client_id) references client (id) on
-delete
-cascade on
-update cascade;
+    primary key (id),
+    constraint unique_internal_id unique (internal_id),
+    constraint unique_merchant_order_id unique (merchant_order_id),
+    constraint fk_orders_client foreign key (client_id) references client (id),
+    constraint check_orders_amount check (amount > 0),
+    constraint check_orders_expires_at check (expires_at > created_at)
+);
 
 create table support_user
 (
     id            binary(16)   not null,
     username      varchar(255) not null,
     registered_at timestamp(0) not null,
-    primary key (id)
-) engine = InnoDB;
-alter table support_user
-    add constraint unique_username unique (username);
+    primary key (id),
+    constraint unique_username unique (username)
+);
 
 create table transaction
 (
@@ -70,10 +69,10 @@ create table transaction
     amount     integer      not null,
     type       varchar(30)  not null,
     comment    varchar(255),
-    primary key (id)
-) engine = InnoDB;
-alter table transaction
-    add constraint fk_transaction_client foreign key (client_id) references client (id) on delete cascade on update cascade;
+    primary key (id),
+    constraint fk_transaction_client foreign key (client_id) references client (id),
+    constraint check_transaction_amount check (amount >= 0)
+);
 
 create table withdrawal_request
 (
@@ -81,16 +80,22 @@ create table withdrawal_request
     client_id           binary(16)    not null,
     status              varchar(30)   not null,
     created_at          timestamp(0)  not null,
-    gross_source_amount int           not null check ( gross_source_amount > 0 ),
-    commission_percent  decimal(5, 2) not null check ( commission_percent > 0 ),
-    net_source_amount   int           not null check ( net_source_amount > 0 ),
-    rate                decimal(5, 2) not null check ( rate > 0 ),
-    target_amount       int           not null check ( target_amount > 0 ),
+    gross_source_amount int           not null,
+    commission_percent  decimal(5, 2) not null,
+    net_source_amount   int           not null,
+    rate                decimal(5, 2) not null,
+    target_amount       int           not null,
     address             varchar(100)  not null,
-    primary key (id)
-) engine = InnoDB;
-alter table withdrawal_request
-    add constraint fk_withdrawal_request_client foreign key (client_id) references client (id) on delete cascade on update cascade;
+    primary key (id),
+    constraint fk_withdrawal_request_client foreign key (client_id) references client (id),
+    constraint check_withdrawal_request_gross_source_amount check (gross_source_amount > 0),
+    constraint check_withdrawal_request_commission_percent check (commission_percent >= 0 and commission_percent < 100),
+    constraint check_withdrawal_request_net_source_amount check (net_source_amount > 0),
+    constraint check_withdrawal_request_net_not_above_gross check (net_source_amount <= gross_source_amount),
+    constraint check_withdrawal_request_rate check (rate > 0),
+    constraint check_withdrawal_request_target_amount check (target_amount > 0),
+    constraint check_withdrawal_request_address check (char_length(trim(address)) > 0)
+);
 
 create table api_key
 (
@@ -99,37 +104,41 @@ create table api_key
     name      varchar(30) not null,
     hash      char(64)    not null,
     client_id binary(16)  not null,
-    primary key (id)
+    primary key (id),
+    constraint unique_hash unique (hash),
+    constraint unique_api_key_client_name unique (client_id, name),
+    constraint fk_api_key_client foreign key (client_id) references client (id) on delete cascade
 );
-alter table api_key
-    add constraint fk_api_key_client foreign key (client_id) references client (id) on delete cascade on update cascade,
-    add constraint unique_hash unique (hash);
 
 create table merchant_callback
 (
-    id                 bigint      not null auto_increment,
-    created_at         timestamp(0),
-    order_id           binary(16)  not null,
-    merchant           varchar(30) not null,
+    id                 bigint       not null auto_increment,
+    created_at         timestamp(0) not null,
+    order_id           binary(16)   not null,
+    merchant           varchar(30)  not null,
     merchant_order_id  varchar(300),
-    status             varchar(50) not null,
+    status             varchar(50)  not null,
     status_description varchar(50),
-    primary key (id)
+    primary key (id),
+    constraint fk_merchant_callback_order foreign key (order_id) references orders (id)
 );
-alter table merchant_callback
-    add constraint fk_merchant_callback_order foreign key (order_id) references orders (id) on delete cascade on update cascade;
+
 create table incident
 (
-    id             bigint       not null auto_increment,
-    created_at     timestamp(0) not null,
+    id              bigint       not null auto_increment,
+    created_at      timestamp(0) not null,
     error_timestamp bigint,
-    status         varchar(30)  not null,
-    type           varchar(100)  not null,
-    data           JSON         not null,
-    resolved_by    binary(16),
-    resolved_at    timestamp(0),
-    comment        varchar(1000),
-    primary key (id)
+    status          varchar(30)  not null,
+    type            varchar(100) not null,
+    data            JSON         not null,
+    resolved_by     binary(16),
+    resolved_at     timestamp(0),
+    comment         varchar(1000),
+    primary key (id),
+    constraint fk_incident_support_user foreign key (resolved_by) references support_user (id),
+    constraint check_incident_resolution check (
+        (status = 'NEW' and resolved_by is null and resolved_at is null)
+            or (status = 'RESOLVED' and resolved_by is not null and resolved_at is not null)
+        ),
+    constraint check_incident_resolved_at check (resolved_at >= created_at)
 );
-alter table incident
-    add constraint fk_support_user foreign key (resolved_by) references support_user (id);
