@@ -28,6 +28,7 @@ public class ApiKeyService {
     }
 
     public String create(String name, Client client) {
+        // TODO могут быть дубли в многопоточке
         if (apiKeyRepository.existsByClientIdAndName(client.getId(), name)) {
             throw new BadRequestException("Апи ключ с именем " + name + " уже существует.");
         }
