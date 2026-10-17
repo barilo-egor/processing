@@ -20,7 +20,10 @@ public class RedirectController {
         if (request.isUserInRole(Role.ADMIN.name()) || request.isUserInRole(Role.OPERATOR.name())) {
             return  "redirect:/support/dashboard";
         }
-        return "redirect:/client/dashboard";
+        if (request.isUserInRole(Role.CLIENT.name())) {
+            return "redirect:/client/dashboard";
+        }
+        return "redirect:/no-role";
     }
 
     @GetMapping("/manage-account")

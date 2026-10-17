@@ -48,6 +48,9 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler {
             clientService.createIfNotExists(UUID.fromString(authentication.getName()), username);
             log.info("Вход клиента {} ({}).", authentication.getName(), username);
             response.sendRedirect("/");
+        } else {
+            log.info("Вход пользователя {} без ролей.", authentication.getName());
+            response.sendRedirect("/");
         }
     }
 
