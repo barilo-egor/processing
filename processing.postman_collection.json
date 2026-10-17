@@ -4508,6 +4508,100 @@
                   "body": "{\n  \"id\": \"a6929b80-f871-4381-91af-7fe75e0faa4f\",\n  \"username\": \"admin\",\n  \"registeredAt\": 1790790668000\n}"
                 }
               ]
+            },
+            {
+              "name": "Роли пользователя поддержки",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_support_api_url}}/support-user/roles",
+                  "host": [
+                    "{{processing_support_api_url}}"
+                  ],
+                  "path": [
+                    "support-user",
+                    "roles"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Роли получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/support-user/roles",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "support-user",
+                        "roles"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 01 Oct 2026 19:41:55 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n  \"ADMIN\"\n]"
+                }
+              ]
             }
           ]
         },

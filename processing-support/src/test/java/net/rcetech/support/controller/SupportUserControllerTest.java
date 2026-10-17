@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,6 +22,8 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -82,6 +85,54 @@ class SupportUserControllerTest {
         mockMvc.perform(get("/api/support/support-user")
                 .with(csrf())
                 .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role)))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "c2cbb845-7313-4106-a1a3-e9e4b328bbd9,ADMIN",
+            "fe4a4710-9c2e-4f04-b274-06802fbf2012,OPERATOR",
+            "0b6f3a52-1d4e-4c8a-9f27-5e3d8c1a7b90,ADMIN;OPERATOR"
+    })
+    @DisplayName("Метод должен вернуть массив ролей пользователя поддержки.")
+    void getRoles_shouldReturnRoles(String id, String roles) throws Exception {
+        String[] roleNames = roles.split(";");
+
+        mockMvc.perform(get("/api/support/support-user/roles")
+                        .with(csrf())
+                        .with(user(id).roles(roleNames)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(roleNames.length)))
+                .andExpect(jsonPath("$", containsInAnyOrder((Object[]) roleNames)));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "c2cbb845-7313-4106-a1a3-e9e4b328bbd9,ADMIN;default-roles-processing",
+            "fe4a4710-9c2e-4f04-b274-06802fbf2012,OPERATOR;offline_access"
+    })
+    @DisplayName("Метод не должен возвращать роли, которых нет в Role.")
+    void getRoles_shouldIgnoreUnknownRoles(String id, String authorities) throws Exception {
+        String[] authorityNames = authorities.split(";");
+
+        mockMvc.perform(get("/api/support/support-user/roles")
+                        .with(csrf())
+                        .with(user(id).authorities(
+                                new SimpleGrantedAuthority("ROLE_" + authorityNames[0]),
+                                new SimpleGrantedAuthority(authorityNames[1]),
+                                new SimpleGrantedAuthority("ROLE_" + authorityNames[1]))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0]").value(authorityNames[0]));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN", "OPERATOR"})
+    @DisplayName("Получение ролей должно вернуть 403 для не пользователей поддержки.")
+    void getRoles_shouldReturn403IfNotSupportUser(Role role) throws Exception {
+        mockMvc.perform(get("/api/support/support-user/roles")
+                        .with(csrf())
+                        .with(user("c2cbb845-7313-4106-a1a3-e9e4b328bbd9").roles(role.name())))
                 .andExpect(status().isForbidden());
     }
 }
