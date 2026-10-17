@@ -1424,6 +1424,13 @@ function CreateWithdrawalDialog({ onCancel, onCreated, showToast }) {
       await api.createWithdrawal(Number(amount.trim()), address.trim());
       onCreated();
     } catch (e) {
+      // 400 про сумму («На балансе недостаточно средств.», «…меньше минимально
+      // допустимой.») показываем под полем «Сумма» — рядом с тем, что исправлять.
+      if (e.status === 400 && e.message && /баланс|сумм/i.test(e.message)) {
+        setErrors({ amount: e.message });
+        setSaving(false);
+        return;
+      }
       // 503 бэк отдаёт без пояснения («Service Unavailable»), когда вывод
       // невозможен: не настроена комиссия клиента или нет курса.
       showToast(
