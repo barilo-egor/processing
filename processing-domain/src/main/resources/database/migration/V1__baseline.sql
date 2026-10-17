@@ -62,7 +62,7 @@ create table support_user
 
 create table transaction
 (
-    id         bigint       not null auto_increment,
+    id         binary(16)   not null,
     client_id  binary(16)   not null,
     created_at timestamp(0) not null,
     operation  varchar(30)  not null,

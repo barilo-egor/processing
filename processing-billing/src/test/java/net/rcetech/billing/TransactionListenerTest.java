@@ -182,11 +182,11 @@ class TransactionListenerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1000,c2cbb845-7313-4106-a1a3-e9e4b328bbd9",
-            "69643546,fe4a4710-9c2e-4f04-b274-06802fbf2012"
+            "5e0a7b1c-3f2d-4c8e-9a6b-1d4f7e2c9b03,c2cbb845-7313-4106-a1a3-e9e4b328bbd9",
+            "a91d4e6f-0b7c-4d2a-8e3f-6c5b9a1d7e48,fe4a4710-9c2e-4f04-b274-06802fbf2012"
     })
     @DisplayName("Должен быть создан инцидент, если произошла ошибка при обновлении баланса.")
-    void transactionCreated_shouldCreateIncidentIfCantUpdateBalance(long transactionId, UUID clientId) {
+    void transactionCreated_shouldCreateIncidentIfCantUpdateBalance(UUID transactionId, UUID clientId) {
         TransactionCreatedEvent event = new TransactionCreatedEvent(transactionId, clientId);
         long before = System.currentTimeMillis();
         eventPublisher.publishEvent(event);
@@ -203,7 +203,7 @@ class TransactionListenerTest {
                 () -> assertTrue(incident.getErrorTimestamp() >= before && incident.getErrorTimestamp() <= after),
                 () -> assertEquals(IncidentStatus.NEW, incident.getStatus()),
                 () -> assertEquals(IncidentType.BALANCE_UPDATE_ERROR, incident.getType()),
-                () -> assertEquals(transactionId, ((Number) incident.getData().get("transactionId")).longValue()),
+                () -> assertEquals(transactionId.toString(), incident.getData().get("transactionId")),
                 () -> assertEquals(clientId.toString(), incident.getData().get("clientId"))
         );
     }

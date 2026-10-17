@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record TransactionResponse(
+        UUID id,
         UUID clientId,
         String clientUsername,
         @JsonSerialize(using = InstantToMillisSerializer.class)

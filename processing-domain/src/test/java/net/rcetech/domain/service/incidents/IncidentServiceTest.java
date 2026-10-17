@@ -116,7 +116,7 @@ class IncidentServiceTest {
             incident.setType(IncidentType.BALANCE_UPDATE_ERROR);
         }
         if (Objects.isNull(incident.getData())) {
-            incident.setData(Map.of("transactionId", 1L));
+            incident.setData(Map.of("transactionId", "3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97"));
         }
     }
 
@@ -136,8 +136,9 @@ class IncidentServiceTest {
     @Test
     @DisplayName("Метод должен сохранить инцидент со статусом NEW, переданным типом, данными и временем ошибки.")
     void save_shouldSaveIncident() {
+        UUID transactionId = UUID.fromString("7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17");
         UUID clientId = UUID.fromString("f3f0d1d5-f4c6-4af5-ad9c-327ac365ea92");
-        BalanceUpdateErrorData data = new BalanceUpdateErrorData(15L, clientId);
+        BalanceUpdateErrorData data = new BalanceUpdateErrorData(transactionId, clientId);
         long errorTimestamp = 1_760_000_000_000L;
         Instant before = Instant.now();
 
@@ -153,7 +154,7 @@ class IncidentServiceTest {
                 () -> assertEquals(errorTimestamp, incident.getErrorTimestamp()),
                 () -> assertNotNull(incident.getCreatedAt()),
                 () -> assertFalse(incident.getCreatedAt().isBefore(before.minusSeconds(1))),
-                () -> assertEquals(15, ((Number) incident.getData().get("transactionId")).longValue()),
+                () -> assertEquals(transactionId.toString(), incident.getData().get("transactionId")),
                 () -> assertEquals(clientId.toString(), incident.getData().get("clientId")),
                 () -> assertNull(incident.getResolvedBy()),
                 () -> assertNull(incident.getResolvedAt()),

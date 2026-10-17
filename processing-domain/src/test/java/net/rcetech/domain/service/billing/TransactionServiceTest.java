@@ -11,10 +11,7 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
-import net.rcetech.meta.billing.dto.ClientTransactionFilter;
-import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
-import net.rcetech.meta.billing.dto.TransactionFilter;
-import net.rcetech.meta.billing.dto.TransactionResponse;
+import net.rcetech.meta.billing.dto.*;
 import net.rcetech.meta.exception.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -188,7 +185,7 @@ class TransactionServiceTest {
         assertNotNull(targetClient.getId());
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter(targetClient.getId().toString(), null, null)),
+                TransactionSpecification.matches(new TransactionFilter(null, targetClient.getId().toString(), null, null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -207,7 +204,7 @@ class TransactionServiceTest {
         assertNotNull(targetClient.getId());
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter("test" + targetClient.getId(), null, null)),
+                TransactionSpecification.matches(new TransactionFilter(null, "test" + targetClient.getId(), null, null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -230,7 +227,7 @@ class TransactionServiceTest {
         transactionRepository.save(transaction);
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter(null, Instant.ofEpochMilli(millis), null)),
+                TransactionSpecification.matches(new TransactionFilter(null, null, Instant.ofEpochMilli(millis), null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -252,7 +249,7 @@ class TransactionServiceTest {
         transactionRepository.save(transaction);
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter(null, null, Instant.ofEpochMilli(millis))),
+                TransactionSpecification.matches(new TransactionFilter(null, null, null, Instant.ofEpochMilli(millis))),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -292,7 +289,7 @@ class TransactionServiceTest {
         transactionRepository.save(transaction);
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(Instant.ofEpochMilli(millis), null)),
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, Instant.ofEpochMilli(millis), null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -314,7 +311,7 @@ class TransactionServiceTest {
         transactionRepository.save(transaction);
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, Instant.ofEpochMilli(millis))),
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, null, Instant.ofEpochMilli(millis))),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -334,7 +331,7 @@ class TransactionServiceTest {
         saveTransaction(client, from.minusSeconds(1));
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter(null, from, null)),
+                TransactionSpecification.matches(new TransactionFilter(null, null, from, null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -355,7 +352,7 @@ class TransactionServiceTest {
         saveTransaction(client, to.minusSeconds(1));
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(new TransactionFilter(null, null, to)),
+                TransactionSpecification.matches(new TransactionFilter(null, null, null, to)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -376,7 +373,7 @@ class TransactionServiceTest {
         saveTransaction(client, from.minusSeconds(1));
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(from, null)),
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, from, null)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
@@ -397,13 +394,113 @@ class TransactionServiceTest {
         saveTransaction(client, to.minusSeconds(1));
 
         Page<TransactionResponse> actual = transactionService.findAll(
-                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, to)),
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(null, null, to)),
                 PageRequest.of(0, 20),
                 TransactionResponse.class
         );
 
         assertEquals(1, actual.getTotalElements());
         assertEquals(to.minusSeconds(1), actual.getContent().getFirst().createdAt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1500, 73042})
+    @DisplayName("Метод должен вернуть идентификатор транзакции в проекции TransactionResponse.")
+    void findAllTransactionFilter_shouldReturnTransactionId(Integer amount) {
+        Transaction transaction = new Transaction();
+        transaction.setClient(getDummyClient());
+        transaction.setAmount(amount);
+        fillFields(transaction);
+        UUID transactionId = transactionRepository.save(transaction).getId();
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(null),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertNotNull(transactionId);
+        assertEquals(transactionId, actual.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1500, 73042})
+    @DisplayName("Метод должен вернуть идентификатор транзакции в проекции ClientTransactionResponse.")
+    void findAllClientTransactionFilter_shouldReturnTransactionId(Integer amount) {
+        Client client = getDummyClient();
+        Transaction transaction = new Transaction();
+        transaction.setClient(client);
+        transaction.setAmount(amount);
+        fillFields(transaction);
+        UUID transactionId = transactionRepository.save(transaction).getId();
+
+        Page<ClientTransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(client.getId(), null),
+                PageRequest.of(0, 20),
+                ClientTransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertNotNull(transactionId);
+        assertEquals(transactionId, actual.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 5})
+    @DisplayName("Метод должен вернуть транзакцию, найденную по id в фильтре TransactionFilter.")
+    void findAllTransactionFilter_shouldReturnTransactionById(int count) {
+        Client client = getDummyClient();
+        for (int i = 0; i < count; i++) {
+            saveTransaction(client, Operation.CREDIT, 1000);
+        }
+        UUID targetId = saveTransaction(getDummyClient(), Operation.DEBIT, 500);
+
+        Page<TransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(new TransactionFilter(targetId, null, null, null)),
+                PageRequest.of(0, 20),
+                TransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(targetId, actual.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 5})
+    @DisplayName("Метод должен вернуть транзакцию клиента, найденную по id в фильтре ClientTransactionFilter.")
+    void findAllClientTransactionFilter_shouldReturnTransactionById(int count) {
+        Client client = getDummyClient();
+        for (int i = 0; i < count; i++) {
+            saveTransaction(client, Operation.CREDIT, 1000);
+        }
+        UUID targetId = saveTransaction(client, Operation.DEBIT, 500);
+
+        Page<ClientTransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(targetId, null, null)),
+                PageRequest.of(0, 20),
+                ClientTransactionResponse.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(targetId, actual.getContent().getFirst().id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 4520})
+    @DisplayName("Метод не должен вернуть транзакцию другого клиента по id в фильтре ClientTransactionFilter.")
+    void findAllClientTransactionFilter_shouldNotReturnOtherClientTransactionById(Integer amount) {
+        Client client = getDummyClient();
+        saveTransaction(client, Operation.CREDIT, amount);
+        UUID otherClientTransactionId = saveTransaction(getDummyClient(), Operation.CREDIT, amount);
+
+        Page<ClientTransactionResponse> actual = transactionService.findAll(
+                TransactionSpecification.matches(client.getId(), new ClientTransactionFilter(otherClientTransactionId, null, null)),
+                PageRequest.of(0, 20),
+                ClientTransactionResponse.class
+        );
+
+        assertEquals(0, actual.getTotalElements());
     }
 
     void saveTransaction(Client client, Instant createdAt) {
@@ -414,13 +511,13 @@ class TransactionServiceTest {
         transactionRepository.save(transaction);
     }
 
-    void saveTransaction(Client client, Operation operation, Integer amount) {
+    UUID saveTransaction(Client client, Operation operation, Integer amount) {
         Transaction transaction = new Transaction();
         transaction.setClient(client);
         transaction.setOperation(operation);
         transaction.setAmount(amount);
         fillFields(transaction);
-        transactionRepository.save(transaction);
+        return transactionRepository.save(transaction).getId();
     }
 
     @ParameterizedTest

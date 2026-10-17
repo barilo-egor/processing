@@ -10,6 +10,7 @@ import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transaction")
@@ -20,8 +21,8 @@ import java.time.Instant;
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     /**
      * Идентификатор клиента в микросервисе clients.

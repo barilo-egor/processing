@@ -329,7 +329,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{processing_client_api_url}}/transaction?createdAtFrom&createdAtTo&page&size&sort",
+                  "raw": "{{processing_client_api_url}}/transaction?id=&createdAtFrom&createdAtTo&page&size&sort",
                   "host": [
                     "{{processing_client_api_url}}"
                   ],
@@ -337,6 +337,11 @@
                     "transaction"
                   ],
                   "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "description": "Идентификатор транзакции"
+                    },
                     {
                       "key": "createdAtFrom",
                       "value": "",
@@ -377,12 +382,18 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{processing_client_api_url}}/transaction",
+                      "raw": "{{processing_client_api_url}}/transaction?id=",
                       "host": [
                         "{{processing_client_api_url}}"
                       ],
                       "path": [
                         "transaction"
+                      ],
+                      "query": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        }
                       ]
                     }
                   },
@@ -436,7 +447,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"4b7e2d91-3c5a-4f80-9e1b-6a2d8c0f7e35\",\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"id\": \"9f1c6a3e-8b2d-4e57-a0c4-3d7e5b9f1a26\",\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"id\": \"2d8a5f0b-7e3c-4b19-8f6d-1c9e4a2b7d53\",\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"id\": \"c6e3b8a1-5d0f-4a72-b9e8-0f4d2c7a6b19\",\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             }
@@ -2277,7 +2288,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{processing_support_api_url}}/transaction?client=&createdAtFrom=&createdAtTo=&page&size&sort",
+                  "raw": "{{processing_support_api_url}}/transaction?id=&client=&createdAtFrom=&createdAtTo=&page&size&sort",
                   "host": [
                     "{{processing_support_api_url}}"
                   ],
@@ -2285,6 +2296,11 @@
                     "transaction"
                   ],
                   "query": [
+                    {
+                      "key": "id",
+                      "value": "",
+                      "description": "Идентификатор транзакции"
+                    },
                     {
                       "key": "client",
                       "value": "",
@@ -2325,7 +2341,7 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{processing_support_api_url}}/transaction?client&createdAtFrom&createdAtTo",
+                      "raw": "{{processing_support_api_url}}/transaction?id=&client&createdAtFrom&createdAtTo",
                       "host": [
                         "{{processing_support_api_url}}"
                       ],
@@ -2333,6 +2349,10 @@
                         "transaction"
                       ],
                       "query": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
                         {
                           "key": "client",
                           "value": null,
@@ -2401,7 +2421,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": \"71a9d4c2-0e6b-4f3d-8a5c-9b2e7f1d4c80\",\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852153951,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"id\": \"e4b0f7a3-2c8d-4e65-9d1a-5f3c0b8e2a74\",\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140427,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое списание за услуги\"\n    },\n    {\n      \"id\": \"38d6c1e9-4a7f-4b20-a3e5-8c1f6d9b0e47\",\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789852140408,\n      \"operation\": \"CREDIT\",\n      \"amount\": 5000,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Тестовое зачисление средств\"\n    },\n    {\n      \"id\": \"b5f2a8d0-9c3e-4d81-b6a4-2e7d0c5f9a13\",\n      \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\",\n      \"clientUsername\": \"postman-admin12\",\n      \"createdAt\": 1789842586755,\n      \"operation\": \"DEBIT\",\n      \"amount\": 1500,\n      \"type\": \"MANUAL_CORRECT\",\n      \"comment\": \"Создано пользователем 027e01ef-0eb5-49b0-9c35-a7ecb654652e. Комментарий: Корректировка баланса по заявке №123\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 4,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -4811,7 +4831,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"id\": 2,\n      \"createdAt\": 1792058400000,\n      \"status\": \"NEW\",\n      \"errorTimestamp\": 1792058399512,\n      \"type\": \"BALANCE_UPDATE_ERROR\",\n      \"data\": {\n        \"transactionId\": 154,\n        \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n      },\n      \"resolvedById\": null,\n      \"resolvedAt\": null,\n      \"comment\": null\n    },\n    {\n      \"id\": 1,\n      \"createdAt\": 1791972000000,\n      \"status\": \"RESOLVED\",\n      \"errorTimestamp\": 1791971999874,\n      \"type\": \"CLIENT_COMMISSION_PERCENT_NOT_SET\",\n      \"data\": {\n        \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n      },\n      \"resolvedById\": \"b5a1d0e2-4c3f-4f8a-9e2b-6d7c8a9b0c1d\",\n      \"resolvedAt\": 1791975600000,\n      \"comment\": \"Комиссия установлена\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"id\": 2,\n      \"createdAt\": 1792058400000,\n      \"status\": \"NEW\",\n      \"errorTimestamp\": 1792058399512,\n      \"type\": \"BALANCE_UPDATE_ERROR\",\n      \"data\": {\n        \"transactionId\": \"0b6f3c2e-8d4a-4e1b-9f7c-2a5d6e8f1c34\",\n        \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n      },\n      \"resolvedById\": null,\n      \"resolvedAt\": null,\n      \"comment\": null\n    },\n    {\n      \"id\": 1,\n      \"createdAt\": 1791972000000,\n      \"status\": \"RESOLVED\",\n      \"errorTimestamp\": 1791971999874,\n      \"type\": \"CLIENT_COMMISSION_PERCENT_NOT_SET\",\n      \"data\": {\n        \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n      },\n      \"resolvedById\": \"b5a1d0e2-4c3f-4f8a-9e2b-6d7c8a9b0c1d\",\n      \"resolvedAt\": 1791975600000,\n      \"comment\": \"Комиссия установлена\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 2,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -4917,7 +4937,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"id\": 2,\n  \"createdAt\": 1792058400000,\n  \"status\": \"RESOLVED\",\n  \"errorTimestamp\": 1792058399512,\n  \"type\": \"BALANCE_UPDATE_ERROR\",\n  \"data\": {\n    \"transactionId\": 154,\n    \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n  },\n  \"resolvedById\": \"b5a1d0e2-4c3f-4f8a-9e2b-6d7c8a9b0c1d\",\n  \"resolvedAt\": 1792062000000,\n  \"comment\": \"Баланс пересчитан вручную\"\n}"
+                  "body": "{\n  \"id\": 2,\n  \"createdAt\": 1792058400000,\n  \"status\": \"RESOLVED\",\n  \"errorTimestamp\": 1792058399512,\n  \"type\": \"BALANCE_UPDATE_ERROR\",\n  \"data\": {\n    \"transactionId\": \"0b6f3c2e-8d4a-4e1b-9f7c-2a5d6e8f1c34\",\n    \"clientId\": \"7321f213-6ab9-4d15-b950-9de1c756812a\"\n  },\n  \"resolvedById\": \"b5a1d0e2-4c3f-4f8a-9e2b-6d7c8a9b0c1d\",\n  \"resolvedAt\": 1792062000000,\n  \"comment\": \"Баланс пересчитан вручную\"\n}"
                 },
                 {
                   "name": "Инцидент не найден",

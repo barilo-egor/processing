@@ -3,6 +3,6 @@ package net.rcetech.meta.incidents.dto;
 import java.util.UUID;
 
 public record BalanceUpdateErrorData(
-        Long transactionId,
+        UUID transactionId,
         UUID clientId
 ) {}

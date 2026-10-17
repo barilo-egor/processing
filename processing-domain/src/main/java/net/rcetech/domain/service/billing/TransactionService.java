@@ -76,11 +76,11 @@ public class TransactionService {
         return transactionRepository.calculateBalance(clientId);
     }
 
-    public Optional<Transaction> findById(Long transactionId) {
+    public Optional<Transaction> findById(UUID transactionId) {
         return transactionRepository.findById(transactionId);
     }
 
-    public <T> Optional<T> findById(Long transactionId, Class<T> projectionType) {
+    public <T> Optional<T> findById(UUID transactionId, Class<T> projectionType) {
         return transactionRepository.findBy(
                 (from, criteriaBuilder) -> criteriaBuilder.equal(from.get(Transaction_.id), transactionId),
                 query -> query.as(projectionType).one());

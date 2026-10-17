@@ -72,14 +72,15 @@ class TransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,test1,1789813263222,CREDIT,3252,ORDER_CONFIRMATION," +
+            "0c4f8a2e-6b1d-4e7a-9c3f-5d2b8e1a7f60,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,test1,1789813263222,CREDIT,3252,ORDER_CONFIRMATION," +
                     "Подтверждение ордера 123. Транзакция создана системой.",
-            "20484949-7339-4e19-86c9-d1e2c492f75f,BOLIK,1789813269144,DEBIT,50664,MANUAL_CORRECT," +
+            "e83b5d17-2a9c-4f6e-b1d4-7c0a3e9f5b28,20484949-7339-4e19-86c9-d1e2c492f75f,BOLIK,1789813269144,DEBIT,50664,MANUAL_CORRECT," +
                     "Подтверждение ордера 89723452. Транзакция создана системой."
     })
-    void get_shouldReturnAllTransactions(UUID clientId, String username, long millis, Operation operation,
+    void get_shouldReturnAllTransactions(UUID id, UUID clientId, String username, long millis, Operation operation,
                                          Integer amount, TransactionType type, String comment) throws Exception {
         TransactionResponse transactionResponse = mock(TransactionResponse.class);
+        when(transactionResponse.id()).thenReturn(id);
         when(transactionResponse.clientId()).thenReturn(clientId);
         when(transactionResponse.clientUsername()).thenReturn(username);
         when(transactionResponse.createdAt()).thenReturn(Instant.ofEpochMilli(millis));
@@ -91,6 +92,7 @@ class TransactionControllerTest {
         mockMvc.perform(get("/api/support/transaction").with(user("user").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].id").value(id.toString()))
                 .andExpect(jsonPath("$.content[0].clientId").value(clientId.toString()))
                 .andExpect(jsonPath("$.content[0].clientUsername").value(username))
                 .andExpect(jsonPath("$.content[0].createdAt").value(millis))
@@ -103,14 +105,15 @@ class TransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource(value = {
-            "test1,1789813253222,1789813263222",
-            "smoki_lolik,1789813153222,1789813223222",
-            "test1,1789813253000,1789813263200"
+            "5a3e9c1d-7f2b-4d80-a6e4-1b9c3f7d2e05,test1,1789813253222,1789813263222",
+            "c1d7b4a9-0e5f-4c36-9b2a-8f4e6d1c3a70,smoki_lolik,1789813153222,1789813223222",
+            "7e2f0a6c-3b9d-4a15-8c7e-2d5a9f0b6e41,test1,1789813253000,1789813263200"
     })
-    void get_shouldPassFilterParameters(String client, long millisFrom, long millisTo) throws Exception {
+    void get_shouldPassFilterParameters(UUID id, String client, long millisFrom, long millisTo) throws Exception {
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         try (MockedStatic<TransactionSpecification> transactionSpecification = Mockito.mockStatic(TransactionSpecification.class)) {
             mockMvc.perform(get("/api/support/transaction").with(user("user").roles(Role.OPERATOR.name()))
+                    .queryParam("id", id.toString())
                     .queryParam("client", client)
                     .queryParam("createdAtFrom", String.valueOf(millisFrom))
                     .queryParam("createdAtTo", String.valueOf(millisTo))
@@ -119,6 +122,7 @@ class TransactionControllerTest {
             transactionSpecification.verify(() -> TransactionSpecification.matches(captor.capture()));
             TransactionFilter filter = captor.getValue();
             assertAll(
+                    () -> assertEquals(id, filter.id()),
                     () -> assertEquals(client, filter.client()),
                     () -> assertEquals(millisFrom, filter.createdAtFrom().toEpochMilli()),
                     () -> assertEquals(millisTo, filter.createdAtTo().toEpochMilli())

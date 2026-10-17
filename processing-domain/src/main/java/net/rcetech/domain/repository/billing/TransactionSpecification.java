@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static net.rcetech.domain.util.SpecificationsUtil.addDateRange;
+import static net.rcetech.domain.util.SpecificationsUtil.addSimpleEqual;
 
 /**
  * Утилита для формирования JPA-спецификаций сущности {@link Transaction}.
@@ -32,6 +33,7 @@ public class TransactionSpecification {
             if (Objects.nonNull(filter.client()) && !filter.client().isBlank()) {
                 predicates.add(ClientSpecifications.idOrUsername(filter.client(), from.join(Transaction_.client), builder));
             }
+            addSimpleEqual(predicates, builder, from.get(Transaction_.id), filter.id());
             addDateRange(predicates, builder, from.get(Transaction_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
             return builder.and(predicates);
         });
@@ -44,6 +46,7 @@ public class TransactionSpecification {
             if (Objects.isNull(filter)) {
                 return builder.and(predicates.toArray(new Predicate[0]));
             }
+            addSimpleEqual(predicates, builder, from.get(Transaction_.id), filter.id());
             addDateRange(predicates, builder, from.get(Transaction_.createdAt), filter.createdAtFrom(), filter.createdAtTo());
             return builder.and(predicates.toArray(new Predicate[0]));
         };
