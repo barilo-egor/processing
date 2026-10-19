@@ -45,7 +45,7 @@ create table orders
     callback_url          varchar(255),
     primary key (id),
     constraint unique_internal_id unique (internal_id),
-    constraint unique_merchant_order_id unique (merchant_order_id),
+    constraint unique_merchant_order_id unique (merchant, merchant_order_id),
     constraint fk_orders_client foreign key (client_id) references client (id),
     constraint check_orders_amount check (amount > 0),
     constraint check_orders_expires_at check (expires_at > created_at)

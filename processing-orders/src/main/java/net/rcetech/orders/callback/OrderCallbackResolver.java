@@ -54,7 +54,7 @@ public class OrderCallbackResolver {
      */
     public void resolve(MerchantCallbackEvent merchantCallbackEvent) {
         String id = merchantCallbackEvent.getMerchantOrderId();
-        Optional<Order> maybeOrder = orderFacade.getOrderByIdOrMerchantOrderId(id);
+        Optional<Order> maybeOrder = orderFacade.getOrderByIdOrMerchantOrderId(merchantCallbackEvent.getMerchant(), id);
         if (maybeOrder.isEmpty()) {
             log.trace("Ордер для callback id={} не найден.", id);
             return;

@@ -43,8 +43,8 @@ class AuthenticationHandlerTest {
             "5560783c-ad7f-4395-b734-74b2ceaf5897,ROLE_TRADER",
             "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,ROLE_UNKNOWN"
     })
-    @DisplayName("Метод должен пропустить аутентификацию, если роль не определена.")
-    void onAuthenticationSuccess_shouldSkipIfUnknownRole(UUID name, String role) throws IOException {
+    @DisplayName("Метод должен перенаправить на главную без создания записей, если роль не определена.")
+    void onAuthenticationSuccess_shouldOnlyRedirectIfUnknownRole(UUID name, String role) throws IOException {
         Collection<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         GrantedAuthority grantedAuthority = mock(GrantedAuthority.class);
         when(grantedAuthority.getAuthority()).thenReturn(role);
@@ -60,7 +60,7 @@ class AuthenticationHandlerTest {
 
         verify(supportUserService, times(0)).createIfNotExists(any(), anyString());
         verify(clientService, times(0)).createIfNotExists(any(), anyString());
-        verify(response, times(0)).sendRedirect(anyString());
+        verify(response).sendRedirect("/");
     }
 
     @ParameterizedTest

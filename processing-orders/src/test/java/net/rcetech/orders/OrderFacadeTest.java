@@ -118,6 +118,10 @@ class OrderFacadeTest {
     }
 
     Order createNewOrder() {
+        return createNewOrder(Merchant.ALFA_TEAM, UUID.randomUUID().toString());
+    }
+
+    Order createNewOrder(Merchant merchant, String merchantOrderId) {
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
@@ -131,8 +135,8 @@ class OrderFacadeTest {
         order.setInternalId(UUID.randomUUID().toString());
         order.setStatus(OrderStatus.NEW);
         order.setAmount(5000);
-        order.setMerchant(Merchant.ALFA_TEAM);
-        order.setMerchantOrderId(UUID.randomUUID().toString());
+        order.setMerchant(merchant);
+        order.setMerchantOrderId(merchantOrderId);
         order.setMerchantOrderStatus("NEW");
         order.setMethod(RequestMethod.CARD);
         order.setDetails("1234 1234 1234 1234");
@@ -229,5 +233,34 @@ class OrderFacadeTest {
         assertEquals(OrderStatus.NEW, actual.getStatus());
         assertEquals("NEW", actual.getMerchantOrderStatus());
         assertTrue(orderEventsRecorder.committedStatuses.isEmpty());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ALFA_TEAM,ASGARD,order-1",
+            "FIAT_CUT,ONLY_PAYS,123456"
+    })
+    @DisplayName("Метод должен найти ордер своего мерчанта, если merchant order id совпадает у разных мерчантов.")
+    void getOrderByIdOrMerchantOrderId_shouldFindOrderOfMerchant(Merchant merchant, Merchant otherMerchant,
+                                                                  String merchantOrderId) {
+        Order order = createNewOrder(merchant, merchantOrderId);
+        Order otherOrder = createNewOrder(otherMerchant, merchantOrderId);
+
+        assertEquals(order.getId(), orderFacade.getOrderByIdOrMerchantOrderId(merchant, merchantOrderId)
+                .orElseThrow().getId());
+        assertEquals(otherOrder.getId(), orderFacade.getOrderByIdOrMerchantOrderId(otherMerchant, merchantOrderId)
+                .orElseThrow().getId());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ALFA_TEAM,ASGARD",
+            "FIAT_CUT,ONLY_PAYS"
+    })
+    @DisplayName("Метод не должен находить ордер по merchant order id другого мерчанта.")
+    void getOrderByIdOrMerchantOrderId_shouldNotFindOrderOfOtherMerchant(Merchant merchant, Merchant otherMerchant) {
+        Order order = createNewOrder(merchant, UUID.randomUUID().toString());
+
+        assertTrue(orderFacade.getOrderByIdOrMerchantOrderId(otherMerchant, order.getMerchantOrderId()).isEmpty());
     }
 }

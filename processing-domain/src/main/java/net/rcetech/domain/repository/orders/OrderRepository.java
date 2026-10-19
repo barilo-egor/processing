@@ -5,6 +5,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.transaction.annotation.Transactional;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Transactional
 public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecificationExecutor<Order> {
 
-    Optional<Order> findByMerchantOrderId(String merchantOrderId);
+    Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId);
 
     List<Order> findAllByStatusAndExpiresAtBefore(OrderStatus status, Instant now);
 

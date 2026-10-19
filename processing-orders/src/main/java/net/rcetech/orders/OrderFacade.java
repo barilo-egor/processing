@@ -8,6 +8,7 @@ import net.rcetech.meta.orders.OrderStatusChange;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -21,8 +22,8 @@ public class OrderFacade {
         this.orderService = orderService;
     }
 
-    public Optional<Order> getOrderByIdOrMerchantOrderId(String id) {
-        Optional<Order> maybeOrder = orderService.findByMerchantOrderId(id);
+    public Optional<Order> getOrderByIdOrMerchantOrderId(Merchant merchant, String id) {
+        Optional<Order> maybeOrder = orderService.findByMerchantAndMerchantOrderId(merchant, id);
         if (maybeOrder.isEmpty()) {
             try {
                 maybeOrder = orderService.findById(UUID.fromString(id));

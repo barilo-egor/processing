@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.PredicateSpecification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
@@ -53,8 +54,8 @@ public class OrderService {
         return orderRepository.findBy(Example.of(order), query -> query.as(projectionType).one());
     }
 
-    public Optional<Order> findByMerchantOrderId(String merchantOrderId) {
-        return orderRepository.findByMerchantOrderId(merchantOrderId);
+    public Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId) {
+        return orderRepository.findByMerchantAndMerchantOrderId(merchant, merchantOrderId);
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Order> filter, Pageable pageable, Class<T> projectionType) {
