@@ -36,6 +36,11 @@ const SECTIONS = [
   { id: 'callbacks', title: 'КБ мерчантов', icon: 'fa-solid fa-rotate' },
 ];
 
+/* Разделы только для администратора: оператор их не видит (ТЗ «Скрыть «Клиенты»
+   и «Конфиги мерчантов» для операторов»). Роли — из GET /support-user/roles;
+   ADMIN включает OPERATOR, поэтому признак «видит всё» — наличие ADMIN. */
+const ADMIN_ONLY_SECTIONS = new Set(['clients', 'merchants']);
+
 export default function App() {
   const [section, setSection] = useState('orders');
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
@@ -55,6 +60,12 @@ export default function App() {
   const [txTypes, setTxTypes] = useState([]);
   // Клиент, выбранный переходом из таблицы в конфигурацию мерчантов.
   const [configClient, setConfigClient] = useState(null);
+  // Роли вошедшего пользователя; null — ещё загружаются.
+  // Пока роли неизвестны, разделы администратора не показываем.
+  const [roles, setRoles] = useState(null);
+  const isAdmin = Array.isArray(roles) && roles.includes('ADMIN');
+  const canSee = (id) => isAdmin || !ADMIN_ONLY_SECTIONS.has(id);
+  const visibleSections = SECTIONS.filter((s) => canSee(s.id));
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ message, type, key: Date.now() });
@@ -65,6 +76,16 @@ export default function App() {
     const t = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    api.supportUserRoles()
+        .then(setRoles)
+        .catch((e) => {
+          // Без ролей остаются только общие разделы — как у оператора.
+          setRoles([]);
+          showToast(e.message || 'Не удалось загрузить роли пользователя', 'error');
+        });
+  }, [showToast]);
 
   // Справочники — из словаря бэка.
   useEffect(() => {
@@ -130,7 +151,7 @@ export default function App() {
             </button>
           </div>
           <nav className="nav">
-            {SECTIONS.map((s) => (
+            {visibleSections.map((s) => (
                 <button
                     key={s.id}
                     type="button"
@@ -175,7 +196,7 @@ export default function App() {
             <AccountMenu />
           </header>
           <main className="content">
-            {section === 'clients' && (
+            {section === 'clients' && canSee('clients') && (
                 <ClientsSection
                     methods={methods}
                     showToast={showToast}
@@ -188,9 +209,10 @@ export default function App() {
                     merchants={merchants}
                     methods={methods}
                     showToast={showToast}
+                    canOpenClient={isAdmin}
                 />
             )}
-            {section === 'merchants' && (
+            {section === 'merchants' && canSee('merchants') && (
                 <MerchantsSection
                     client={configClient}
                     showToast={showToast}
@@ -635,7 +657,7 @@ const EMPTY_ORDER_FILTER = {
   createdAtTo: '', createdAtToTime: '',
 };
 
-function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
+function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenClient }) {
   const [draft, setDraft] = useState(EMPTY_ORDER_FILTER);
   const [applied, setApplied] = useState(EMPTY_ORDER_FILTER);
   const [rows, setRows] = useState([]);
@@ -806,7 +828,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
           </div>
         </div>
 
-        <p className="table-hint">Двойной клик по строке — подробная информация</p>
+        <p className="table-hint">Двойной клик по строке — карточка ордера и управление статусом</p>
 
         <div className="table-wrap">
           <table className="grid grid-orders">
@@ -872,6 +894,8 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
                 onClose={() => setCard(null)}
                 onCopy={copy}
                 showToast={showToast}
+                onStatusChanged={() => load(applied, page, sort)}
+                canOpenClient={canOpenClient}
             />
         )}
       </>
@@ -879,10 +903,11 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast }) {
 }
 
 /* ==================== Карточка ордера ==================== */
-/* Всё только для чтения. Ключевые значения — сумма и статус —
-   вынесены отдельной строкой, остальное в двух колонках. */
+/* Ключевые значения — сумма и статус — вынесены отдельной строкой,
+   остальное в двух колонках. Над кнопками — полоса «Управление статусом»:
+   ручная смена статуса (PATCH /order/{id}), см. ORDER_ACTIONS. */
 
-function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, showToast }) {
+function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, showToast, onStatusChanged, canOpenClient }) {
   const [client, setClient] = useState(null);   // карточка клиента поверх
   const [loadingClient, setLoadingClient] = useState(false);
   /* В списке приходит сокращённый набор полей, поэтому подробности
@@ -890,24 +915,52 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
      До ответа показываем то, что уже есть из строки таблицы. */
   const [full, setFull] = useState(order);
   const [loading, setLoading] = useState(true);
+  // Перечитать ордер после смены статуса.
+  const [reloadKey, setReloadKey] = useState(0);
+  // Действие в окне подтверждения (элемент ORDER_ACTIONS) и идёт ли запрос.
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     api.order(order.id)
-        .then((d) => { if (alive && d) setFull({ ...order, ...d }); })
+        .then((d) => { if (alive && d) setFull((prev) => ({ ...prev, ...d })); })
         .catch((e) => {
           if (alive) showToast(e.message || 'Не удалось загрузить ордер', 'error');
         })
         .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [order, showToast]);
+  }, [order, reloadKey, showToast]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !client) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !client && !confirmAction) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, client]);
+  }, [onClose, client, confirmAction]);
+
+  // Кнопки — только для разрешённых переходов из текущего статуса.
+  // Пока подробности не загружены, статус может быть устаревшим — кнопок не показываем.
+  const actions = loading ? [] : ORDER_ACTIONS.filter((a) => a.from.includes(full.status));
+  const statusName = (name) => orderStatuses.find((s) => s.name === name)?.description || name || '—';
+
+  const applyStatus = async () => {
+    const action = confirmAction;
+    setChanging(true);
+    try {
+      await api.setOrderStatus(full.id, action.status);
+      showToast('Статус ордера изменён', 'success');
+    } catch (e) {
+      // Например, статус успели поменять, пока карточка была открыта, — бэк отвечает 400 с текстом.
+      showToast(e.message || 'Не удалось изменить статус', 'error');
+    } finally {
+      setChanging(false);
+      setConfirmAction(null);
+      // В любом случае перечитываем карточку и таблицу: статус на сервере мог измениться.
+      setReloadKey((k) => k + 1);
+      onStatusChanged?.();
+    }
+  };
 
   const statusLabel = orderStatuses.find((s) => s.name === full.status)?.description
       || full.status || '—';
@@ -1016,11 +1069,36 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
             </div>
           </div>
 
-          <div className="modal-foot modal-foot-split">
-            <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
-              <i className="fa-solid fa-user" />
-              Открыть карточку клиента
-            </button>
+          {/* Управление статусом: подпись слева, кнопки разрешённых переходов справа.
+              Если переходов нет (например, ордер «Успешный») — полосы нет. */}
+          {actions.length > 0 && (
+              <div className="status-bar">
+                <span className="eyebrow">Управление статусом</span>
+                <div className="status-actions">
+                  {actions.map((a) => (
+                      <button
+                          key={a.status}
+                          type="button"
+                          className={`btn btn-sm ${a.btn}`}
+                          onClick={() => setConfirmAction(a)}
+                          disabled={changing}
+                      >
+                        <i className={a.icon} />
+                        {a.label}
+                      </button>
+                  ))}
+                </div>
+              </div>
+          )}
+
+          {/* «Открыть карточку клиента» ведёт в раздел «Клиенты» — оператору не показываем. */}
+          <div className={`modal-foot${canOpenClient ? ' modal-foot-split' : ''}`}>
+            {canOpenClient && (
+                <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
+                  <i className="fa-solid fa-user" />
+                  Открыть карточку клиента
+                </button>
+            )}
             <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
           </div>
         </div>
@@ -1035,6 +1113,77 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
                 showToast={showToast}
             />
         )}
+
+        {confirmAction && (
+            <ConfirmOrderStatus
+                orderId={full.id}
+                action={confirmAction}
+                from={statusName(full.status)}
+                to={statusName(confirmAction.status)}
+                busy={changing}
+                onCancel={() => setConfirmAction(null)}
+                onApply={applyStatus}
+            />
+        )}
+      </div>
+  );
+}
+
+/* ---- Ручная смена статуса ордера ----
+   Из каких статусов доступен переход (ТЗ «Управление статусом ордера»):
+   в SUCCESS — из любого, кроме самого SUCCESS; в CANCELED — только из NEW
+   и DISPUTE; в DISPUTE — из NEW и TIMEOUT. NEW и TIMEOUT вручную не ставятся.
+   Окончательно переход проверяет бэк. */
+const ORDER_ACTIONS = [
+  {
+    status: 'SUCCESS', label: 'Подтвердить', question: 'Подтвердить ордер?',
+    from: ['NEW', 'TIMEOUT', 'DISPUTE', 'CANCELED'],
+    btn: 'btn-success', icon: 'fa-solid fa-check',
+  },
+  {
+    status: 'CANCELED', label: 'Отклонить', question: 'Отклонить ордер?',
+    from: ['NEW', 'DISPUTE'],
+    btn: 'btn-danger', icon: 'fa-solid fa-xmark',
+  },
+  {
+    status: 'DISPUTE', label: 'Спор', question: 'Перевести ордер в спор?',
+    from: ['NEW', 'TIMEOUT'],
+    btn: 'btn-dispute', icon: 'fa-solid fa-scale-balanced',
+  },
+];
+
+/* Подтверждение смены статуса: ID ордера, вопрос, «с … на …». */
+function ConfirmOrderStatus({ orderId, action, from, to, busy, onCancel, onApply }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, busy]);
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="os-title">
+          <div className="modal-head">
+            <h2 id="os-title">Подтверждение</h2>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <p className="confirm-id mono">{orderId}</p>
+            <p className="confirm-text"><b>{action.question}</b></p>
+            <p className="confirm-text">
+              Статус изменится с «{from}» на «{to}».
+              <br />
+              Действие необратимо.
+            </p>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Отмена</button>
+            <button type="button" className={`btn ${action.btn}`} onClick={onApply} disabled={busy}>
+              {busy ? <i className="fa-solid fa-spinner fa-spin" /> : <i className={action.icon} />}
+              {action.label}
+            </button>
+          </div>
+        </div>
       </div>
   );
 }
@@ -2754,6 +2903,7 @@ function MultiSelect({ id, options, value, onChange, placeholder = 'Все' }) {
    Сортировки по клику на заголовок нет — по ТЗ не предусмотрена. */
 
 const EMPTY_TX_FILTER = {
+  id: '',
   client: '',
   dateMode: 'equal',
   date: '', time: '',
@@ -2800,6 +2950,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
       const r = await api.transactions({
         page: pageNum,
         size: PAGE_SIZE,
+        id: f.id.trim(),
         // Одно поле на логин и ID клиента — бэк ищет по обоим.
         client: f.client.trim(),
         ...range,
@@ -2846,7 +2997,14 @@ function TransactionsSection({ operations, txTypes, showToast }) {
   return (
       <>
         <div className="card filter-card">
-          <div className="filter-grid filter-grid-3">
+          {/* Четыре колонки: ID, клиент и блок даты (занимает две). */}
+          <div className="filter-grid">
+            <div className="field">
+              <label htmlFor="t-id">ID транзакции</label>
+              <input id="t-id" value={draft.id} placeholder="UUID транзакции"
+                     onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
+            </div>
+
             <div className="field">
               <label htmlFor="t-client">Клиент</label>
               <input id="t-client" value={draft.client} placeholder="ID или логин клиента"
@@ -2906,6 +3064,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
           <table className="grid grid-tx">
             <thead>
             <tr>
+              <th>ID транзакции</th>
               <th>Клиент</th>
               <th>Создана</th>
               <th>Операция</th>
@@ -2927,6 +3086,8 @@ function TransactionsSection({ operations, txTypes, showToast }) {
                       key={t.id ?? `${t.clientId}-${t.createdAt}-${i}`}
                       className={`no-hover${credit ? ' tx-credit' : ''}${debit ? ' tx-debit' : ''}`}
                   >
+                    {/* ID — сокращённо, полный в подсказке, копируется по клику (как в «Ордерах») */}
+                    <td className="c-id"><CopyValue value={t.id} onCopy={copy} /></td>
                     <td>
                       <span className="cell-main">{t.clientUsername || '—'}</span>
                       <span className="cell-sub"><CopyValue value={t.clientId} onCopy={copy} /></span>

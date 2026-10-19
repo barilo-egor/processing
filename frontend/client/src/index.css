@@ -447,7 +447,7 @@ table.grid tbody tr:hover { background: var(--row-hover); }
 .state-flat { border: none; border-radius: 0; background: none; }
 
 table.grid-orders { min-width: 980px; }
-table.grid-tx { min-width: 720px; }
+table.grid-tx { min-width: 860px; }
 table.grid-wd { min-width: 1120px; }
 table.grid td { vertical-align: middle; }
 table.grid th.num, table.grid td.num {
@@ -645,3 +645,5 @@ table.grid tbody tr.row-open { cursor: pointer; }
 .th-sort:hover .sort-ico { opacity: .7; }
 table.grid thead th.th-sortable.active { color: var(--text); }
 th.th-sortable.active .sort-ico { opacity: 1; color: var(--accent); }
+/* ID ордера в окне отмены — переносится целиком, не растягивает окно */
+.confirm-text .code.wrap { overflow-wrap: anywhere; }

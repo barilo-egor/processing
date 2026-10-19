@@ -17,10 +17,13 @@
      PATCH /api/support/merchant-config/{id}
      GET   /api/support/withdrawal-request?client&id&status&address&createdAtFrom&createdAtTo&page&size&sort
      PATCH /api/support/withdrawal-request/{id}?status=APPROVED|CANCELED
-     GET   /api/support/transaction?client&createdAtFrom&createdAtTo&page&size&sort
+     GET   /api/support/order/{id}   -> подробности ордера
+     PATCH /api/support/order/{id}   <- { status: SUCCESS | CANCELED | DISPUTE } — ручная смена статуса
+     GET   /api/support/transaction?id&client&createdAtFrom&createdAtTo&page&size&sort
      POST  /api/support/transaction   <- { clientId, operation, amount, comment }
            тип MANUAL_CORRECT бэк ставит сам
      GET   /api/support/support-user  -> { id, username, registeredAt } — вошедший администратор
+     GET   /api/support/support-user/roles -> ["ADMIN"] | ["OPERATOR"] — роли вошедшего пользователя
      GET   /api/support/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
      GET   /api/support/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
            -> { content, page }; orderId здесь — ID у мерчанта
@@ -205,6 +208,11 @@ export const api = {
 
   order: (id) => request(`${SUPPORT_API}/order/${encodeURIComponent(id)}`),
 
+  /* Ручная смена статуса ордера: SUCCESS, CANCELED или DISPUTE.
+     Переход проверяет бэк; запрещённый или уже выполненный — 400 с текстом. */
+  setOrderStatus: (id, status) =>
+      request(`${SUPPORT_API}/order/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status } }),
+
   merchantConfigs: (clientId) =>
       request(`${SUPPORT_API}/merchant-config/${encodeURIComponent(clientId)}`),
   updateMerchantConfig: (id, body) =>
@@ -240,6 +248,12 @@ export const api = {
 
   // Вошедший администратор (для шапки): { id, username, registeredAt }.
   supportUser: () => request(`${SUPPORT_API}/support-user`),
+
+  // Роли вошедшего пользователя поддержки: массив строк, например ["ADMIN"].
+  async supportUserRoles() {
+    const d = await request(`${SUPPORT_API}/support-user/roles`);
+    return Array.isArray(d) ? d.map(String) : [];
+  },
 
   /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
      Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */

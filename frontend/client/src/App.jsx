@@ -998,7 +998,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
           />
         </FilterPanel>
 
-        <p className="table-hint">Двойной клик по строке таблицы открывает карточку ордера.</p>
+        <p className="table-hint">Двойной клик по строке — карточка ордера и управление статусом</p>
 
         <TableCard
             list={list}
@@ -1049,24 +1049,49 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
             <OrderCard
                 order={card} dict={dict} timeoutSec={timeoutSec}
                 showToast={showToast} onClose={() => setCard(null)}
+                onChanged={(fresh) => { setCard(fresh); list.reload(); }}
             />
         )}
       </>
   );
 }
 
-/* ---- Карточка ордера (только просмотр) ----
+/* ---- Карточка ордера ----
    Данные — из строки таблицы: список GET /api/client/order отдаёт все поля
    карточки (id, amount, status, internalId, createdAt, method, bank,
    details, callbackUrl). Статус и метод — подписи из словаря.
    «Дата истечения» по ТЗ вычисляется: дата создания + время активности
-   ордеров клиента (orderTimeoutSeconds из профиля). */
-function OrderCard({ order, dict, timeoutSec, showToast, onClose }) {
+   ордеров клиента (orderTimeoutSeconds из профиля).
+   «Отменить ордер» — только для NEW и DISPUTE (ТЗ «Управление статусом
+   ордера»): PATCH /order/{id}, затем карточка перечитывает ордер. */
+const CANCELABLE_ORDER = ['NEW', 'DISPUTE'];
+
+function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !confirmCancel) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, confirmCancel]);
+
+  const cancelOrder = async () => {
+    setCanceling(true);
+    try {
+      await api.cancelOrder(order.id);
+      showToast('Ордер отменён', 'success');
+    } catch (e) {
+      // Например, статус ордера успели сменить, пока карточка была открыта, — 400 с текстом.
+      showToast(e.message || 'Не удалось отменить ордер', 'error');
+    }
+    // В любом случае перечитываем ордер: статус на сервере мог измениться.
+    let fresh = null;
+    try { fresh = await api.order(order.id); } catch { /* останется прежняя версия */ }
+    setCanceling(false);
+    setConfirmCancel(false);
+    onChanged?.(fresh && typeof fresh === 'object' ? { ...order, ...fresh } : order);
+  };
 
   const created = Number(order.createdAt);
   const timeout = Number(timeoutSec);
@@ -1144,7 +1169,56 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose }) {
           </div>
 
           <div className="modal-foot">
+            {CANCELABLE_ORDER.includes(order.status) && (
+                <button type="button" className="btn btn-danger" onClick={() => setConfirmCancel(true)} disabled={canceling}>
+                  <i className="fa-solid fa-xmark" />
+                  Отменить ордер
+                </button>
+            )}
             <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
+          </div>
+        </div>
+
+        {confirmCancel && (
+            <CancelOrderDialog
+                id={order.id}
+                busy={canceling}
+                onCancel={() => setConfirmCancel(false)}
+                onApply={cancelOrder}
+            />
+        )}
+      </div>
+  );
+}
+
+/* Подтверждение отмены ордера. */
+function CancelOrderDialog({ id, busy, onCancel, onApply }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, busy]);
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="co-title">
+          <div className="modal-head">
+            <h2 id="co-title">Отмена ордера</h2>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <p className="confirm-text">
+              Отменить ордер <span className="code wrap">{id}</span>?
+              <br />
+              Действие необратимо.
+            </p>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Не отменять</button>
+            <button type="button" className="btn btn-danger" onClick={onApply} disabled={busy}>
+              {busy && <i className="fa-solid fa-spinner fa-spin" />}
+              Отменить ордер
+            </button>
           </div>
         </div>
       </div>
@@ -1153,16 +1227,28 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose }) {
 
 /* ==================== Раздел «Транзакции» ==================== */
 
+const EMPTY_TX_FILTER = { id: '', ...EMPTY_DATE_FILTER };
+
 function TransactionsSection({ dict, showToast }) {
   const list = usePagedList(api.transactions, showToast, 'Не удалось загрузить транзакции');
-  const [draft, setDraft] = useState(EMPTY_DATE_FILTER);
+  const [draft, setDraft] = useState(EMPTY_TX_FILTER);
 
-  const onSearch = () => list.search(dateFilterParams(draft));
-  const onReset = () => { setDraft(EMPTY_DATE_FILTER); list.search({}); };
+  const onSearch = () => list.search({ id: draft.id.trim(), ...dateFilterParams(draft) });
+  const onReset = () => { setDraft(EMPTY_TX_FILTER); list.search({}); };
 
   return (
       <>
         <FilterPanel onSearch={onSearch} onReset={onReset}>
+          <div className="field field-wide">
+            <label htmlFor="tx-id">ID транзакции</label>
+            <input
+                id="tx-id"
+                type="text"
+                placeholder="UUID транзакции"
+                value={draft.id}
+                onChange={(e) => setDraft((d) => ({ ...d, id: e.target.value }))}
+            />
+          </div>
           <DateFilter idPrefix="tx-date" value={draft} onChange={setDraft} />
         </FilterPanel>
 
@@ -1175,6 +1261,7 @@ function TransactionsSection({ dict, showToast }) {
           <table className="grid grid-tx">
             <thead>
             <tr>
+              <th>ID транзакции</th>
               <th>Создана</th>
               <th>Операция</th>
               <th className="num">Сумма, ₽</th>
@@ -1195,6 +1282,9 @@ function TransactionsSection({ dict, showToast }) {
                       key={t.id ?? i}
                       className={`no-hover${credit ? ' tx-credit' : ''}${debit ? ' tx-debit' : ''}`}
                   >
+                    <td>
+                      <CopyCell value={t.id} showToast={showToast} okText="ID транзакции скопирован" />
+                    </td>
                     <td className="nowrap">{formatDateTime(t.createdAt)}</td>
                     <td>{dictLabel(dict, 'Operation', t.operation)}</td>
                     <td className={`num strong${credit ? ' plus' : ''}${debit ? ' minus' : ''}`}>

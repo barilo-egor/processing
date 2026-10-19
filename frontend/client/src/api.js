@@ -12,7 +12,9 @@
      POST   /api/client/api-key?name=       -> строка с полным токеном
      DELETE /api/client/api-key/{id}
      GET    /api/client/order?status&method&page&size&sort
-     GET    /api/client/transaction?createdAtFrom&createdAtTo&page&size&sort
+     GET    /api/client/order/{id}           -> один ордер
+     PATCH  /api/client/order/{id}           — отмена своего ордера (тела нет)
+     GET    /api/client/transaction?id&createdAtFrom&createdAtTo&page&size&sort
      GET    /api/client/withdrawal-request?id&status&address&createdAtFrom&createdAtTo&page&size&sort
      POST   /api/client/withdrawal-request?amount=&address=   — создание
      PATCH  /api/client/withdrawal-request/{id}               — отмена
@@ -204,7 +206,14 @@ export const api = {
   // Ордера клиента. Фильтр: status, method.
   orders: (params) => pageRequest(`${CLIENT_API}/order`, params),
 
-  // Транзакции. Фильтр: createdAtFrom, createdAtTo.
+  // Один ордер — перечитать карточку после отмены.
+  order: (id) => request(`${CLIENT_API}/order/${encodeURIComponent(id)}`),
+
+  // Отмена своего ордера. Только из NEW и DISPUTE, иначе бэк отвечает 400.
+  cancelOrder: (id) =>
+      request(`${CLIENT_API}/order/${encodeURIComponent(id)}`, { method: 'PATCH' }),
+
+  // Транзакции. Фильтр: id, createdAtFrom, createdAtTo.
   transactions: (params) => pageRequest(`${CLIENT_API}/transaction`, params),
 
   // Заявки на вывод. Фильтр: id и address (подстрока), status,

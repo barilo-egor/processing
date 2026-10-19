@@ -863,3 +863,31 @@ table.grid-mh td { white-space: nowrap; }
 .grid-merchants tr.is-dragging { opacity: .45; }
 .grid-merchants tr.drop-before td { box-shadow: inset 0 2px 0 var(--accent); }
 .grid-merchants tr.drop-after td { box-shadow: inset 0 -2px 0 var(--accent); }
+/* ===== Карточка ордера: управление статусом ===== */
+/* Полоса над кнопками «Открыть карточку клиента» / «Закрыть»:
+   подпись слева, кнопки разрешённых переходов справа. */
+.status-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px; background: var(--surface-2); border-top: 1px solid var(--border);
+}
+.status-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-dispute { background: #7c3aed; color: #fff; }
+.btn-success:not(:disabled):hover,
+.btn-danger:not(:disabled):hover,
+.btn-dispute:not(:disabled):hover { filter: brightness(1.08); }
+
+/* ID ордера в окне подтверждения */
+.confirm-id { margin: 4px 0 0; font-size: 13px; color: var(--text-dim); word-break: break-all; }
+
+@media (max-width: 560px) {
+  .status-bar { flex-direction: column; align-items: stretch; }
+  .status-actions .btn { flex: 1 1 0; }
+}
+/* Телефон: «Открыть карточку клиента» и «Закрыть» не помещались в строку — переносим */
+@media (max-width: 560px) {
+  .modal-foot-split { flex-wrap: wrap; }
+  .modal-foot-split .btn { flex: 1 1 auto; }
+}
