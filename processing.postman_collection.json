@@ -260,37 +260,6 @@
               ]
             },
             {
-              "name": "Создание ордера",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Test-User",
-                    "value": "{{test_user}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{processing_client_api_url}}/order",
-                  "host": [
-                    "{{processing_client_api_url}}"
-                  ],
-                  "path": [
-                    "order"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
               "name": "Отмена ордера",
               "request": {
                 "method": "PATCH",
@@ -2369,6 +2338,13 @@
                   {
                     "key": "Api-Key",
                     "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "Test-Order",
+                    "value": "true",
+                    "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                    "type": "text",
+                    "disabled": true
                   }
                 ],
                 "body": {

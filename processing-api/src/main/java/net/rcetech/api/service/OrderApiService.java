@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
+import net.rcetech.api.merchantdetails.RandomDetailsGenerator;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
@@ -32,21 +33,26 @@ public class OrderApiService {
 
     private final MerchantDetailsReceiver merchantDetailsReceiver;
 
+    private final RandomDetailsGenerator randomDetailsGenerator;
+
     private final ClientService clientService;
 
     private final OrderService orderService;
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public OrderApiService(MerchantDetailsReceiver merchantDetailsReceiver, ClientService clientService,
-                           OrderService orderService, ApplicationEventPublisher eventPublisher) {
+    public OrderApiService(MerchantDetailsReceiver merchantDetailsReceiver, RandomDetailsGenerator randomDetailsGenerator,
+                           ClientService clientService, OrderService orderService,
+                           ApplicationEventPublisher eventPublisher) {
         this.merchantDetailsReceiver = merchantDetailsReceiver;
+        this.randomDetailsGenerator = randomDetailsGenerator;
         this.clientService = clientService;
         this.orderService = orderService;
         this.eventPublisher = eventPublisher;
     }
 
-    public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest, Integer timeoutSeconds) {
+    public Order createOrder(UUID clientId, CreateOrderRequest createOrderRequest, Integer timeoutSeconds,
+                             boolean testOrder) {
         Client client = clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
         if (orderService.existsByInternalId(createOrderRequest.internalId())) {
@@ -54,9 +60,9 @@ public class OrderApiService {
                     + createOrderRequest.internalId() + " уже присутствует в системе.");
         }
         UUID orderId = UUID.randomUUID();
-        ApiDetailsResponse detailsResponse = merchantDetailsReceiver.getDetails(
-                clientId, orderId, createOrderRequest, timeoutSeconds
-        );
+        ApiDetailsResponse detailsResponse = testOrder
+                ? randomDetailsGenerator.generate(createOrderRequest)
+                : merchantDetailsReceiver.getDetails(clientId, orderId, createOrderRequest, timeoutSeconds);
         ApiDetailsResponse.Details details = detailsResponse.details();
         Order order = new Order();
         order.setId(orderId);

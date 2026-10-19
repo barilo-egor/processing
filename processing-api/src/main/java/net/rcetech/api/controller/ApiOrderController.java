@@ -40,8 +40,16 @@ public class ApiOrderController {
                                                           @RequestHeader(required = false, defaultValue = "30",
                                                                   value = "Search-Timeout-Seconds")
                                                                   Integer timeoutSeconds,
+                                                          @RequestHeader(required = false, defaultValue = "false",
+                                                                  value = "Test-Order")
+                                                                  boolean testOrder,
                                                           Principal principal) {
-        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds);
+        log.info("Клиент {} запросил через API создание ордера (internalId={}, сумма={}, методы={}, " +
+                        "таймаут поиска={} с, тестовый={}).",
+                principal.getName(), clientRequest.internalId(), clientRequest.amount(), clientRequest.methods(),
+                timeoutSeconds, testOrder);
+        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds,
+                testOrder);
         log.info("Клиент {} создал через API ордер {} (internalId={}, сумма={}, методы={}).",
                 principal.getName(), order.getId(), clientRequest.internalId(), clientRequest.amount(),
                 clientRequest.methods());

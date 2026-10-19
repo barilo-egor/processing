@@ -7,8 +7,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
@@ -52,7 +51,7 @@ enum OrderEndpoint {
 
         @Override
         void verifyCalled(OrderApiService orderApiService, UUID clientId, UUID orderId) {
-            verify(orderApiService).createOrder(eq(clientId), any(), any());
+            verify(orderApiService).createOrder(eq(clientId), any(), any(), anyBoolean());
         }
     },
     CANCEL(true, HttpStatus.OK) {

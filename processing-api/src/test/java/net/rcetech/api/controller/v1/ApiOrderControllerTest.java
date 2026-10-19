@@ -76,7 +76,7 @@ class ApiOrderControllerTest {
 
     @BeforeEach
     void setUp() {
-        when(orderApiService.createOrder(any(), any(), any())).thenReturn(new Order());
+        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenReturn(new Order());
     }
 
     private RequestPostProcessor apiKeyOf(UUID clientId) {
@@ -257,7 +257,7 @@ class ApiOrderControllerTest {
                         .content(objectMapper.writeValueAsString(expected))
                         .header("Content-Type", "application/json")
         ).andExpect(status().isCreated());
-        verify(orderApiService).createOrder(eq(clientId), captor.capture(), eq(30));
+        verify(orderApiService).createOrder(eq(clientId), captor.capture(), eq(30), anyBoolean());
         CreateOrderRequest actual = captor.getValue();
         assertAll(
                 () -> assertEquals(expected.internalId(), actual.internalId()),
@@ -287,7 +287,7 @@ class ApiOrderControllerTest {
                         .header("Content-Type", "application/json")
                         .header("Search-Timeout-Seconds", timeoutSeconds)
         ).andExpect(status().isCreated());
-        verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds));
+        verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds), anyBoolean());
     }
 
     @Test
@@ -307,7 +307,51 @@ class ApiOrderControllerTest {
                         .content(content)
                         .header("Content-Type", "application/json")
         ).andExpect(status().isCreated());
-        verify(orderApiService).createOrder(any(), any(), eq(30));
+        verify(orderApiService).createOrder(any(), any(), eq(30), anyBoolean());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Значение заголовка Test-Order должно быть передано в сервис.")
+    void createOrder_shouldPassTestOrderFromHeader(boolean testOrder) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Test-Order", testOrder)
+        ).andExpect(status().isCreated());
+        verify(orderApiService).createOrder(any(), any(), any(), eq(testOrder));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15, 45})
+    @DisplayName("Если заголовок Test-Order отсутствует, то ордер должен создаваться как нетестовый.")
+    void createOrder_shouldPassFalseTestOrderByDefault(Integer timeoutSeconds) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Search-Timeout-Seconds", timeoutSeconds)
+        ).andExpect(status().isCreated());
+        verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds), eq(false));
     }
 
     static Stream<Arguments> createOrderRequestArguments() {
@@ -325,7 +369,7 @@ class ApiOrderControllerTest {
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
     void createOrder_shouldReturnCreatedOrder(ClientOrderSummary expected) throws Exception {
         Order order = mock(Order.class);
-        when(orderApiService.createOrder(any(), any(), anyInt())).thenReturn(order);
+        when(orderApiService.createOrder(any(), any(), anyInt(), anyBoolean())).thenReturn(order);
         when(orderMapper.toOrderSummary(order)).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
@@ -462,7 +506,7 @@ class ApiOrderControllerTest {
                                     "callbackUrl": "https://example.com/callback"
                                 }"""))
                 .andExpect(status().isCreated());
-        verify(orderApiService).createOrder(eq(clientId), any(), eq(30));
+        verify(orderApiService).createOrder(eq(clientId), any(), eq(30), anyBoolean());
     }
 
     @RepeatedTest(value = 2)

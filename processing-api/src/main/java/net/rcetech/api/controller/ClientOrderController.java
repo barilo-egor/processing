@@ -1,11 +1,8 @@
 package net.rcetech.api.controller;
 
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.mapping.orders.OrderMapper;
-import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -33,19 +30,6 @@ public class ClientOrderController {
     public ClientOrderController(OrderApiService orderApiService, OrderMapper orderMapper) {
         this.orderApiService = orderApiService;
         this.orderMapper = orderMapper;
-    }
-
-    @PostMapping
-    public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
-                                                          @RequestHeader(required = false, defaultValue = "30",
-                                                                  value = "Search-Timeout-Seconds")
-                                                                  Integer timeoutSeconds,
-                                                          Principal principal) {
-        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds);
-        log.info("Клиент {} создал ордер {} (internalId={}, сумма={}, методы={}).",
-                principal.getName(), order.getId(), clientRequest.internalId(), clientRequest.amount(),
-                clientRequest.methods());
-        return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")

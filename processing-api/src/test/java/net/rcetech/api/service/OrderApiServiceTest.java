@@ -3,6 +3,7 @@ package net.rcetech.api.service;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
+import net.rcetech.api.merchantdetails.RandomDetailsGenerator;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
@@ -58,7 +59,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @DataJpaTest
 @Import(OrderService.class)
@@ -94,6 +95,9 @@ class OrderApiServiceTest {
     @MockitoBean
     private MerchantDetailsReceiver merchantDetailsReceiver;
 
+    @MockitoBean
+    private RandomDetailsGenerator randomDetailsGenerator;
+
     @Autowired
     private ClientService clientService;
 
@@ -113,7 +117,7 @@ class OrderApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        orderApiService = new OrderApiService(merchantDetailsReceiver, clientService, orderService, eventPublisher);
+        orderApiService = new OrderApiService(merchantDetailsReceiver, randomDetailsGenerator, clientService, orderService, eventPublisher);
     }
 
     @ParameterizedTest
@@ -129,7 +133,7 @@ class OrderApiServiceTest {
         CreateOrderRequest request = new CreateOrderRequest(
                 null, null, null, null, null
         );
-        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, request, 30));
+        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, request, 30, false));
     }
 
     @RepeatedTest(value = 2)
@@ -143,7 +147,7 @@ class OrderApiServiceTest {
         );
         assertThrows(
                 BadRequestException.class,
-                () -> orderApiService.createOrder(clientId, request, 30),
+                () -> orderApiService.createOrder(clientId, request, 30, false),
                 "Внутренний идентификатор(internalId) должен быть уникальным, ордер с идентификатором "
                         + order.getInternalId() + " уже присутствует в системе."
         );
@@ -189,7 +193,7 @@ class OrderApiServiceTest {
         Instant time = Instant.now();
         try (MockedStatic<Instant> instantMock = Mockito.mockStatic(Instant.class)) {
             instantMock.when(Instant::now).thenReturn(time);
-            orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
+            orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
             List<Order> orders = orderRepository.findAll();
             assertEquals(1, orders.size());
             Order order = orders.getFirst();
@@ -206,7 +210,7 @@ class OrderApiServiceTest {
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(detailsResponse);
         Client client = getDummyClient();
         clientService.save(client);
-        orderApiService.createOrder(client.getId(), createOrderRequest, 30);
+        orderApiService.createOrder(client.getId(), createOrderRequest, 30, false);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -241,7 +245,7 @@ class OrderApiServiceTest {
         Client client = getDummyClient();
         clientService.save(client);
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(apiDetailsResponse);
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
+        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -272,6 +276,40 @@ class OrderApiServiceTest {
         );
     }
 
+    @MethodSource("detailsResponseArguments")
+    @ParameterizedTest
+    @DisplayName("Тестовый ордер должен создаваться со сгенерированными реквизитами без запроса в merchant-details.")
+    void createOrder_shouldCreateTestOrderWithGeneratedDetails(ApiDetailsResponse apiDetailsResponse) {
+        Client client = getDummyClient();
+        CreateOrderRequest createOrderRequest = getDummyCreateOrderRequest();
+        when(randomDetailsGenerator.generate(createOrderRequest)).thenReturn(apiDetailsResponse);
+        orderApiService.createOrder(client.getId(), createOrderRequest, 30, true);
+        List<Order> orders = orderRepository.findAll();
+        assertEquals(1, orders.size());
+        Order order = orders.getFirst();
+        assertAll(
+                () -> assertEquals(apiDetailsResponse.merchant(), order.getMerchant()),
+                () -> assertEquals(apiDetailsResponse.orderId(), order.getMerchantOrderId()),
+                () -> assertEquals(apiDetailsResponse.orderStatus(), order.getMerchantOrderStatus()),
+                () -> assertEquals(apiDetailsResponse.details().requestMethod(), order.getMethod()),
+                () -> assertEquals(apiDetailsResponse.details().details(), order.getDetails()),
+                () -> assertEquals(apiDetailsResponse.details().bank(), order.getBank())
+        );
+        verifyNoInteractions(merchantDetailsReceiver);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 60})
+    @DisplayName("Обычный ордер должен создаваться с реквизитами из merchant-details без генерации тестовых.")
+    void createOrder_shouldNotGenerateDetailsForNotTestOrder(int timeoutSeconds) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(timeoutSeconds)))
+                .thenReturn(getDummyApiDetailsResponse());
+        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), timeoutSeconds, false);
+        verify(merchantDetailsReceiver).getDetails(eq(client.getId()), any(), any(), eq(timeoutSeconds));
+        verifyNoInteractions(randomDetailsGenerator);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "https://example.com/callback",
@@ -283,7 +321,7 @@ class OrderApiServiceTest {
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(apiDetailsResponse);
         Client client = getDummyClient();
         client.setCallbackUrl(url);
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30);
+        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         assertEquals(url, orders.getFirst().getCallbackUrl());

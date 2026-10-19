@@ -3,7 +3,6 @@ package net.rcetech.api.controller;
 import jakarta.servlet.http.Cookie;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.Client;
-import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
@@ -80,7 +79,6 @@ class ClientOrderControllerSecurityTest {
     @BeforeEach
     void setUp() {
         when(orderApiService.findAll(any(), any(), any())).thenReturn(Page.empty());
-        when(orderApiService.createOrder(any(), any(), any())).thenReturn(new Order());
     }
 
     private Client createClient() {
@@ -100,8 +98,13 @@ class ClientOrderControllerSecurityTest {
         return session;
     }
 
-    static Stream<Arguments> endpointsAndCsrfTokens() {
+    private static Stream<OrderEndpoint> clientEndpoints() {
         return Arrays.stream(OrderEndpoint.values())
+                .filter(endpoint -> endpoint != OrderEndpoint.CREATE);
+    }
+
+    static Stream<Arguments> endpointsAndCsrfTokens() {
+        return clientEndpoints()
                 .flatMap(endpoint -> Stream.of(
                         Arguments.of(endpoint, UUID.randomUUID().toString()),
                         Arguments.of(endpoint, UUID.randomUUID().toString())
@@ -109,7 +112,7 @@ class ClientOrderControllerSecurityTest {
     }
 
     static Stream<Arguments> modifyingEndpointsAndCsrfHeaders() {
-        return Arrays.stream(OrderEndpoint.values())
+        return clientEndpoints()
                 .filter(OrderEndpoint::isModifying)
                 .flatMap(endpoint -> Stream.of(
                         Arguments.of(endpoint, null),
@@ -118,7 +121,7 @@ class ClientOrderControllerSecurityTest {
     }
 
     static Stream<Arguments> endpointsAndKeyNames() {
-        return Arrays.stream(OrderEndpoint.values())
+        return clientEndpoints()
                 .flatMap(endpoint -> Stream.of(
                         Arguments.of(endpoint, "key"),
                         Arguments.of(endpoint, "integration-key")
@@ -126,7 +129,7 @@ class ClientOrderControllerSecurityTest {
     }
 
     static Stream<Arguments> endpointsAndSupportRoles() {
-        return Arrays.stream(OrderEndpoint.values())
+        return clientEndpoints()
                 .flatMap(endpoint -> Role.SUPPORT_USERS.stream()
                         .map(role -> Arguments.of(endpoint, role)));
     }
