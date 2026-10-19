@@ -14,11 +14,13 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -589,5 +591,109 @@ class OrderServiceTest {
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.TIMEOUT, actual.getStatus());
         assertEquals(merchantOrderStatus, actual.getMerchantOrderStatus());
+    }
+
+    @ValueSource(strings = {
+            "5000",
+            "12000"
+    })
+    @ParameterizedTest
+    @DisplayName("Ордер в статусе SEARCHING должен сохраняться без реквизитов, данных мерчанта и времени истечения.")
+    void save_shouldSaveSearchingOrderWithoutDetails(int amount) {
+        Order order = searchingOrder(getDummyClient(), amount);
+
+        orderRepository.saveAndFlush(order);
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(OrderStatus.SEARCHING, actual.getStatus()),
+                () -> assertEquals(amount, actual.getAmount()),
+                () -> assertNull(actual.getExpiresAt()),
+                () -> assertNull(actual.getMerchant()),
+                () -> assertNull(actual.getMerchantOrderId()),
+                () -> assertNull(actual.getMerchantOrderStatus()),
+                () -> assertNull(actual.getMethod()),
+                () -> assertNull(actual.getDetails()),
+                () -> assertNull(actual.getBank())
+        );
+    }
+
+    @ValueSource(ints = {
+            2,
+            5
+    })
+    @ParameterizedTest
+    @DisplayName("Несколько ордеров без мерчанта и идентификатора ордера мерчанта должны сохраняться без нарушения уникальности.")
+    void save_shouldSaveSeveralOrdersWithoutMerchantOrderId(int count) {
+        Client client = getDummyClient();
+
+        for (int i = 0; i < count; i++) {
+            orderRepository.saveAndFlush(searchingOrder(client, 5000));
+        }
+
+        assertEquals(count, orderRepository.count());
+    }
+
+    @CsvSource({
+            "ALFA_TEAM,ONLY_PAYS,8f1c2d3e",
+            "ONLY_PAYS,ALFA_TEAM,c4b5a6d7"
+    })
+    @ParameterizedTest
+    @DisplayName("Ордера разных мерчантов с одинаковым идентификатором ордера мерчанта должны сохраняться.")
+    void save_shouldSaveSameMerchantOrderIdForDifferentMerchants(Merchant first, Merchant second,
+                                                                 String merchantOrderId) {
+        Client client = getDummyClient();
+
+        orderRepository.saveAndFlush(merchantOrder(client, first, merchantOrderId));
+        orderRepository.saveAndFlush(merchantOrder(client, second, merchantOrderId));
+
+        assertEquals(2, orderRepository.count());
+    }
+
+    @CsvSource({
+            "ALFA_TEAM,8f1c2d3e",
+            "ONLY_PAYS,c4b5a6d7"
+    })
+    @ParameterizedTest
+    @DisplayName("Должен быть брошен DataIntegrityViolationException, если у мерчанта уже есть ордер с таким же идентификатором.")
+    void save_shouldThrowIfMerchantOrderIdDuplicated(Merchant merchant, String merchantOrderId) {
+        Client client = getDummyClient();
+        orderRepository.saveAndFlush(merchantOrder(client, merchant, merchantOrderId));
+        Order duplicate = merchantOrder(client, merchant, merchantOrderId);
+
+        assertThrows(DataIntegrityViolationException.class, () -> orderRepository.saveAndFlush(duplicate));
+    }
+
+    @EnumSource(value = OrderStatus.class, names = {"SEARCHING", "NEW"})
+    @ParameterizedTest
+    @DisplayName("Ордер должен сохраняться без URL для колбэков.")
+    void save_shouldSaveOrderWithoutCallbackUrl(OrderStatus status) {
+        Order order = searchingOrder(getDummyClient(), 5000);
+        order.setStatus(status);
+        order.setCallbackUrl(null);
+
+        orderRepository.saveAndFlush(order);
+
+        assertNull(orderRepository.findById(order.getId()).orElseThrow().getCallbackUrl());
+    }
+
+    private Order searchingOrder(Client client, int amount) {
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setCreatedAt(Instant.now());
+        order.setClient(client);
+        order.setInternalId(UUID.randomUUID().toString());
+        order.setStatus(OrderStatus.SEARCHING);
+        order.setAmount(amount);
+        order.setCallbackUrl("https://google.com/callback");
+        return order;
+    }
+
+    private Order merchantOrder(Client client, Merchant merchant, String merchantOrderId) {
+        Order order = new Order();
+        order.setMerchant(merchant);
+        order.setMerchantOrderId(merchantOrderId);
+        fillFields(order, client);
+        return order;
     }
 }
