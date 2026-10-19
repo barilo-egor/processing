@@ -22,6 +22,11 @@ public class MerchantDetailsEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void orderCanceled(OrderCanceledEvent event) {
+        if (event.merchant() == null || event.merchantOrderId() == null) {
+            log.debug("Отмена ордера в merchant-details не требуется: мерчант или идентификатор ордера мерчанта " +
+                    "не заданы.");
+            return;
+        }
         try {
             apiMerchantDetailsGrpcService.cancelOrder(detailsMapper.orderCanceledEventToDTO(event));
         } catch (Exception e) {

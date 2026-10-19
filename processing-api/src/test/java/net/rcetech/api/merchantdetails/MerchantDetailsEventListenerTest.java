@@ -91,4 +91,20 @@ class MerchantDetailsEventListenerTest {
         assertDoesNotThrow(TestTransaction::end);
         verify(apiMerchantDetailsGrpcService).cancelOrder(new CancelOrderDTO(merchant, merchantOrderId, method));
     }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "null,null,null",
+            "ALFA_TEAM,null,CARD",
+            "null,58213,SBP"
+    }, nullValues = "null")
+    @DisplayName("Отмена ордера в merchant-details не должна вызываться, если мерчант или идентификатор ордера мерчанта не заданы.")
+    void orderCanceled_shouldNotCancelOrderInMerchantDetailsIfMerchantDataMissing(Merchant merchant,
+                                                                                  String merchantOrderId,
+                                                                                  RequestMethod method) {
+        eventPublisher.publishEvent(new OrderCanceledEvent(merchant, merchantOrderId, method));
+        TestTransaction.flagForCommit();
+        assertDoesNotThrow(TestTransaction::end);
+        verifyNoInteractions(apiMerchantDetailsGrpcService);
+    }
 }
