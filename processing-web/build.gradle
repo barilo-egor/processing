@@ -11,6 +11,8 @@ dependencies {
     implementation 'tgb.cryptoexchange:common-api:1.1.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.security:spring-security-oauth2-client'
 }
 
 bootJar {

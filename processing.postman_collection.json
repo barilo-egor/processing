@@ -1942,6 +1942,151 @@
               ]
             }
           ]
+        },
+        {
+          "name": "docs",
+          "item": [
+            {
+              "name": "Список страниц документации",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/docs",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "docs"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Список получен",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/docs",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "docs"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n  {\n    \"id\": \"orders\",\n    \"title\": \"Заявки\"\n  },\n  {\n    \"id\": \"balance\",\n    \"title\": \"Баланс\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Страница документации",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "{{test_user}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/docs/{{docId}}",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "{{docId}}"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Страница получена",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/docs/{{docId}}",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "{{docId}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"orders\",\n  \"title\": \"Заявки\",\n  \"content\": \"...\"\n}"
+                },
+                {
+                  "name": "Страница не найдена",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/docs/unknown",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "text",
+                  "header": [],
+                  "cookie": [],
+                  "body": ""
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -5178,6 +5323,153 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"instance\": \"/api/support/incident/2\",\n  \"status\": 500,\n  \"title\": \"Internal Server Error\",\n  \"type\": \"/errors/internal-server-error\",\n  \"timestamp\": 1792062000000,\n  \"description\": \"Contact support.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "docs",
+          "item": [
+            {
+              "name": "Список страниц документации",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_support_api_url}}/docs",
+                  "host": [
+                    "{{processing_support_api_url}}"
+                  ],
+                  "path": [
+                    "docs"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Список получен",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/docs",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "docs"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n  {\n    \"id\": \"order_route\",\n    \"title\": \"Маршруты ордеров\"\n  },\n  {\n    \"id\": \"incident\",\n    \"title\": \"Инциденты\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Страница документации",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_support_api_url}}/docs/{{docId}}",
+                  "host": [
+                    "{{processing_support_api_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "{{docId}}"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Страница получена",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/docs/{{docId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "{{docId}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"incident\",\n  \"title\": \"Инциденты\",\n  \"content\": \"Инцидент — запись о ситуации, которую система не смогла обработать автоматически и которая требует внимания поддержки.\\n\\n## Статусы инцидента\\n\\n...\"\n}"
+                },
+                {
+                  "name": "Страница не найдена",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "a6929b80-f871-4381-91af-7fe75e0faa4f;ROLE_ADMIN"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/docs/unknown",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "text",
+                  "header": [],
+                  "cookie": [],
+                  "body": ""
                 }
               ]
             }
