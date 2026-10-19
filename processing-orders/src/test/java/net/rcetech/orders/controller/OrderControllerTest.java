@@ -292,7 +292,9 @@ class OrderControllerTest {
     @ParameterizedTest
     @CsvSource({
             "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d,NEW",
-            "d9c8b7a6-f5e4-4d3c-9b2a-1f0e9d8c7b6a,TIMEOUT"
+            "d9c8b7a6-f5e4-4d3c-9b2a-1f0e9d8c7b6a,TIMEOUT",
+            "5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f,SEARCHING",
+            "7e8f9a0b-1c2d-4e3f-a04b-5c6d7e8f9a0b,DETAILS_NOT_FOUND"
     })
     @DisplayName("Метод должен вернуть статус 400, если статус не входит в список допустимых для ручной смены.")
     void update_shouldReturn400IfStatusNotAllowed(UUID id, OrderStatus status) throws Exception {
