@@ -26,6 +26,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'io.grpc:grpc-inprocess'
     // TODO Вынести версию
     testAnnotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"
     annotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"

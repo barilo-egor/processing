@@ -693,4 +693,29 @@ class OrderApiServiceTest {
             clientRepository.deleteAll();
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 7300})
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("Если клиент отменил ордер во время поиска и поиск прервался, ордер должен остаться отменённым.")
+    void createOrder_shouldKeepOrderCanceledIfCanceledByClientDuringSearch(int amount) {
+        Client client = getDummyClient();
+        CreateOrderRequest request = new CreateOrderRequest(
+                UUID.randomUUID().toString(), amount, Set.of(RequestMethod.CARD), null, "1235153208"
+        );
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenAnswer(invocation -> {
+            orderApiService.cancelOrder(client.getId(), invocation.getArgument(1, UUID.class));
+            return Optional.empty();
+        });
+        try {
+            ClientOrderSummary order = orderApiService.createOrder(client.getId(), request, 30, false);
+
+            assertEquals(OrderStatus.CANCELED, order.status());
+            assertNull(order.details());
+            assertEquals(OrderStatus.CANCELED, orderRepository.findById(order.id()).orElseThrow().getStatus());
+        } finally {
+            orderRepository.deleteAll();
+            clientRepository.deleteAll();
+        }
+    }
 }

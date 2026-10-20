@@ -25,6 +25,13 @@ public class MerchantDetailsEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void cancelDetailsSearch(OrderStatusUpdatedEvent event) {
+        if (OrderStatus.CANCELED.equals(event.orderStatus())) {
+            apiMerchantDetailsGrpcService.cancelSearch(event.orderId());
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void orderStatusUpdated(OrderStatusUpdatedEvent event) {
         if (!OrderStatus.CANCELED.equals(event.orderStatus())

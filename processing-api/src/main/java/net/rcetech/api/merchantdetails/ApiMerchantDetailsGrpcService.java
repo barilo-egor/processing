@@ -2,6 +2,7 @@ package net.rcetech.api.merchantdetails;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import io.grpc.Context;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +17,10 @@ import net.rcetech.meta.incidents.dto.DetailsSearchErrorData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -30,6 +33,8 @@ public class ApiMerchantDetailsGrpcService {
     private final String applicationName;
 
     private final IncidentService incidentService;
+
+    private final Map<UUID, Context.CancellableContext> searches = new ConcurrentHashMap<>();
 
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
                                          ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub,
@@ -45,11 +50,13 @@ public class ApiMerchantDetailsGrpcService {
      * Получает реквизиты мерчанта по clientId и деталям запроса через gRPC.
      *
      * @return {@link ApiDetailsResponse} с найденными реквизитами или пустой Optional, если реквизиты не найдены
-     * (gRPC NOT_FOUND), поиск отменён (gRPC CANCELLED) или при поиске произошла ошибка. Об ошибке создаётся инцидент,
-     * если необработанного инцидента такого типа ещё нет.
+     * (gRPC NOT_FOUND), поиск отменён через {@link #cancelSearch(UUID)} или при поиске произошла ошибка. Об ошибке
+     * создаётся инцидент, если необработанного инцидента такого типа ещё нет.
      */
     public Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
                                          Integer timeoutSeconds) {
+        Context.CancellableContext context = Context.current().withCancellation();
+        searches.put(orderId, context);
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
@@ -63,9 +70,9 @@ public class ApiMerchantDetailsGrpcService {
                     .setOwnerId(clientId.toString())
                     .setInitiatorApp(applicationName)
                     .build();
-            DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
+            DetailsResponseGrpc grpcResponse = context.call(() -> detailsBlockingStub.detailsRequest(
                     detailsRequestGrpc
-            );
+            ));
             return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
@@ -76,13 +83,24 @@ public class ApiMerchantDetailsGrpcService {
                 log.info("Не найдены реквизиты по ордеру {}: {}", orderId, clientOrderRequest);
                 return Optional.empty();
             }
-            if (code == Code.CANCELLED_VALUE) {
+            if (code == Code.CANCELLED_VALUE && context.isCancelled()) {
                 log.info("Поиск реквизитов по ордеру {} отменён.", orderId);
                 return Optional.empty();
             }
             return searchError(orderId, "Неизвестная ошибка GRPC " + code, statusException);
         } catch (Exception ex) {
             return searchError(orderId, "Непредвиденная ошибка: " + ex.getMessage(), ex);
+        } finally {
+            searches.remove(orderId, context);
+            context.cancel(null);
+        }
+    }
+
+    public void cancelSearch(UUID orderId) {
+        Context.CancellableContext context = searches.get(orderId);
+        if (context != null) {
+            log.info("Отмена поиска реквизитов по ордеру {}.", orderId);
+            context.cancel(null);
         }
     }
 

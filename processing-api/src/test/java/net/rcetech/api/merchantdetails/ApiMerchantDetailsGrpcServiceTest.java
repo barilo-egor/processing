@@ -1,10 +1,17 @@
 package net.rcetech.api.merchantdetails;
 
+import io.grpc.Context;
+import io.grpc.ManagedChannel;
+import io.grpc.Server;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.StreamObserver;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsGrpc;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.incidents.IncidentType;
@@ -22,8 +29,15 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -97,26 +111,26 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 5})
-    @DisplayName("Метод должен вернуть пустой Optional без инцидента, если реквизиты не найдены или поиск отменён.")
-    void getDetails_shouldReturnEmptyWithoutIncidentIfNotFoundOrCancelled(int statusValue) {
-        when(detailsBlockingStub.detailsRequest(any()))
-                .thenThrow(new StatusRuntimeException(Status.fromCodeValue(statusValue)));
+    @ValueSource(ints = {30, 120})
+    @DisplayName("Метод должен вернуть пустой Optional без инцидента, если реквизиты не найдены.")
+    void getDetails_shouldReturnEmptyWithoutIncidentIfNotFound(int timeoutSeconds) {
+        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
+        assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, timeoutSeconds)
+                .isEmpty());
         verifyNoInteractions(incidentService);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {
-            3, 6, 14
+            1, 3, 6, 14
     })
-    @DisplayName("Метод должен вернуть пустой Optional и создать инцидент, если статус ответа GRPC не ожидаем.")
+    @DisplayName("Метод должен вернуть пустой Optional и создать инцидент, если статус ответа GRPC не ожидаем, в том числе CANCELLED не по отмене поиска.")
     void getDetails_shouldReturnEmptyAndSaveIncidentIfUnknownStatus(int statusValue) {
         Status status = Status.fromCodeValue(statusValue);
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(status));
@@ -145,5 +159,140 @@ class ApiMerchantDetailsGrpcServiceTest {
         assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
         verify(incidentService).saveIfNoUnresolved(eq(IncidentType.DETAILS_SEARCH_ERROR),
                 eq(new DetailsSearchErrorData(orderId, "Непредвиденная ошибка: " + message)), anyLong());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 120})
+    @DisplayName("Отмена поиска по ордеру должна отменять gRPC-вызов и возвращать пустой Optional без инцидента.")
+    void cancelSearch_shouldCancelGrpcCallWithoutIncident(int timeoutSeconds) throws Exception {
+        CountDownLatch requestReceived = new CountDownLatch(1);
+        CountDownLatch callCancelled = new CountDownLatch(1);
+        try (InProcessDetails inProcessDetails = new InProcessDetails((request, responseObserver) -> {
+            Context.current().addListener(context -> callCancelled.countDown(), Runnable::run);
+            requestReceived.countDown();
+        })) {
+            UUID orderId = UUID.randomUUID();
+            AtomicReference<Optional<ApiDetailsResponse>> result = new AtomicReference<>();
+            Thread searchThread = Thread.ofVirtual().start(() -> result.set(inProcessDetails.service()
+                    .getDetails(UUID.randomUUID(), orderId, createOrderRequest(), timeoutSeconds)));
+            assertTrue(requestReceived.await(5, TimeUnit.SECONDS));
+
+            inProcessDetails.service().cancelSearch(orderId);
+
+            assertTrue(searchThread.join(Duration.ofSeconds(5)));
+            assertAll(
+                    () -> assertTrue(result.get().isEmpty()),
+                    () -> assertTrue(callCancelled.await(5, TimeUnit.SECONDS)),
+                    () -> assertFalse(searchThread.isInterrupted())
+            );
+            verifyNoInteractions(incidentService);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ALFA_TEAM,1234 1234 1234 1234",
+            "PAYSCROW,+79851235423"
+    })
+    @DisplayName("Отмена поиска по другому ордеру не должна отменять gRPC-вызов.")
+    void cancelSearch_shouldNotCancelSearchOfAnotherOrder(Merchant merchant, String details) throws Exception {
+        CountDownLatch requestReceived = new CountDownLatch(1);
+        CountDownLatch respond = new CountDownLatch(1);
+        try (InProcessDetails inProcessDetails = new InProcessDetails((request, responseObserver) -> {
+            requestReceived.countDown();
+            Thread.ofVirtual().start(() -> {
+                try {
+                    respond.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                responseObserver.onNext(detailsResponse(request, merchant, details));
+                responseObserver.onCompleted();
+            });
+        })) {
+            UUID orderId = UUID.randomUUID();
+            AtomicReference<Optional<ApiDetailsResponse>> result = new AtomicReference<>();
+            Thread searchThread = Thread.ofVirtual().start(() -> result.set(inProcessDetails.service()
+                    .getDetails(UUID.randomUUID(), orderId, createOrderRequest(), 30)));
+            assertTrue(requestReceived.await(5, TimeUnit.SECONDS));
+
+            inProcessDetails.service().cancelSearch(UUID.randomUUID());
+            respond.countDown();
+
+            assertTrue(searchThread.join(Duration.ofSeconds(5)));
+            ApiDetailsResponse actual = result.get().orElseThrow();
+            assertAll(
+                    () -> assertEquals(merchant, actual.merchant()),
+                    () -> assertEquals(details, actual.details().details())
+            );
+            verifyNoInteractions(incidentService);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Сбербанк", "МТС"})
+    @DisplayName("Отмена поиска по ордеру после завершения поиска не должна бросать исключение.")
+    void cancelSearch_shouldDoNothingAfterSearchCompleted(String bank) {
+        when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation ->
+                detailsResponse(invocation.getArgument(0), Merchant.ALFA_TEAM, bank));
+        UUID orderId = UUID.randomUUID();
+        assertTrue(apiMerchantDetailsGrpcService.getDetails(UUID.randomUUID(), orderId, createOrderRequest(), 30)
+                .isPresent());
+        assertDoesNotThrow(() -> apiMerchantDetailsGrpcService.cancelSearch(orderId));
+    }
+
+    private CreateOrderRequest createOrderRequest() {
+        return new CreateOrderRequest(UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
+                "https://example.com/callback", "534690");
+    }
+
+    private DetailsResponseGrpc detailsResponse(DetailsRequestGrpc request, Merchant merchant, String details) {
+        return DetailsResponseGrpc.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setMerchant(merchant.name())
+                .setOrderId(UUID.randomUUID().toString())
+                .setOrderStatus("NEW")
+                .setDetails(DetailsGrpc.newBuilder()
+                        .setRequestMethod(RequestMethod.CARD.name())
+                        .setDetails(details)
+                        .setBank("Сбербанк")
+                        .build())
+                .build();
+    }
+
+    private class InProcessDetails implements AutoCloseable {
+
+        private final Server server;
+
+        private final ManagedChannel channel;
+
+        private final ApiMerchantDetailsGrpcService service;
+
+        InProcessDetails(BiConsumer<DetailsRequestGrpc, StreamObserver<DetailsResponseGrpc>> handler)
+                throws IOException {
+            String serverName = InProcessServerBuilder.generateName();
+            server = InProcessServerBuilder.forName(serverName).directExecutor()
+                    .addService(new ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceImplBase() {
+                        @Override
+                        public void detailsRequest(DetailsRequestGrpc request,
+                                                   StreamObserver<DetailsResponseGrpc> responseObserver) {
+                            handler.accept(request, responseObserver);
+                        }
+                    }).build().start();
+            channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+            service = new ApiMerchantDetailsGrpcService(detailsMapper,
+                    ApiDetailsRequestServiceGrpc.newBlockingStub(channel), "processing", incidentService);
+        }
+
+        ApiMerchantDetailsGrpcService service() {
+            return service;
+        }
+
+        @Override
+        public void close() {
+            channel.shutdownNow();
+            server.shutdownNow();
+        }
     }
 }

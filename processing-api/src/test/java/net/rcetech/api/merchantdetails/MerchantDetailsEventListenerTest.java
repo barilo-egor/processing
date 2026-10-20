@@ -220,4 +220,35 @@ class MerchantDetailsEventListenerTest {
         verify(apiMerchantDetailsGrpcService, timeout(5000)).cancelOrder(new CancelOrderDTO(merchant, merchantOrderId, method));
         assertNotEquals(Thread.currentThread(), cancelThread.get());
     }
+
+    @ParameterizedTest
+    @EnumSource(OrderStatusChangeSource.class)
+    @DisplayName("После коммита отмены ордера из любого источника должен отменяться поиск реквизитов по нему.")
+    void cancelDetailsSearch_shouldCancelSearchAfterCommit(OrderStatusChangeSource source) {
+        UUID orderId = UUID.randomUUID();
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(orderId, OrderStatus.CANCELED, source, true));
+        verify(apiMerchantDetailsGrpcService, never()).cancelSearch(any());
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+        verify(apiMerchantDetailsGrpcService).cancelSearch(orderId);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = OrderStatusChangeSource.class, names = {"CLIENT", "SUPPORT"})
+    @DisplayName("Поиск реквизитов не должен отменяться при откате транзакции отмены ордера.")
+    void cancelDetailsSearch_shouldNotCancelSearchAfterRollback(OrderStatusChangeSource source) {
+        eventPublisher.publishEvent(new OrderStatusUpdatedEvent(UUID.randomUUID(), OrderStatus.CANCELED, source,
+                true));
+        TestTransaction.flagForRollback();
+        TestTransaction.end();
+        verify(apiMerchantDetailsGrpcService, never()).cancelSearch(any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = OrderStatus.class, names = {"NEW", "SUCCESS", "TIMEOUT", "DISPUTE", "DETAILS_NOT_FOUND"})
+    @DisplayName("Поиск реквизитов не должен отменяться, если ордер переведён не в CANCELED.")
+    void cancelDetailsSearch_shouldNotCancelSearchIfStatusNotCanceled(OrderStatus status) {
+        publishAndCommit(UUID.randomUUID(), status, OrderStatusChangeSource.SYSTEM);
+        verify(apiMerchantDetailsGrpcService, never()).cancelSearch(any());
+    }
 }
