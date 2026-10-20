@@ -94,6 +94,10 @@ public class OrderService {
         return orderRepository.findAllByStatusAndExpiresAtBefore(OrderStatus.NEW, Instant.now());
     }
 
+    public List<Order> findAllInSearchCreatedBefore(Instant createdAt) {
+        return orderRepository.findAllByStatusAndCreatedAtBefore(OrderStatus.SEARCHING, createdAt);
+    }
+
     @Transactional
     public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, OrderStatusChangeSource source,
                                           String merchantOrderStatus) {

@@ -19,6 +19,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
 
     List<Order> findAllByStatusAndExpiresAtBefore(OrderStatus status, Instant now);
 
+    List<Order> findAllByStatusAndCreatedAtBefore(OrderStatus status, Instant createdAt);
+
     boolean existsByInternalId(String internalId);
 
     boolean existsByIdAndClientId(UUID id, UUID clientId);

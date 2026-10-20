@@ -48,7 +48,9 @@ create table orders
     constraint unique_merchant_order_id unique (merchant, merchant_order_id),
     constraint fk_orders_client foreign key (client_id) references client (id),
     constraint check_orders_amount check (amount > 0),
-    constraint check_orders_expires_at check (expires_at > created_at)
+    constraint check_orders_expires_at check (expires_at > created_at),
+    index idx_orders_status_expires_at (status, expires_at),
+    index idx_orders_status_created_at (status, created_at)
 );
 
 create table support_user

@@ -1,12 +1,11 @@
 package net.rcetech.api.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
+import net.rcetech.api.validation.SearchTimeout;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -27,10 +26,6 @@ import java.util.UUID;
 @ClientAccess
 public class ApiOrderController {
 
-    private static final String SEARCH_TIMEOUT_MIN_MESSAGE = "Таймаут поиска реквизитов не может быть меньше 5 секунд.";
-
-    private static final String SEARCH_TIMEOUT_MAX_MESSAGE = "Таймаут поиска реквизитов не может превышать 300 секунд.";
-
     private final OrderApiService orderApiService;
 
     public ApiOrderController(OrderApiService orderApiService) {
@@ -41,8 +36,7 @@ public class ApiOrderController {
     public ResponseEntity<ClientOrderSummary> createOrder(
             @Valid @RequestBody CreateOrderRequest clientRequest,
             @RequestHeader(required = false, defaultValue = "30", value = "Search-Timeout-Seconds")
-            @Min(value = 5, message = SEARCH_TIMEOUT_MIN_MESSAGE)
-            @Max(value = 300, message = SEARCH_TIMEOUT_MAX_MESSAGE)
+            @SearchTimeout
             Integer timeoutSeconds,
             @RequestHeader(required = false, defaultValue = "false", value = "Test-Order")
             boolean testOrder,
