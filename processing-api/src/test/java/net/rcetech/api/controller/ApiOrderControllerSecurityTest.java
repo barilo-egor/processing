@@ -85,7 +85,7 @@ class ApiOrderControllerSecurityTest {
     @BeforeEach
     void setUp() {
         when(orderApiService.findAll(any(), any(), any())).thenReturn(Page.empty());
-        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenReturn(summary());
+        when(orderApiService.createOrder(any())).thenReturn(summary());
     }
 
     private static ClientOrderSummary summary() {
@@ -207,7 +207,8 @@ class ApiOrderControllerSecurityTest {
         endpoint.verifyCalled(orderApiService, keyOwner.getId(), orderId);
         verify(orderApiService, never()).findAll(eq(sessionClient.getId()), any(), any());
         verify(orderApiService, never()).findByIdAndClientId(eq(sessionClient.getId()), any());
-        verify(orderApiService, never()).createOrder(eq(sessionClient.getId()), any(), any(), anyBoolean());
+        verify(orderApiService, never())
+                .createOrder(argThat(command -> sessionClient.getId().equals(command.clientId())));
         verify(orderApiService, never()).cancelOrder(eq(sessionClient.getId()), any());
     }
 

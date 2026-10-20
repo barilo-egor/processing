@@ -1,6 +1,8 @@
 package net.rcetech.api.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.config.DetailsSearchExecutorConfig;
+import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.domain.model.clients.Client;
@@ -12,6 +14,7 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
@@ -19,6 +22,9 @@ import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,49 +47,95 @@ public class OrderApiService {
 
     private final OrderFacade orderFacade;
 
+    private final TaskExecutor detailsSearchExecutor;
+
     public OrderApiService(DetailsSearchService detailsSearchService, ClientService clientService,
-                           OrderService orderService, OrderFacade orderFacade) {
+                           OrderService orderService, OrderFacade orderFacade,
+                           @Qualifier(DetailsSearchExecutorConfig.DETAILS_SEARCH_EXECUTOR)
+                           TaskExecutor detailsSearchExecutor) {
         this.detailsSearchService = detailsSearchService;
         this.clientService = clientService;
         this.orderService = orderService;
         this.orderFacade = orderFacade;
+        this.detailsSearchExecutor = detailsSearchExecutor;
     }
 
-    public ClientOrderSummary createOrder(UUID clientId, CreateOrderRequest createOrderRequest,
-                                          Integer timeoutSeconds, boolean testOrder) {
-        Client client = clientService.findById(clientId)
+    public ClientOrderSummary createOrder(CreateOrderCommand command) {
+        Client client = findClient(command.clientId());
+        Order order = createSearchingOrder(client, command.request());
+        searchDetails(command, order.getId(), client.getOrderTimeoutSeconds(), false);
+        return findSummary(order.getId());
+    }
+
+    public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
+        Client client = findClient(command.clientId());
+        if (Objects.isNull(command.request().callbackUrl()) && Objects.isNull(client.getCallbackUrl())) {
+            throw new BadRequestException(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED);
+        }
+        Order order = createSearchingOrder(client, command.request());
+        ClientOrderSummary summary = findSummary(order.getId());
+        submitSearch(command, order.getId(), client.getOrderTimeoutSeconds());
+        return summary;
+    }
+
+    private Client findClient(UUID clientId) {
+        return clientService.findById(clientId)
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
+    }
+
+    private Order createSearchingOrder(Client client, CreateOrderRequest createOrderRequest) {
         if (orderService.existsByInternalId(createOrderRequest.internalId())) {
             throw new BadRequestException(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE);
         }
-        Order order = orderService.createOrder(
+        return orderService.createOrder(
                 client,
                 createOrderRequest.internalId(),
                 createOrderRequest.amount(),
                 createOrderRequest.callbackUrl()
         );
-        detailsSearchService.search(order, createOrderRequest, timeoutSeconds, testOrder).ifPresentOrElse(
-                detailsResponse -> completeSearch(
-                        order.getId(),
-                        detailsResponse,
-                        client.getOrderTimeoutSeconds()
-                ),
-                () -> failSearch(order.getId())
-        );
-        return orderService.findById(order.getId(), ClientOrderSummary.class)
-                .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + order.getId()));
     }
 
-    private void completeSearch(UUID orderId, ApiDetailsResponse detailsResponse, int orderTimeoutSeconds) {
+    private void submitSearch(CreateOrderCommand command, UUID orderId, int orderTimeoutSeconds) {
+        try {
+            detailsSearchExecutor.execute(() -> {
+                try {
+                    searchDetails(command, orderId, orderTimeoutSeconds, true);
+                } catch (Exception e) {
+                    log.error("Ошибка асинхронного поиска реквизитов по ордеру {}: {}", orderId, e.getMessage(), e);
+                }
+            });
+        } catch (TaskRejectedException e) {
+            orderService.deleteById(orderId);
+            throw new ServiceUnavailableException("Достигнут лимит одновременных асинхронных поисков реквизитов, " +
+                    "ордер " + orderId + " удалён.", e);
+        }
+    }
+
+    private void searchDetails(CreateOrderCommand command, UUID orderId, int orderTimeoutSeconds,
+                               boolean notifyClient) {
+        detailsSearchService.search(command.clientId(), orderId, command.request(), command.timeoutSeconds(),
+                command.testOrder()).ifPresentOrElse(
+                detailsResponse -> completeSearch(orderId, detailsResponse, orderTimeoutSeconds, notifyClient),
+                () -> failSearch(orderId, notifyClient)
+        );
+    }
+
+    private ClientOrderSummary findSummary(UUID orderId) {
+        return orderService.findById(orderId, ClientOrderSummary.class)
+                .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + orderId));
+    }
+
+    private void completeSearch(UUID orderId, ApiDetailsResponse detailsResponse, int orderTimeoutSeconds,
+                                boolean notifyClient) {
         OrderStatusChange change = orderFacade.routeOrder(OrderStatus.NEW, orderId, OrderStatusChangeSource.SYSTEM,
-                false, order -> fillDetails(order, detailsResponse, orderTimeoutSeconds));
+                notifyClient, order -> fillDetails(order, detailsResponse, orderTimeoutSeconds));
         if (!OrderStatusTransition.ALLOWED.equals(change.transition())) {
             log.info("Реквизиты по ордеру {} найдены, но ордер уже в статусе {}.", orderId, change.from());
         }
     }
 
-    private void failSearch(UUID orderId) {
-        orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, orderId, OrderStatusChangeSource.SYSTEM, false,
+    private void failSearch(UUID orderId, boolean notifyClient) {
+        orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, orderId, OrderStatusChangeSource.SYSTEM, notifyClient,
                 order -> { });
     }
 

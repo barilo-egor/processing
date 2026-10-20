@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.meta.WebPath;
@@ -37,26 +38,30 @@ public class ApiOrderController {
     }
 
     @PostMapping
-    public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
-                                                          @RequestHeader(required = false, defaultValue = "30",
-                                                                  value = "Search-Timeout-Seconds")
-                                                          @Min(value = 5, message = SEARCH_TIMEOUT_MIN_MESSAGE)
-                                                          @Max(value = 300, message = SEARCH_TIMEOUT_MAX_MESSAGE)
-                                                                  Integer timeoutSeconds,
-                                                          @RequestHeader(required = false, defaultValue = "false",
-                                                                  value = "Test-Order")
-                                                                  boolean testOrder,
-                                                          Principal principal) {
+    public ResponseEntity<ClientOrderSummary> createOrder(
+            @Valid @RequestBody CreateOrderRequest clientRequest,
+            @RequestHeader(required = false, defaultValue = "30", value = "Search-Timeout-Seconds")
+            @Min(value = 5, message = SEARCH_TIMEOUT_MIN_MESSAGE)
+            @Max(value = 300, message = SEARCH_TIMEOUT_MAX_MESSAGE)
+            Integer timeoutSeconds,
+            @RequestHeader(required = false, defaultValue = "false", value = "Test-Order")
+            boolean testOrder,
+            @RequestHeader(required = false, defaultValue = "false", value = "Async-Request")
+            boolean async,
+            Principal principal) {
         log.info("Клиент {} запросил через API создание ордера (internalId={}, сумма={}, методы={}, " +
-                        "таймаут поиска={} с, тестовый={}).",
+                        "таймаут поиска={} с, тестовый={}, асинхронный={}).",
                 principal.getName(), clientRequest.internalId(), clientRequest.amount(), clientRequest.methods(),
+                timeoutSeconds, testOrder, async);
+        CreateOrderCommand command = new CreateOrderCommand(UUID.fromString(principal.getName()), clientRequest,
                 timeoutSeconds, testOrder);
-        ClientOrderSummary order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest,
-                timeoutSeconds, testOrder);
+        ClientOrderSummary order = async
+                ? orderApiService.createOrderAsync(command)
+                : orderApiService.createOrder(command);
         log.info("Клиент {} создал через API ордер {} в статусе {} (internalId={}, сумма={}, методы={}).",
                 principal.getName(), order.id(), order.status(), clientRequest.internalId(), clientRequest.amount(),
                 clientRequest.methods());
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+        return new ResponseEntity<>(order, async ? HttpStatus.ACCEPTED : HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")

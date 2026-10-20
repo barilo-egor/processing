@@ -6,4 +6,7 @@ import lombok.experimental.UtilityClass;
 public class ExceptionMessage {
     public static final String INTERNAL_ID_NOT_UNIQUE = "Внутренний идентификатор(internalId) должен быть уникальным, " +
             "ордер с таким идентификатором уже присутствует в системе.";
+
+    public static final String ASYNC_CALLBACK_URL_REQUIRED = "Для асинхронного создания ордера необходимо указать " +
+            "адрес для КБ(callbackUrl) в запросе или в настройках клиента.";
 }

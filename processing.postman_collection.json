@@ -2352,6 +2352,13 @@
                     "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
                     "type": "text",
                     "disabled": true
+                  },
+                  {
+                    "key": "Async-Request",
+                    "value": "true",
+                    "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                    "type": "text",
+                    "disabled": true
                   }
                 ],
                 "body": {
@@ -2372,7 +2379,7 @@
                     "order"
                   ]
                 },
-                "description": "Создаёт ордер и синхронно ищет реквизиты. Ордер сохраняется в статусе SEARCHING, затем переходит в NEW, если реквизиты найдены, или в DETAILS_NOT_FOUND, если не найдены или при поиске произошла ошибка. В обоих случаях ответ 201 с ордером в итоговом статусе."
+                "description": "Создаёт ордер и ищет реквизиты. Ордер сохраняется в статусе SEARCHING, затем переходит в NEW, если реквизиты найдены, или в DETAILS_NOT_FOUND, если не найдены или при поиске произошла ошибка.\n\nПо умолчанию поиск синхронный: ответ 201 с ордером в итоговом статусе, КБ об этом переходе не отправляется.\n\nС заголовком Async-Request: true поиск асинхронный: ответ 202 с ордером в статусе SEARCHING, итоговый статус приходит в КБ. Адрес КБ (callbackUrl) обязателен в запросе или в настройках клиента, иначе 400. Если одновременно идёт слишком много асинхронных поисков, ордер не создаётся и возвращается 503."
               },
               "response": [
                 {
@@ -2395,6 +2402,13 @@
                         "key": "Test-Order",
                         "value": "true",
                         "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
                         "type": "text",
                         "disabled": true
                       }
@@ -2452,6 +2466,13 @@
                         "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
                         "type": "text",
                         "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
                       }
                     ],
                     "body": {
@@ -2507,6 +2528,13 @@
                         "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
                         "type": "text",
                         "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
                       }
                     ],
                     "body": {
@@ -2539,6 +2567,189 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Таймаут поиска реквизитов не может превышать 300 секунд.\"\n}"
+                },
+                {
+                  "name": "Асинхронное создание",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Accepted",
+                  "code": 202,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"7c1e2f30-4a5b-4c6d-8e7f-9a0b1c2d3e4f\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10000\",\n  \"status\": \"SEARCHING\",\n  \"amount\": 5000,\n  \"method\": null,\n  \"details\": null,\n  \"bank\": null,\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
+                },
+                {
+                  "name": "Асинхронное создание без адреса КБ",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Для асинхронного создания ордера необходимо указать адрес для КБ(callbackUrl) в запросе или в настройках клиента.\"\n}"
+                },
+                {
+                  "name": "Превышен лимит асинхронных поисков",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Async-Request",
+                        "value": "true",
+                        "description": "Создать ордер асинхронно: ответ 202 с ордером в статусе SEARCHING, итоговый статус NEW или DETAILS_NOT_FOUND приходит в КБ. Требует адрес КБ (callbackUrl) в запросе или в настройках клиента. По умолчанию false.",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Service Unavailable",
+                  "code": 503,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"type\": \"/docs/errors/service-unavailable\",\n  \"title\": \"Service Unavailable\",\n  \"status\": 503,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Contact support.\"\n}"
                 }
               ]
             },

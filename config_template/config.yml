@@ -32,6 +32,9 @@ spring:
 cache:
   ttl:
     client-get-seconds: 3600
+details-search:
+  # Максимум одновременных асинхронных поисков реквизитов. При превышении API отвечает 503.
+  concurrency-limit: 200
 kafka:
   group-id:
   topic:

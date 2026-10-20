@@ -49,7 +49,8 @@ class DetailsSearchServiceTest {
         when(merchantDetailsReceiver.getDetails(order.getClient().getId(), order.getId(), request, timeoutSeconds))
                 .thenReturn(expected);
 
-        assertEquals(expected, detailsSearchService.search(order, request, timeoutSeconds, false));
+        assertEquals(expected, detailsSearchService.search(order.getClient().getId(), order.getId(), request,
+                timeoutSeconds, false));
         verifyNoInteractions(randomDetailsReceiver);
     }
 
@@ -63,7 +64,8 @@ class DetailsSearchServiceTest {
         when(randomDetailsReceiver.getDetails(order.getClient().getId(), order.getId(), request, timeoutSeconds))
                 .thenReturn(expected);
 
-        assertEquals(expected, detailsSearchService.search(order, request, timeoutSeconds, true));
+        assertEquals(expected, detailsSearchService.search(order.getClient().getId(), order.getId(), request,
+                timeoutSeconds, true));
         verifyNoInteractions(merchantDetailsReceiver);
     }
 

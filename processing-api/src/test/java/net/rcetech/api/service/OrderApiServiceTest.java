@@ -1,5 +1,6 @@
 package net.rcetech.api.service;
 
+import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
@@ -16,6 +17,7 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
@@ -34,6 +36,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +46,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.NestedExceptionUtils;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -125,6 +130,8 @@ class OrderApiServiceTest {
     @Autowired
     private ApplicationEvents applicationEvents;
 
+    private final TaskExecutor detailsSearchExecutor = mock(TaskExecutor.class);
+
     private OrderApiService orderApiService;
 
     @BeforeEach
@@ -132,7 +139,7 @@ class OrderApiServiceTest {
         DetailsSearchService detailsSearchService = new DetailsSearchService(merchantDetailsReceiver,
                 randomDetailsReceiver);
         orderApiService = new OrderApiService(detailsSearchService, clientService, orderService,
-                new OrderFacade(orderService));
+                new OrderFacade(orderService), detailsSearchExecutor);
     }
 
     @ParameterizedTest
@@ -148,7 +155,7 @@ class OrderApiServiceTest {
         CreateOrderRequest request = new CreateOrderRequest(
                 null, null, null, null, null
         );
-        assertThrows(BaseException.class, () -> orderApiService.createOrder(clientId, request, 30, false));
+        assertThrows(BaseException.class, () -> orderApiService.createOrder(command(clientId, request, 30, false)));
     }
 
     @RepeatedTest(value = 2)
@@ -161,7 +168,7 @@ class OrderApiServiceTest {
                 order.getInternalId(), null, null, null, null
         );
         BadRequestException exception = assertThrows(BadRequestException.class,
-                () -> orderApiService.createOrder(clientId, request, 30, false));
+                () -> orderApiService.createOrder(command(clientId, request, 30, false)));
         assertEquals(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE, exception.getMessage());
     }
 
@@ -188,7 +195,7 @@ class OrderApiServiceTest {
         );
         try {
             DataIntegrityViolationException exception = assertThrows(DataIntegrityViolationException.class,
-                    () -> orderApiService.createOrder(client.getId(), request, 30, false));
+                    () -> orderApiService.createOrder(command(client.getId(), request, 30, false)));
 
             assertTrue(NestedExceptionUtils.getMostSpecificCause(exception).getMessage()
                     .contains(DatabaseConstraint.UNIQUE_INTERNAL_ID));
@@ -213,6 +220,10 @@ class OrderApiServiceTest {
                 UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
                 null, "1235153208"
         );
+    }
+
+    CreateOrderCommand command(UUID clientId, CreateOrderRequest request, int timeoutSeconds, boolean testOrder) {
+        return new CreateOrderCommand(clientId, request, timeoutSeconds, testOrder);
     }
 
     Client getDummyClient() {
@@ -241,7 +252,7 @@ class OrderApiServiceTest {
         Instant time = Instant.now();
         try (MockedStatic<Instant> instantMock = Mockito.mockStatic(Instant.class)) {
             instantMock.when(Instant::now).thenReturn(time);
-            orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
+            orderApiService.createOrder(command(client.getId(), getDummyCreateOrderRequest(), 30, false));
             List<Order> orders = orderRepository.findAll();
             assertEquals(1, orders.size());
             Order order = orders.getFirst();
@@ -259,7 +270,7 @@ class OrderApiServiceTest {
                 .thenReturn(Optional.of(detailsResponse));
         Client client = getDummyClient();
         clientService.save(client);
-        orderApiService.createOrder(client.getId(), createOrderRequest, 30, false);
+        orderApiService.createOrder(command(client.getId(), createOrderRequest, 30, false));
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -295,7 +306,7 @@ class OrderApiServiceTest {
         clientService.save(client);
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
                 .thenReturn(Optional.of(apiDetailsResponse));
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
+        orderApiService.createOrder(command(client.getId(), getDummyCreateOrderRequest(), 30, false));
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -334,7 +345,7 @@ class OrderApiServiceTest {
         CreateOrderRequest createOrderRequest = getDummyCreateOrderRequest();
         when(randomDetailsReceiver.getDetails(any(), any(), eq(createOrderRequest), any()))
                 .thenReturn(Optional.of(apiDetailsResponse));
-        orderApiService.createOrder(client.getId(), createOrderRequest, 30, true);
+        orderApiService.createOrder(command(client.getId(), createOrderRequest, 30, true));
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         Order order = orders.getFirst();
@@ -356,7 +367,7 @@ class OrderApiServiceTest {
         Client client = getDummyClient();
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(timeoutSeconds)))
                 .thenReturn(Optional.of(getDummyApiDetailsResponse()));
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), timeoutSeconds, false);
+        orderApiService.createOrder(command(client.getId(), getDummyCreateOrderRequest(), timeoutSeconds, false));
         verify(merchantDetailsReceiver).getDetails(eq(client.getId()), any(), any(), eq(timeoutSeconds));
         verifyNoInteractions(randomDetailsReceiver);
     }
@@ -373,7 +384,7 @@ class OrderApiServiceTest {
                 .thenReturn(Optional.of(apiDetailsResponse));
         Client client = getDummyClient();
         client.setCallbackUrl(url);
-        orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
+        orderApiService.createOrder(command(client.getId(), getDummyCreateOrderRequest(), 30, false));
         List<Order> orders = orderRepository.findAll();
         assertEquals(1, orders.size());
         assertEquals(url, orders.getFirst().getCallbackUrl());
@@ -554,7 +565,7 @@ class OrderApiServiceTest {
             return Optional.of(getDummyApiDetailsResponse());
         });
 
-        orderApiService.createOrder(client.getId(), request, 30, false);
+        orderApiService.createOrder(command(client.getId(), request, 30, false));
 
         verify(merchantDetailsReceiver).getDetails(any(), any(), any(), eq(30));
     }
@@ -567,7 +578,8 @@ class OrderApiServiceTest {
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
                 .thenReturn(Optional.of(apiDetailsResponse));
 
-        ClientOrderSummary order = orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
+        ClientOrderSummary order = orderApiService.createOrder(
+                command(client.getId(), getDummyCreateOrderRequest(), 30, false));
 
         assertAll(
                 () -> assertEquals(OrderStatus.NEW, order.status()),
@@ -589,8 +601,8 @@ class OrderApiServiceTest {
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(timeoutSeconds)))
                 .thenReturn(Optional.empty());
 
-        ClientOrderSummary order = orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(),
-                timeoutSeconds, false);
+        ClientOrderSummary order = orderApiService.createOrder(command(client.getId(), getDummyCreateOrderRequest(),
+                timeoutSeconds, false));
 
         assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.status());
         assertNull(order.details());
@@ -610,7 +622,8 @@ class OrderApiServiceTest {
             return Optional.of(apiDetailsResponse);
         });
 
-        ClientOrderSummary order = orderApiService.createOrder(client.getId(), getDummyCreateOrderRequest(), 30, false);
+        ClientOrderSummary order = orderApiService.createOrder(
+                command(client.getId(), getDummyCreateOrderRequest(), 30, false));
 
         assertEquals(OrderStatus.CANCELED, order.status());
         assertNull(order.details());
@@ -684,7 +697,7 @@ class OrderApiServiceTest {
             return Optional.empty();
         });
         try {
-            ClientOrderSummary order = orderApiService.createOrder(client.getId(), request, 30, false);
+            ClientOrderSummary order = orderApiService.createOrder(command(client.getId(), request, 30, false));
 
             assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.status());
             verify(merchantDetailsReceiver).getDetails(any(), any(), any(), eq(30));
@@ -708,7 +721,7 @@ class OrderApiServiceTest {
             return Optional.empty();
         });
         try {
-            ClientOrderSummary order = orderApiService.createOrder(client.getId(), request, 30, false);
+            ClientOrderSummary order = orderApiService.createOrder(command(client.getId(), request, 30, false));
 
             assertEquals(OrderStatus.CANCELED, order.status());
             assertNull(order.details());
@@ -717,5 +730,167 @@ class OrderApiServiceTest {
             orderRepository.deleteAll();
             clientRepository.deleteAll();
         }
+    }
+
+    private Runnable captureSearchTask() {
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(detailsSearchExecutor).execute(captor.capture());
+        return captor.getValue();
+    }
+
+    private CreateOrderRequest asyncRequest(String callbackUrl) {
+        return new CreateOrderRequest(UUID.randomUUID().toString(), 5000, Set.of(RequestMethod.CARD), callbackUrl,
+                "1235153208");
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "https://example.com/callback,null",
+            "null,https://google.com/merchant-details/callback",
+            "https://example.com/callback,https://google.com/merchant-details/callback"
+    }, nullValues = "null")
+    @DisplayName("Асинхронное создание должно вернуть ордер в SEARCHING и запустить поиск в пуле, не дожидаясь его.")
+    void createOrder_shouldReturnSearchingOrderAndSubmitSearchIfAsync(String requestCallbackUrl,
+                                                                      String clientCallbackUrl) {
+        Client client = getDummyClient();
+        client.setCallbackUrl(clientCallbackUrl);
+
+        ClientOrderSummary order = orderApiService.createOrderAsync(
+                command(client.getId(), asyncRequest(requestCallbackUrl), 30, false));
+
+        assertEquals(OrderStatus.SEARCHING, order.status());
+        assertEquals(OrderStatus.SEARCHING, orderRepository.findById(order.id()).orElseThrow().getStatus());
+        verify(detailsSearchExecutor).execute(any());
+        verifyNoInteractions(merchantDetailsReceiver, randomDetailsReceiver);
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @MethodSource("detailsResponseArguments")
+    @ParameterizedTest
+    @DisplayName("После асинхронного поиска с найденными реквизитами ордер должен перейти в NEW с КБ клиенту.")
+    void createOrder_shouldMoveOrderToNewWithClientCallbackIfAsync(ApiDetailsResponse apiDetailsResponse) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(eq(client.getId()), any(), any(), eq(45)))
+                .thenReturn(Optional.of(apiDetailsResponse));
+        ClientOrderSummary created = orderApiService.createOrderAsync(
+                command(client.getId(), asyncRequest("https://example.com/callback"), 45, false));
+
+        captureSearchTask().run();
+
+        Order order = orderRepository.findById(created.id()).orElseThrow();
+        assertAll(
+                () -> assertEquals(OrderStatus.NEW, order.getStatus()),
+                () -> assertEquals(apiDetailsResponse.details().details(), order.getDetails()),
+                () -> assertEquals(apiDetailsResponse.merchant(), order.getMerchant()),
+                () -> assertNotNull(order.getExpiresAt())
+        );
+        assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.NEW,
+                        OrderStatusChangeSource.SYSTEM, true)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 60})
+    @DisplayName("Если асинхронный поиск не нашёл реквизиты, ордер должен перейти в DETAILS_NOT_FOUND с КБ клиенту.")
+    void createOrder_shouldMoveOrderToDetailsNotFoundWithClientCallbackIfAsync(int timeoutSeconds) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(timeoutSeconds))).thenReturn(Optional.empty());
+        ClientOrderSummary created = orderApiService.createOrderAsync(
+                command(client.getId(), asyncRequest("https://example.com/callback"), timeoutSeconds, false));
+
+        captureSearchTask().run();
+
+        Order order = orderRepository.findById(created.id()).orElseThrow();
+        assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.getStatus());
+        assertNull(order.getDetails());
+        assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.DETAILS_NOT_FOUND,
+                        OrderStatusChangeSource.SYSTEM, true)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Connection is not available", "Deadlock found"})
+    @DisplayName("Непредвиденная ошибка асинхронного поиска не должна пробрасываться из задачи, ордер остаётся в SEARCHING.")
+    void createOrder_shouldNotThrowFromSearchTaskIfUnexpectedError(String message) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
+                .thenThrow(new IllegalStateException(message));
+        ClientOrderSummary created = orderApiService.createOrderAsync(
+                command(client.getId(), asyncRequest("https://example.com/callback"), 30, false));
+
+        assertDoesNotThrow(captureSearchTask()::run);
+
+        assertEquals(OrderStatus.SEARCHING, orderRepository.findById(created.id()).orElseThrow().getStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 7300})
+    @DisplayName("Если клиент отменил ордер во время асинхронного поиска, ордер должен остаться отменённым.")
+    void createOrder_shouldKeepOrderCanceledIfCanceledDuringAsyncSearch(int amount) {
+        Client client = getDummyClient();
+        CreateOrderRequest request = new CreateOrderRequest(UUID.randomUUID().toString(), amount,
+                Set.of(RequestMethod.SBP), "https://example.com/callback", "1235153208");
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenAnswer(invocation -> {
+            orderApiService.cancelOrder(client.getId(), invocation.getArgument(1, UUID.class));
+            return Optional.empty();
+        });
+        ClientOrderSummary created = orderApiService.createOrderAsync(command(client.getId(), request, 30, false));
+
+        captureSearchTask().run();
+
+        assertEquals(OrderStatus.CANCELED, orderRepository.findById(created.id()).orElseThrow().getStatus());
+        assertEquals(List.of(new OrderStatusUpdatedEvent(created.id(), OrderStatus.CANCELED,
+                        OrderStatusChangeSource.CLIENT, true)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"a27fc526-017c-440a-b680-0f672983aeaf", "internal-7731"})
+    @DisplayName("Асинхронное создание без адреса КБ в запросе и у клиента должно бросать BadRequestException без сохранения ордера.")
+    void createOrder_shouldThrowIfAsyncWithoutCallbackUrl(String internalId) {
+        Client client = getDummyClient();
+        CreateOrderRequest request = new CreateOrderRequest(internalId, 5000, Set.of(RequestMethod.CARD), null,
+                "1235153208");
+        CreateOrderCommand command = command(client.getId(), request, 30, false);
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> orderApiService.createOrderAsync(command));
+
+        assertEquals(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED, exception.getMessage());
+        assertEquals(0, orderRepository.count());
+        verifyNoInteractions(detailsSearchExecutor, merchantDetailsReceiver);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"a27fc526-017c-440a-b680-0f672983aeaf", "internal-7731"})
+    @DisplayName("Синхронное создание без адреса КБ в запросе и у клиента должно создавать ордер.")
+    void createOrder_shouldCreateOrderIfSyncWithoutCallbackUrl(String internalId) {
+        Client client = getDummyClient();
+        CreateOrderRequest request = new CreateOrderRequest(internalId, 5000, Set.of(RequestMethod.CARD), null,
+                "1235153208");
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(Optional.empty());
+
+        ClientOrderSummary order = orderApiService.createOrder(command(client.getId(), request, 30, false));
+
+        assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.status());
+        verifyNoInteractions(detailsSearchExecutor);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1000, 7300})
+    @DisplayName("Если пул поиска переполнен, ордер должен удаляться и бросаться ServiceUnavailableException.")
+    void createOrder_shouldDeleteOrderAndThrowIfSearchRejected(int amount) {
+        Client client = getDummyClient();
+        doThrow(new TaskRejectedException("Concurrency limit reached")).when(detailsSearchExecutor).execute(any());
+        CreateOrderRequest request = new CreateOrderRequest(UUID.randomUUID().toString(), amount,
+                Set.of(RequestMethod.CARD), "https://example.com/callback", "1235153208");
+        CreateOrderCommand command = command(client.getId(), request, 30, false);
+
+        assertThrows(ServiceUnavailableException.class, () -> orderApiService.createOrderAsync(command));
+
+        assertEquals(0, orderRepository.count());
+        assertFalse(orderService.existsByInternalId(request.internalId()));
+        verifyNoInteractions(merchantDetailsReceiver);
     }
 }

@@ -4,10 +4,10 @@ import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
 import net.rcetech.api.merchantdetails.RandomDetailsReceiver;
-import net.rcetech.domain.model.orders.Order;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DetailsSearchService {
@@ -22,9 +22,9 @@ public class DetailsSearchService {
         this.randomDetailsReceiver = randomDetailsReceiver;
     }
 
-    public Optional<ApiDetailsResponse> search(Order order, CreateOrderRequest createOrderRequest,
+    public Optional<ApiDetailsResponse> search(UUID clientId, UUID orderId, CreateOrderRequest createOrderRequest,
                                                Integer timeoutSeconds, boolean testOrder) {
         MerchantDetailsReceiver receiver = testOrder ? randomDetailsReceiver : merchantDetailsReceiver;
-        return receiver.getDetails(order.getClient().getId(), order.getId(), createOrderRequest, timeoutSeconds);
+        return receiver.getDetails(clientId, orderId, createOrderRequest, timeoutSeconds);
     }
 }
