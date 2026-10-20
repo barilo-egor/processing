@@ -53,6 +53,13 @@ public class IncidentService {
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
+    public void saveIfNoUnresolved(IncidentType type, Object data, Long errorTimestamp) {
+        if (incidentRepository.existsByTypeAndStatus(type, IncidentStatus.NEW)) {
+            return;
+        }
+        save(type, data, errorTimestamp);
+    }
+
     public void save(IncidentType type, Object data, Long errorTimestamp) {
         try {
             transactionTemplate.executeWithoutResult(status -> {

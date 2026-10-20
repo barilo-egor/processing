@@ -133,6 +133,43 @@ class IncidentServiceTest {
         );
     }
 
+    @ParameterizedTest
+    @EnumSource(value = IncidentType.class, names = {"DETAILS_SEARCH_ERROR", "BALANCE_UPDATE_ERROR"})
+    @DisplayName("Метод должен сохранить инцидент, если необработанного инцидента такого типа нет.")
+    void saveIfNoUnresolved_shouldSaveIfNoUnresolvedIncidentOfType(IncidentType type) {
+        Incident resolved = new Incident();
+        resolved.setType(type);
+        resolved.setStatus(IncidentStatus.RESOLVED);
+        saveDummyIncident(resolved);
+        Incident anotherType = new Incident();
+        anotherType.setType(IncidentType.ORDER_STATUS_TRANSITION_REJECTED);
+        saveDummyIncident(anotherType);
+
+        incidentService.saveIfNoUnresolved(type, Map.of("orderId", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"),
+                1_760_000_000_000L);
+
+        assertEquals(1, incidentRepository.findAll().stream()
+                .filter(incident -> type.equals(incident.getType()))
+                .filter(incident -> IncidentStatus.NEW.equals(incident.getStatus()))
+                .count());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = IncidentType.class, names = {"DETAILS_SEARCH_ERROR", "BALANCE_UPDATE_ERROR"})
+    @DisplayName("Метод не должен сохранять инцидент, если необработанный инцидент такого типа уже есть.")
+    void saveIfNoUnresolved_shouldNotSaveIfUnresolvedIncidentOfTypeExists(IncidentType type) {
+        Incident unresolved = new Incident();
+        unresolved.setType(type);
+        saveDummyIncident(unresolved);
+
+        incidentService.saveIfNoUnresolved(type, Map.of("orderId", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"),
+                1_760_000_000_000L);
+
+        List<Incident> actual = incidentRepository.findAll();
+        assertEquals(1, actual.size());
+        assertEquals(unresolved.getId(), actual.getFirst().getId());
+    }
+
     @Test
     @DisplayName("Метод должен сохранить инцидент со статусом NEW, переданным типом, данными и временем ошибки.")
     void save_shouldSaveIncident() {

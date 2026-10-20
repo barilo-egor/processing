@@ -521,4 +521,47 @@ class OrderCallbackResolverTest {
         assertEquals(OrderStatus.SUCCESS, actual.getStatus());
         assertEquals("PAID", actual.getMerchantOrderStatus());
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CANCELED,ALFA_TEAM,Отменен",
+            "DISPUTE,DEORA,В споре"
+    })
+    @DisplayName("Метод должен создать инцидент об отклонённом переходе без исключения, если КБ с успешным статусом пришёл для ордера без реквизитов.")
+    void resolve_shouldCreateIncidentIfSuccessWithoutDetails(OrderStatus statusFrom, Merchant merchant,
+                                                             String expectedStatusFrom) {
+        UUID id = UUID.randomUUID();
+        Client client = getDummyClient();
+        Order order = new Order();
+        order.setId(id);
+        order.setStatus(statusFrom);
+        order.setMerchantOrderStatus("DECLINED");
+        fillFields(order, client);
+        order.setDetails(null);
+        orderRepository.save(order);
+
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(id.toString());
+        event.setStatus("PAID");
+        event.setStatusDescription("Status");
+        event.setMerchant(merchant);
+        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
+
+        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(incidentService).save(eq(IncidentType.ORDER_STATUS_TRANSITION_REJECTED), dataCaptor.capture(),
+                anyLong());
+        OrderStatusTransitionRejectedData data = assertInstanceOf(OrderStatusTransitionRejectedData.class,
+                dataCaptor.getValue());
+        assertAll(
+                () -> assertEquals(id, data.orderId()),
+                () -> assertEquals(expectedStatusFrom, data.statusFrom()),
+                () -> assertEquals("Успешный", data.statusTo()),
+                () -> assertEquals(merchant, data.merchant()),
+                () -> assertEquals("PAID", data.merchantOrderStatus())
+        );
+        Order actual = orderRepository.findById(id).orElseThrow();
+        assertEquals(statusFrom, actual.getStatus());
+        assertEquals("DECLINED", actual.getMerchantOrderStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
 }

@@ -20,4 +20,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     List<Order> findAllByStatusAndExpiresAtBefore(OrderStatus status, Instant now);
 
     boolean existsByInternalId(String internalId);
+
+    boolean existsByIdAndClientId(UUID id, UUID clientId);
+
+    <T> Optional<T> findByIdAndClientId(UUID id, UUID clientId, Class<T> projectionType);
 }

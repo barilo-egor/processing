@@ -1,14 +1,14 @@
 package net.rcetech.api.merchantdetails;
 
 import net.rcetech.api.dto.CreateOrderRequest;
-import net.rcetech.meta.Profiles;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Profile(Profiles.NOT_TEST_MERCHANT_DETAILS)
+@Primary
 public class MerchantDetailsReceiverImpl implements MerchantDetailsReceiver {
 
     private final ApiMerchantDetailsGrpcService apiMerchantDetailsGrpcService;
@@ -18,7 +18,7 @@ public class MerchantDetailsReceiverImpl implements MerchantDetailsReceiver {
     }
 
     @Override
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+    public Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
                                          Integer timeoutSeconds) {
         return apiMerchantDetailsGrpcService.getDetails(clientId, orderId, clientOrderRequest, timeoutSeconds);
     }

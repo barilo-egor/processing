@@ -1,11 +1,11 @@
 package net.rcetech.api.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
-import net.rcetech.domain.mapping.orders.OrderMapper;
-import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -26,19 +26,22 @@ import java.util.UUID;
 @ClientAccess
 public class ApiOrderController {
 
+    private static final String SEARCH_TIMEOUT_MIN_MESSAGE = "Таймаут поиска реквизитов не может быть меньше 5 секунд.";
+
+    private static final String SEARCH_TIMEOUT_MAX_MESSAGE = "Таймаут поиска реквизитов не может превышать 300 секунд.";
+
     private final OrderApiService orderApiService;
 
-    private final OrderMapper orderMapper;
-
-    public ApiOrderController(OrderApiService orderApiService, OrderMapper orderMapper) {
+    public ApiOrderController(OrderApiService orderApiService) {
         this.orderApiService = orderApiService;
-        this.orderMapper = orderMapper;
     }
 
     @PostMapping
     public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
                                                           @RequestHeader(required = false, defaultValue = "30",
                                                                   value = "Search-Timeout-Seconds")
+                                                          @Min(value = 5, message = SEARCH_TIMEOUT_MIN_MESSAGE)
+                                                          @Max(value = 300, message = SEARCH_TIMEOUT_MAX_MESSAGE)
                                                                   Integer timeoutSeconds,
                                                           @RequestHeader(required = false, defaultValue = "false",
                                                                   value = "Test-Order")
@@ -48,18 +51,18 @@ public class ApiOrderController {
                         "таймаут поиска={} с, тестовый={}).",
                 principal.getName(), clientRequest.internalId(), clientRequest.amount(), clientRequest.methods(),
                 timeoutSeconds, testOrder);
-        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds,
-                testOrder);
-        log.info("Клиент {} создал через API ордер {} (internalId={}, сумма={}, методы={}).",
-                principal.getName(), order.getId(), clientRequest.internalId(), clientRequest.amount(),
+        ClientOrderSummary order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest,
+                timeoutSeconds, testOrder);
+        log.info("Клиент {} создал через API ордер {} в статусе {} (internalId={}, сумма={}, методы={}).",
+                principal.getName(), order.id(), order.status(), clientRequest.internalId(), clientRequest.amount(),
                 clientRequest.methods());
-        return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
+        return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClientOrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
-        return new ResponseEntity<>(orderMapper.toOrderSummary(
-                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id)),
+        return new ResponseEntity<>(
+                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id),
                 HttpStatus.OK
         );
     }

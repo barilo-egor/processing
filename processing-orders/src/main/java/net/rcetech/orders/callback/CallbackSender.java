@@ -28,6 +28,9 @@ public class CallbackSender {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void sendCallback(OrderStatusUpdatedEvent event) {
+        if (!event.notifyClient()) {
+            return;
+        }
         ClientOrderSummary order = orderService.findById(event.orderId(), ClientOrderSummary.class)
                 .orElseThrow(() -> new BaseException("Ордер не найден."));
         String callbackUrl = order.callbackUrl();

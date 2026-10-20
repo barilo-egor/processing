@@ -6,27 +6,32 @@ import org.springframework.stereotype.Component;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component
-public class RandomDetailsGenerator {
+public class RandomDetailsReceiver implements MerchantDetailsReceiver {
 
     private static final List<String> BANKS = List.of("Т-Банк", "Сбербанк", "Альфа-Банк", "ВТБ");
 
+    public static final String TEST_ORDER_ID_PREFIX = "TEST_";
+
     private static final String TEST_ORDER_STATUS = "TEST";
 
-    public ApiDetailsResponse generate(CreateOrderRequest createOrderRequest) {
+    @Override
+    public Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+                                                   Integer timeoutSeconds) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        List<RequestMethod> methods = List.copyOf(createOrderRequest.methods());
+        List<RequestMethod> methods = List.copyOf(clientOrderRequest.methods());
         RequestMethod method = methods.get(random.nextInt(methods.size()));
         Merchant[] merchants = Merchant.values();
-        return new ApiDetailsResponse(
+        return Optional.of(new ApiDetailsResponse(
                 UUID.randomUUID().toString(),
                 merchants[random.nextInt(merchants.length)],
-                UUID.randomUUID().toString(),
+                TEST_ORDER_ID_PREFIX + UUID.randomUUID(),
                 TEST_ORDER_STATUS,
                 null,
                 new ApiDetailsResponse.Details(
@@ -34,7 +39,7 @@ public class RandomDetailsGenerator {
                         RequestMethod.CARD.equals(method) ? randomCardNumber(random) : randomPhoneNumber(random),
                         BANKS.get(random.nextInt(BANKS.size()))
                 )
-        );
+        ));
     }
 
     private String randomCardNumber(ThreadLocalRandom random) {

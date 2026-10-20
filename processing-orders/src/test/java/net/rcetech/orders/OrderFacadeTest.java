@@ -8,6 +8,7 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.config.MetaExecutorSpringConfig;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.AfterEach;
@@ -150,7 +151,8 @@ class OrderFacadeTest {
             AtomicReference<Throwable> error = new AtomicReference<>();
             Thread concurrent = Thread.ofPlatform().start(() -> {
                 try {
-                    orderFacade.routeOrder(concurrentStatus, order.getId(), concurrentMerchantStatus);
+                    orderFacade.routeOrder(concurrentStatus, order.getId(),
+                            OrderStatusChangeSource.MERCHANT_CALLBACK, concurrentMerchantStatus);
                 } catch (Throwable e) {
                     error.set(e);
                 }
@@ -188,7 +190,8 @@ class OrderFacadeTest {
         Order order = createNewOrder();
         runConcurrently(order, concurrentStatus, concurrentMerchantStatus);
 
-        assertDoesNotThrow(() -> orderFacade.routeOrder(status, order.getId(), merchantStatus));
+        assertDoesNotThrow(() -> orderFacade.routeOrder(status, order.getId(),
+                OrderStatusChangeSource.MERCHANT_CALLBACK, merchantStatus));
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(expectedStatus, actual.getStatus());
@@ -208,7 +211,8 @@ class OrderFacadeTest {
 
         UUID orderId = order.getId();
         OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
-                () -> orderFacade.routeOrder(status, orderId, merchantStatus));
+                () -> orderFacade.routeOrder(status, orderId,
+                        OrderStatusChangeSource.MERCHANT_CALLBACK, merchantStatus));
 
         assertEquals(OrderStatus.SUCCESS, exception.getStatusFrom());
         assertEquals(status, exception.getStatusTo());
@@ -227,7 +231,8 @@ class OrderFacadeTest {
     void routeOrder_shouldIgnoreNewStatus(String merchantOrderStatus) {
         Order order = createNewOrder();
 
-        orderFacade.routeOrder(OrderStatus.NEW, order.getId(), merchantOrderStatus);
+        orderFacade.routeOrder(OrderStatus.NEW, order.getId(), OrderStatusChangeSource.MERCHANT_CALLBACK,
+                merchantOrderStatus);
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.NEW, actual.getStatus());

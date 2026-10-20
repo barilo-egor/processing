@@ -4,12 +4,12 @@ import net.rcetech.api.config.ApiSecurityConfig;
 import net.rcetech.api.controller.ApiOrderController;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.service.OrderApiService;
-import net.rcetech.domain.mapping.orders.OrderMapper;
 import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.config.MetaSecurityConfig;
+import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -21,6 +21,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -28,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -36,6 +38,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tools.jackson.databind.ObjectMapper;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -64,9 +67,6 @@ class ApiOrderControllerTest {
     private OrderApiService orderApiService;
 
     @MockitoBean
-    private OrderMapper orderMapper;
-
-    @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @MockitoBean
@@ -76,7 +76,12 @@ class ApiOrderControllerTest {
 
     @BeforeEach
     void setUp() {
-        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenReturn(new Order());
+        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenReturn(summary());
+    }
+
+    private static ClientOrderSummary summary() {
+        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(), OrderStatus.NEW,
+                1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
     }
 
     private RequestPostProcessor apiKeyOf(UUID clientId) {
@@ -106,6 +111,38 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").isNumber())
                 .andExpect(jsonPath("$.description")
                         .value("Required body is missing."));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "Duplicate entry 'order-1' for key 'orders.unique_internal_id'|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
+            "Duplicate entry 'order-2' for key unique_internal_id|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
+            "unique_internal_id|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
+            "Duplicate entry 'order-1' for key 'orders.unique_internal_id_v2'|500|Contact support.",
+            "Duplicate entry 'order-1' for key 'orders.not_unique_internal_id'|500|Contact support.",
+            "Duplicate entry 'ALFA_TEAM-1' for key 'orders.unique_merchant_order_id'|500|Contact support.",
+            "Column 'amount' cannot be null|500|Contact support."
+    })
+    @DisplayName("Метод должен вернуть 400 при нарушении известного ограничения БД и 500 при нарушении остальных.")
+    void createOrder_shouldMapDataIntegrityViolationByConstraint(String causeMessage, int status,
+                                                                 String description) throws Exception {
+        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenThrow(
+                new DataIntegrityViolationException("could not execute statement",
+                        new SQLIntegrityConstraintViolationException(causeMessage)));
+        String content = """
+                {
+                    "internalId": "order-1",
+                    "amount": 5000,
+                    "methods":["CARD"],
+                    "userId": "163637435086"
+                }""";
+        mockMvc.perform(
+                        post("/api/v1/order")
+                                .with(apiKeyOf(UUID.randomUUID()))
+                                .content(content)
+                                .header("Content-Type", "application/json")
+                ).andExpect(status().is(status))
+                .andExpect(jsonPath("$.description").value(description));
     }
 
     @Test
@@ -269,7 +306,7 @@ class ApiOrderControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {30, 60, 1})
+    @ValueSource(ints = {30, 60, 5})
     @DisplayName("Заголовок с количеством секунд таймаута поиска должен быть передан в сервис.")
     void createOrder_shouldPassTimeoutSecondsFromHeader(Integer timeoutSeconds) throws Exception {
         String content = """
@@ -354,6 +391,75 @@ class ApiOrderControllerTest {
         verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds), eq(false));
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {4, 0, -5})
+    @DisplayName("Метод должен вернуть 400 без создания ордера, если таймаут поиска меньше 5 секунд.")
+    void createOrder_shouldReturn400IfTimeoutTooSmall(Integer timeoutSeconds) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Search-Timeout-Seconds", timeoutSeconds)
+        ).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.description").value("Таймаут поиска реквизитов не может быть меньше 5 секунд."));
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {301, 600})
+    @DisplayName("Метод должен вернуть 400 без создания ордера, если таймаут поиска больше 300 секунд.")
+    void createOrder_shouldReturn400IfTimeoutTooLarge(Integer timeoutSeconds) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Search-Timeout-Seconds", timeoutSeconds)
+        ).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Таймаут поиска реквизитов не может превышать 300 секунд."));
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {5, 300})
+    @DisplayName("Метод должен создать ордер, если таймаут поиска от 5 до 300 секунд.")
+    void createOrder_shouldCreateOrderIfTimeoutWithinLimit(Integer timeoutSeconds) throws Exception {
+        String content = """
+                {
+                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                    "amount": 5000,
+                    "methods": ["CARD"],
+                    "userId": "163637435086",
+                    "callbackUrl": "https://example.com/callback"
+                }""";
+        mockMvc.perform(
+                post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header("Search-Timeout-Seconds", timeoutSeconds)
+        ).andExpect(status().isCreated());
+        verify(orderApiService).createOrder(any(), any(), eq(timeoutSeconds), eq(false));
+    }
+
     static Stream<Arguments> createOrderRequestArguments() {
         return Stream.of(
                 Arguments.of(new CreateOrderRequest("76f4cb46-54b7-471a-9834-0ead44a8b4f3", 5124,
@@ -368,9 +474,7 @@ class ApiOrderControllerTest {
     @MethodSource("orderSummaryArguments")
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
     void createOrder_shouldReturnCreatedOrder(ClientOrderSummary expected) throws Exception {
-        Order order = mock(Order.class);
-        when(orderApiService.createOrder(any(), any(), anyInt(), anyBoolean())).thenReturn(order);
-        when(orderMapper.toOrderSummary(order)).thenReturn(expected);
+        when(orderApiService.createOrder(any(), any(), anyInt(), anyBoolean())).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
                                 .with(apiKeyOf(UUID.randomUUID()))
@@ -523,9 +627,7 @@ class ApiOrderControllerTest {
     @MethodSource("orderSummaryArguments")
     @DisplayName("Метод должен вернуть JSON представление ордера, когда он создан.")
     void getOrder_shouldReturnOrder(ClientOrderSummary expected) throws Exception {
-        Order order = mock(Order.class);
-        when(orderApiService.findByIdAndClientId(any(), any())).thenReturn(order);
-        when(orderMapper.toOrderSummary(order)).thenReturn(expected);
+        when(orderApiService.findByIdAndClientId(any(), any())).thenReturn(expected);
         mockMvc.perform(
                         MockMvcRequestBuilders.get("/api/v1/order/" + expected.id())
                                 .with(apiKeyOf(UUID.randomUUID()))

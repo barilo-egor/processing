@@ -2340,6 +2340,13 @@
                     "value": "{{api_key}}"
                   },
                   {
+                    "key": "Search-Timeout-Seconds",
+                    "value": "30",
+                    "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                    "type": "text",
+                    "disabled": true
+                  },
+                  {
                     "key": "Test-Order",
                     "value": "true",
                     "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
@@ -2364,9 +2371,176 @@
                   "path": [
                     "order"
                   ]
-                }
+                },
+                "description": "Создаёт ордер и синхронно ищет реквизиты. Ордер сохраняется в статусе SEARCHING, затем переходит в NEW, если реквизиты найдены, или в DETAILS_NOT_FOUND, если не найдены или при поиске произошла ошибка. В обоих случаях ответ 201 с ордером в итоговом статусе."
               },
-              "response": []
+              "response": [
+                {
+                  "name": "Реквизиты найдены",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10000\",\n  \"status\": \"NEW\",\n  \"amount\": 5000,\n  \"method\": \"CARD\",\n  \"details\": \"2200 1234 5678 9012\",\n  \"bank\": \"Т-Банк\",\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
+                },
+                {
+                  "name": "Реквизиты не найдены",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"0b5a1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c2d\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10001\",\n  \"status\": \"DETAILS_NOT_FOUND\",\n  \"amount\": 5000,\n  \"method\": null,\n  \"details\": null,\n  \"bank\": null,\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
+                },
+                {
+                  "name": "Таймаут поиска больше 300 секунд",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      },
+                      {
+                        "key": "Search-Timeout-Seconds",
+                        "value": "30",
+                        "description": "Таймаут поиска реквизитов в секундах, от 5 до 300. По умолчанию 30.",
+                        "type": "text",
+                        "disabled": true
+                      },
+                      {
+                        "key": "Test-Order",
+                        "value": "true",
+                        "description": "Создать тестовый ордер со случайными реквизитами без запроса в merchant-details. По умолчанию false.",
+                        "type": "text",
+                        "disabled": true
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"internalId\": \"qwerty10000\",\n    \"amount\": 5000,\n    \"methods\": [\"SBP\", \"CARD\", \"QR\"],\n    \"callbackUrl\": \"https://example.com/callback\",\n    \"userId\": \"userid1\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Таймаут поиска реквизитов не может превышать 300 секунд.\"\n}"
+                }
+              ]
             },
             {
               "name": "Отмена ордера",
@@ -2391,9 +2565,48 @@
                     "order",
                     "{{id}}"
                   ]
-                }
+                },
+                "description": "Отменяет ордер клиента по маршруту статусов. Отменить можно ордер в статусах SEARCHING, NEW и DISPUTE. Для остальных статусов возвращается 400 с описанием причины."
               },
-              "response": []
+              "response": [
+                {
+                  "name": "Ордер уже отменён",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "{{test_user}}"
+                      },
+                      {
+                        "key": "Api-Key",
+                        "value": "{{api_key}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_v1_api_url}}/order/{{id}}",
+                      "host": [
+                        "{{processing_v1_api_url}}"
+                      ],
+                      "path": [
+                        "order",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order/f267063e-9223-4b4b-8e15-e25a8d6d52a5\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Ордер уже в статусе «Отменен».\"\n}"
+                }
+              ]
             }
           ]
         }

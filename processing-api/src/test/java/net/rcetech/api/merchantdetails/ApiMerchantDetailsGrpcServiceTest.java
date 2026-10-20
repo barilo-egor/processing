@@ -6,12 +6,12 @@ import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
-import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.DetailsSearchErrorData;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ApiMerchantDetailsGrpcServiceTest {
@@ -38,12 +38,15 @@ class ApiMerchantDetailsGrpcServiceTest {
     @Spy
     private DetailsMapper detailsMapper = Mappers.getMapper(DetailsMapper.class);
 
+    @Mock
+    private IncidentService incidentService;
+
     private ApiMerchantDetailsGrpcService apiMerchantDetailsGrpcService;
 
     @BeforeEach
     void setUp() {
         apiMerchantDetailsGrpcService =  new ApiMerchantDetailsGrpcService(
-                detailsMapper, detailsBlockingStub, "processing"
+                detailsMapper, detailsBlockingStub, "processing", incidentService
         );
     }
 
@@ -79,7 +82,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                         internalId.toString(), 5042, Set.of(RequestMethod.CARD),
                         "https://example.com/callback", "534690"
                 ), 60
-        );
+        ).orElseThrow();
         assertAll(
                 () -> assertEquals(requestId.toString(), actual.requestId()),
                 () -> assertEquals(merchant, actual.merchant()),
@@ -93,26 +96,28 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
     }
 
-    @Test
-    @DisplayName("Метод должен бросить MerchantDetailsNotFoundException, если реквизиты не найдены.")
-    void getDetails_shouldThrowMerchantDetailsNotFoundExceptionIfNotFoundGrpcStatus() {
-        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
+    @ParameterizedTest
+    @ValueSource(ints = {1, 5})
+    @DisplayName("Метод должен вернуть пустой Optional без инцидента, если реквизиты не найдены или поиск отменён.")
+    void getDetails_shouldReturnEmptyWithoutIncidentIfNotFoundOrCancelled(int statusValue) {
+        when(detailsBlockingStub.detailsRequest(any()))
+                .thenThrow(new StatusRuntimeException(Status.fromCodeValue(statusValue)));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(MerchantDetailsNotFoundException.class,
-                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30));
+        assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
+        verifyNoInteractions(incidentService);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {
-            1, 3, 6
+            3, 6, 14
     })
-    @DisplayName("Метод должен бросить BaseException, если статус ответа GRPC не ожидаем.")
-    void getDetails_shouldThrowBaseExceptionIfUnknownStatus(int statusValue) {
+    @DisplayName("Метод должен вернуть пустой Optional и создать инцидент, если статус ответа GRPC не ожидаем.")
+    void getDetails_shouldReturnEmptyAndSaveIncidentIfUnknownStatus(int statusValue) {
         Status status = Status.fromCodeValue(statusValue);
         when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(status));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
@@ -121,59 +126,24 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class,
-                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30),
-                "Неизвестная ошибка GRPC " + statusValue);
+        assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
+        verify(incidentService).saveIfNoUnresolved(eq(IncidentType.DETAILS_SEARCH_ERROR),
+                eq(new DetailsSearchErrorData(orderId, "Неизвестная ошибка GRPC " + statusValue)), anyLong());
     }
 
-    @Test
-    @DisplayName("Метод должен бросить BaseException, если произошла непредвиденная ошибка при попытке получить реквизиты.")
-    void getDetails_shouldThrowBaseExceptionIfUnknownException() {
-        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new IllegalStateException("Illegal State"));
+    @ParameterizedTest
+    @ValueSource(strings = {"Illegal State", "Connection refused"})
+    @DisplayName("Метод должен вернуть пустой Optional и создать инцидент, если произошла непредвиденная ошибка при попытке получить реквизиты.")
+    void getDetails_shouldReturnEmptyAndSaveIncidentIfUnknownException(String message) {
+        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new IllegalStateException(message));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        assertThrows(BaseException.class,
-                () -> apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30),
-                "Непредвиденная ошибка: Illegal State");
+        assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
+        verify(incidentService).saveIfNoUnresolved(eq(IncidentType.DETAILS_SEARCH_ERROR),
+                eq(new DetailsSearchErrorData(orderId, "Непредвиденная ошибка: " + message)), anyLong());
     }
-
-    @Test
-    @DisplayName("getDetails с testDetails=true должен вызывать получение реквизитов в контексте testDetails=true.")
-    void getDetails_withTestDetailsTrue_shouldSetContextAndReturnResponse() {
-        UUID requestId = UUID.randomUUID();
-        UUID merchantOrderId = UUID.randomUUID();
-        DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
-                .setRequestId(requestId.toString())
-                .setMerchant(Merchant.ALFA_TEAM.name())
-                .setOrderId(merchantOrderId.toString())
-                .setOrderStatus("SUCCESS")
-                .setDetails(DetailsGrpc.newBuilder()
-                        .setRequestMethod(RequestMethod.CARD.name())
-                        .setDetails("1234 1234 1234 1234")
-                        .setBank("Сбербанк")
-                        .build())
-                .setAmount(1000)
-                .build();
-        when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation -> {
-            assertEquals("true", TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
-            return detailsResponseGrpc;
-        });
-
-        UUID clientId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
-        CreateOrderRequest request = new CreateOrderRequest(
-                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
-                "https://example.com/callback", "534690"
-        );
-
-        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getTestDetails(clientId, orderId, request);
-        assertNotNull(actual);
-        assertEquals(requestId.toString(), actual.requestId());
-        assertNull(TestDetailsClientInterceptor.TEST_DETAILS_CTX_KEY.get());
-    }
-
 }

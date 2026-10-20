@@ -21,6 +21,7 @@ import net.rcetech.meta.config.MetaWebConfig;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.AfterEach;
@@ -162,7 +163,7 @@ class TransactionEventListenerTest {
         order.setId(orderId);
         fillFields(order, client);
         orderRepository.save(order);
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -196,7 +197,7 @@ class TransactionEventListenerTest {
         order.setId(orderId);
         fillFields(order, client);
         orderRepository.save(order);
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, status);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, status, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -213,7 +214,7 @@ class TransactionEventListenerTest {
     @DisplayName("Должен быть создан инцидент, если произошла ошибка при создании транзакции.")
     void orderStatusUpdated_shouldCreateIncidentIfCantCreateTransaction(UUID orderId) {
         // ордер не сохранен в БД, поэтому создание транзакции упадет
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         long before = System.currentTimeMillis();
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();

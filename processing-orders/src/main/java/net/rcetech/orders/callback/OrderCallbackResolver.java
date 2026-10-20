@@ -11,6 +11,7 @@ import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.orders.OrderFacade;
 import net.rcetech.orders.status.OrderStatusResolver;
@@ -75,7 +76,8 @@ public class OrderCallbackResolver {
         }
         try {
             OrderStatusChange change = orderFacade.routeOrder(
-                    maybeStatus.get(), order.getId(), merchantCallbackEvent.getStatus());
+                    maybeStatus.get(), order.getId(), OrderStatusChangeSource.MERCHANT_CALLBACK,
+                    merchantCallbackEvent.getStatus());
             if (OrderStatusTransition.ALLOWED.equals(change.transition())) {
                 log.info("Ордер {} переведён из статуса {} в статус {} по КБ мерчанта {} (статус {}).",
                         order.getId(), change.from(), change.to(),

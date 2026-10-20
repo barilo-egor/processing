@@ -6,16 +6,18 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.MerchantDetailsNotFoundException;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.dto.DetailsSearchErrorData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
@@ -27,22 +29,26 @@ public class ApiMerchantDetailsGrpcService {
 
     private final String applicationName;
 
+    private final IncidentService incidentService;
+
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
                                          ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub,
-                                         @Value("${spring.application.name}") String applicationName) {
+                                         @Value("${spring.application.name}") String applicationName,
+                                         IncidentService incidentService) {
         this.detailsBlockingStub = detailsBlockingStub;
         this.detailsMapper = detailsMapper;
         this.applicationName = applicationName;
+        this.incidentService = incidentService;
     }
 
     /**
      * Получает реквизиты мерчанта по clientId и деталям запроса через gRPC.
      *
-     * @return {@link ApiDetailsResponse} с найденными реквизитами.
-     * @throws MerchantDetailsNotFoundException если реквизиты не найдены (gRPC NOT_FOUND).
-     * @throws BaseException                    при системных ошибках gRPC или сбоях сети.
+     * @return {@link ApiDetailsResponse} с найденными реквизитами или пустой Optional, если реквизиты не найдены
+     * (gRPC NOT_FOUND), поиск отменён (gRPC CANCELLED) или при поиске произошла ошибка. Об ошибке создаётся инцидент,
+     * если необработанного инцидента такого типа ещё нет.
      */
-    public ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+    public Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
                                          Integer timeoutSeconds) {
         try {
             UUID requestId = UUID.randomUUID();
@@ -60,37 +66,32 @@ public class ApiMerchantDetailsGrpcService {
             DetailsResponseGrpc grpcResponse = detailsBlockingStub.detailsRequest(
                     detailsRequestGrpc
             );
-            return detailsMapper.grpcResponseToDTO(grpcResponse);
+            return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
             int code = status != null
                     ? status.getCode()
                     : statusException.getStatus().getCode().value();
             if (code == Code.NOT_FOUND_VALUE) {
-                log.info("Не найдены реквизиты для {}", clientOrderRequest);
-                throw new MerchantDetailsNotFoundException();
-            } else {
-                throw new BaseException("Неизвестная ошибка GRPC " + code, statusException);
+                log.info("Не найдены реквизиты по ордеру {}: {}", orderId, clientOrderRequest);
+                return Optional.empty();
             }
+            if (code == Code.CANCELLED_VALUE) {
+                log.info("Поиск реквизитов по ордеру {} отменён.", orderId);
+                return Optional.empty();
+            }
+            return searchError(orderId, "Неизвестная ошибка GRPC " + code, statusException);
         } catch (Exception ex) {
-            throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
+            return searchError(orderId, "Непредвиденная ошибка: " + ex.getMessage(), ex);
         }
     }
 
-    /**
-     * Получает реквизиты мерчанта по clientId и деталям запроса с возможностью запроса тестовых реквизитов.
-     *
-     * @param clientId           идентификатор клиента
-     * @param orderId            идентификатор ордера
-     * @param clientOrderRequest запрос на создание ордера
-     * @return {@link ApiDetailsResponse} с найденными реквизитами
-     */
-    public ApiDetailsResponse getTestDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest) {
-        AtomicReference<ApiDetailsResponse> responseRef = new AtomicReference<>();
-        TestDetailsClientInterceptor.runWithTestDetails(() ->
-                responseRef.set(getDetails(clientId, orderId, clientOrderRequest, 10))
-        );
-        return responseRef.get();
+    private Optional<ApiDetailsResponse> searchError(UUID orderId, String error, Exception ex) {
+        long timestamp = System.currentTimeMillis();
+        log.error("{} Ошибка поиска реквизитов по ордеру {}: {}", timestamp, orderId, error, ex);
+        incidentService.saveIfNoUnresolved(IncidentType.DETAILS_SEARCH_ERROR, new DetailsSearchErrorData(orderId, error),
+                timestamp);
+        return Optional.empty();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
