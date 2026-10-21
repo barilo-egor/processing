@@ -1,9 +1,11 @@
 package net.rcetech.domain.repository.orders;
 
+import jakarta.persistence.LockModeType;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.transaction.annotation.Transactional;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
@@ -14,6 +16,9 @@ import java.util.UUID;
 
 @Transactional
 public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecificationExecutor<Order> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Order> findForUpdateById(UUID id);
 
     Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId);
 

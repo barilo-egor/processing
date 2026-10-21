@@ -67,6 +67,10 @@ public class OrderService {
         return orderRepository.findById(id);
     }
 
+    public Optional<Order> findByIdForUpdate(UUID id) {
+        return orderRepository.findForUpdateById(id);
+    }
+
     public <T> Optional<T> findById(UUID id, Class<T> projectionType) {
         Order order = new Order();
         order.setId(id);
@@ -98,7 +102,7 @@ public class OrderService {
         return orderRepository.findAllByStatusAndCreatedAtBefore(OrderStatus.SEARCHING, createdAt);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = OrderStatusUpdateException.class)
     public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, OrderStatusChangeSource source,
                                           String merchantOrderStatus) {
         return updateStatus(id, statusTo, source, true, order -> {
@@ -108,7 +112,7 @@ public class OrderService {
         });
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = OrderStatusUpdateException.class)
     public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, OrderStatusChangeSource source,
                                           boolean notifyClient, Consumer<Order> changes) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));

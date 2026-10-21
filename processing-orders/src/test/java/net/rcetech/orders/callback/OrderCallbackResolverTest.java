@@ -1,567 +1,70 @@
 package net.rcetech.orders.callback;
 
-import net.rcetech.domain.model.clients.Client;
-import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.domain.repository.clients.ClientRepository;
-import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
-import net.rcetech.domain.repository.orders.OrderRepository;
-import net.rcetech.domain.service.incidents.IncidentService;
-import net.rcetech.domain.service.orders.MerchantCallbackService;
-import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
-import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
-import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.OrderFacade;
-import net.rcetech.orders.status.BridgePayOrderStatusResolver;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({OrderFacade.class, OrderService.class, MerchantCallbackService.class})
-@Testcontainers
-@RecordApplicationEvents
+@ExtendWith(MockitoExtension.class)
 class OrderCallbackResolverTest {
 
-    @TestConfiguration
-    static class Configuration {
+    @Mock
+    private OrderFacade orderFacade;
 
-        @Bean
-        public BridgePayOrderStatusResolver alfaTeamOrderStatusResolver() {
-            return new BridgePayOrderStatusResolver();
-        }
+    @Mock
+    private MerchantCallbackProcessor merchantCallbackProcessor;
 
-        @Bean
-        public OrderCallbackResolver orderCallbackService(BridgePayOrderStatusResolver bridgePayOrderStatusResolver,
-                                                          OrderFacade orderFacade,
-                                                          MerchantCallbackService merchantCallbackService,
-                                                          IncidentService incidentService) {
-            return new OrderCallbackResolver(List.of(bridgePayOrderStatusResolver), orderFacade, merchantCallbackService,
-                    incidentService);
-        }
-    }
-
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
-    }
-
-    @MockitoBean
-    private IncidentService incidentService;
-
-    @Autowired
+    @InjectMocks
     private OrderCallbackResolver orderCallbackResolver;
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private ClientRepository clientRepository;
-
-    @Autowired
-    private ApplicationEvents applicationEvents;
-
-    @MockitoSpyBean
-    private MerchantCallbackService merchantCallbackService;
-
-    @Autowired
-    private MerchantCallbackRepository merchantCallbackRepository;
-
-    Client getDummyClient() {
-        Client client = new Client();
-        client.setId(UUID.randomUUID());
-        client.setUsername("test" + client.getId());
-        client.setRegisteredAt(Instant.now());
-        return clientRepository.save(client);
-    }
-
-    Order getDummyOrder(Client client) {
-        Order order = new Order();
-        fillFields(order, client);
-        return orderRepository.save(order);
-    }
-
-    void fillFields(Order order, Client client) {
-        if (order.getId() == null) {
-            order.setId(UUID.randomUUID());
-        }
-        if (order.getCreatedAt() == null) {
-            order.setCreatedAt(Instant.now());
-        }
-        if (order.getExpiresAt() == null) {
-            order.setExpiresAt(Instant.now().plusSeconds(900));
-        }
-        if (order.getClient() == null && client != null) {
-            order.setClient(client);
-        }
-        if (order.getInternalId() == null) {
-            order.setInternalId(UUID.randomUUID().toString());
-        }
-        if (order.getStatus() == null) {
-            order.setStatus(OrderStatus.NEW);
-        }
-        if (order.getAmount() == null) {
-            order.setAmount(5000);
-        }
-        if (order.getMerchant() == null) {
-            order.setMerchant(Merchant.ALFA_TEAM);
-        }
-        if (order.getMerchantOrderId() == null) {
-            order.setMerchantOrderId(UUID.randomUUID().toString());
-        }
-        if (order.getMerchantOrderStatus() == null) {
-            order.setMerchantOrderStatus("NEW");
-        }
-        if (order.getMethod() == null) {
-            order.setMethod(RequestMethod.CARD);
-        }
-        if (order.getDetails() == null) {
-            order.setDetails("1234 1234 1234 1234");
-        }
-        if (order.getBank() == null) {
-            order.setBank("ALFA");
-        }
-        if (order.getCallbackUrl() == null) {
-            order.setCallbackUrl("https://google.com/callback");
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "12363466", "7257beb1-b01f-4c05-a053-1e1144f3d18b"
-    })
-    @DisplayName("Метод должен пропустить обработку КБ, если ордер не найден.")
-    void resolve_shouldSkipIfOrderNotFound(String id) {
-        Client client = getDummyClient();
-        Order order = getDummyOrder(client);
+    MerchantCallbackEvent event(Merchant merchant, String merchantOrderId) {
         MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id);
-        orderCallbackResolver.resolve(event);
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.NEW, maybeOrder.get().getStatus());
+        event.setMerchant(merchant);
+        event.setMerchantOrderId(merchantOrderId);
+        event.setStatus("PAID");
+        return event;
     }
 
     @ParameterizedTest
     @CsvSource({
-            "12363466,QWERTY",
-            "7257beb1-b01f-4c05-a053-1e1144f3d18b,VERY_SUCCESS"
+            "ALFA_TEAM,12363466,7257beb1-b01f-4c05-a053-1e1144f3d18b",
+            "DEORA,c2cbb845-7313-4106-a1a3-e9e4b328bbd9,d958fbca-5c3d-4941-8918-4c74e144d8e2"
     })
-    @DisplayName("Метод должен бросить BaseException, если статус не определен.")
-    void resolve_shouldThrowBaseExceptionIfStatusNotResolved(String id, String status) {
-        Client client = getDummyClient();
+    @DisplayName("Метод должен передать найденный ордер на обработку КБ.")
+    void resolve_shouldProcessFoundOrder(Merchant merchant, String merchantOrderId, UUID orderId) {
         Order order = new Order();
-        order.setMerchantOrderId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id);
-        event.setStatus(status);
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        assertThrows(BaseException.class, () -> orderCallbackResolver.resolve(event));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "7de063f7-720f-4078-9cde-c8d1ff924283",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2"
-    })
-    @DisplayName("Метод должен пропустить обработку, если статус не может быть обработан.")
-    void resolve_shouldSkipIfStatusUnprocessable(UUID id) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setStatus("NEW");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        event.setMerchantOrderId(id.toString());
-        orderCallbackResolver.resolve(event);
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.NEW, maybeOrder.get().getStatus());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "7de063f7-720f-4078-9cde-c8d1ff924283",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2"
-    })
-    @DisplayName("Метод должен подтвердить ордер, если КБ с успешным статусом.")
-    void resolve_shouldConfirmOrder(UUID id) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("PAID");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
-        List<OrderStatusUpdatedEvent> actualEvents = applicationEvents.stream(OrderStatusUpdatedEvent.class).toList();
-        assertEquals(1, actualEvents.size());
-        assertEquals(order.getId(), actualEvents.getFirst().orderId());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "7de063f7-720f-4078-9cde-c8d1ff924283",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2"
-    })
-    @DisplayName("Метод должен отменить ордер, если КБ со статусом отмены.")
-    void resolve_shouldCancelOrder(UUID id) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("CANCELED");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.CANCELED, maybeOrder.get().getStatus());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "7de063f7-720f-4078-9cde-c8d1ff924283",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2"
-    })
-    @DisplayName("Метод должен отменить ордер по таймауту, если КБ со статусом истечения.")
-    void resolve_shouldTimeoutOrder(UUID id) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("EXPIRED");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.TIMEOUT, maybeOrder.get().getStatus());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "DISPUTE",
-            "SUCCESS"
-    })
-    @DisplayName("Метод должен отменить ордер по таймауту, если КБ со статусом истечения.")
-    void resolve_shouldNotUpdateOrderIfNotNewStatus(OrderStatus status) {
-        UUID id = UUID.randomUUID();
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        order.setStatus(status);
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("EXPIRED");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(status, maybeOrder.get().getStatus());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "7de063f7-720f-4078-9cde-c8d1ff924283",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2"
-    })
-    @DisplayName("Метод должен перевести в спор ордер, если КБ со статусом спора.")
-    void resolve_shouldDisputeOrder(UUID id) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("DISPUTE");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.DISPUTE, maybeOrder.get().getStatus());
-    }
-
-    @DisplayName("Метод должен подтвердить ордер, даже если было брошено исключение при сохранении КБ.")
-    @Test
-    void resolve_shouldConfirmOrderIfExceptionThrownWhileSavingCallbackService() {
-        Client client = getDummyClient();
-        Order order = new Order();
-        UUID orderId = UUID.randomUUID();
         order.setId(orderId);
-        fillFields(order, client);
-        orderRepository.save(order);
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(orderId.toString());
-        event.setStatus("PAID");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        doThrow(BaseException.class).when(merchantCallbackService).save(any(), any());
-        orderCallbackResolver.resolve(event);
+        when(orderFacade.getOrderByIdOrMerchantOrderId(merchant, merchantOrderId)).thenReturn(Optional.of(order));
 
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
-    }
+        orderCallbackResolver.resolve(event(merchant, merchantOrderId));
 
-    @DisplayName("Метод должен сохранить КБ.")
-    @Test
-    void resolve_shouldSaveCallback() {
-        Client client = getDummyClient();
-        Order order = new Order();
-        UUID orderId = UUID.randomUUID();
-        order.setId(orderId);
-        fillFields(order, client);
-        orderRepository.save(order);
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(orderId.toString());
-        event.setStatus("PAID");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        orderCallbackResolver.resolve(event);
-
-        assertNotNull(order.getId());
-        Optional<Order> maybeOrder = orderRepository.findById(order.getId());
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
-        List<MerchantCallback> callbacks = merchantCallbackRepository.findAll();
-        assertEquals(1, callbacks.size());
-        MerchantCallback actual = callbacks.getFirst();
-        assertAll(
-                () -> assertNotNull(actual.getId()),
-                () -> assertEquals(orderId, actual.getOrder().getId()),
-                () -> assertEquals(event.getMerchant(), actual.getMerchant()),
-                () -> assertEquals(event.getMerchantOrderId(), actual.getMerchantOrderId()),
-                () -> assertEquals(event.getStatus(), actual.getStatus()),
-                () -> assertEquals(event.getStatusDescription(), actual.getStatusDescription())
-        );
+        verify(merchantCallbackProcessor).process(orderId);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "7de063f7-720f-4078-9cde-c8d1ff924283,OLD_PAID",
-            "d958fbca-5c3d-4941-8918-4c74e144d8e2,SUCCESS"
+            "ALFA_TEAM,12363466",
+            "DEORA,7257beb1-b01f-4c05-a053-1e1144f3d18b"
     })
-    @DisplayName("Метод должен пропустить КБ с успешным статусом без исключения, если ордер уже подтверждён.")
-    void resolve_shouldSkipIfOrderAlreadyConfirmed(UUID id, String merchantOrderStatus) {
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        order.setStatus(OrderStatus.SUCCESS);
-        order.setMerchantOrderStatus(merchantOrderStatus);
-        fillFields(order, client);
-        orderRepository.save(order);
+    @DisplayName("Метод не должен обрабатывать КБ, если ордер не найден.")
+    void resolve_shouldSkipIfOrderNotFound(Merchant merchant, String merchantOrderId) {
+        when(orderFacade.getOrderByIdOrMerchantOrderId(merchant, merchantOrderId)).thenReturn(Optional.empty());
 
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("PAID");
-        event.setStatusDescription("Status");
-        event.setMerchant(Merchant.ALFA_TEAM);
-        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
+        orderCallbackResolver.resolve(event(merchant, merchantOrderId));
 
-        Optional<Order> maybeOrder = orderRepository.findById(id);
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(OrderStatus.SUCCESS, maybeOrder.get().getStatus());
-        assertEquals(merchantOrderStatus, maybeOrder.get().getMerchantOrderStatus());
-        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "CANCELED,CANCELED,ALFA_TEAM",
-            "TIMEOUT,CANCELED,DEORA",
-            "CANCELED,EXPIRED,DEORA",
-            "TIMEOUT,EXPIRED,ALFA_TEAM",
-            "DISPUTE,DISPUTE,ALFA_TEAM"
-    })
-    @DisplayName("Метод должен пропустить КБ без исключения, если статусы перехода совпадают или ордер просрочен и пришла отмена.")
-    void resolve_shouldSkipIfTransitionSkippable(OrderStatus status, String callbackStatus, Merchant merchant) {
-        UUID id = UUID.randomUUID();
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        order.setStatus(status);
-        order.setMerchantOrderStatus("OLD");
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus(callbackStatus);
-        event.setStatusDescription("Status");
-        event.setMerchant(merchant);
-        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
-
-        Optional<Order> maybeOrder = orderRepository.findById(id);
-        assertTrue(maybeOrder.isPresent());
-        assertEquals(status, maybeOrder.get().getStatus());
-        verifyNoInteractions(incidentService);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "CANCELED,ALFA_TEAM,Отменен",
-            "CANCELED,DEORA,Отменен",
-            "DISPUTE,ALFA_TEAM,В споре",
-            "DISPUTE,DEORA,В споре"
-    })
-    @DisplayName("Метод должен создать инцидент об отклонённом переходе без исключения, если КБ на отмену или спор пришёл для подтверждённого ордера.")
-    void resolve_shouldCreateIncidentIfTransitionRejected(String callbackStatus, Merchant merchant,
-                                                          String expectedStatusTo) {
-        UUID id = UUID.randomUUID();
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        order.setStatus(OrderStatus.SUCCESS);
-        order.setMerchantOrderStatus("PAID");
-        fillFields(order, client);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus(callbackStatus);
-        event.setStatusDescription("Status");
-        event.setMerchant(merchant);
-        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
-
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(incidentService).save(eq(IncidentType.ORDER_STATUS_TRANSITION_REJECTED), dataCaptor.capture(),
-                anyLong());
-        OrderStatusTransitionRejectedData data = assertInstanceOf(OrderStatusTransitionRejectedData.class,
-                dataCaptor.getValue());
-        assertAll(
-                () -> assertEquals(id, data.orderId()),
-                () -> assertEquals("Успешный", data.statusFrom()),
-                () -> assertEquals(expectedStatusTo, data.statusTo()),
-                () -> assertEquals(merchant, data.merchant()),
-                () -> assertEquals(callbackStatus, data.merchantOrderStatus())
-        );
-        Order actual = orderRepository.findById(id).orElseThrow();
-        assertEquals(OrderStatus.SUCCESS, actual.getStatus());
-        assertEquals("PAID", actual.getMerchantOrderStatus());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "CANCELED,ALFA_TEAM,Отменен",
-            "DISPUTE,DEORA,В споре"
-    })
-    @DisplayName("Метод должен создать инцидент об отклонённом переходе без исключения, если КБ с успешным статусом пришёл для ордера без реквизитов.")
-    void resolve_shouldCreateIncidentIfSuccessWithoutDetails(OrderStatus statusFrom, Merchant merchant,
-                                                             String expectedStatusFrom) {
-        UUID id = UUID.randomUUID();
-        Client client = getDummyClient();
-        Order order = new Order();
-        order.setId(id);
-        order.setStatus(statusFrom);
-        order.setMerchantOrderStatus("DECLINED");
-        fillFields(order, client);
-        order.setDetails(null);
-        orderRepository.save(order);
-
-        MerchantCallbackEvent event = new MerchantCallbackEvent();
-        event.setMerchantOrderId(id.toString());
-        event.setStatus("PAID");
-        event.setStatusDescription("Status");
-        event.setMerchant(merchant);
-        assertDoesNotThrow(() -> orderCallbackResolver.resolve(event));
-
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(incidentService).save(eq(IncidentType.ORDER_STATUS_TRANSITION_REJECTED), dataCaptor.capture(),
-                anyLong());
-        OrderStatusTransitionRejectedData data = assertInstanceOf(OrderStatusTransitionRejectedData.class,
-                dataCaptor.getValue());
-        assertAll(
-                () -> assertEquals(id, data.orderId()),
-                () -> assertEquals(expectedStatusFrom, data.statusFrom()),
-                () -> assertEquals("Успешный", data.statusTo()),
-                () -> assertEquals(merchant, data.merchant()),
-                () -> assertEquals("PAID", data.merchantOrderStatus())
-        );
-        Order actual = orderRepository.findById(id).orElseThrow();
-        assertEquals(statusFrom, actual.getStatus());
-        assertEquals("DECLINED", actual.getMerchantOrderStatus());
-        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+        verify(merchantCallbackProcessor, never()).process(any());
     }
 }

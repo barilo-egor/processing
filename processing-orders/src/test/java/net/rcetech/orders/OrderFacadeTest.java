@@ -268,4 +268,19 @@ class OrderFacadeTest {
 
         assertTrue(orderFacade.getOrderByIdOrMerchantOrderId(otherMerchant, order.getMerchantOrderId()).isEmpty());
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ALFA_TEAM,ASGARD",
+            "FIAT_CUT,ONLY_PAYS"
+    })
+    @DisplayName("Метод должен найти ордер по id только для его мерчанта.")
+    void getOrderByIdOrMerchantOrderId_shouldFindOrderByIdOnlyForItsMerchant(Merchant merchant,
+                                                                               Merchant otherMerchant) {
+        Order order = createNewOrder(merchant, UUID.randomUUID().toString());
+
+        assertEquals(order.getId(), orderFacade.getOrderByIdOrMerchantOrderId(merchant, order.getId().toString())
+                .orElseThrow().getId());
+        assertTrue(orderFacade.getOrderByIdOrMerchantOrderId(otherMerchant, order.getId().toString()).isEmpty());
+    }
 }

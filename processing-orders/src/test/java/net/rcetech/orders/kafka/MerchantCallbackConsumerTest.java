@@ -1,8 +1,11 @@
 package net.rcetech.orders.kafka;
 
 import net.rcetech.domain.model.incidents.Incident;
+import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.repository.incidents.IncidentRepository;
+import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.meta.Profiles;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
@@ -73,10 +76,20 @@ class MerchantCallbackConsumerTest {
 
         @Bean
         public MerchantCallbackConsumer merchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver,
+                                                                 MerchantCallbackService merchantCallbackService,
                                                                  IncidentService incidentService) {
-            return new MerchantCallbackConsumer(orderCallbackResolver, incidentService);
+            return new MerchantCallbackConsumer(orderCallbackResolver, merchantCallbackService, incidentService);
         }
     }
+
+    private static final String CALLBACK_TOPIC = "merchant-details-callback-v1";
+
+    private static final String CALLBACK_JSON_TEMPLATE = "{" +
+            "\"merchantOrderId\":\"%s\", " +
+            "\"status\":\"%s\", " +
+            "\"statusDescription\": \"%s\"," +
+            "\"merchant\":\"%s\"" +
+            "}";
 
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
@@ -106,28 +119,76 @@ class MerchantCallbackConsumerTest {
     @Autowired
     private IncidentRepository incidentRepository;
 
+    @Autowired
+    private MerchantCallbackRepository merchantCallbackRepository;
+
     @BeforeEach
     void setUp() {
         Mockito.reset(orderCallbackResolver);
         incidentRepository.deleteAll();
+        merchantCallbackRepository.deleteAll();
     }
 
     @ParameterizedTest
     @CsvSource("""
             1236043,DISPUTE,Спор,ALFA_TEAM
+            c2cbb845-7313-4106-a1a3-e9e4b328bbd9,CANCELED,Отменен,EVO_PAY
+            """)
+    @DisplayName("Метод должен сохранить КБ до его обработки, даже если обработка завершилась ошибкой.")
+    void callback_shouldSaveCallbackBeforeResolving(String merchantOrderId, String status, String statusDescription,
+                                                    Merchant merchant) {
+        doThrow(new RuntimeException("Ошибка обработки КБ")).when(orderCallbackResolver).resolve(any());
+        String message = String.format(CALLBACK_JSON_TEMPLATE, merchantOrderId, status, statusDescription, merchant);
+        callbackProducer.send(new ProducerRecord<>(CALLBACK_TOPIC, merchantOrderId, message));
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> incidentRepository.count() > 0);
+
+        List<MerchantCallback> callbacks = merchantCallbackRepository.findAll();
+        assertEquals(1, callbacks.size());
+        MerchantCallback actual = callbacks.getFirst();
+        assertAll(
+                () -> assertNull(actual.getOrder()),
+                () -> assertNull(actual.getProcessedAt()),
+                () -> assertEquals(merchant, actual.getMerchant()),
+                () -> assertEquals(merchantOrderId, actual.getMerchantOrderId()),
+                () -> assertEquals(status, actual.getStatus()),
+                () -> assertEquals(statusDescription, actual.getStatusDescription())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource("""
+            1236043,DISPUTE,Спор,UNKNOWN_MERCHANT
+            c2cbb845-7313-4106-a1a3-e9e4b328bbd9,CANCELED,Отменен,NOT_A_MERCHANT
+            """)
+    @DisplayName("Метод должен создать инцидент и не обрабатывать КБ, если КБ не удалось сохранить.")
+    void callback_shouldCreateIncidentAndSkipResolvingIfCallbackNotSaved(String merchantOrderId, String status,
+                                                                          String statusDescription, String merchant) {
+        String message = String.format(CALLBACK_JSON_TEMPLATE, merchantOrderId, status, statusDescription, merchant);
+        callbackProducer.send(new ProducerRecord<>(CALLBACK_TOPIC, merchantOrderId, message));
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> incidentRepository.count() > 0);
+
+        List<Incident> incidents = incidentRepository.findAll();
+        assertEquals(1, incidents.size());
+        assertAll(
+                () -> assertEquals(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR, incidents.getFirst().getType()),
+                () -> assertEquals(merchantOrderId, incidents.getFirst().getData().get("merchantOrderId")),
+                () -> assertEquals(0, merchantCallbackRepository.count())
+        );
+        verify(orderCallbackResolver, never()).resolve(any());
+    }
+
+    @ParameterizedTest
+    @CsvSource("""
+            1236043,DISPUTE,Спор,ALFA_TEAM
+            c2cbb845-7313-4106-a1a3-e9e4b328bbd9,CANCELED,Отменен,EVO_PAY
             """)
     @DisplayName("Метод должен передать КБ в метод сервиса.")
     void callback_shouldPassCallbackToServiceMethod(String merchantOrderId, String status, String statusDescription,
                                                     Merchant merchant) {
-        String callbackJsonTemplate = "{" +
-                "\"merchantOrderId\":\"%s\", " +
-                "\"status\":\"%s\", " +
-                "\"statusDescription\": \"%s\"," +
-                "\"merchant\":\"%s\"" +
-                "}";
-        String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
-        String callbackTopic = "merchant-details-callback-v1";
-        callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
+        String message = String.format(CALLBACK_JSON_TEMPLATE, merchantOrderId, status, statusDescription, merchant);
+        callbackProducer.send(new ProducerRecord<>(CALLBACK_TOPIC, merchantOrderId, message));
         ArgumentCaptor<MerchantCallbackEvent> captor = ArgumentCaptor.forClass(MerchantCallbackEvent.class);
 
         verify(orderCallbackResolver, timeout(10000)).resolve(captor.capture());
@@ -151,16 +212,9 @@ class MerchantCallbackConsumerTest {
     void callback_shouldCreateIncidentIfCantResolveCallback(String merchantOrderId, String status,
                                                             String statusDescription, Merchant merchant) {
         doThrow(new RuntimeException("Ошибка обработки КБ")).when(orderCallbackResolver).resolve(any());
-        String callbackJsonTemplate = "{" +
-                "\"merchantOrderId\":\"%s\", " +
-                "\"status\":\"%s\", " +
-                "\"statusDescription\": \"%s\"," +
-                "\"merchant\":\"%s\"" +
-                "}";
-        String message = String.format(callbackJsonTemplate, merchantOrderId, status, statusDescription, merchant);
-        String callbackTopic = "merchant-details-callback-v1";
+        String message = String.format(CALLBACK_JSON_TEMPLATE, merchantOrderId, status, statusDescription, merchant);
         long before = System.currentTimeMillis();
-        callbackProducer.send(new ProducerRecord<>(callbackTopic, merchantOrderId, message));
+        callbackProducer.send(new ProducerRecord<>(CALLBACK_TOPIC, merchantOrderId, message));
 
         await().atMost(Duration.ofSeconds(10)).until(() -> incidentRepository.count() > 0);
         long after = System.currentTimeMillis();

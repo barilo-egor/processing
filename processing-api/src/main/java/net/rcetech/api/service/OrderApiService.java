@@ -22,6 +22,7 @@ import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
+import net.rcetech.orders.callback.MerchantCallbackProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.core.task.TaskRejectedException;
@@ -47,16 +48,20 @@ public class OrderApiService {
 
     private final OrderFacade orderFacade;
 
+    private final MerchantCallbackProcessor merchantCallbackProcessor;
+
     private final TaskExecutor detailsSearchExecutor;
 
     public OrderApiService(DetailsSearchService detailsSearchService, ClientService clientService,
                            OrderService orderService, OrderFacade orderFacade,
+                           MerchantCallbackProcessor merchantCallbackProcessor,
                            @Qualifier(DetailsSearchExecutorConfig.DETAILS_SEARCH_EXECUTOR)
                            TaskExecutor detailsSearchExecutor) {
         this.detailsSearchService = detailsSearchService;
         this.clientService = clientService;
         this.orderService = orderService;
         this.orderFacade = orderFacade;
+        this.merchantCallbackProcessor = merchantCallbackProcessor;
         this.detailsSearchExecutor = detailsSearchExecutor;
     }
 
@@ -131,6 +136,18 @@ public class OrderApiService {
                 notifyClient, order -> fillDetails(order, detailsResponse, orderTimeoutSeconds));
         if (!OrderStatusTransition.ALLOWED.equals(change.transition())) {
             log.info("Реквизиты по ордеру {} найдены, но ордер уже в статусе {}.", orderId, change.from());
+            return;
+        }
+        processMerchantCallbacks(orderId);
+    }
+
+    private void processMerchantCallbacks(UUID orderId) {
+        try {
+            merchantCallbackProcessor.process(orderId);
+        } catch (Exception e) {
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Ошибка обработки КБ мерчанта, пришедших во время поиска реквизитов по ордеру {}: {}",
+                    timestamp, orderId, e.getMessage(), e);
         }
     }
 

@@ -116,13 +116,15 @@ create table merchant_callback
 (
     id                 bigint       not null auto_increment,
     created_at         timestamp(0) not null,
-    order_id           binary(16)   not null,
+    processed_at       timestamp(0),
+    order_id           binary(16),
     merchant           varchar(30)  not null,
     merchant_order_id  varchar(300),
     status             varchar(50)  not null,
     status_description varchar(50),
     primary key (id),
-    constraint fk_merchant_callback_order foreign key (order_id) references orders (id)
+    constraint fk_merchant_callback_order foreign key (order_id) references orders (id),
+    index idx_merchant_callback_merchant_order_id_processed_at (merchant, merchant_order_id, processed_at)
 );
 
 create table incident

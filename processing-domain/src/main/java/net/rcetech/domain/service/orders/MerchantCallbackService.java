@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 @Service
 public class MerchantCallbackService {
@@ -23,15 +26,23 @@ public class MerchantCallbackService {
     }
 
     @Transactional
-    public MerchantCallback save(Order order, MerchantCallbackEvent merchantCallbackEvent) {
+    public MerchantCallback save(MerchantCallbackEvent merchantCallbackEvent) {
         MerchantCallback merchantCallback = new MerchantCallback();
-        merchantCallback.setOrder(order);
         merchantCallback.setCreatedAt(Instant.now());
         merchantCallback.setMerchant(merchantCallbackEvent.getMerchant());
         merchantCallback.setMerchantOrderId(merchantCallbackEvent.getMerchantOrderId());
         merchantCallback.setStatus(merchantCallbackEvent.getStatus());
         merchantCallback.setStatusDescription(merchantCallbackEvent.getStatusDescription());
         return merchantCallbackRepository.save(merchantCallback);
+    }
+
+    @Transactional
+    public List<MerchantCallback> findAllUnprocessed(Order order) {
+        List<String> merchantOrderIds = Stream.of(order.getId().toString(), order.getMerchantOrderId())
+                .filter(Objects::nonNull)
+                .toList();
+        return merchantCallbackRepository.findAllByMerchantAndMerchantOrderIdInAndProcessedAtIsNullOrderByCreatedAtAscIdAsc(
+                order.getMerchant(), merchantOrderIds);
     }
 
     @Transactional(readOnly = true)

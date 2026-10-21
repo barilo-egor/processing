@@ -25,6 +25,7 @@ import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
+import net.rcetech.orders.callback.MerchantCallbackProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -132,6 +133,8 @@ class OrderApiServiceTest {
 
     private final TaskExecutor detailsSearchExecutor = mock(TaskExecutor.class);
 
+    private final MerchantCallbackProcessor merchantCallbackProcessor = mock(MerchantCallbackProcessor.class);
+
     private OrderApiService orderApiService;
 
     @BeforeEach
@@ -139,7 +142,7 @@ class OrderApiServiceTest {
         DetailsSearchService detailsSearchService = new DetailsSearchService(merchantDetailsReceiver,
                 randomDetailsReceiver);
         orderApiService = new OrderApiService(detailsSearchService, clientService, orderService,
-                new OrderFacade(orderService), detailsSearchExecutor);
+                new OrderFacade(orderService), merchantCallbackProcessor, detailsSearchExecutor);
     }
 
     @ParameterizedTest
@@ -591,6 +594,25 @@ class OrderApiServiceTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.id(), OrderStatus.NEW,
                         OrderStatusChangeSource.SYSTEM, false)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        verify(merchantCallbackProcessor).process(order.id());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Connection is not available", "Deadlock found"})
+    @DisplayName("Ошибка обработки КБ мерчанта после нахождения реквизитов не должна ломать создание ордера.")
+    void createOrder_shouldReturnNewOrderIfMerchantCallbacksProcessingFailed(String message) {
+        Client client = getDummyClient();
+        ApiDetailsResponse apiDetailsResponse = (ApiDetailsResponse) detailsResponseArguments().findFirst()
+                .orElseThrow().get()[0];
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
+                .thenReturn(Optional.of(apiDetailsResponse));
+        doThrow(new IllegalStateException(message)).when(merchantCallbackProcessor).process(any());
+
+        ClientOrderSummary order = orderApiService.createOrder(
+                command(client.getId(), getDummyCreateOrderRequest(), 30, false));
+
+        assertEquals(OrderStatus.NEW, order.status());
+        verify(merchantCallbackProcessor).process(order.id());
     }
 
     @ParameterizedTest
@@ -610,6 +632,7 @@ class OrderApiServiceTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.id(), OrderStatus.DETAILS_NOT_FOUND,
                         OrderStatusChangeSource.SYSTEM, false)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        verify(merchantCallbackProcessor, never()).process(any());
     }
 
     @MethodSource("detailsResponseArguments")
@@ -628,6 +651,7 @@ class OrderApiServiceTest {
         assertEquals(OrderStatus.CANCELED, order.status());
         assertNull(order.details());
         assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+        verify(merchantCallbackProcessor, never()).process(any());
     }
 
     @ParameterizedTest
@@ -787,6 +811,7 @@ class OrderApiServiceTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.NEW,
                         OrderStatusChangeSource.SYSTEM, true)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        verify(merchantCallbackProcessor).process(created.id());
     }
 
     @ParameterizedTest
@@ -806,6 +831,7 @@ class OrderApiServiceTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.DETAILS_NOT_FOUND,
                         OrderStatusChangeSource.SYSTEM, true)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        verify(merchantCallbackProcessor, never()).process(any());
     }
 
     @ParameterizedTest

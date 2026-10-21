@@ -2,6 +2,7 @@ package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.MerchantCallbackHandleErrorData;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -18,10 +19,14 @@ public class MerchantCallbackConsumer {
 
     private final OrderCallbackResolver orderCallbackResolver;
 
+    private final MerchantCallbackService merchantCallbackService;
+
     private final IncidentService incidentService;
 
-    public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver, IncidentService incidentService) {
+    public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver,
+                                    MerchantCallbackService merchantCallbackService, IncidentService incidentService) {
         this.orderCallbackResolver = orderCallbackResolver;
+        this.merchantCallbackService = merchantCallbackService;
         this.incidentService = incidentService;
     }
 
@@ -40,6 +45,7 @@ public class MerchantCallbackConsumer {
     public void callback(ConsumerRecord<String, MerchantCallbackEvent> consumerRecord) {
         log.debug("Принят callback key={} : {}", consumerRecord.key(), consumerRecord.value());
         try {
+            merchantCallbackService.save(consumerRecord.value());
             orderCallbackResolver.resolve(consumerRecord.value());
         } catch (Exception e) {
             long timestamp = System.currentTimeMillis();
