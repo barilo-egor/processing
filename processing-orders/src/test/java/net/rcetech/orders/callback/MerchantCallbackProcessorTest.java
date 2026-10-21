@@ -32,8 +32,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
@@ -69,9 +71,10 @@ class MerchantCallbackProcessorTest {
         @Bean
         public MerchantCallbackProcessor merchantCallbackProcessor(
                 BridgePayOrderStatusResolver bridgePayOrderStatusResolver, OrderService orderService,
-                MerchantCallbackService merchantCallbackService, IncidentService incidentService) {
+                MerchantCallbackService merchantCallbackService, IncidentService incidentService,
+                PlatformTransactionManager transactionManager) {
             return new MerchantCallbackProcessor(List.of(bridgePayOrderStatusResolver), orderService,
-                    merchantCallbackService, incidentService);
+                    merchantCallbackService, incidentService, transactionManager);
         }
     }
 
@@ -95,6 +98,9 @@ class MerchantCallbackProcessorTest {
     @Autowired
     private MerchantCallbackService merchantCallbackService;
 
+    @MockitoSpyBean
+    private OrderService orderService;
+
     @Autowired
     private MerchantCallbackRepository merchantCallbackRepository;
 
@@ -109,7 +115,7 @@ class MerchantCallbackProcessorTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(incidentService);
+        Mockito.reset(incidentService, orderService);
     }
 
     Order saveOrder(OrderStatus status, Merchant merchant, String merchantOrderId) {
@@ -235,7 +241,7 @@ class MerchantCallbackProcessorTest {
             "CANCELED,Отменен,ALFA_TEAM",
             "DISPUTE,В споре,DEORA"
     })
-    @DisplayName("Метод должен создать инцидент об отклонённом переходе, остановить обработку на этом КБ и не откатывать предыдущие переходы.")
+    @DisplayName("Метод должен создать инцидент об отклонённом переходе, отметить КБ обработанным и обработать остальные КБ.")
     void process_shouldCreateIncidentIfTransitionRejected(String rejectedStatus, String expectedStatusTo,
                                                           Merchant merchant) {
         String merchantOrderId = UUID.randomUUID().toString();
@@ -261,8 +267,9 @@ class MerchantCallbackProcessorTest {
                 () -> assertEquals(OrderStatus.SUCCESS, actualOrder.getStatus()),
                 () -> assertEquals("PAID", actualOrder.getMerchantOrderStatus()),
                 () -> assertNotNull(reload(paid).getProcessedAt()),
-                () -> assertNull(reload(rejected).getProcessedAt()),
-                () -> assertNull(reload(next).getProcessedAt())
+                () -> assertNotNull(reload(rejected).getProcessedAt()),
+                () -> assertEquals(order.getId(), orderIdOf(reload(rejected))),
+                () -> assertNotNull(reload(next).getProcessedAt())
         );
     }
 
@@ -271,7 +278,7 @@ class MerchantCallbackProcessorTest {
             "QWERTY,ALFA_TEAM",
             "VERY_SUCCESS,DEORA"
     })
-    @DisplayName("Метод должен создать инцидент и остановить обработку на КБ с нераспознанным статусом.")
+    @DisplayName("Метод должен создать инцидент по КБ с нераспознанным статусом, отметить его обработанным и обработать остальные КБ.")
     void process_shouldCreateIncidentIfStatusNotResolved(String callbackStatus, Merchant merchant) {
         String merchantOrderId = UUID.randomUUID().toString();
         Order order = saveOrder(OrderStatus.NEW, merchant, merchantOrderId);
@@ -290,28 +297,41 @@ class MerchantCallbackProcessorTest {
                 () -> assertEquals(callbackStatus, data.status()),
                 () -> assertEquals("Status", data.statusDescription()),
                 () -> assertEquals(merchantOrderId, data.merchantOrderId()),
-                () -> assertNull(reload(unknown).getProcessedAt()),
-                () -> assertNull(reload(paid).getProcessedAt()),
-                () -> assertEquals(OrderStatus.NEW, statusOf(order))
+                () -> assertNotNull(reload(unknown).getProcessedAt()),
+                () -> assertNotNull(reload(paid).getProcessedAt()),
+                () -> assertEquals(OrderStatus.SUCCESS, statusOf(order))
         );
     }
 
     @ParameterizedTest
     @CsvSource({
-            "QWERTY,ALFA_TEAM",
-            "VERY_SUCCESS,DEORA"
+            "Connection is not available,ALFA_TEAM",
+            "Deadlock found,DEORA"
     })
-    @DisplayName("Метод должен создавать инцидент при каждой обработке, пока КБ не обработан.")
-    void process_shouldCreateIncidentOnEveryProcessingOfFailedCallback(String callbackStatus, Merchant merchant) {
+    @DisplayName("Технический сбой на КБ должен откатить только этот КБ, создать инцидент и не мешать обработке остальных КБ.")
+    void process_shouldCreateIncidentAndContinueIfCallbackFailed(String message, Merchant merchant) {
         String merchantOrderId = UUID.randomUUID().toString();
         Order order = saveOrder(OrderStatus.NEW, merchant, merchantOrderId);
-        MerchantCallback unknown = saveCallback(merchant, merchantOrderId, callbackStatus);
+        MerchantCallback failed = saveCallback(merchant, merchantOrderId, "DISPUTE");
+        MerchantCallback paid = saveCallback(merchant, merchantOrderId, "PAID");
+        doThrow(new IllegalStateException(message)).when(orderService).updateStatus(eq(order.getId()),
+                eq(OrderStatus.DISPUTE), any(), anyString());
 
         merchantCallbackProcessor.process(order.getId());
-        merchantCallbackProcessor.process(order.getId());
 
-        verify(incidentService, times(2)).save(eq(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR), any(), anyLong());
-        assertNull(reload(unknown).getProcessedAt());
+        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(incidentService).save(eq(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR), dataCaptor.capture(),
+                anyLong());
+        MerchantCallbackHandleErrorData data = assertInstanceOf(MerchantCallbackHandleErrorData.class,
+                dataCaptor.getValue());
+        assertAll(
+                () -> assertEquals("DISPUTE", data.status()),
+                () -> assertEquals(merchantOrderId, data.merchantOrderId()),
+                () -> assertNull(reload(failed).getProcessedAt()),
+                () -> assertNull(orderIdOf(reload(failed))),
+                () -> assertNotNull(reload(paid).getProcessedAt()),
+                () -> assertEquals(OrderStatus.SUCCESS, statusOf(order))
+        );
     }
 
     @ParameterizedTest

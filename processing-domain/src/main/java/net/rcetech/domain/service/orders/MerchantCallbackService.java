@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
@@ -36,7 +37,11 @@ public class MerchantCallbackService {
         return merchantCallbackRepository.save(merchantCallback);
     }
 
-    @Transactional
+    public Optional<MerchantCallback> findById(Long id) {
+        return merchantCallbackRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
     public List<MerchantCallback> findAllUnprocessed(Order order) {
         List<String> merchantOrderIds = Stream.of(order.getId().toString(), order.getMerchantOrderId())
                 .filter(Objects::nonNull)

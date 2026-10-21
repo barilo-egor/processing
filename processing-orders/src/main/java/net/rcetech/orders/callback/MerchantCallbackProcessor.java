@@ -17,8 +17,9 @@ import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.orders.status.OrderStatusResolver;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -41,12 +42,16 @@ public class MerchantCallbackProcessor {
 
     private final IncidentService incidentService;
 
+    private final TransactionTemplate transactionTemplate;
+
     public MerchantCallbackProcessor(List<OrderStatusResolver> orderStatusResolvers, OrderService orderService,
                                      MerchantCallbackService merchantCallbackService,
-                                     IncidentService incidentService) {
+                                     IncidentService incidentService, PlatformTransactionManager transactionManager) {
         this.orderService = orderService;
         this.merchantCallbackService = merchantCallbackService;
         this.incidentService = incidentService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         this.statusResolversMap = new EnumMap<>(Merchant.class);
         for (OrderStatusResolver resolver : orderStatusResolvers) {
             for (Merchant merchant : resolver.getMerchants()) {
@@ -55,9 +60,8 @@ public class MerchantCallbackProcessor {
         }
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void process(UUID orderId) {
-        Order order = orderService.findByIdForUpdate(orderId)
+        Order order = orderService.findById(orderId)
                 .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + orderId));
         if (OrderStatus.SEARCHING.equals(order.getStatus())) {
             log.debug("Обработка КБ по ордеру {} отложена до завершения поиска реквизитов.", orderId);
@@ -67,21 +71,33 @@ public class MerchantCallbackProcessor {
             log.debug("У ордера {} нет мерчанта, КБ не обрабатываются.", orderId);
             return;
         }
-        Instant processedAt = Instant.now();
         for (MerchantCallback callback : merchantCallbackService.findAllUnprocessed(order)) {
-            callback.setOrder(order);
-            if (!routeOrder(order, callback)) {
-                return;
+            try {
+                transactionTemplate.executeWithoutResult(status -> processCallback(orderId, callback.getId()));
+            } catch (Exception e) {
+                reportProcessingError(orderId, callback, e);
             }
-            callback.setProcessedAt(processedAt);
         }
     }
 
-    private boolean routeOrder(Order order, MerchantCallback callback) {
+    private void processCallback(UUID orderId, Long callbackId) {
+        Order order = orderService.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + orderId));
+        MerchantCallback callback = merchantCallbackService.findById(callbackId)
+                .orElseThrow(() -> new BaseException("КБ мерчанта не найден по идентификатору " + callbackId));
+        if (Objects.nonNull(callback.getProcessedAt())) {
+            return;
+        }
+        callback.setOrder(order);
+        callback.setProcessedAt(Instant.now());
+        routeOrder(order, callback);
+    }
+
+    private void routeOrder(Order order, MerchantCallback callback) {
         Optional<OrderStatus> status = resolveStatus(callback);
         if (status.isEmpty()) {
             reportUnresolvedStatus(order, callback);
-            return false;
+            return;
         }
         try {
             OrderStatusChange change = orderService.updateStatus(order.getId(), status.get(),
@@ -90,10 +106,8 @@ public class MerchantCallbackProcessor {
                 log.info("Ордер {} переведён из статуса {} в статус {} по КБ мерчанта {} (статус {}).",
                         order.getId(), change.from(), change.to(), callback.getMerchant(), callback.getStatus());
             }
-            return true;
         } catch (OrderStatusUpdateException e) {
             reportRejectedTransition(order, callback, e);
-            return false;
         }
     }
 
@@ -103,6 +117,15 @@ public class MerchantCallbackProcessor {
             return Optional.empty();
         }
         return resolver.resolve(callback.getStatus());
+    }
+
+    private void reportProcessingError(UUID orderId, MerchantCallback callback, Exception e) {
+        long timestamp = System.currentTimeMillis();
+        log.error("{} Ошибка обработки КБ мерчанта {} по ордеру {}: {}", timestamp, callback.getId(), orderId,
+                e.getMessage(), e);
+        MerchantCallbackHandleErrorData data = new MerchantCallbackHandleErrorData(callback.getMerchant(),
+                callback.getStatus(), callback.getStatusDescription(), callback.getMerchantOrderId());
+        incidentService.save(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR, data, timestamp);
     }
 
     private void reportUnresolvedStatus(Order order, MerchantCallback callback) {
