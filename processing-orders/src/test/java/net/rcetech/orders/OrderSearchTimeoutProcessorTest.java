@@ -4,10 +4,8 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.StuckSearchOrderErrorData;
+import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
@@ -19,10 +17,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -34,9 +32,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -58,8 +55,8 @@ class OrderSearchTimeoutProcessorTest {
         registry.add("spring.flyway.locations", () -> "classpath:database/migration");
     }
 
-    @MockitoBean
-    private IncidentService incidentService;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @MockitoSpyBean
     private OrderFacade orderFacade;
@@ -115,7 +112,7 @@ class OrderSearchTimeoutProcessorTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.DETAILS_NOT_FOUND,
                         OrderStatusChangeSource.SYSTEM, true)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
-        verifyNoInteractions(incidentService);
+        assertEquals(0, applicationEvents.stream(StuckSearchOrderErrorEvent.class).count());
     }
 
     @ParameterizedTest
@@ -151,14 +148,21 @@ class OrderSearchTimeoutProcessorTest {
         Order other = saveOrder(client, OrderStatus.SEARCHING, 500);
         doThrow(new IllegalStateException(message)).when(orderFacade)
                 .routeOrder(eq(OrderStatus.DETAILS_NOT_FOUND), eq(failed.getId()), any(), any());
+        long before = System.currentTimeMillis();
 
         orderSearchTimeoutProcessor.checkStuckInSearchOrders();
+        long after = System.currentTimeMillis();
 
         assertEquals(OrderStatus.SEARCHING, statusOf(failed));
         assertEquals(OrderStatus.DETAILS_NOT_FOUND, statusOf(other));
-        verify(incidentService).save(eq(IncidentType.STUCK_SEARCH_ORDER_ERROR),
-                eq(new StuckSearchOrderErrorData(failed.getId(), message)), anyLong());
-        verifyNoMoreInteractions(incidentService);
+        List<StuckSearchOrderErrorEvent> events = applicationEvents.stream(StuckSearchOrderErrorEvent.class).toList();
+        assertEquals(1, events.size());
+        assertAll(
+                () -> assertEquals(failed.getId(), events.getFirst().orderId()),
+                () -> assertEquals(message, events.getFirst().error()),
+                () -> assertTrue(events.getFirst().errorTimestamp() >= before
+                        && events.getFirst().errorTimestamp() <= after)
+        );
     }
 
     @ParameterizedTest
@@ -173,12 +177,12 @@ class OrderSearchTimeoutProcessorTest {
         Order stuck = saveOrder(client, OrderStatus.SEARCHING, stuckAgeSeconds);
         Order notStuck = saveOrder(client, OrderStatus.SEARCHING, notStuckAgeSeconds);
         OrderSearchTimeoutProcessor processor = new OrderSearchTimeoutProcessor(orderFacade, orderService,
-                incidentService, maxTimeoutSeconds);
+                eventPublisher, maxTimeoutSeconds);
 
         processor.checkStuckInSearchOrders();
 
         assertEquals(OrderStatus.DETAILS_NOT_FOUND, statusOf(stuck));
         assertEquals(OrderStatus.SEARCHING, statusOf(notStuck));
-        verifyNoInteractions(incidentService);
+        assertEquals(0, applicationEvents.stream(StuckSearchOrderErrorEvent.class).count());
     }
 }

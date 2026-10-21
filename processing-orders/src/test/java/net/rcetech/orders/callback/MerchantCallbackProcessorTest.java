@@ -6,12 +6,10 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.MerchantCallbackHandleErrorData;
-import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
+import net.rcetech.meta.incidents.MerchantCallbackHandleErrorEvent;
+import net.rcetech.meta.incidents.OrderStatusTransitionRejectedEvent;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
@@ -21,17 +19,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -71,10 +68,10 @@ class MerchantCallbackProcessorTest {
         @Bean
         public MerchantCallbackProcessor merchantCallbackProcessor(
                 BridgePayOrderStatusResolver bridgePayOrderStatusResolver, OrderService orderService,
-                MerchantCallbackService merchantCallbackService, IncidentService incidentService,
+                MerchantCallbackService merchantCallbackService, ApplicationEventPublisher eventPublisher,
                 PlatformTransactionManager transactionManager) {
             return new MerchantCallbackProcessor(List.of(bridgePayOrderStatusResolver), orderService,
-                    merchantCallbackService, incidentService, transactionManager);
+                    merchantCallbackService, eventPublisher, transactionManager);
         }
     }
 
@@ -88,9 +85,6 @@ class MerchantCallbackProcessorTest {
         registry.add("spring.datasource.password", mySQLContainer::getPassword);
         registry.add("spring.flyway.locations", () -> "classpath:database/migration");
     }
-
-    @MockitoBean
-    private IncidentService incidentService;
 
     @Autowired
     private MerchantCallbackProcessor merchantCallbackProcessor;
@@ -115,7 +109,20 @@ class MerchantCallbackProcessorTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(incidentService, orderService);
+        Mockito.reset(orderService);
+    }
+
+    <T> T singleEvent(Class<T> eventClass) {
+        List<T> events = applicationEvents.stream(eventClass).toList();
+        assertEquals(1, events.size());
+        return events.getFirst();
+    }
+
+    void assertNoIncidentEvents() {
+        assertAll(
+                () -> assertEquals(0, applicationEvents.stream(MerchantCallbackHandleErrorEvent.class).count()),
+                () -> assertEquals(0, applicationEvents.stream(OrderStatusTransitionRejectedEvent.class).count())
+        );
     }
 
     Order saveOrder(OrderStatus status, Merchant merchant, String merchantOrderId) {
@@ -189,7 +196,7 @@ class MerchantCallbackProcessorTest {
                 () -> assertNotNull(actual.getProcessedAt()),
                 () -> assertEquals(1, applicationEvents.stream(OrderStatusUpdatedEvent.class).count())
         );
-        verifyNoInteractions(incidentService);
+        assertNoIncidentEvents();
     }
 
     @ParameterizedTest
@@ -211,7 +218,7 @@ class MerchantCallbackProcessorTest {
                 () -> assertNull(orderIdOf(actual)),
                 () -> assertNull(actual.getProcessedAt())
         );
-        verifyNoInteractions(incidentService);
+        assertNoIncidentEvents();
     }
 
     @ParameterizedTest
@@ -238,29 +245,28 @@ class MerchantCallbackProcessorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "CANCELED,Отменен,ALFA_TEAM",
-            "DISPUTE,В споре,DEORA"
+            "CANCELED,CANCELED,ALFA_TEAM",
+            "DISPUTE,DISPUTE,DEORA"
     })
     @DisplayName("Метод должен создать инцидент об отклонённом переходе, отметить КБ обработанным и обработать остальные КБ.")
-    void process_shouldCreateIncidentIfTransitionRejected(String rejectedStatus, String expectedStatusTo,
+    void process_shouldCreateIncidentIfTransitionRejected(String rejectedStatus, OrderStatus expectedStatusTo,
                                                           Merchant merchant) {
         String merchantOrderId = UUID.randomUUID().toString();
         Order order = saveOrder(OrderStatus.NEW, merchant, merchantOrderId);
         MerchantCallback paid = saveCallback(merchant, merchantOrderId, "PAID");
         MerchantCallback rejected = saveCallback(merchant, merchantOrderId, rejectedStatus);
         MerchantCallback next = saveCallback(merchant, merchantOrderId, "PAID");
+        long before = System.currentTimeMillis();
 
         merchantCallbackProcessor.process(order.getId());
+        long after = System.currentTimeMillis();
 
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(incidentService).save(eq(IncidentType.ORDER_STATUS_TRANSITION_REJECTED), dataCaptor.capture(),
-                anyLong());
-        OrderStatusTransitionRejectedData data = assertInstanceOf(OrderStatusTransitionRejectedData.class,
-                dataCaptor.getValue());
+        OrderStatusTransitionRejectedEvent data = singleEvent(OrderStatusTransitionRejectedEvent.class);
         Order actualOrder = orderRepository.findById(order.getId()).orElseThrow();
         assertAll(
+                () -> assertTrue(data.errorTimestamp() >= before && data.errorTimestamp() <= after),
                 () -> assertEquals(order.getId(), data.orderId()),
-                () -> assertEquals("Успешный", data.statusFrom()),
+                () -> assertEquals(OrderStatus.SUCCESS, data.statusFrom()),
                 () -> assertEquals(expectedStatusTo, data.statusTo()),
                 () -> assertEquals(merchant, data.merchant()),
                 () -> assertEquals(rejectedStatus, data.merchantOrderStatus()),
@@ -284,15 +290,14 @@ class MerchantCallbackProcessorTest {
         Order order = saveOrder(OrderStatus.NEW, merchant, merchantOrderId);
         MerchantCallback unknown = saveCallback(merchant, merchantOrderId, callbackStatus);
         MerchantCallback paid = saveCallback(merchant, merchantOrderId, "PAID");
+        long before = System.currentTimeMillis();
 
         merchantCallbackProcessor.process(order.getId());
+        long after = System.currentTimeMillis();
 
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(incidentService).save(eq(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR), dataCaptor.capture(),
-                anyLong());
-        MerchantCallbackHandleErrorData data = assertInstanceOf(MerchantCallbackHandleErrorData.class,
-                dataCaptor.getValue());
+        MerchantCallbackHandleErrorEvent data = singleEvent(MerchantCallbackHandleErrorEvent.class);
         assertAll(
+                () -> assertTrue(data.errorTimestamp() >= before && data.errorTimestamp() <= after),
                 () -> assertEquals(merchant, data.merchant()),
                 () -> assertEquals(callbackStatus, data.status()),
                 () -> assertEquals("Status", data.statusDescription()),
@@ -316,15 +321,15 @@ class MerchantCallbackProcessorTest {
         MerchantCallback paid = saveCallback(merchant, merchantOrderId, "PAID");
         doThrow(new IllegalStateException(message)).when(orderService).updateStatus(eq(order.getId()),
                 eq(OrderStatus.DISPUTE), any(), anyString());
+        long before = System.currentTimeMillis();
 
         merchantCallbackProcessor.process(order.getId());
+        long after = System.currentTimeMillis();
 
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(incidentService).save(eq(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR), dataCaptor.capture(),
-                anyLong());
-        MerchantCallbackHandleErrorData data = assertInstanceOf(MerchantCallbackHandleErrorData.class,
-                dataCaptor.getValue());
+        MerchantCallbackHandleErrorEvent data = singleEvent(MerchantCallbackHandleErrorEvent.class);
         assertAll(
+                () -> assertTrue(data.errorTimestamp() >= before && data.errorTimestamp() <= after),
+                () -> assertEquals(merchant, data.merchant()),
                 () -> assertEquals("DISPUTE", data.status()),
                 () -> assertEquals(merchantOrderId, data.merchantOrderId()),
                 () -> assertNull(reload(failed).getProcessedAt()),
@@ -357,7 +362,7 @@ class MerchantCallbackProcessorTest {
                 () -> assertNotNull(reload(callback).getProcessedAt()),
                 () -> assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count())
         );
-        verifyNoInteractions(incidentService);
+        assertNoIncidentEvents();
     }
 
     @ParameterizedTest
@@ -403,6 +408,6 @@ class MerchantCallbackProcessorTest {
                 () -> assertEquals(status, statusOf(order)),
                 () -> assertNull(reload(callback).getProcessedAt())
         );
-        verifyNoInteractions(incidentService);
+        assertNoIncidentEvents();
     }
 }

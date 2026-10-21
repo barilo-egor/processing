@@ -13,9 +13,7 @@ import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
-import net.rcetech.domain.service.incidents.IncidentService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.DetailsSearchErrorData;
+import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,9 +22,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.io.IOException;
@@ -53,14 +53,14 @@ class ApiMerchantDetailsGrpcServiceTest {
     private DetailsMapper detailsMapper = Mappers.getMapper(DetailsMapper.class);
 
     @Mock
-    private IncidentService incidentService;
+    private ApplicationEventPublisher eventPublisher;
 
     private ApiMerchantDetailsGrpcService apiMerchantDetailsGrpcService;
 
     @BeforeEach
     void setUp() {
         apiMerchantDetailsGrpcService =  new ApiMerchantDetailsGrpcService(
-                detailsMapper, detailsBlockingStub, "processing", incidentService
+                detailsMapper, detailsBlockingStub, "processing", eventPublisher
         );
     }
 
@@ -123,7 +123,7 @@ class ApiMerchantDetailsGrpcServiceTest {
         UUID orderId = UUID.randomUUID();
         assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, timeoutSeconds)
                 .isEmpty());
-        verifyNoInteractions(incidentService);
+        verifyNoInteractions(eventPublisher);
     }
 
     @ParameterizedTest
@@ -140,9 +140,9 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
+        long before = System.currentTimeMillis();
         assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
-        verify(incidentService).saveIfNoUnresolved(eq(IncidentType.DETAILS_SEARCH_ERROR),
-                eq(new DetailsSearchErrorData(orderId, "Неизвестная ошибка GRPC " + statusValue)), anyLong());
+        assertIncidentPublished(orderId, "Неизвестная ошибка GRPC " + statusValue, before);
     }
 
     @ParameterizedTest
@@ -156,9 +156,21 @@ class ApiMerchantDetailsGrpcServiceTest {
         );
         UUID clientId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
+        long before = System.currentTimeMillis();
         assertTrue(apiMerchantDetailsGrpcService.getDetails(clientId, orderId, createOrderRequest, 30).isEmpty());
-        verify(incidentService).saveIfNoUnresolved(eq(IncidentType.DETAILS_SEARCH_ERROR),
-                eq(new DetailsSearchErrorData(orderId, "Непредвиденная ошибка: " + message)), anyLong());
+        assertIncidentPublished(orderId, "Непредвиденная ошибка: " + message, before);
+    }
+
+    void assertIncidentPublished(UUID orderId, String error, long before) {
+        long after = System.currentTimeMillis();
+        ArgumentCaptor<DetailsSearchErrorEvent> captor = ArgumentCaptor.forClass(DetailsSearchErrorEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertAll(
+                () -> assertEquals(orderId, captor.getValue().orderId()),
+                () -> assertEquals(error, captor.getValue().error()),
+                () -> assertTrue(captor.getValue().errorTimestamp() >= before
+                        && captor.getValue().errorTimestamp() <= after)
+        );
     }
 
     @ParameterizedTest
@@ -185,7 +197,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                     () -> assertTrue(callCancelled.await(5, TimeUnit.SECONDS)),
                     () -> assertFalse(searchThread.isInterrupted())
             );
-            verifyNoInteractions(incidentService);
+            verifyNoInteractions(eventPublisher);
         }
     }
 
@@ -226,7 +238,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                     () -> assertEquals(merchant, actual.merchant()),
                     () -> assertEquals(details, actual.details().details())
             );
-            verifyNoInteractions(incidentService);
+            verifyNoInteractions(eventPublisher);
         }
     }
 
@@ -282,7 +294,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                     }).build().start();
             channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
             service = new ApiMerchantDetailsGrpcService(detailsMapper,
-                    ApiDetailsRequestServiceGrpc.newBlockingStub(channel), "processing", incidentService);
+                    ApiDetailsRequestServiceGrpc.newBlockingStub(channel), "processing", eventPublisher);
         }
 
         ApiMerchantDetailsGrpcService service() {

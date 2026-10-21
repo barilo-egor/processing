@@ -2,11 +2,10 @@ package net.rcetech.billing;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.billing.TransactionService;
-import net.rcetech.domain.service.incidents.IncidentService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.TransactionCreationErrorData;
+import net.rcetech.meta.incidents.TransactionCreationErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -17,11 +16,11 @@ public class TransactionEventListener {
 
     private final TransactionService transactionService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public TransactionEventListener(TransactionService transactionService, IncidentService incidentService) {
+    public TransactionEventListener(TransactionService transactionService, ApplicationEventPublisher eventPublisher) {
         this.transactionService = transactionService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -34,11 +33,8 @@ public class TransactionEventListener {
             long timestamp = System.currentTimeMillis();
             log.error("{} Ошибка при попытке создать транзакцию после обновления статуса ордера {}: {}",
                     timestamp, event.orderId(), e.getMessage(), e);
-            incidentService.save(
-                    IncidentType.TRANSACTION_CREATION_ERROR,
-                    new TransactionCreationErrorData(event.orderId(), event.orderStatus()),
-                    timestamp
-            );
+            eventPublisher.publishEvent(
+                    new TransactionCreationErrorEvent(event.orderId(), event.orderStatus(), timestamp));
         }
     }
 }

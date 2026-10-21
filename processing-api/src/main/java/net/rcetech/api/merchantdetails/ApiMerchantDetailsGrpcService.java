@@ -7,14 +7,13 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderRequest;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.grpc.generated.ApiDetailsRequestServiceGrpc;
 import net.rcetech.grpc.generated.DetailsRequestGrpc;
 import net.rcetech.grpc.generated.DetailsResponseGrpc;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.DetailsSearchErrorData;
+import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -32,18 +31,18 @@ public class ApiMerchantDetailsGrpcService {
 
     private final String applicationName;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final Map<UUID, Context.CancellableContext> searches = new ConcurrentHashMap<>();
 
     public ApiMerchantDetailsGrpcService(DetailsMapper detailsMapper,
                                          ApiDetailsRequestServiceGrpc.ApiDetailsRequestServiceBlockingStub detailsBlockingStub,
                                          @Value("${spring.application.name}") String applicationName,
-                                         IncidentService incidentService) {
+                                         ApplicationEventPublisher eventPublisher) {
         this.detailsBlockingStub = detailsBlockingStub;
         this.detailsMapper = detailsMapper;
         this.applicationName = applicationName;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -107,8 +106,7 @@ public class ApiMerchantDetailsGrpcService {
     private Optional<ApiDetailsResponse> searchError(UUID orderId, String error, Exception ex) {
         long timestamp = System.currentTimeMillis();
         log.error("{} Ошибка поиска реквизитов по ордеру {}: {}", timestamp, orderId, error, ex);
-        incidentService.saveIfNoUnresolved(IncidentType.DETAILS_SEARCH_ERROR, new DetailsSearchErrorData(orderId, error),
-                timestamp);
+        eventPublisher.publishEvent(new DetailsSearchErrorEvent(orderId, error, timestamp));
         return Optional.empty();
     }
 

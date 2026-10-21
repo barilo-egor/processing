@@ -3,19 +3,18 @@ package net.rcetech.orders.callback;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.MerchantCallbackHandleErrorData;
-import net.rcetech.meta.incidents.dto.OrderStatusTransitionRejectedData;
+import net.rcetech.meta.incidents.MerchantCallbackHandleErrorEvent;
+import net.rcetech.meta.incidents.OrderStatusTransitionRejectedEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.orders.status.OrderStatusResolver;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -40,16 +39,17 @@ public class MerchantCallbackProcessor {
 
     private final MerchantCallbackService merchantCallbackService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final TransactionTemplate transactionTemplate;
 
     public MerchantCallbackProcessor(List<OrderStatusResolver> orderStatusResolvers, OrderService orderService,
                                      MerchantCallbackService merchantCallbackService,
-                                     IncidentService incidentService, PlatformTransactionManager transactionManager) {
+                                     ApplicationEventPublisher eventPublisher,
+                                     PlatformTransactionManager transactionManager) {
         this.orderService = orderService;
         this.merchantCallbackService = merchantCallbackService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         this.statusResolversMap = new EnumMap<>(Merchant.class);
@@ -75,7 +75,10 @@ public class MerchantCallbackProcessor {
             try {
                 transactionTemplate.executeWithoutResult(status -> processCallback(orderId, callback.getId()));
             } catch (Exception e) {
-                reportProcessingError(orderId, callback, e);
+                long timestamp = System.currentTimeMillis();
+                log.error("{} Ошибка обработки КБ мерчанта {} по ордеру {}: {}", timestamp, callback.getId(), orderId,
+                        e.getMessage(), e);
+                publishHandleError(callback, timestamp);
             }
         }
     }
@@ -96,7 +99,10 @@ public class MerchantCallbackProcessor {
     private void routeOrder(Order order, MerchantCallback callback) {
         Optional<OrderStatus> status = resolveStatus(callback);
         if (status.isEmpty()) {
-            reportUnresolvedStatus(order, callback);
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Не удалось определить статус ордера {} по КБ мерчанта {} (статус {}).", timestamp,
+                    order.getId(), callback.getMerchant(), callback.getStatus());
+            publishHandleError(callback, timestamp);
             return;
         }
         try {
@@ -107,8 +113,18 @@ public class MerchantCallbackProcessor {
                         order.getId(), change.from(), change.to(), callback.getMerchant(), callback.getStatus());
             }
         } catch (OrderStatusUpdateException e) {
-            reportRejectedTransition(order, callback, e);
+            long timestamp = System.currentTimeMillis();
+            log.warn("{} Переход ордера {} из статуса {} в статус {} по КБ мерчанта {} (статус {}) отклонён.",
+                    timestamp, order.getId(), e.getStatusFrom(), e.getStatusTo(), callback.getMerchant(),
+                    callback.getStatus());
+            eventPublisher.publishEvent(new OrderStatusTransitionRejectedEvent(order.getId(), e.getStatusFrom(),
+                    e.getStatusTo(), callback.getMerchant(), callback.getStatus(), timestamp));
         }
+    }
+
+    private void publishHandleError(MerchantCallback callback, long timestamp) {
+        eventPublisher.publishEvent(new MerchantCallbackHandleErrorEvent(callback.getMerchant(), callback.getStatus(),
+                callback.getStatusDescription(), callback.getMerchantOrderId(), timestamp));
     }
 
     private Optional<OrderStatus> resolveStatus(MerchantCallback callback) {
@@ -117,34 +133,5 @@ public class MerchantCallbackProcessor {
             return Optional.empty();
         }
         return resolver.resolve(callback.getStatus());
-    }
-
-    private void reportProcessingError(UUID orderId, MerchantCallback callback, Exception e) {
-        long timestamp = System.currentTimeMillis();
-        log.error("{} Ошибка обработки КБ мерчанта {} по ордеру {}: {}", timestamp, callback.getId(), orderId,
-                e.getMessage(), e);
-        MerchantCallbackHandleErrorData data = new MerchantCallbackHandleErrorData(callback.getMerchant(),
-                callback.getStatus(), callback.getStatusDescription(), callback.getMerchantOrderId());
-        incidentService.save(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR, data, timestamp);
-    }
-
-    private void reportUnresolvedStatus(Order order, MerchantCallback callback) {
-        long timestamp = System.currentTimeMillis();
-        log.error("{} Не удалось определить статус ордера {} по КБ мерчанта {} (статус {}).", timestamp,
-                order.getId(), callback.getMerchant(), callback.getStatus());
-        MerchantCallbackHandleErrorData data = new MerchantCallbackHandleErrorData(callback.getMerchant(),
-                callback.getStatus(), callback.getStatusDescription(), callback.getMerchantOrderId());
-        incidentService.save(IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR, data, timestamp);
-    }
-
-    private void reportRejectedTransition(Order order, MerchantCallback callback, OrderStatusUpdateException e) {
-        long timestamp = System.currentTimeMillis();
-        log.warn("{} Переход ордера {} из статуса {} в статус {} по КБ мерчанта {} (статус {}) отклонён.",
-                timestamp, order.getId(), e.getStatusFrom(), e.getStatusTo(), callback.getMerchant(),
-                callback.getStatus());
-        OrderStatusTransitionRejectedData data = new OrderStatusTransitionRejectedData(order.getId(),
-                e.getStatusFrom().getDescription(), e.getStatusTo().getDescription(), callback.getMerchant(),
-                callback.getStatus());
-        incidentService.save(IncidentType.ORDER_STATUS_TRANSITION_REJECTED, data, timestamp);
     }
 }

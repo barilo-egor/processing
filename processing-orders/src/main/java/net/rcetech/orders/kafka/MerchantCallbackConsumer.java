@@ -1,16 +1,17 @@
 package net.rcetech.orders.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.MerchantCallbackHandleErrorData;
+import net.rcetech.meta.incidents.MerchantCallbackHandleErrorEvent;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.orders.callback.OrderCallbackResolver;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -21,13 +22,14 @@ public class MerchantCallbackConsumer {
 
     private final MerchantCallbackService merchantCallbackService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MerchantCallbackConsumer(OrderCallbackResolver orderCallbackResolver,
-                                    MerchantCallbackService merchantCallbackService, IncidentService incidentService) {
+                                    MerchantCallbackService merchantCallbackService,
+                                    ApplicationEventPublisher eventPublisher) {
         this.orderCallbackResolver = orderCallbackResolver;
         this.merchantCallbackService = merchantCallbackService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -49,15 +51,12 @@ public class MerchantCallbackConsumer {
             orderCallbackResolver.resolve(consumerRecord.value());
         } catch (Exception e) {
             long timestamp = System.currentTimeMillis();
-            log.error("{} Ошибка обработки КБ мерчанта: {}", timestamp, e.getMessage(), e);
-            MerchantCallbackEvent event = consumerRecord.value();
-            incidentService.save(
-                    IncidentType.MERCHANT_CALLBACK_HANDLE_ERROR,
-                    new MerchantCallbackHandleErrorData(
-                            event.getMerchant(), event.getStatus(), event.getStatusDescription(), event.getMerchantOrderId()
-                    ),
-                    timestamp
-            );
+            log.error("{} Ошибка обработки КБ мерчанта с ключом {}: {}", timestamp, consumerRecord.key(),
+                    e.getMessage(), e);
+            MerchantCallbackEvent event = Objects.requireNonNullElseGet(consumerRecord.value(),
+                    MerchantCallbackEvent::new);
+            eventPublisher.publishEvent(new MerchantCallbackHandleErrorEvent(event.getMerchant(), event.getStatus(),
+                    event.getStatusDescription(), event.getMerchantOrderId(), timestamp));
         }
     }
 

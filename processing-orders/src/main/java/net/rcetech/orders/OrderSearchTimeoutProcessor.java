@@ -2,15 +2,14 @@ package net.rcetech.orders;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.orders.Order;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.StuckSearchOrderErrorData;
+import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -27,16 +26,16 @@ public class OrderSearchTimeoutProcessor {
 
     private final OrderService orderService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final int stuckAfterSeconds;
 
     public OrderSearchTimeoutProcessor(OrderFacade orderFacade, OrderService orderService,
-                                       IncidentService incidentService,
+                                       ApplicationEventPublisher eventPublisher,
                                        @Value("${details-search.timeout.max-seconds:300}") int maxTimeoutSeconds) {
         this.orderFacade = orderFacade;
         this.orderService = orderService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
         this.stuckAfterSeconds = maxTimeoutSeconds + STUCK_SEARCH_MARGIN_SECONDS;
     }
 
@@ -54,8 +53,7 @@ public class OrderSearchTimeoutProcessor {
                 long timestamp = System.currentTimeMillis();
                 log.error("{} Не удалось перевести зависший в поиске реквизитов ордер {}: {}", timestamp,
                         order.getId(), e.getMessage(), e);
-                incidentService.save(IncidentType.STUCK_SEARCH_ORDER_ERROR,
-                        new StuckSearchOrderErrorData(order.getId(), e.getMessage()), timestamp);
+                eventPublisher.publishEvent(new StuckSearchOrderErrorEvent(order.getId(), e.getMessage(), timestamp));
             }
         }
     }
