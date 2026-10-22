@@ -51,7 +51,7 @@ enum OrderEndpoint {
 
         @Override
         void verifyCalled(OrderApiService orderApiService, UUID clientId, UUID orderId) {
-            verify(orderApiService).createOrder(eq(clientId), any(), any(), anyBoolean());
+            verify(orderApiService).createOrder(argThat(command -> clientId.equals(command.clientId())));
         }
     },
     CANCEL(true, HttpStatus.OK) {

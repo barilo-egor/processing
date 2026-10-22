@@ -15,7 +15,7 @@ class ActuatorSecurityConfigPortCheckTest {
             ",,",
             "9000,,",
             "8080,8080,mh-test",
-            "8443,8443,md-test-details;md-test-callback"
+            "8443,8443,mh-test;md-test-callback"
     })
     @DisplayName("Конфигурация вне профиля dev должна бросить исключение, если actuator слушает порт приложения.")
     void constructor_shouldThrowIfManagementPortSameAsServerPort(String serverPort,

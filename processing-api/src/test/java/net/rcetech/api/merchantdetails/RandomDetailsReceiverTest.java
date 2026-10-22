@@ -14,16 +14,16 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class RandomDetailsGeneratorTest {
+class RandomDetailsReceiverTest {
 
-    private final RandomDetailsGenerator randomDetailsGenerator = new RandomDetailsGenerator();
+    private final RandomDetailsReceiver randomDetailsReceiver = new RandomDetailsReceiver();
 
     @ParameterizedTest
     @MethodSource("methodsArguments")
     @DisplayName("Метод реквизитов должен выбираться из методов, переданных в запросе.")
     void generate_shouldChooseMethodFromRequest(Set<RequestMethod> methods) {
         for (int i = 0; i < 20; i++) {
-            ApiDetailsResponse response = randomDetailsGenerator.generate(request(methods));
+            ApiDetailsResponse response = details(methods);
             assertTrue(methods.contains(response.details().requestMethod()));
         }
     }
@@ -42,7 +42,7 @@ class RandomDetailsGeneratorTest {
     void generate_shouldGenerateDetailsMatchingMethod(RequestMethod method) {
         String regex = RequestMethod.CARD.equals(method) ? "\\d{4} \\d{4} \\d{4} \\d{4}" : "\\+79\\d{9}";
         for (int i = 0; i < 20; i++) {
-            String details = randomDetailsGenerator.generate(request(Set.of(method))).details().details();
+            String details = details(Set.of(method)).details().details();
             assertTrue(details.matches(regex), details);
         }
     }
@@ -51,19 +51,22 @@ class RandomDetailsGeneratorTest {
     @EnumSource(RequestMethod.class)
     @DisplayName("Ответ должен содержать мерчанта, банк, уникальный идентификатор ордера мерчанта и не менять сумму.")
     void generate_shouldFillRequiredFields(RequestMethod method) {
-        ApiDetailsResponse first = randomDetailsGenerator.generate(request(Set.of(method)));
-        ApiDetailsResponse second = randomDetailsGenerator.generate(request(Set.of(method)));
+        ApiDetailsResponse first = details(Set.of(method));
+        ApiDetailsResponse second = details(Set.of(method));
         assertAll(
                 () -> assertNotNull(first.requestId()),
                 () -> assertNotNull(first.merchant()),
                 () -> assertNotNull(first.orderStatus()),
                 () -> assertNotNull(first.details().bank()),
                 () -> assertNull(first.amount()),
+                () -> assertTrue(first.orderId().startsWith(RandomDetailsReceiver.TEST_ORDER_ID_PREFIX)),
                 () -> assertNotEquals(first.orderId(), second.orderId())
         );
     }
 
-    private CreateOrderRequest request(Set<RequestMethod> methods) {
-        return new CreateOrderRequest(UUID.randomUUID().toString(), 1000, methods, null, "1235153208");
+    private ApiDetailsResponse details(Set<RequestMethod> methods) {
+        CreateOrderRequest request = new CreateOrderRequest(UUID.randomUUID().toString(), 1000, methods, null,
+                "1235153208");
+        return randomDetailsReceiver.getDetails(UUID.randomUUID(), UUID.randomUUID(), request, 30).orElseThrow();
     }
 }

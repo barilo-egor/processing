@@ -4,6 +4,7 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.RequestMethod;
@@ -221,7 +222,7 @@ class OrderControllerTest {
     void update_shouldReturn200AndRouteOrder(UUID id, OrderStatus statusFrom, OrderStatus status, String role)
             throws Exception {
         when(orderService.existsById(id)).thenReturn(true);
-        when(orderFacade.routeOrder(eq(status), eq(id), isNull()))
+        when(orderFacade.routeOrder(eq(status), eq(id), eq(OrderStatusChangeSource.SUPPORT), isNull()))
                 .thenReturn(new OrderStatusChange(statusFrom, status, OrderStatusTransition.ALLOWED));
         mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(role))
@@ -229,7 +230,7 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"" + status.name() + "\"}"))
                 .andExpect(status().isOk());
-        verify(orderFacade).routeOrder(eq(status), eq(id), isNull());
+        verify(orderFacade).routeOrder(eq(status), eq(id), eq(OrderStatusChangeSource.SUPPORT), isNull());
     }
 
     @ParameterizedTest
@@ -241,7 +242,7 @@ class OrderControllerTest {
     void update_shouldReturn400IfRouteRejected(UUID id, OrderStatus statusFrom, OrderStatus statusTo) throws Exception {
         when(orderService.existsById(id)).thenReturn(true);
         doThrow(new OrderStatusUpdateException("Переход запрещён.", statusFrom, statusTo))
-                .when(orderFacade).routeOrder(eq(statusTo), eq(id), isNull());
+                .when(orderFacade).routeOrder(eq(statusTo), eq(id), eq(OrderStatusChangeSource.SUPPORT), isNull());
         mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
                         .with(csrf())
@@ -261,7 +262,7 @@ class OrderControllerTest {
     void update_shouldReturn400IfTransitionSkipped(UUID id, OrderStatus statusFrom, OrderStatus statusTo,
                                                    String expectedDescription) throws Exception {
         when(orderService.existsById(id)).thenReturn(true);
-        when(orderFacade.routeOrder(eq(statusTo), eq(id), isNull()))
+        when(orderFacade.routeOrder(eq(statusTo), eq(id), eq(OrderStatusChangeSource.SUPPORT), isNull()))
                 .thenReturn(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.SKIPPED));
         mockMvc.perform(patch("/api/support/order/" + id)
                         .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.ADMIN.name()))
@@ -292,7 +293,9 @@ class OrderControllerTest {
     @ParameterizedTest
     @CsvSource({
             "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d,NEW",
-            "d9c8b7a6-f5e4-4d3c-9b2a-1f0e9d8c7b6a,TIMEOUT"
+            "d9c8b7a6-f5e4-4d3c-9b2a-1f0e9d8c7b6a,TIMEOUT",
+            "5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f,SEARCHING",
+            "7e8f9a0b-1c2d-4e3f-a04b-5c6d7e8f9a0b,DETAILS_NOT_FOUND"
     })
     @DisplayName("Метод должен вернуть статус 400, если статус не входит в список допустимых для ручной смены.")
     void update_shouldReturn400IfStatusNotAllowed(UUID id, OrderStatus status) throws Exception {

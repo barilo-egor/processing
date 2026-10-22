@@ -1,4 +1,4 @@
-package net.rcetech.support.controller;
+package net.rcetech.incidents.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;

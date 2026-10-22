@@ -1,4 +1,4 @@
-package net.rcetech.support.controller;
+package net.rcetech.incidents.controller;
 
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;
 import net.rcetech.domain.service.incidents.IncidentService;

@@ -7,14 +7,13 @@ import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.ClientFieldNotSetErrorData;
+import net.rcetech.meta.incidents.ClientCommissionPercentNotSetEvent;
+import net.rcetech.meta.incidents.ClientMinWithdrawalAmountNotSetEvent;
 import net.rcetech.rates.RatePair;
 import net.rcetech.rates.RateService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -37,6 +35,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
@@ -47,14 +47,13 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ClientService.class, WithdrawalRequestService.class})
+@RecordApplicationEvents
 class WithdrawalRequestServiceTest {
 
     @TestConfiguration
@@ -79,8 +78,8 @@ class WithdrawalRequestServiceTest {
     @MockitoBean
     private RateService rateService;
 
-    @MockitoBean
-    private IncidentService incidentService;
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     @MockitoBean
     private TransactionService transactionService;
@@ -142,18 +141,9 @@ class WithdrawalRequestServiceTest {
         }
     }
 
-    void assertIncidentSaved(IncidentType type, UUID clientId, BaseException exception, long before, long after) {
-        ArgumentCaptor<Object> dataCaptor = ArgumentCaptor.forClass(Object.class);
-        ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(incidentService).save(eq(type), dataCaptor.capture(), timestampCaptor.capture());
-        ClientFieldNotSetErrorData data = assertInstanceOf(ClientFieldNotSetErrorData.class, dataCaptor.getValue());
-        Long timestamp = timestampCaptor.getValue();
-        assertAll(
-                () -> assertEquals(clientId, data.clientId()),
-                () -> assertNotNull(timestamp),
-                () -> assertTrue(timestamp >= before && timestamp <= after),
-                () -> assertEquals(timestamp, exception.getTimestamp())
-        );
+    void assertErrorTimestamp(BaseException exception, long before, long after) {
+        assertNotNull(exception.getTimestamp());
+        assertTrue(exception.getTimestamp() >= before && exception.getTimestamp() <= after);
     }
 
     @Test
@@ -182,7 +172,9 @@ class WithdrawalRequestServiceTest {
         );
 
         long after = System.currentTimeMillis();
-        assertIncidentSaved(IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET, clientId, exception, before, after);
+        assertErrorTimestamp(exception, before, after);
+        assertEquals(List.of(new ClientMinWithdrawalAmountNotSetEvent(clientId, exception.getTimestamp())),
+                applicationEvents.stream(ClientMinWithdrawalAmountNotSetEvent.class).toList());
         assertEquals(0, withdrawalRequestRepository.count());
     }
 
@@ -258,7 +250,9 @@ class WithdrawalRequestServiceTest {
         );
 
         long after = System.currentTimeMillis();
-        assertIncidentSaved(IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET, clientId, exception, before, after);
+        assertErrorTimestamp(exception, before, after);
+        assertEquals(List.of(new ClientCommissionPercentNotSetEvent(clientId, exception.getTimestamp())),
+                applicationEvents.stream(ClientCommissionPercentNotSetEvent.class).toList());
         assertEquals(0, withdrawalRequestRepository.count());
     }
 

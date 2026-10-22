@@ -2,10 +2,11 @@ package net.rcetech.api.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.service.LimitedOrderCreator;
 import net.rcetech.api.service.OrderApiService;
-import net.rcetech.domain.mapping.orders.OrderMapper;
-import net.rcetech.domain.model.orders.Order;
+import net.rcetech.api.validation.SearchTimeout;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -28,38 +29,41 @@ public class ApiOrderController {
 
     private final OrderApiService orderApiService;
 
-    private final OrderMapper orderMapper;
+    private final LimitedOrderCreator limitedOrderCreator;
 
-    public ApiOrderController(OrderApiService orderApiService, OrderMapper orderMapper) {
+    public ApiOrderController(OrderApiService orderApiService, LimitedOrderCreator limitedOrderCreator) {
         this.orderApiService = orderApiService;
-        this.orderMapper = orderMapper;
+        this.limitedOrderCreator = limitedOrderCreator;
     }
 
     @PostMapping
-    public ResponseEntity<ClientOrderSummary> createOrder(@Valid @RequestBody CreateOrderRequest clientRequest,
-                                                          @RequestHeader(required = false, defaultValue = "30",
-                                                                  value = "Search-Timeout-Seconds")
-                                                                  Integer timeoutSeconds,
-                                                          @RequestHeader(required = false, defaultValue = "false",
-                                                                  value = "Test-Order")
-                                                                  boolean testOrder,
-                                                          Principal principal) {
+    public ResponseEntity<ClientOrderSummary> createOrder(
+            @Valid @RequestBody CreateOrderRequest clientRequest,
+            @RequestHeader(required = false, defaultValue = "30", value = "Search-Timeout-Seconds")
+            @SearchTimeout
+            Integer timeoutSeconds,
+            @RequestHeader(required = false, defaultValue = "false", value = "Test-Order")
+            boolean testOrder,
+            @RequestHeader(required = false, defaultValue = "false", value = "Async-Request")
+            boolean async,
+            Principal principal) {
         log.info("Клиент {} запросил через API создание ордера (internalId={}, сумма={}, методы={}, " +
-                        "таймаут поиска={} с, тестовый={}).",
+                        "таймаут поиска={} с, тестовый={}, асинхронный={}).",
                 principal.getName(), clientRequest.internalId(), clientRequest.amount(), clientRequest.methods(),
+                timeoutSeconds, testOrder, async);
+        CreateOrderCommand command = new CreateOrderCommand(UUID.fromString(principal.getName()), clientRequest,
                 timeoutSeconds, testOrder);
-        Order order = orderApiService.createOrder(UUID.fromString(principal.getName()), clientRequest, timeoutSeconds,
-                testOrder);
-        log.info("Клиент {} создал через API ордер {} (internalId={}, сумма={}, методы={}).",
-                principal.getName(), order.getId(), clientRequest.internalId(), clientRequest.amount(),
+        ClientOrderSummary order = limitedOrderCreator.createOrder(command, async);
+        log.info("Клиент {} создал через API ордер {} в статусе {} (internalId={}, сумма={}, методы={}).",
+                principal.getName(), order.id(), order.status(), clientRequest.internalId(), clientRequest.amount(),
                 clientRequest.methods());
-        return new ResponseEntity<>(orderMapper.toOrderSummary(order), HttpStatus.CREATED);
+        return new ResponseEntity<>(order, async ? HttpStatus.ACCEPTED : HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClientOrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
-        return new ResponseEntity<>(orderMapper.toOrderSummary(
-                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id)),
+        return new ResponseEntity<>(
+                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id),
                 HttpStatus.OK
         );
     }

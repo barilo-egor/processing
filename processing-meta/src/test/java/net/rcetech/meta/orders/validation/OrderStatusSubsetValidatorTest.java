@@ -45,7 +45,7 @@ class OrderStatusSubsetValidatorTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = OrderStatus.class, names = {"NEW", "TIMEOUT", "DISPUTE"})
+    @EnumSource(value = OrderStatus.class, names = {"SEARCHING", "DETAILS_NOT_FOUND", "NEW", "TIMEOUT", "DISPUTE"})
     @DisplayName("Валидатор должен вернуть нарушение по полю status, если статус не входит в список допустимых.")
     void isValid_shouldRejectNotAllowedStatus(OrderStatus status) {
         Set<ConstraintViolation<Target>> violations = validator.validate(new Target(status));

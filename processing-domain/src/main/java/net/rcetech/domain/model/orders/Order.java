@@ -69,44 +69,37 @@ public class Order implements Persistable<UUID> {
      * Константа мерчанта, от которого были получены реквизиты.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Merchant merchant;
 
     /**
      * Идентификатор ордера в системе мерчанта.
      */
-    @Column(nullable = false, unique = true)
     private String merchantOrderId;
 
     /**
      * Статус ордера в системе мерчанта.
      */
-    @Column(nullable = false)
     private String merchantOrderStatus;
 
     /**
      * Метод, по которому был запрошен и получен реквизит
      */
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RequestMethod method;
 
     /**
      * Данные реквизита: номер карты, телефона, счета и т.п.
      */
-    @Column(nullable = false)
     private String details;
 
     /**
      * Банк, сотовый оператор и т.п, иначе организация, которая выдала реквизит
      */
-    @Column(nullable = false)
     private String bank;
 
     /**
      * URL на который будет отправлен HTTP запрос об изменении статуса с информацией об ордере.
      */
-    @Column(nullable = false)
     private String callbackUrl;
 
     @Transient

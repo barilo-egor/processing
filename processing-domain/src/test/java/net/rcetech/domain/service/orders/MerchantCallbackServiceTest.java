@@ -9,12 +9,14 @@ import net.rcetech.domain.repository.orders.MerchantCallbackSpecifications;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.billing.dto.MerchantCallbackFilter;
 import net.rcetech.meta.billing.dto.MerchantCallbackResponse;
+import net.rcetech.meta.orders.MerchantCallbackEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -33,7 +35,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -138,6 +140,63 @@ class MerchantCallbackServiceTest {
         if (order.getCallbackUrl() == null) {
             order.setCallbackUrl("https://google.com/callback");
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "1236043,PAID,Оплачено,ALFA_TEAM",
+            "c2cbb845-7313-4106-a1a3-e9e4b328bbd9,CANCELED,null,EVO_PAY"
+    }, nullValues = "null")
+    @DisplayName("Метод должен сохранить КБ без ордера и без отметки об обработке.")
+    void save_shouldSaveCallbackWithoutOrder(String merchantOrderId, String status, String statusDescription,
+                                             Merchant merchant) {
+        MerchantCallbackEvent event = new MerchantCallbackEvent();
+        event.setMerchantOrderId(merchantOrderId);
+        event.setStatus(status);
+        event.setStatusDescription(statusDescription);
+        event.setMerchant(merchant);
+        Instant before = Instant.now().minusSeconds(1);
+
+        MerchantCallback saved = merchantCallbackService.save(event);
+
+        MerchantCallback actual = merchantCallbackRepository.findById(saved.getId()).orElseThrow();
+        assertAll(
+                () -> assertNotNull(actual.getCreatedAt()),
+                () -> assertFalse(actual.getCreatedAt().isBefore(before)),
+                () -> assertNull(actual.getProcessedAt()),
+                () -> assertNull(actual.getOrder()),
+                () -> assertEquals(merchant, actual.getMerchant()),
+                () -> assertEquals(merchantOrderId, actual.getMerchantOrderId()),
+                () -> assertEquals(status, actual.getStatus()),
+                () -> assertEquals(statusDescription, actual.getStatusDescription())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "1790262068000,true",
+            "null,false"
+    }, nullValues = "null")
+    @DisplayName("Метод должен вернуть время обработки КБ и КБ без ордера.")
+    void findAll_shouldReturnProcessedAtAndCallbackWithoutOrder(Long processedAtMillis, boolean withOrder) {
+        MerchantCallback callback = new MerchantCallback();
+        Instant processedAt = Objects.isNull(processedAtMillis) ? null : Instant.ofEpochMilli(processedAtMillis);
+        callback.setProcessedAt(processedAt);
+        Order order = withOrder ? getDummyOrder(getDummyClient()) : null;
+        callback.setOrder(order);
+        fillFields(callback);
+        merchantCallbackRepository.save(callback);
+
+        Page<MerchantCallbackResponse> callbacks = merchantCallbackService.findAll(
+                MerchantCallbackSpecifications.matches(null), PageRequest.of(0, 20), MerchantCallbackResponse.class);
+
+        assertEquals(1, callbacks.getTotalElements());
+        MerchantCallbackResponse actual = callbacks.getContent().getFirst();
+        assertAll(
+                () -> assertEquals(callback.getId(), actual.id()),
+                () -> assertEquals(processedAt, actual.processedAt()),
+                () -> assertEquals(withOrder ? order.getId() : null, actual.orderId())
+        );
     }
 
     @Test

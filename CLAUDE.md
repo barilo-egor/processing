@@ -35,12 +35,12 @@
 - Spring-профили (см. README и `net.rcetech.meta.Profiles`):
   - `dev`: допускает значения `ddl-auto`, отличные от `validate`, и запуск без отдельного порта actuator (`management.server.port`).
   - `disable-security`: всё открыто без авторизации, заголовок `Test-User: <keycloakId>;ROLE_X` подставляет principal.
-  - `md-test-details`, `md-test-callback`, `mh-test`: заглушки внешних микросервисов merchant-details и merchant-history.
+  - `md-test-callback`, `mh-test`: заглушки внешних микросервисов merchant-details и merchant-history.
 - Изменения схемы БД — только Flyway-миграциями в `processing-domain/src/main/resources/database/migration` (`ddl-auto: validate`).
 
 ## Архитектура
 
-Направление зависимостей модулей: `meta` ← `rates` ← `domain` ← функциональные модули (`clients`, `orders`, `billing`, `support`, `api`, `security`, `web`) ← `app`. Convention-плагин `buildSrc/src/main/groovy/processing.gradle` (подключается как `id 'processing'`) задаёт Java toolchain, BOM-ы Boot/Cloud, Lombok, actuator/Prometheus и MapStruct `defaultComponentModel=spring`. Во всех модулях, кроме `app`, `bootJar` отключён.
+Направление зависимостей модулей: `meta` ← `rates` ← `domain` ← функциональные модули (`clients`, `orders`, `billing`, `incidents`, `support`, `api`, `security`, `web`) ← `app`. Convention-плагин `buildSrc/src/main/groovy/processing.gradle` (подключается как `id 'processing'`) задаёт Java toolchain, BOM-ы Boot/Cloud, Lombok, actuator/Prometheus и MapStruct `defaultComponentModel=spring`. Во всех модулях, кроме `app`, `bootJar` отключён.
 
 - **processing-meta**: общий слой контрактов без доменного кода и персистентности. Содержит DTO, enum-ы, события, исключения, `GlobalControllerAdvice`, константы `WebPath`, `MetricsConstants` и глобальную конфигурацию безопасности.
 - **processing-domain**: все JPA-сущности, репозитории, MapStruct-мапперы, основные доменные сервисы и Flyway-миграции. Функциональные модули зависят от него, а не определяют собственные сущности.

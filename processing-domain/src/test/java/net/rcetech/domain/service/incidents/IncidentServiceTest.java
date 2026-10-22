@@ -1,5 +1,6 @@
 package net.rcetech.domain.service.incidents;
 
+import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.domain.repository.incidents.IncidentRepository;
@@ -11,9 +12,10 @@ import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.incidents.IncidentSaveErrorEvent;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.BalanceUpdateErrorData;
+import net.rcetech.meta.incidents.OrderStatusTransitionRejectedEvent;
 import net.rcetech.meta.incidents.dto.IncidentFilter;
 import net.rcetech.meta.incidents.dto.IncidentResponse;
+import net.rcetech.meta.orders.OrderStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,8 +27,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,8 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
+import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
@@ -55,19 +54,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({IncidentService.class, SupportUserService.class})
+@Import({IncidentService.class, SupportUserService.class, IncidentConfig.class})
 @RecordApplicationEvents
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class IncidentServiceTest {
-
-    @TestConfiguration
-    static class Configuration {
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            return JsonMapper.builder().build();
-        }
-    }
 
     @Container
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
@@ -133,12 +123,49 @@ class IncidentServiceTest {
         );
     }
 
+    @ParameterizedTest
+    @EnumSource(value = IncidentType.class, names = {"DETAILS_SEARCH_ERROR", "BALANCE_UPDATE_ERROR"})
+    @DisplayName("Метод должен сохранить инцидент, если необработанного инцидента такого типа нет.")
+    void saveIfNoUnresolved_shouldSaveIfNoUnresolvedIncidentOfType(IncidentType type) {
+        Incident resolved = new Incident();
+        resolved.setType(type);
+        resolved.setStatus(IncidentStatus.RESOLVED);
+        saveDummyIncident(resolved);
+        Incident anotherType = new Incident();
+        anotherType.setType(IncidentType.ORDER_STATUS_TRANSITION_REJECTED);
+        saveDummyIncident(anotherType);
+
+        incidentService.saveIfNoUnresolved(type, Map.of("orderId", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"),
+                1_760_000_000_000L);
+
+        assertEquals(1, incidentRepository.findAll().stream()
+                .filter(incident -> type.equals(incident.getType()))
+                .filter(incident -> IncidentStatus.NEW.equals(incident.getStatus()))
+                .count());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = IncidentType.class, names = {"DETAILS_SEARCH_ERROR", "BALANCE_UPDATE_ERROR"})
+    @DisplayName("Метод не должен сохранять инцидент, если необработанный инцидент такого типа уже есть.")
+    void saveIfNoUnresolved_shouldNotSaveIfUnresolvedIncidentOfTypeExists(IncidentType type) {
+        Incident unresolved = new Incident();
+        unresolved.setType(type);
+        saveDummyIncident(unresolved);
+
+        incidentService.saveIfNoUnresolved(type, Map.of("orderId", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"),
+                1_760_000_000_000L);
+
+        List<Incident> actual = incidentRepository.findAll();
+        assertEquals(1, actual.size());
+        assertEquals(unresolved.getId(), actual.getFirst().getId());
+    }
+
     @Test
     @DisplayName("Метод должен сохранить инцидент со статусом NEW, переданным типом, данными и временем ошибки.")
     void save_shouldSaveIncident() {
         UUID transactionId = UUID.fromString("7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17");
         UUID clientId = UUID.fromString("f3f0d1d5-f4c6-4af5-ad9c-327ac365ea92");
-        BalanceUpdateErrorData data = new BalanceUpdateErrorData(transactionId, clientId);
+        Map<String, Object> data = Map.of("transactionId", transactionId.toString(), "clientId", clientId.toString());
         long errorTimestamp = 1_760_000_000_000L;
         Instant before = Instant.now();
 
@@ -163,12 +190,35 @@ class IncidentServiceTest {
         assertEquals(0, applicationEvents.stream(IncidentSaveErrorEvent.class).count());
     }
 
-    @Test
-    @DisplayName("Метод должен опубликовать IncidentSaveErrorEvent с типом и данными инцидента, если сохранить его не удалось.")
-    void save_shouldPublishErrorEventIfSaveFailed() {
-        String data = "not a map";
+    @ParameterizedTest
+    @CsvSource({
+            "7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17,SUCCESS,CANCELED,ALFA_TEAM,CANCELED,1760000000000",
+            "3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97,TIMEOUT,DISPUTE,DEORA,DISPUTE,1790262057999"
+    })
+    @DisplayName("Метод должен записать в данные поля события: статусы ордера описаниями, остальные enum именами, без времени ошибки и типа.")
+    void save_shouldSerializeEventFields(UUID orderId, OrderStatus statusFrom, OrderStatus statusTo, Merchant merchant,
+                                         String merchantOrderStatus, long errorTimestamp) {
+        OrderStatusTransitionRejectedEvent event = new OrderStatusTransitionRejectedEvent(orderId, statusFrom, statusTo,
+                merchant, merchantOrderStatus, errorTimestamp);
 
-        incidentService.save(IncidentType.TRANSACTION_CREATION_ERROR, data, 1_760_000_000_000L);
+        incidentService.save(event.type(), event, errorTimestamp);
+
+        Incident incident = incidentRepository.findAll().getFirst();
+        assertEquals(Map.of(
+                "orderId", orderId.toString(),
+                "statusFrom", statusFrom.getDescription(),
+                "statusTo", statusTo.getDescription(),
+                "merchant", merchant.name(),
+                "merchantOrderStatus", merchantOrderStatus
+        ), incident.getData());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"not a map", "1760000000000"})
+    @DisplayName("Метод должен опубликовать IncidentSaveErrorEvent с типом и данными инцидента, если данные не удалось преобразовать.")
+    void save_shouldPublishErrorEventIfDataConversionFailed(String data) {
+        assertDoesNotThrow(() -> incidentService.save(IncidentType.TRANSACTION_CREATION_ERROR, data,
+                1_760_000_000_000L));
 
         List<IncidentSaveErrorEvent> events = applicationEvents.stream(IncidentSaveErrorEvent.class).toList();
         assertEquals(1, events.size());

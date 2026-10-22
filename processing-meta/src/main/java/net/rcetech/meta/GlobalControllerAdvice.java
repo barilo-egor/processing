@@ -5,20 +5,28 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.exception.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterErrors;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 @ControllerAdvice
 @NullMarked
@@ -33,6 +41,13 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     private static final String INTERNAL_SERVER_ERROR_TYPE = "/errors/internal-server-error";
     private static final String BAD_REQUEST_TITLE = "Bad Request";
     private static final String BAD_REQUEST_TYPE = "/docs/errors/bad-request";
+    private static final Map<Pattern, String> BAD_REQUEST_CONSTRAINT_MESSAGES = Map.of(
+            constraintPattern(DatabaseConstraint.UNIQUE_INTERNAL_ID), ExceptionMessage.INTERNAL_ID_NOT_UNIQUE
+    );
+
+    private static Pattern constraintPattern(String constraintName) {
+        return Pattern.compile("(^|[\\s'\"`.\\[])" + Pattern.quote(constraintName) + "($|[\\s'\"`\\]])");
+    }
 
     @ExceptionHandler({ ServiceException.class })
     public ProblemDetail handle(ServiceException ex) {
@@ -85,6 +100,21 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         return getBadRequestProblemDetail(ex);
     }
 
+    @ExceptionHandler({ DataIntegrityViolationException.class })
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String causeMessage = Objects.requireNonNullElse(NestedExceptionUtils.getMostSpecificCause(ex).getMessage(), "");
+        return BAD_REQUEST_CONSTRAINT_MESSAGES.entrySet().stream()
+                .filter(constraint -> constraint.getKey().matcher(causeMessage).find())
+                .findFirst()
+                .map(constraint -> {
+                    log.error("Bad request constraint violation error: {}", ex.getMessage(), ex);
+                    ProblemDetail problemDetail = getBadRequestProblemDetail(ex);
+                    problemDetail.setProperty(DESCRIPTION, constraint.getValue());
+                    return problemDetail;
+                })
+                .orElseGet(() -> handleGenericException(ex));
+    }
+
     @Override
     protected @Nullable ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         log.error("Method argument not valid error: {}", ex.getMessage(), ex);
@@ -93,11 +123,35 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         StringBuilder message = new StringBuilder();
-        for (FieldError error : ex.getFieldErrors()) {
-            message.append("field '").append(error.getField()).append("' ").append(error.getDefaultMessage()).append(";");
-        }
+        appendFieldErrors(message, ex.getFieldErrors());
         problemDetail.setProperty(DESCRIPTION, message.toString());
         return handleExceptionInternal(ex, problemDetail, headers, status, request);
+    }
+
+    @Override
+    protected @Nullable ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.error("Handler method validation error: {}", ex.getMessage(), ex);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setTitle(BAD_REQUEST_TITLE);
+        problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
+        problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
+        StringBuilder message = new StringBuilder();
+        for (ParameterValidationResult result : ex.getParameterValidationResults()) {
+            if (result instanceof ParameterErrors errors) {
+                appendFieldErrors(message, errors.getFieldErrors());
+            } else {
+                result.getResolvableErrors().forEach(error -> message.append(error.getDefaultMessage()));
+            }
+        }
+        problemDetail.setProperty(DESCRIPTION, message.toString());
+        return handleExceptionInternal(ex, problemDetail, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    private void appendFieldErrors(StringBuilder message, List<FieldError> fieldErrors) {
+        for (FieldError error : fieldErrors) {
+            message.append("field '").append(error.getField()).append("' ").append(error.getDefaultMessage()).append(";");
+        }
     }
 
     private ProblemDetail getBadRequestProblemDetail(Exception ex) {
@@ -148,13 +202,6 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setType(URI.create("/docs/errors/service-unavailable"));
         problemDetail.setProperty(TIMESTAMP, epochMilli);
         problemDetail.setProperty(DESCRIPTION, CONTACT_SUPPORT);
-        return problemDetail;
-    }
-
-    @ExceptionHandler({ MerchantDetailsNotFoundException.class })
-    public ProblemDetail handle(MerchantDetailsNotFoundException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
-        problemDetail.setTitle("Details not found");
         return problemDetail;
     }
 }
