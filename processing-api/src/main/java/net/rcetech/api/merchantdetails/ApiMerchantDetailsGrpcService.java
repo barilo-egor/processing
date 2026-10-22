@@ -65,13 +65,13 @@ public class ApiMerchantDetailsGrpcService {
                     .setInternalId(orderId.toString())
                     .setUserId(clientOrderRequest.userId())
                     .setAmount(clientOrderRequest.amount())
-                    .setWaitTimeout(timeoutSeconds)
+                    .setWaitTimeout(timeoutSeconds - 1)
                     .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
                     .setOwnerId(clientId.toString())
                     .setInitiatorApp(applicationName)
                     .build();
             DetailsResponseGrpc grpcResponse = context.call(() -> detailsBlockingStub
-                    .withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS)
+                    .withDeadlineAfter(timeoutSeconds - 2, TimeUnit.SECONDS)
                     .detailsRequest(detailsRequestGrpc));
             return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
         } catch (StatusRuntimeException statusException) {

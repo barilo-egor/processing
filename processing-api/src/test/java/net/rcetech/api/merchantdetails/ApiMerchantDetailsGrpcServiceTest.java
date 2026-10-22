@@ -209,8 +209,8 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2})
-    @DisplayName("Поиск должен прерываться по истечении таймаута поиска и возвращать пустой Optional без инцидента.")
+    @ValueSource(ints = {3, 4})
+    @DisplayName("Поиск должен прерываться за 2 секунды до истечения таймаута поиска и возвращать пустой Optional без инцидента.")
     void getDetails_shouldCancelGrpcCallAfterTimeout(int timeoutSeconds) throws Exception {
         CountDownLatch callCancelled = new CountDownLatch(1);
         try (InProcessDetails inProcessDetails = new InProcessDetails((request, responseObserver) ->
@@ -221,11 +221,27 @@ class ApiMerchantDetailsGrpcServiceTest {
             long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before);
             assertAll(
                     () -> assertTrue(result.isEmpty()),
-                    () -> assertTrue(elapsedMillis >= TimeUnit.SECONDS.toMillis(timeoutSeconds) - 100),
+                    () -> assertTrue(elapsedMillis >= TimeUnit.SECONDS.toMillis(timeoutSeconds - 2) - 100),
+                    () -> assertTrue(elapsedMillis < TimeUnit.SECONDS.toMillis(timeoutSeconds - 1)),
                     () -> assertTrue(callCancelled.await(5, TimeUnit.SECONDS))
             );
             verifyNoInteractions(eventPublisher);
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 120})
+    @DisplayName("В merchant-details должен передаваться таймаут ожидания на секунду меньше таймаута поиска, а дедлайн вызова на 2 секунды меньше.")
+    void getDetails_shouldSetWaitTimeoutAndDeadlineLessThanSearchTimeout(int timeoutSeconds) {
+        when(detailsBlockingStub.detailsRequest(any())).thenReturn(DetailsResponseGrpc.getDefaultInstance());
+
+        apiMerchantDetailsGrpcService.getDetails(UUID.randomUUID(), UUID.randomUUID(), createOrderRequest(),
+                timeoutSeconds);
+
+        ArgumentCaptor<DetailsRequestGrpc> captor = ArgumentCaptor.forClass(DetailsRequestGrpc.class);
+        verify(detailsBlockingStub).detailsRequest(captor.capture());
+        assertEquals(timeoutSeconds - 1, captor.getValue().getWaitTimeout());
+        verify(detailsBlockingStub).withDeadlineAfter(timeoutSeconds - 2, TimeUnit.SECONDS);
     }
 
     @ParameterizedTest

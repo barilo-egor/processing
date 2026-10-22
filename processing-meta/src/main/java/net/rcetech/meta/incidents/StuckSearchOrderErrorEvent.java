@@ -12,4 +12,9 @@ public record StuckSearchOrderErrorEvent(
     public IncidentType type() {
         return IncidentType.STUCK_SEARCH_ORDER_ERROR;
     }
+
+    @Override
+    public boolean onlyIfNoUnresolved() {
+        return true;
+    }
 }
