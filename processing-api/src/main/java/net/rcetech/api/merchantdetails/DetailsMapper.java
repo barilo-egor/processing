@@ -1,0 +1,57 @@
+package net.rcetech.api.merchantdetails;
+
+import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.grpc.generated.CancelOrderRequestGrpc;
+import net.rcetech.grpc.generated.DetailsRequestGrpc;
+import net.rcetech.grpc.generated.DetailsResponseGrpc;
+import net.rcetech.grpc.generated.MerchantCallbackGrpc;
+import net.rcetech.meta.orders.RequestMethod;
+import org.mapstruct.CollectionMappingStrategy;
+import org.mapstruct.InjectionStrategy;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import tgb.cryptoexchange.commons.enums.Merchant;
+
+import java.util.UUID;
+
+@Mapper(
+        componentModel = "spring",
+        collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR
+)
+public interface DetailsMapper {
+
+    ApiDetailsResponse grpcResponseToDTO(DetailsResponseGrpc response);
+
+    @Mapping(target = "requestId", source = "requestId")
+    @Mapping(target = "internalId", source = "orderId")
+    @Mapping(target = "userId", source = "orderDTO.userId")
+    @Mapping(target = "amount", source = "orderDTO.amount")
+    @Mapping(target = "ownerId", source = "clientId")
+    @Mapping(target = "requestMethodList", source = "orderDTO.methods")
+    DetailsRequestGrpc detailsRequestDTOToGrpc(UUID clientId, UUID requestId, UUID orderId, CreateOrderRequest orderDTO);
+
+    @Mapping(target = "orderId", source = "merchantOrderId")
+    @Mapping(target = "method", source = "method")
+    CancelOrderRequestGrpc cancelOrderDTOToGrpc(CancelOrderDTO cancelOrderDTO);
+
+    MerchantCallbackGrpc merchantCallbackDTOToGrpc(MerchantCallbackDTO merchantCallbackDTO);
+
+    MerchantCallbackDTO merchantCallbackDTOToGrpc(MerchantCallbackGrpc response);
+
+    default String mapRequestMethodToString(RequestMethod method) {
+        return method != null ? method.name() : null;
+    }
+
+    default String mapUuidToString(UUID uuid) {
+        return uuid != null ? uuid.toString() : null;
+    }
+
+    default UUID mapStringToUuid(String uuid) {
+        return uuid != null ? UUID.fromString(uuid) : null;
+    }
+
+    default Merchant mapStringToMerchant(String merchant) {
+        return merchant != null ? Merchant.valueOf(merchant) : null;
+    }
+}

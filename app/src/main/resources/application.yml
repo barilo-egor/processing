@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: "details-api-gateway"
-  config:
-    import: "optional:file:config/config.yml"

@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: "processing"
+  config:
+    import: 'file:config/config.yml,classpath:application-domain.yml'
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problem-details:
+      enabled: true
+  web:
+    resources:
+      static-locations: 'file:config/frontend/'
+server:
+  forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        name: JSESSIONID
+        secure: true
+        same-site: lax
+management:
+  server:
+    port: 8091

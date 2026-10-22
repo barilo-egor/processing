@@ -1,0 +1,52 @@
+package net.rcetech.api.controller;
+
+import lombok.extern.slf4j.Slf4j;
+import net.rcetech.api.service.OrderApiService;
+import net.rcetech.meta.WebPath;
+import net.rcetech.meta.orders.dto.ClientOrderFilter;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
+import net.rcetech.meta.user.ClientAccess;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.UUID;
+
+@Slf4j
+@RestController
+@RequestMapping(WebPath.CLIENT_API_PATH + "/order")
+@ClientAccess
+public class ClientOrderController {
+
+    private final OrderApiService orderApiService;
+
+    public ClientOrderController(OrderApiService orderApiService) {
+        this.orderApiService = orderApiService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ClientOrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
+        return new ResponseEntity<>(
+                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id),
+                HttpStatus.OK
+        );
+    }
+
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void cancelOrder(@PathVariable UUID id, Principal principal) {
+        orderApiService.cancelOrder(UUID.fromString(principal.getName()), id);
+        log.info("Клиент {} отменил ордер {}.", principal.getName(), id);
+    }
+
+    @GetMapping
+    public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter,
+                                                    @PageableDefault(size = 20) Pageable pageable,
+                                                    Principal principal) {
+        return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));
+    }
+}

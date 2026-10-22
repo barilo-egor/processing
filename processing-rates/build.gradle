@@ -1,0 +1,18 @@
+plugins {
+    id 'processing'
+}
+
+dependencies {
+    implementation project(':processing-meta')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    testImplementation platform('org.junit:junit-bom:6.0.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.wiremock.integrations:wiremock-spring-boot:4.0.9'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+bootJar {
+    enabled = false
+}

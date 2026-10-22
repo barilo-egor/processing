@@ -1,0 +1,14 @@
+kafka:
+  group-id: 'processing'
+  topic:
+    merchant-details:
+      callback: 'merchant-details-callback-v1'
+spring:
+  application:
+    name: 'processing'
+  jpa:
+    hibernate:
+      ddl-auto: validate
+management:
+  server:
+    port: 0

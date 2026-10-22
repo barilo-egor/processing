@@ -1,0 +1,649 @@
+/* ============================================================
+   Тема следует настройкам системы: светлая по умолчанию,
+   тёмная — если в ОС включена тёмная тема.
+   Переменные и классы те же, что в кабинете администратора,
+   чтобы оба кабинета выглядели одинаково.
+   ============================================================ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f0f1f4;
+  --text: #16181d;
+  --text-dim: #6b7280;
+  --border: #e2e4e9;
+  --border-strong: #cfd3da;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --row-hover: rgba(0, 0, 0, .04);
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warn: #b45309;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar-w: 232px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --surface: #1c1f25;
+    --surface-2: #23272e;
+    --text: #e8eaed;
+    --text-dim: #9aa1ac;
+    --border: #2c313a;
+    --border-strong: #3a404b;
+    --accent: #4b8bf5;
+    --accent-text: #ffffff;
+    --row-hover: rgba(255, 255, 255, .05);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warn: #fbbf24;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; padding: 0; height: 100%; }
+
+body {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Каркас ---- */
+.layout { display: flex; min-height: 100%; }
+
+.sidebar {
+  width: var(--sidebar-w); flex: none;
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 18px 12px; display: flex; flex-direction: column; gap: 22px;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.brand-ico {
+  width: 34px; height: 34px; flex: none; border-radius: 9px;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-text); font-size: 15px;
+}
+.brand-name { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border: none; border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: left;
+  transition: background .15s, color .15s;
+}
+.nav-item i { width: 16px; text-align: center; font-size: 14px; }
+.nav-item:hover { background: var(--row-hover); color: var(--text); }
+.nav-item.active { background: var(--accent); color: var(--accent-text); }
+
+/* ---- Сворачивание бокового меню (широкий экран) ---- */
+.sidebar-toggle {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border: none; border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: left; white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.sidebar-toggle i { width: 16px; text-align: center; font-size: 14px; }
+.sidebar-toggle:hover { background: var(--row-hover); color: var(--text); }
+
+@media (min-width: 721px) {
+  /* Меню прилипает к экрану, чтобы кнопка «Свернуть» всегда была видна. */
+  .sidebar {
+    position: sticky; top: 0; align-self: flex-start;
+    height: 100vh; overflow-x: hidden; overflow-y: auto;
+    transition: width .2s ease, padding .2s ease;
+  }
+  .brand-name { white-space: nowrap; }
+  .sidebar.collapsed { width: 64px; padding-left: 10px; padding-right: 10px; }
+  .sidebar.collapsed .brand { padding: 0; justify-content: center; }
+  .sidebar.collapsed .brand-name,
+  .sidebar.collapsed .nav-item span,
+  .sidebar.collapsed .sidebar-toggle span { display: none; }
+  .sidebar.collapsed .nav-item,
+  .sidebar.collapsed .sidebar-toggle { justify-content: center; padding-left: 0; padding-right: 0; }
+}
+
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar { padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.topbar h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ---- Блок профиля: слева пояснение, справа поля ---- */
+.block {
+  display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 28px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 22px;
+}
+.block-aside { min-width: 0; }
+.block-title { margin: 0 0 6px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.block-note { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-dim); max-width: 60ch; }
+.block-body { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.block-actions { display: flex; justify-content: flex-end; }
+
+@media (max-width: 860px) {
+  .block { grid-template-columns: 1fr; gap: 16px; }
+  .block-actions { justify-content: flex-start; }
+}
+
+/* ---- Поля ---- */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { font-size: 13px; font-weight: 600; }
+.field input, .field textarea, .modal input, .modal textarea {
+  padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
+  min-width: 0;
+}
+.field input:focus, .field textarea:focus,
+.modal input:focus, .modal textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.field input:disabled { opacity: .6; }
+.field input.invalid { border-color: var(--danger); }
+.field-error { font-size: 12px; color: var(--danger); }
+
+/* Строка создания токена: поле, кнопка и пояснение о лимите */
+.create-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.create-row .field { flex: 1 1 260px; }
+.create-btn { margin-top: 24px; } /* выровнять по полю, а не по его подписи */
+.limit-note {
+  flex-basis: 100%; font-size: 13px; color: var(--warn); line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .create-btn { margin-top: 0; }
+}
+
+/* ---- Кнопки ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  padding: 10px 16px; font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background .15s, opacity .15s;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-primary { background: var(--accent); color: var(--accent-text); }
+.btn-secondary { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.btn-secondary:not(:disabled):hover { background: var(--row-hover); }
+.btn-danger { background: var(--danger); color: #fff; }
+
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex: none;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim); cursor: pointer; font-size: 13px;
+  transition: background .15s, color .15s, opacity .15s;
+}
+.icon-btn:hover { background: var(--row-hover); color: var(--text); }
+.icon-btn:disabled { opacity: .4; cursor: default; }
+.icon-btn.no:hover { color: var(--danger); }
+
+/* ---- Состояния ---- */
+.state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 44px 20px; color: var(--text-dim); text-align: center; font-size: 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.state i { font-size: 24px; opacity: .6; }
+
+/* ---- Таблица токенов ---- */
+.table-wrap {
+  overflow-x: auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+table.grid { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.grid-tokens { min-width: 420px; }
+table.grid th, table.grid td { padding: 11px 14px; text-align: left; }
+table.grid thead th {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text-dim); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+table.grid tbody tr { border-top: 1px solid var(--border); }
+table.grid tbody tr:first-child { border-top: none; }
+table.grid tbody tr.no-hover { cursor: default; }
+table.grid tbody tr:hover { background: var(--row-hover); }
+.mono { font-variant-numeric: tabular-nums; }
+.c-act { width: 1%; white-space: nowrap; text-align: right; }
+
+/* ---- Модалки ---- */
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: color-mix(in srgb, #000 45%, transparent);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay-top { z-index: 120; }
+.modal {
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  background: var(--surface); border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  display: flex; flex-direction: column;
+}
+.modal-sm { max-width: 440px; }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.modal-head h2 { margin: 0; font-size: 17px; font-weight: 800; }
+.close-x {
+  background: none; border: none; font-size: 22px; line-height: 1;
+  color: var(--text-dim); cursor: pointer; padding: 0 4px;
+}
+.close-x:hover { color: var(--text); }
+.modal-body { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 18px; border-top: 1px solid var(--border);
+}
+.confirm-text { margin: 8px 0 4px; font-size: 14px; line-height: 1.55; }
+
+/* Предупреждение в окне выдачи токена */
+.warn-text {
+  margin: 0; display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 13px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  font-size: 13.5px; line-height: 1.55;
+}
+.warn-text i { color: var(--warn); margin-top: 2px; flex: none; }
+
+/* Значение токена: только для чтения, одним блоком */
+.token-field { gap: 6px; }
+.token-value {
+  resize: none; width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.5; word-break: break-all;
+}
+
+/* ---- Строка «ключ — значение» ---- */
+.prow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 9px 0;
+}
+.prow .k { font-size: 13px; color: var(--text-dim); flex: 0 0 110px; }
+.prow .v { font-size: 14px; flex: 1; min-width: 0; word-break: break-word; }
+
+/* ---- Тосты ---- */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  padding: 11px 18px; border-radius: 999px;
+  font-size: 14px; font-weight: 600; color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+  z-index: 200; max-width: 90%; text-align: center;
+  animation: toast-in .2s ease;
+}
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+.toast-info { background: #334155; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
+
+/* ---- Кнопки меню (☰ и ×) — видны только на узком экране ---- */
+.menu-btn, .menu-close {
+  display: none; place-items: center; flex: none;
+  width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: none; color: var(--text); cursor: pointer; font-size: 16px;
+}
+.menu-btn:hover, .menu-close:hover { background: var(--row-hover); }
+.menu-close { margin-left: auto; }
+.topbar-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.menu-backdrop {
+  position: fixed; inset: 0; z-index: 55;
+  background: rgba(0, 0, 0, .45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none !important; }
+}
+
+/* ---- Узкие экраны ---- */
+@media (max-width: 720px) {
+  /* Боковое меню выезжает слева по кнопке ☰ в шапке. */
+  .sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
+    width: min(280px, 85vw); overflow-y: auto;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform .2s ease, visibility 0s linear .2s;
+  }
+  .sidebar.open {
+    transform: none; visibility: visible;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .35);
+    transition: transform .2s ease;
+  }
+  .menu-btn, .menu-close { display: inline-grid; }
+  .sidebar-toggle { display: none; }
+  .content { padding: 16px; }
+  .topbar { padding: 14px 16px; }
+  .block { padding: 16px; }
+  .prow .k { flex-basis: 100%; }
+}
+
+/* ---- Верхняя панель с меню аккаунта ---- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* Баланс: отдельный блок слева от логина — подпись и сумма */
+.balance {
+  display: inline-flex; align-items: baseline; gap: 10px;
+  padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); white-space: nowrap;
+}
+.balance-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.balance-value { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.account { position: relative; }
+.account-menu-head { display: none; }
+.account-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 7px 11px; border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: none; color: var(--text); cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  transition: background .15s, border-color .15s;
+}
+.account-btn:hover, .account-btn.is-open { background: var(--row-hover); border-color: var(--border); }
+.account-btn > i:first-child { font-size: 17px; color: var(--text-dim); }
+.account-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-caret { font-size: 11px; color: var(--text-dim); }
+
+.account-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 90;
+  min-width: 180px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.account-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: var(--radius-sm);
+  color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;
+}
+.account-item:hover { background: var(--row-hover); }
+.account-item { white-space: nowrap; } /* «Управление аккаунтом» — в одну строку */
+/* «Выйти» — красным, как в кабинете администратора */
+.account-item.is-danger i { color: var(--danger); }
+.account-item.is-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.account-item i { width: 16px; text-align: center; color: var(--text-dim); }
+/* ============================================================
+   Разделы-таблицы: «Ордера», «Транзакции», «Заявки на вывод»
+   ============================================================ */
+
+.dim { color: var(--text-dim); }
+.strong { font-weight: 700; }
+.nowrap { white-space: nowrap; }
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+/* ---- Панель фильтра ---- */
+.filters {
+  display: flex; flex-direction: column; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.filters-row { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-start; }
+.filters-row .field { flex: 0 1 160px; }
+.filters-row .field-wide { flex: 1 1 220px; }
+.filters-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filters-extra { margin-left: auto; display: flex; gap: 10px; }
+
+.field select {
+  padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
+  min-width: 0; cursor: pointer;
+}
+.field select:focus { outline: none; border-color: var(--accent); }
+/* Одна высота у полей и списков: иначе select ниже поля даты (у даты иконка
+   календаря), и в одной строке они стоят вразнобой. */
+.field input:not([type="checkbox"]):not([type="radio"]), .field select { height: 40px; box-sizing: border-box; }
+/* Своя стрелка у списков: у системной стрелки отступ справа меньше, чем
+   у текста слева, и выглядит несимметрично. Стрелка стоит на том же
+   расстоянии от правого края, что и текст от левого. */
+.field select {
+  -webkit-appearance: none; appearance: none;
+  padding-left: 12px; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238b95a5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+}
+.label-note { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+.field-hint { font-size: 12px; color: var(--text-dim); }
+
+/* Дата + время одной парой */
+.filters-row .field:has(.date-pair) { flex: 0 1 auto; }
+.date-pair { display: flex; gap: 8px; }
+.date-pair input[type="date"] { width: 150px; }
+.date-pair input[type="time"] { width: 120px; }
+
+/* ---- Карточка таблицы ---- */
+.table-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.table-scroll { overflow-x: auto; transition: opacity .15s; }
+.table-scroll.is-loading { opacity: .55; pointer-events: none; }
+.state-flat { border: none; border-radius: 0; background: none; }
+
+table.grid-orders { min-width: 980px; }
+table.grid-tx { min-width: 860px; }
+table.grid-wd { min-width: 1120px; }
+table.grid td { vertical-align: middle; }
+table.grid th.num, table.grid td.num {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+.table-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; padding: 12px 14px; border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+/* ---- Пагинация ---- */
+.pager { display: flex; gap: 6px; }
+.pager-btn {
+  min-width: 30px; height: 30px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.pager-btn:not(:disabled):not(.active):hover { background: var(--row-hover); }
+.pager-btn:disabled { opacity: .4; cursor: default; }
+.pager-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+/* ---- Сокращённое значение с копированием ---- */
+.copy-cell { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.icon-btn-sm { width: 24px; height: 24px; font-size: 12px; }
+.icon-btn-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.icon-btn-danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* Callback URL — в одну строку с многоточием */
+.url-cell { max-width: 260px; }
+.ellipsis {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- Цветные метки ---- */
+.badge {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  color: var(--badge); background: color-mix(in srgb, var(--badge) 15%, transparent);
+}
+.badge-green  { --badge: var(--success); }
+.badge-blue   { --badge: var(--accent); }
+.badge-amber  { --badge: #d97706; }
+.badge-purple { --badge: #8b5cf6; }
+.badge-red    { --badge: var(--danger); }
+.badge-brown  { --badge: #a16207; }
+.badge-grey   { --badge: var(--text-dim); }
+
+/* ---- Транзакции: цвет строки по операции ---- */
+table.grid tbody tr.tx-credit { background: color-mix(in srgb, var(--success) 7%, transparent); }
+table.grid tbody tr.tx-debit  { background: color-mix(in srgb, var(--danger) 7%, transparent); }
+td.plus  { color: var(--success); }
+td.minus { color: var(--danger); }
+
+@media (max-width: 720px) {
+  .filters { padding: 14px; }
+  .filters-extra { margin-left: 0; }
+  .date-pair input[type="date"], .date-pair input[type="time"] { width: auto; flex: 1; }
+}
+
+/* ---- Блок даты в фильтре: режим + «С»/«По» (или «Дата») ----
+   Раскладка считается от ширины самого блока (container query).
+   «Равна»:    режим и дата с временем в одну строку; поля сжимаются
+               до минимума, дальше дата уходит под режим.
+   «Диапазон»: блок во всю строку; всё в строку → режим сверху,
+               «С» и «По» под ним → на узком экране «С» и «По» —
+               две колонки, в каждой дата над временем.
+               «По» от «С» не отрывается никогда. */
+.filters-row .date-group {
+  container-type: inline-size;
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 14px;
+  /* размер блока задаём явно: с container-type он не считается по содержимому */
+  flex: 0 1 470px; min-width: min(100%, 420px);
+}
+.filters-row .date-group-range { flex: 1 1 100%; min-width: 0; }
+.filters-row .date-group > .field { flex: 0 0 160px; }
+
+.date-fields { display: flex; flex-wrap: nowrap; gap: 12px 14px; min-width: 0; }
+
+/* «Равна»: пара дата+время забирает остаток строки. */
+/* «Равна»: всё в одну строку не переносится — поля сжимаются
+   (селект до 116px, дата до 128px, время до 96px). Вниз дата уходит
+   только когда блок уже 330px (см. @container ниже). */
+.filters-row .date-group:not(.date-group-range) { flex-wrap: nowrap; }
+.filters-row .date-group:not(.date-group-range) > .field { flex: 0 1 160px; min-width: 116px; }
+.filters-row .date-group > .field > label { white-space: nowrap; }
+.filters-row .date-group:not(.date-group-range) .date-fields { flex: 1 1 auto; min-width: 232px; max-width: 340px; }
+.filters-row .date-group:not(.date-group-range) .date-fields > .field { flex: 1 1 auto; }
+.date-group:not(.date-group-range) .date-pair input[type="date"] { flex: 1 1 60%; width: auto; min-width: 128px; }
+.date-group:not(.date-group-range) .date-pair input[type="time"] { flex: 1 1 40%; width: auto; min-width: 96px; }
+
+/* «Диапазон»: поля фиксированной ширины. */
+.filters-row .date-group-range .date-fields { flex: 0 0 auto; }
+.filters-row .date-group-range .date-fields > .field { flex: none; }
+.date-group-range .date-pair input[type="date"] { flex: none; width: 150px; }
+.date-group-range .date-pair input[type="time"] { flex: none; width: 120px; }
+
+/* Узкий блок: «С» и «По» — две равные колонки, дата над временем. */
+@container (max-width: 579px) {
+  .filters-row .date-group-range > .field { flex: 1 1 100%; }
+  .filters-row .date-group-range .date-fields { flex: 1 1 100%; align-items: flex-end; }
+  .filters-row .date-group-range .date-fields > .field { flex: 1 1 0; min-width: 0; }
+  .date-group-range .date-pair { flex-direction: column; }
+  .date-group-range .date-pair input[type="date"],
+  .date-group-range .date-pair input[type="time"] { width: 100%; min-width: 0; }
+}
+
+/* Телефон: блок во всю строку. */
+@media (max-width: 720px) {
+  .filters-row .date-group { flex: 1 1 100%; min-width: 0; }
+}
+
+
+@container (max-width: 329px) {
+  .filters-row .date-group:not(.date-group-range) > .field { flex: 1 1 100%; }
+  .filters-row .date-group:not(.date-group-range) .date-fields { flex: 1 1 100%; max-width: none; }
+}
+/* Сам контейнер @container стилизовать не может — перенос включаем по ширине окна. */
+@media (max-width: 420px) {
+  .filters-row .date-group:not(.date-group-range) { flex-wrap: wrap; }
+}
+
+/* Баланс на узком экране: компактнее, логин может сжаться */
+@media (max-width: 560px) {
+  .topbar-title h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-right { gap: 6px; flex: none; }
+  .balance { padding: 6px 10px; }
+  .balance-label { display: none; }   /* сумма с ₽ и так понятна */
+  .balance-value { font-size: 14px; }
+  .account-name, .account-caret { display: none; } /* логин — в открытом меню */
+  .account-menu-head {
+    display: block; padding: 8px 12px 10px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 700; color: var(--text-dim);
+    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}
+
+/* ==================== Карточка ордера ==================== */
+.table-hint { margin: 0 0 8px; font-size: 13px; color: var(--text-dim); }
+table.grid tbody tr.row-open { cursor: pointer; }
+
+.ocard { max-width: 640px; }
+.ocard-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 20px 16px;
+}
+.ocard-ico {
+  width: 42px; height: 42px; flex: none; border-radius: 10px;
+  display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-size: 17px;
+}
+.ocard-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.ocard-head .close-x { margin-left: auto; }
+.ocard-eyebrow {
+  display: block; margin-bottom: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ocard-copy { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.ocard-copy .wrap { overflow-wrap: anywhere; }
+.ocard-band {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; background: var(--surface-2);
+}
+.ocard-band-right { text-align: right; }
+.ocard-sum { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ocard-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 28px; padding: 20px;
+}
+.ocard-field { min-width: 0; font-size: 14px; }
+@media (max-width: 560px) {
+  .ocard-grid { grid-template-columns: 1fr; }
+  .ocard-sum { font-size: 22px; }
+}
+
+/* ===== Сортировка по клику на заголовок (как в кабинете администратора) ===== */
+.th-sort {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0; border: none; background: none; cursor: pointer;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit;
+}
+.th-sort:hover { color: var(--text); }
+.th-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sort-ico { font-size: 10px; opacity: .35; transition: opacity .15s; }
+.th-sort:hover .sort-ico { opacity: .7; }
+table.grid thead th.th-sortable.active { color: var(--text); }
+th.th-sortable.active .sort-ico { opacity: 1; color: var(--accent); }
+/* ID ордера в окне отмены — переносится целиком, не растягивает окно */
+.confirm-text .code.wrap { overflow-wrap: anywhere; }

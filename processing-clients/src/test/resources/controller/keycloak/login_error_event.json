@@ -1,0 +1,19 @@
+{
+  "type": "LOGIN_ERROR",
+  "realmId": "844e420f-8c1a-48db-a4d1-b9170da0a2b6",
+  "id": "99e1234a-bcde-4f56-7a89-0123456789ab",
+  "time": 1787262100123,
+  "clientId": "processing",
+  "userId": "ea2c489d-1a95-4f42-b810-7dce5622ffbd",
+  "ipAddress": "192.168.65.1",
+  "error": "user_not_found",
+  "details": {
+    "auth_method": "openid-connect",
+    "auth_type": "code",
+    "redirect_uri": "http://localhost:8080/login/oauth2/code/keycloak-bff",
+    "code_id": "_XFGY0wbOcvimwq4-OfwBduS",
+    "username": "wrong_user_name"
+  },
+  "resourcePath": null,
+  "representation": null
+}

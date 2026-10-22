@@ -1,44 +1,62 @@
 spring:
+  # Локально Spring Cloud Config не используется. На сервере вместо этого spring.config.import: "configserver:..."
+  cloud:
+    config:
+      enabled: false
   grpc:
     client:
       channels:
-        api-clients:
-          address: ""
-  cloud:
-    gateway:
-      httpclient:
-        connect-timeout: 2000
-        response-timeout: 5000
-      server:
-        webflux:
-          routes:
-            - id: clients-login-route
-              uri: https://api-clients-service
-              predicates:
-                - Path=/api-clients/login
-
-            - id: clients-secured-route
-              uri: https://api-clients-service
-              predicates:
-                - Path=/api-clients/**
-              filters:
-                - JwtAuthFilter
-
-            - id: billing-secured-route
-              uri: https://billing-service
-              predicates:
-                - Path=/billing/**
-              filters:
-                - JwtAuthFilter
-
-            - id: orders-secured-route
-              uri: https://orders-service
-              predicates:
-                - Path=/orders/**
-              filters:
-                - JwtAuthFilter
-
-            - id: details-api-route
-              uri: https://details-api-service
-              predicates:
-                - Path=/api/**
+        api-merchant-details:
+          address: "localhost:9090"
+        merchant-history:
+          address: "localhost:9091"
+  datasource:
+    username:
+    password:
+    url:
+    driver-class-name: "com.mysql.cj.jdbc.Driver"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+      client:
+        registration:
+          keycloak-bff:
+            provider: keycloak-provider
+            client-id:
+            client-secret:
+            authorization-grant-type: authorization_code
+            scope: openid,profile
+        provider:
+          keycloak-provider:
+            issuer-uri:
+  kafka:
+    bootstrap-servers:
+cache:
+  ttl:
+    client-get-seconds: 3600
+details-search:
+  # Максимум одновременных поисков реквизитов, синхронных и асинхронных. При превышении API отвечает 503.
+  concurrency-limit: 200
+  timeout:
+    # Допустимый таймаут поиска реквизитов в заголовке Search-Timeout-Seconds.
+    min-seconds: 5
+    # Ордер в статусе SEARCHING дольше max-seconds + 30 секунд переводится шедулером в DETAILS_NOT_FOUND.
+    max-seconds: 300
+kafka:
+  group-id:
+  topic:
+    merchant-details:
+      callback:
+# Actuator (health, метрики Prometheus) слушает отдельный порт 8091 из application.yml, на основном порту приложения его нет.
+# Порт не проксируется через nginx и должен быть доступен только из внутреннего VPN.
+management:
+  server:
+    # Адрес интерфейса, на котором слушает порт actuator. В проде указать адрес сервера во внутреннем VPN.
+    # Если приложение запущено в Docker, оставить 0.0.0.0 и публиковать порт только на VPN-адрес: "<vpn-ip>:8091:8091".
+    address: 0.0.0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

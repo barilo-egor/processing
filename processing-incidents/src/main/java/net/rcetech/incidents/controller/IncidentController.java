@@ -1,0 +1,47 @@
+package net.rcetech.incidents.controller;
+
+import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.repository.incidents.IncidentSpecifications;
+import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.WebPath;
+import net.rcetech.meta.incidents.dto.IncidentFilter;
+import net.rcetech.meta.incidents.dto.IncidentResponse;
+import net.rcetech.meta.incidents.dto.UpdateIncidentRequest;
+import net.rcetech.meta.user.SupportAccess;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.UUID;
+
+@Slf4j
+@RestController
+@SupportAccess
+@RequestMapping(WebPath.SUPPORT_API_PATH + "/incident")
+public class IncidentController {
+
+    private final IncidentService incidentService;
+
+    public IncidentController(IncidentService incidentService) {
+        this.incidentService = incidentService;
+    }
+
+    @GetMapping
+    public PagedModel<IncidentResponse> get(IncidentFilter incidentFilter, @PageableDefault(size = 20) Pageable pageable) {
+        return new PagedModel<>(
+                incidentService.findAll(IncidentSpecifications.matches(incidentFilter), pageable, IncidentResponse.class)
+        );
+    }
+
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public IncidentResponse update(Principal principal, @PathVariable Long id, @RequestBody UpdateIncidentRequest request) {
+        IncidentResponse incident = incidentService.resolve(id, UUID.fromString(principal.getName()), request.comment());
+        log.info("Сотрудник поддержки {} закрыл инцидент {} с комментарием: {}.",
+                principal.getName(), id, request.comment());
+        return incident;
+    }
+}

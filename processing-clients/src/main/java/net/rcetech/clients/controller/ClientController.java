@@ -1,0 +1,42 @@
+package net.rcetech.clients.controller;
+
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.WebPath;
+import net.rcetech.meta.clients.dto.ClientUpdateRequest;
+import net.rcetech.meta.clients.projection.ClientProjection;
+import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.user.ClientAccess;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.UUID;
+
+@Slf4j
+@RestController
+@RequestMapping(WebPath.CLIENT_API_PATH + "/profile")
+@ClientAccess
+public class ClientController {
+
+    private final ClientService clientService;
+
+    public ClientController(ClientService clientService) {
+        this.clientService = clientService;
+    }
+
+    @GetMapping
+    public ClientProjection get(Principal principal) {
+        return clientService.findById(UUID.fromString(principal.getName()), ClientProjection.class)
+                .orElseThrow(() -> new BaseException(
+                        "Клиент не найден в базе данных по своему principal.getName(): " + principal.getName())
+                );
+    }
+
+    @PatchMapping
+    public ClientProjection patch(Principal principal, @Valid @RequestBody ClientUpdateRequest clientUpdateRequest) {
+        ClientProjection client = clientService.update(UUID.fromString(principal.getName()), clientUpdateRequest);
+        log.info("Клиент {} обновил профиль: {}.", principal.getName(), clientUpdateRequest);
+        return client;
+    }
+}

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Подключаем базовые настройки и дефолтный консольный аппендер Spring Boot -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <!-- 1. Аппендер для net.rcetech (ротация: 3 дня, по 10 МБ) -->
+    <appender name="RCETECH_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/rcetech.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Имя архивных файлов с паттерном даты и индекса -->
+            <fileNamePattern>logs/archived/rcetech-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Ограничение размера одного файла -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- Хранить историю за последние 3 дня -->
+            <maxHistory>3</maxHistory>
+            <!-- Общий лимит на архив (опционально, страхует диск) -->
+            <totalSizeCap>100MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 2. Аппендер для org.springframework -->
+    <appender name="SPRING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/spring.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archived/spring-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 3. Аппендер для всего остального (Root) -->
+    <appender name="OTHER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/other.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archived/other-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+
+    <!-- Настройка логгера для net.rcetech -->
+    <!-- additivity="false" означает, что логи пакета НЕ будут дублироваться в other.log -->
+    <logger name="net.rcetech" level="DEBUG" additivity="false">
+        <appender-ref ref="RCETECH_FILE" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- Настройка логгера для org.springframework -->
+    <!-- Уровень здесь НЕ указываем, чтобы его можно было переопределять через application.yml -->
+    <logger name="org.springframework" additivity="false">
+        <appender-ref ref="SPRING_FILE" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+
+    <!-- Главный логгер (Root) собирает всё, что не подошло под правила выше -->
+    <root level="INFO">
+        <appender-ref ref="OTHER_FILE" />
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+</configuration>

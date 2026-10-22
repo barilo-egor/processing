@@ -1,0 +1,129 @@
+plugins {
+    id 'processing'
+    id 'org.springframework.boot'
+    id("com.github.node-gradle.node") version "7.1.0"
+}
+
+dependencies {
+    implementation project(':processing-api')
+    implementation project(':processing-billing')
+    implementation project(':processing-clients')
+    implementation project(':processing-orders')
+    implementation project(':processing-support')
+    implementation project(':processing-domain')
+    implementation project(':processing-web')
+    implementation project(':processing-security')
+    implementation project(':processing-incidents')
+
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'processing.jar'
+    destinationDirectory = file("${rootProject.layout.buildDirectory.get().asFile}/libs")
+}
+
+springBoot {
+    mainClass = 'net.rcetech.Application'
+}
+
+tasks.register('processingStartUp', Exec) {
+    workingDir file("${project.rootDir}/docker")
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'up', '-d', '--build'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'up', '-d', '--build'
+    }
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend',
+            'copyKeycloakFrontendToDocker')
+}
+
+tasks.register('processingShutdown', Exec) {
+    workingDir file("${project.rootDir}/docker")
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'down'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'down'
+    }
+}
+
+tasks.register('processingRedeployJar', Exec) {
+    workingDir file("${project.rootDir}/docker")
+
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        executable 'cmd'
+        args '/c', 'docker', 'compose', 'up', '-d', '--no-deps', '--force-recreate', 'processing'
+    } else {
+        executable '/usr/local/bin/docker'
+        args 'compose', 'up', '-d', '--no-deps', '--force-recreate', 'processing'
+    }
+    dependsOn('clean', 'bootJar', 'copyJarToDockerDir', 'copyConfigToDockerDir', 'installFrontend')
+}
+
+tasks.named("bootJar") {
+    mustRunAfter("clean")
+}
+
+tasks.register('copyJarToDockerDir', Copy) {
+    from(new File(rootDir, 'build/libs/'))
+    include('processing.jar')
+    into(new File(rootDir, 'docker/mount/processing'))
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mustRunAfter('bootJar')
+}
+
+tasks.register('copyConfigToDockerDir', Copy) {
+    from(rootDir)
+    include('config/**')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(new File(rootDir, 'docker/mount/processing'))
+    mustRunAfter('installFrontend')
+}
+
+node {
+    download = true
+    version = '26.8.1'
+}
+
+
+tasks.register('installFrontend') {
+    dependsOn('installClient', 'installSupport', 'installNoRole')
+}
+
+tasks.register('installNoRole', Sync) {
+    from(new File(rootDir, 'frontend/no-role'))
+    into(new File(rootDir, 'config/frontend/no-role'))
+}
+
+tasks.register('installClient', NpmTask) {
+    workingDir = file('../frontend/client')
+    args = ['run', 'build']
+}
+
+tasks.register('installSupport', NpmTask) {
+    workingDir = file('../frontend/support')
+    args = ['run', 'build']
+}
+
+tasks.register('processingRedeployFrontend') {
+    dependsOn('installFrontend', 'copyFrontendToDocker')
+}
+
+tasks.register('copyFrontendToDocker', Copy) {
+    from(rootDir)
+    include('config/frontend/**')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(new File(rootDir, 'docker/mount/processing'))
+    mustRunAfter('installFrontend')
+}
+
+tasks.register('copyKeycloakFrontendToDocker', Sync) {
+    from(new File(rootDir, 'frontend-keycloak'))
+    into(new File(rootDir, 'docker/mount/keycloak/themes'))
+}

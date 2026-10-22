@@ -1,0 +1,23 @@
+{
+  "type": "LOGIN",
+  "realmId": "844e420f-8c1a-48db-a4d1-b9170da0a2b6",
+  "id": "32a4a93a-7fce-41ff-a552-eca51a8bb634",
+  "time": 1787261849488,
+  "clientId": "processing",
+  "userId": "ea2c489d-1a95-4f42-b810-7dce5622ffbd",
+  "ipAddress": "192.168.65.1",
+  "error": null,
+  "details": {
+    "auth_method": "openid-connect",
+    "auth_type": "code",
+    "response_type": "code",
+    "redirect_uri": "http://localhost:8080/login/oauth2/code/keycloak-bff",
+    "consent": "no_consent_required",
+    "code_id": "_GUVY0wbOcvimwq4-OfwBduS",
+    "username": "user",
+    "response_mode": "query"
+  },
+  "resourcePath": null,
+  "representation": null,
+  "abrakadabra": "suuuuu"
+}

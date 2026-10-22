@@ -1,0 +1,83 @@
+package net.rcetech.incidents;
+
+import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
+import net.rcetech.meta.incidents.BalanceUpdateErrorEvent;
+import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
+import net.rcetech.meta.incidents.IncidentEvent;
+import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
+import net.rcetech.meta.incidents.TransactionCreationErrorEvent;
+import net.rcetech.meta.orders.OrderStatus;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+@ExtendWith(MockitoExtension.class)
+class IncidentEventListenerTest {
+
+    @Mock
+    private IncidentService incidentService;
+
+    @InjectMocks
+    private IncidentEventListener incidentEventListener;
+
+    static Stream<Arguments> events() {
+        return Stream.of(
+                Arguments.of(new BalanceUpdateErrorEvent(UUID.fromString("7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17"),
+                        UUID.fromString("f3f0d1d5-f4c6-4af5-ad9c-327ac365ea92"), 1_760_000_000_000L),
+                        IncidentType.BALANCE_UPDATE_ERROR),
+                Arguments.of(new TransactionCreationErrorEvent(UUID.fromString("4f8a2c6e-9b1d-4e73-b5a0-6c2e8d4f1b39"),
+                        OrderStatus.SUCCESS, 1_790_262_057_999L), IncidentType.TRANSACTION_CREATION_ERROR)
+        );
+    }
+
+    static Stream<Arguments> onlyIfNoUnresolvedEvents() {
+        return Stream.of(
+                Arguments.of(new DetailsSearchErrorEvent(UUID.fromString("7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17"),
+                        "Неизвестная ошибка GRPC 14", 1_760_000_000_000L), IncidentType.DETAILS_SEARCH_ERROR),
+                Arguments.of(new DetailsSearchErrorEvent(UUID.fromString("3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97"),
+                        "Непредвиденная ошибка: Connection refused", 1_790_262_057_999L),
+                        IncidentType.DETAILS_SEARCH_ERROR),
+                Arguments.of(new AsyncDetailsSearchErrorEvent(UUID.fromString("9a4c2e7b-5d1f-4b38-8e6a-2f7c9d0b3e51"),
+                        "Deadlock found", 1_791_100_000_000L), IncidentType.ASYNC_DETAILS_SEARCH_ERROR),
+                Arguments.of(new AsyncDetailsSearchErrorEvent(UUID.fromString("b2e8d4f1-6c3a-4e97-9d05-7a1f3c8e6b24"),
+                        "Connection is not available", 1_792_400_000_000L), IncidentType.ASYNC_DETAILS_SEARCH_ERROR),
+                Arguments.of(new StuckSearchOrderErrorEvent(UUID.fromString("3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97"),
+                        "Connection is not available", 1_790_262_057_999L), IncidentType.STUCK_SEARCH_ORDER_ERROR),
+                Arguments.of(new StuckSearchOrderErrorEvent(UUID.fromString("e5b1c9d3-2f7a-4c86-a0e4-8d3b6f1a9c72"),
+                        "Deadlock found", 1_793_500_000_000L), IncidentType.STUCK_SEARCH_ORDER_ERROR)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("events")
+    @DisplayName("Метод должен сохранить инцидент с типом и временем ошибки из события.")
+    void incident_shouldSaveIncident(IncidentEvent event, IncidentType type) {
+        incidentEventListener.incident(event);
+
+        verify(incidentService).save(type, event, event.errorTimestamp());
+        verifyNoMoreInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("onlyIfNoUnresolvedEvents")
+    @DisplayName("Метод должен сохранить инцидент об ошибке поиска реквизитов, только если нет необработанного такого типа.")
+    void incident_shouldSaveIfNoUnresolved(IncidentEvent event, IncidentType type) {
+        incidentEventListener.incident(event);
+
+        verify(incidentService).saveIfNoUnresolved(type, event, event.errorTimestamp());
+        verifyNoMoreInteractions(incidentService);
+    }
+}

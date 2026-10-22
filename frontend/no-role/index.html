@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Нет доступа</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+    <!--
+      Страница для пользователя без роли (frontend/no-role/index.html).
+      Сообщение по центру и кнопка «Выйти».
+      Цвета — как в ЛК (светлая и тёмная тема по настройке системы).
+    -->
+    <style>
+        :root {
+            --bg: #f5f6f8;
+            --surface: #ffffff;
+            --text: #16181d;
+            --text-dim: #6b7280;
+            --border: #e2e4e9;
+            --danger: #dc2626;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #14161a;
+                --surface: #1c1f25;
+                --text: #e8eaed;
+                --text-dim: #9aa1ac;
+                --border: #2c313a;
+                --danger: #ef4444;
+            }
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; }
+        body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 24px 24px;
+            text-align: center;
+        }
+        .card > svg { color: var(--text-dim); margin-bottom: 14px; }
+        .card p {
+            margin: 0 0 24px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.5;
+            text-wrap: balance;
+        }
+
+        .btn-logout {
+            appearance: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 140px;
+            padding: 10px 18px;
+            border: 1px solid var(--danger);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--danger);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .btn-logout:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+        .btn-logout:disabled { opacity: .5; cursor: default; }
+    </style>
+</head>
+<body>
+<main class="card">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+    <p>Обратитесь в поддержку для получения роли.</p>
+    <button type="button" class="btn-logout" id="logout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+        </svg>
+        Выйти
+    </button>
+</main>
+
+<script>
+    /* Выход — так же, как в ЛК.
+       Бэк проверяет CSRF через csrf().spa(): в поле формы _csrf нужен
+       замаскированный токен, поэтому берём его со стандартной страницы
+       GET /logout и отправляем форму POST /logout. Дальше processing
+       сам перенаправит на выход Keycloak и обратно на форму входа.
+       Если токен получить не удалось — открываем GET /logout, там
+       стандартная кнопка подтверждения выхода. */
+    async function logout() {
+        let token = '';
+        try {
+            const res = await fetch('/logout', { credentials: 'include', headers: { Accept: 'text/html' } });
+            if (res.ok) {
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const input = doc.querySelector('input[name="_csrf"]');
+                token = input ? input.value : '';
+            }
+        } catch (e) { /* сеть недоступна — ниже запасной вариант */ }
+
+        if (!token) {
+            window.location.href = '/logout';
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/logout';
+        form.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_csrf';
+        input.value = token;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    const btn = document.getElementById('logout');
+    btn.addEventListener('click', () => {
+        btn.disabled = true;
+        logout();
+    });
+</script>
+</body>
+</html>
