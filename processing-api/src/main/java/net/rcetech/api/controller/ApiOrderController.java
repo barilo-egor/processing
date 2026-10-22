@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.service.LimitedOrderCreator;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.api.validation.SearchTimeout;
 import net.rcetech.meta.WebPath;
@@ -28,8 +29,11 @@ public class ApiOrderController {
 
     private final OrderApiService orderApiService;
 
-    public ApiOrderController(OrderApiService orderApiService) {
+    private final LimitedOrderCreator limitedOrderCreator;
+
+    public ApiOrderController(OrderApiService orderApiService, LimitedOrderCreator limitedOrderCreator) {
         this.orderApiService = orderApiService;
+        this.limitedOrderCreator = limitedOrderCreator;
     }
 
     @PostMapping
@@ -49,9 +53,7 @@ public class ApiOrderController {
                 timeoutSeconds, testOrder, async);
         CreateOrderCommand command = new CreateOrderCommand(UUID.fromString(principal.getName()), clientRequest,
                 timeoutSeconds, testOrder);
-        ClientOrderSummary order = async
-                ? orderApiService.createOrderAsync(command)
-                : orderApiService.createOrder(command);
+        ClientOrderSummary order = limitedOrderCreator.createOrder(command, async);
         log.info("Клиент {} создал через API ордер {} в статусе {} (internalId={}, сумма={}, методы={}).",
                 principal.getName(), order.id(), order.status(), clientRequest.internalId(), clientRequest.amount(),
                 clientRequest.methods());

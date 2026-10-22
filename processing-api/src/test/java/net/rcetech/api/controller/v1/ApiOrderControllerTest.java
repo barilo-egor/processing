@@ -4,6 +4,7 @@ import net.rcetech.api.config.ApiSecurityConfig;
 import net.rcetech.api.controller.ApiOrderController;
 import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
+import net.rcetech.api.service.LimitedOrderCreator;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
@@ -60,7 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ApiOrderController.class)
-@Import({MetaSecurityConfig.class, ApiSecurityConfig.class})
+@Import({MetaSecurityConfig.class, ApiSecurityConfig.class, LimitedOrderCreator.class})
 class ApiOrderControllerTest {
 
     @Autowired
@@ -80,7 +81,7 @@ class ApiOrderControllerTest {
     @BeforeEach
     void setUp() {
         when(orderApiService.createOrder(any())).thenReturn(summary());
-        when(orderApiService.createOrderAsync(any())).thenReturn(summary());
+        when(orderApiService.createOrderAsync(any(), any())).thenReturn(summary());
     }
 
     private static ClientOrderSummary summary() {
@@ -391,7 +392,7 @@ class ApiOrderControllerTest {
     void createOrder_shouldReturn202IfAsync(OrderStatus status) throws Exception {
         ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(),
                 UUID.randomUUID().toString(), status, 5000, null, null, null, "https://example.com/callback");
-        when(orderApiService.createOrderAsync(any())).thenReturn(expected);
+        when(orderApiService.createOrderAsync(any(), any())).thenReturn(expected);
         mockMvc.perform(
                         post("/api/v1/order")
                                 .with(apiKeyOf(UUID.randomUUID()))
@@ -401,7 +402,7 @@ class ApiOrderControllerTest {
                 ).andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(expected.id().toString()))
                 .andExpect(jsonPath("$.status").value(status.name()));
-        verify(orderApiService).createOrderAsync(any());
+        verify(orderApiService).createOrderAsync(any(), any());
         verify(orderApiService, never()).createOrder(any());
     }
 
@@ -418,14 +419,14 @@ class ApiOrderControllerTest {
         }
         mockMvc.perform(request).andExpect(status().isCreated());
         verify(orderApiService).createOrder(any());
-        verify(orderApiService, never()).createOrderAsync(any());
+        verify(orderApiService, never()).createOrderAsync(any(), any());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Достигнут лимит одновременных поисков реквизитов.", "Лимит исчерпан."})
     @DisplayName("Если достигнут лимит поисков реквизитов, метод должен вернуть 503.")
     void createOrder_shouldReturn503IfSearchRejected(String message) throws Exception {
-        when(orderApiService.createOrderAsync(any())).thenThrow(new ServiceUnavailableException(message));
+        when(orderApiService.createOrderAsync(any(), any())).thenThrow(new ServiceUnavailableException(message));
         mockMvc.perform(
                         post("/api/v1/order")
                                 .with(apiKeyOf(UUID.randomUUID()))

@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 @Service
 @Slf4j
@@ -47,65 +48,52 @@ public class OrderApiService {
 
     private final MerchantCallbackProcessor merchantCallbackProcessor;
 
-    private final DetailsSearchLimiter detailsSearchLimiter;
-
     private final ApplicationEventPublisher eventPublisher;
 
     public OrderApiService(DetailsSearchService detailsSearchService, ClientService clientService,
                            OrderService orderService, OrderFacade orderFacade,
                            MerchantCallbackProcessor merchantCallbackProcessor,
-                           DetailsSearchLimiter detailsSearchLimiter, ApplicationEventPublisher eventPublisher) {
+                           ApplicationEventPublisher eventPublisher) {
         this.detailsSearchService = detailsSearchService;
         this.clientService = clientService;
         this.orderService = orderService;
         this.orderFacade = orderFacade;
         this.merchantCallbackProcessor = merchantCallbackProcessor;
-        this.detailsSearchLimiter = detailsSearchLimiter;
         this.eventPublisher = eventPublisher;
     }
 
     public ClientOrderSummary createOrder(CreateOrderCommand command) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        detailsSearchLimiter.acquire();
-        try {
-            CreateOrderRequest request = command.request();
-            Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-            completeSearch(order, detailsSearchService.search(order, command), false);
-            return findSummary(order.getId());
-        } finally {
-            detailsSearchLimiter.release();
-        }
+        CreateOrderRequest request = command.request();
+        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
+        completeSearch(order, detailsSearchService.search(order, command), false);
+        return findSummary(order.getId());
     }
 
-    public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
+    public ClientOrderSummary createOrderAsync(CreateOrderCommand command,
+                                               BiConsumer<Void, Throwable> onSearchCompleted) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        detailsSearchLimiter.acquire();
-        try {
-            CreateOrderRequest request = command.request();
-            Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-            ClientOrderSummary summary = findSummary(order.getId());
-            if (Objects.isNull(summary.callbackUrl())) {
-                log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
-            }
-            detailsSearchService.searchAsync(order, command)
-                    .thenAccept(details -> completeSearch(order, details, true))
-                    .exceptionally(e -> {
-                        Throwable cause = e.getCause();
-                        long timestamp = System.currentTimeMillis();
-                        log.error("{} Ошибка асинхронного поиска реквизитов по ордеру {}: {}", timestamp,
-                                order.getId(), cause.getMessage(), cause);
-                        eventPublisher.publishEvent(new AsyncDetailsSearchErrorEvent(order.getId(),
-                                cause.getMessage(), timestamp));
-                        return null;
-                    })
-                    .whenComplete((result, e) -> detailsSearchLimiter.release());
-            return summary;
-        } catch (RuntimeException e) {
-            detailsSearchLimiter.release();
-            throw e;
+        CreateOrderRequest request = command.request();
+        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
+        ClientOrderSummary summary = findSummary(order.getId());
+        if (Objects.isNull(summary.callbackUrl())) {
+            log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
         }
+        detailsSearchService.searchAsync(order, command)
+                .thenAccept(details -> completeSearch(order, details, true))
+                .exceptionally(e -> {
+                    Throwable cause = e.getCause();
+                    long timestamp = System.currentTimeMillis();
+                    log.error("{} Ошибка асинхронного поиска реквизитов по ордеру {}: {}", timestamp, order.getId(),
+                            cause.getMessage(), cause);
+                    eventPublisher.publishEvent(new AsyncDetailsSearchErrorEvent(order.getId(), cause.getMessage(),
+                            timestamp));
+                    return null;
+                })
+                .whenComplete(onSearchCompleted);
+        return summary;
     }
 
     private ClientOrderSummary findSummary(UUID orderId) {
