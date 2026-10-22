@@ -1,4 +1,8 @@
 spring:
+  # Локально Spring Cloud Config не используется. На сервере вместо этого spring.config.import: "configserver:..."
+  cloud:
+    config:
+      enabled: false
   grpc:
     client:
       channels:
