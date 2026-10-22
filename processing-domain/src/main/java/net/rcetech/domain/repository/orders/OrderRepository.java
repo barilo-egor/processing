@@ -6,6 +6,8 @@ import net.rcetech.meta.orders.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
@@ -31,4 +33,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     boolean existsByIdAndClientId(UUID id, UUID clientId);
 
     <T> Optional<T> findByIdAndClientId(UUID id, UUID clientId, Class<T> projectionType);
+
+    @Modifying
+    @Query("delete from Order o where o.client.id = :clientId")
+    int deleteAllByClientId(UUID clientId);
 }

@@ -2,6 +2,7 @@ package net.rcetech.clients.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -27,8 +28,11 @@ public class SupportClientController {
 
     private final ClientService clientService;
 
-    public SupportClientController(ClientService clientService) {
+    private final ClientDeletionService clientDeletionService;
+
+    public SupportClientController(ClientService clientService, ClientDeletionService clientDeletionService) {
         this.clientService = clientService;
+        this.clientDeletionService = clientDeletionService;
     }
 
     @GetMapping
@@ -45,5 +49,13 @@ public class SupportClientController {
         SupportClientProjection client = clientService.update(id, updateClientDTO);
         log.info("Сотрудник поддержки {} обновил настройки клиента {}: {}.", principal.getName(), id, updateClientDTO);
         return new ResponseEntity<>(client, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}")
+    @AdminAccess
+    public ResponseEntity<Void> delete(Principal principal, @PathVariable UUID id) {
+        clientDeletionService.delete(id);
+        log.info("Сотрудник поддержки {} удалил клиента {}.", principal.getName(), id);
+        return ResponseEntity.noContent().build();
     }
 }
