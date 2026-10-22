@@ -148,9 +148,9 @@ class OrderApiServiceTest {
 
     private OrderApiService orderApiService(int concurrencyLimit) {
         DetailsSearchService detailsSearchService = new DetailsSearchService(merchantDetailsReceiver,
-                randomDetailsReceiver);
+                randomDetailsReceiver, virtualTaskExecutor);
         return new OrderApiService(detailsSearchService, clientService, orderService, new OrderFacade(orderService),
-                merchantCallbackProcessor, virtualTaskExecutor, concurrencyLimit, eventPublisher);
+                merchantCallbackProcessor, new DetailsSearchLimiter(concurrencyLimit), eventPublisher);
     }
 
     @ParameterizedTest

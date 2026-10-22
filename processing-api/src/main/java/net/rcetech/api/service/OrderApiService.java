@@ -12,7 +12,6 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
-import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
@@ -22,8 +21,6 @@ import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
 import net.rcetech.orders.callback.MerchantCallbackProcessor;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,9 +28,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
@@ -51,50 +47,41 @@ public class OrderApiService {
 
     private final MerchantCallbackProcessor merchantCallbackProcessor;
 
-    private final Executor virtualTaskExecutor;
-
-    private final Semaphore detailsSearchPermits;
+    private final DetailsSearchLimiter detailsSearchLimiter;
 
     private final ApplicationEventPublisher eventPublisher;
 
     public OrderApiService(DetailsSearchService detailsSearchService, ClientService clientService,
                            OrderService orderService, OrderFacade orderFacade,
                            MerchantCallbackProcessor merchantCallbackProcessor,
-                           @Qualifier("virtualTaskExecutor") Executor virtualTaskExecutor,
-                           @Value("${details-search.concurrency-limit:200}") int concurrencyLimit,
-                           ApplicationEventPublisher eventPublisher) {
+                           DetailsSearchLimiter detailsSearchLimiter, ApplicationEventPublisher eventPublisher) {
         this.detailsSearchService = detailsSearchService;
         this.clientService = clientService;
         this.orderService = orderService;
         this.orderFacade = orderFacade;
         this.merchantCallbackProcessor = merchantCallbackProcessor;
-        this.virtualTaskExecutor = virtualTaskExecutor;
-        this.detailsSearchPermits = new Semaphore(concurrencyLimit);
+        this.detailsSearchLimiter = detailsSearchLimiter;
         this.eventPublisher = eventPublisher;
     }
 
     public ClientOrderSummary createOrder(CreateOrderCommand command) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        acquireSearchPermit();
+        detailsSearchLimiter.acquire();
         try {
             CreateOrderRequest request = command.request();
             Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-            detailsSearchService.search(order, command).ifPresentOrElse(
-                    detailsResponse -> completeSearch(order.getId(), detailsResponse,
-                            client.getOrderTimeoutSeconds(), false),
-                    () -> failSearch(order.getId(), false)
-            );
+            completeSearch(order, detailsSearchService.search(order, command), false);
             return findSummary(order.getId());
         } finally {
-            detailsSearchPermits.release();
+            detailsSearchLimiter.release();
         }
     }
 
     public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        acquireSearchPermit();
+        detailsSearchLimiter.acquire();
         try {
             CreateOrderRequest request = command.request();
             Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
@@ -102,33 +89,22 @@ public class OrderApiService {
             if (Objects.isNull(summary.callbackUrl())) {
                 log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
             }
-            virtualTaskExecutor.execute(() -> {
-                try {
-                    detailsSearchService.search(order, command).ifPresentOrElse(
-                            detailsResponse -> completeSearch(order.getId(), detailsResponse,
-                                    client.getOrderTimeoutSeconds(), true),
-                            () -> failSearch(order.getId(), true)
-                    );
-                } catch (Exception e) {
-                    long timestamp = System.currentTimeMillis();
-                    log.error("{} Ошибка асинхронного поиска реквизитов по ордеру {}: {}", timestamp, order.getId(),
-                            e.getMessage(), e);
-                    eventPublisher.publishEvent(new AsyncDetailsSearchErrorEvent(order.getId(), e.getMessage(),
-                            timestamp));
-                } finally {
-                    detailsSearchPermits.release();
-                }
-            });
+            detailsSearchService.searchAsync(order, command)
+                    .thenAccept(details -> completeSearch(order, details, true))
+                    .exceptionally(e -> {
+                        Throwable cause = e.getCause();
+                        long timestamp = System.currentTimeMillis();
+                        log.error("{} Ошибка асинхронного поиска реквизитов по ордеру {}: {}", timestamp,
+                                order.getId(), cause.getMessage(), cause);
+                        eventPublisher.publishEvent(new AsyncDetailsSearchErrorEvent(order.getId(),
+                                cause.getMessage(), timestamp));
+                        return null;
+                    })
+                    .whenComplete((result, e) -> detailsSearchLimiter.release());
             return summary;
         } catch (RuntimeException e) {
-            detailsSearchPermits.release();
+            detailsSearchLimiter.release();
             throw e;
-        }
-    }
-
-    private void acquireSearchPermit() {
-        if (!detailsSearchPermits.tryAcquire()) {
-            throw new ServiceUnavailableException("Достигнут лимит одновременных поисков реквизитов.");
         }
     }
 
@@ -137,15 +113,21 @@ public class OrderApiService {
                 .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + orderId));
     }
 
-    private void completeSearch(UUID orderId, ApiDetailsResponse detailsResponse, int orderTimeoutSeconds,
-                                boolean notifyClient) {
-        OrderStatusChange change = orderFacade.routeOrder(OrderStatus.NEW, orderId, OrderStatusChangeSource.SYSTEM,
-                notifyClient, order -> fillDetails(order, detailsResponse, orderTimeoutSeconds));
-        if (!OrderStatusTransition.ALLOWED.equals(change.transition())) {
-            log.info("Реквизиты по ордеру {} найдены, но ордер уже в статусе {}.", orderId, change.from());
+    private void completeSearch(Order order, Optional<ApiDetailsResponse> details, boolean notifyClient) {
+        if (details.isEmpty()) {
+            orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, order.getId(), OrderStatusChangeSource.SYSTEM,
+                    notifyClient, routed -> { });
             return;
         }
-        processMerchantCallbacks(orderId);
+        ApiDetailsResponse detailsResponse = details.get();
+        OrderStatusChange change = orderFacade.routeOrder(OrderStatus.NEW, order.getId(),
+                OrderStatusChangeSource.SYSTEM, notifyClient,
+                routed -> fillDetails(routed, detailsResponse, order.getClient().getOrderTimeoutSeconds()));
+        if (!OrderStatusTransition.ALLOWED.equals(change.transition())) {
+            log.info("Реквизиты по ордеру {} найдены, но ордер уже в статусе {}.", order.getId(), change.from());
+            return;
+        }
+        processMerchantCallbacks(order.getId());
     }
 
     private void processMerchantCallbacks(UUID orderId) {
@@ -156,11 +138,6 @@ public class OrderApiService {
             log.error("{} Ошибка обработки КБ мерчанта, пришедших во время поиска реквизитов по ордеру {}: {}",
                     timestamp, orderId, e.getMessage(), e);
         }
-    }
-
-    private void failSearch(UUID orderId, boolean notifyClient) {
-        orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, orderId, OrderStatusChangeSource.SYSTEM, notifyClient,
-                order -> { });
     }
 
     private void fillDetails(Order order, ApiDetailsResponse detailsResponse, int orderTimeoutSeconds) {

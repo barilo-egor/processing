@@ -12,7 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tgb.cryptoexchange.commons.enums.Merchant;
@@ -20,8 +22,11 @@ import tgb.cryptoexchange.commons.enums.Merchant;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,11 +38,14 @@ class DetailsSearchServiceTest {
     @Mock
     private RandomDetailsReceiver randomDetailsReceiver;
 
+    @Mock
+    private Executor virtualTaskExecutor;
+
     private DetailsSearchService detailsSearchService;
 
     @BeforeEach
     void setUp() {
-        detailsSearchService = new DetailsSearchService(merchantDetailsReceiver, randomDetailsReceiver);
+        detailsSearchService = new DetailsSearchService(merchantDetailsReceiver, randomDetailsReceiver, virtualTaskExecutor);
     }
 
     @ParameterizedTest
@@ -68,6 +76,27 @@ class DetailsSearchServiceTest {
         assertEquals(expected, detailsSearchService.search(order,
                 new CreateOrderCommand(order.getClient().getId(), request, timeoutSeconds, true)));
         verifyNoInteractions(merchantDetailsReceiver);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"30,false", "120,true"})
+    @DisplayName("Асинхронный поиск должен выполняться в пуле виртуальных потоков и возвращать результат поиска.")
+    void searchAsync_shouldSearchInVirtualTaskExecutor(int timeoutSeconds, boolean testOrder) {
+        Order order = order();
+        CreateOrderRequest request = request();
+        Optional<ApiDetailsResponse> expected = Optional.of(detailsResponse());
+        MerchantDetailsReceiver receiver = testOrder ? randomDetailsReceiver : merchantDetailsReceiver;
+        when(receiver.getDetails(order.getClient().getId(), order.getId(), request, timeoutSeconds))
+                .thenReturn(expected);
+
+        CompletableFuture<Optional<ApiDetailsResponse>> future = detailsSearchService.searchAsync(order,
+                new CreateOrderCommand(order.getClient().getId(), request, timeoutSeconds, testOrder));
+
+        assertFalse(future.isDone());
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(virtualTaskExecutor).execute(captor.capture());
+        captor.getValue().run();
+        assertEquals(expected, future.join());
     }
 
     private Order order() {
