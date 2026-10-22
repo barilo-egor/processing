@@ -1,7 +1,6 @@
 package net.rcetech.api.service;
 
 import lombok.extern.slf4j.Slf4j;
-import net.rcetech.api.config.DetailsSearchExecutorConfig;
 import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
@@ -14,6 +13,7 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
+import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
@@ -23,8 +23,8 @@ import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
 import net.rcetech.orders.callback.MerchantCallbackProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.core.task.TaskRejectedException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +32,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
@@ -49,66 +51,85 @@ public class OrderApiService {
 
     private final MerchantCallbackProcessor merchantCallbackProcessor;
 
-    private final TaskExecutor detailsSearchExecutor;
+    private final Executor virtualTaskExecutor;
+
+    private final Semaphore detailsSearchPermits;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderApiService(DetailsSearchService detailsSearchService, ClientService clientService,
                            OrderService orderService, OrderFacade orderFacade,
                            MerchantCallbackProcessor merchantCallbackProcessor,
-                           @Qualifier(DetailsSearchExecutorConfig.DETAILS_SEARCH_EXECUTOR)
-                           TaskExecutor detailsSearchExecutor) {
+                           @Qualifier("virtualTaskExecutor") Executor virtualTaskExecutor,
+                           @Value("${details-search.concurrency-limit:200}") int concurrencyLimit,
+                           ApplicationEventPublisher eventPublisher) {
         this.detailsSearchService = detailsSearchService;
         this.clientService = clientService;
         this.orderService = orderService;
         this.orderFacade = orderFacade;
         this.merchantCallbackProcessor = merchantCallbackProcessor;
-        this.detailsSearchExecutor = detailsSearchExecutor;
+        this.virtualTaskExecutor = virtualTaskExecutor;
+        this.detailsSearchPermits = new Semaphore(concurrencyLimit);
+        this.eventPublisher = eventPublisher;
     }
 
     public ClientOrderSummary createOrder(CreateOrderCommand command) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        CreateOrderRequest request = command.request();
-        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-        searchDetails(command, order.getId(), client.getOrderTimeoutSeconds(), false);
-        return findSummary(order.getId());
+        acquireSearchPermit();
+        try {
+            CreateOrderRequest request = command.request();
+            Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
+            detailsSearchService.search(order, command).ifPresentOrElse(
+                    detailsResponse -> completeSearch(order.getId(), detailsResponse,
+                            client.getOrderTimeoutSeconds(), false),
+                    () -> failSearch(order.getId(), false)
+            );
+            return findSummary(order.getId());
+        } finally {
+            detailsSearchPermits.release();
+        }
     }
 
     public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
         Client client = clientService.findById(command.clientId())
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
-        CreateOrderRequest request = command.request();
-        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-        ClientOrderSummary summary = findSummary(order.getId());
-        submitSearch(command, order.getId(), client.getOrderTimeoutSeconds());
-        if (Objects.isNull(summary.callbackUrl())) {
-            log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
-        }
-        return summary;
-    }
-
-    private void submitSearch(CreateOrderCommand command, UUID orderId, int orderTimeoutSeconds) {
+        acquireSearchPermit();
         try {
-            detailsSearchExecutor.execute(() -> {
+            CreateOrderRequest request = command.request();
+            Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
+            ClientOrderSummary summary = findSummary(order.getId());
+            if (Objects.isNull(summary.callbackUrl())) {
+                log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
+            }
+            virtualTaskExecutor.execute(() -> {
                 try {
-                    searchDetails(command, orderId, orderTimeoutSeconds, true);
+                    detailsSearchService.search(order, command).ifPresentOrElse(
+                            detailsResponse -> completeSearch(order.getId(), detailsResponse,
+                                    client.getOrderTimeoutSeconds(), true),
+                            () -> failSearch(order.getId(), true)
+                    );
                 } catch (Exception e) {
-                    log.error("Ошибка асинхронного поиска реквизитов по ордеру {}: {}", orderId, e.getMessage(), e);
+                    long timestamp = System.currentTimeMillis();
+                    log.error("{} Ошибка асинхронного поиска реквизитов по ордеру {}: {}", timestamp, order.getId(),
+                            e.getMessage(), e);
+                    eventPublisher.publishEvent(new AsyncDetailsSearchErrorEvent(order.getId(), e.getMessage(),
+                            timestamp));
+                } finally {
+                    detailsSearchPermits.release();
                 }
             });
-        } catch (TaskRejectedException e) {
-            orderService.deleteById(orderId);
-            throw new ServiceUnavailableException("Достигнут лимит одновременных асинхронных поисков реквизитов, " +
-                    "ордер " + orderId + " удалён.", e);
+            return summary;
+        } catch (RuntimeException e) {
+            detailsSearchPermits.release();
+            throw e;
         }
     }
 
-    private void searchDetails(CreateOrderCommand command, UUID orderId, int orderTimeoutSeconds,
-                               boolean notifyClient) {
-        detailsSearchService.search(command.clientId(), orderId, command.request(), command.timeoutSeconds(),
-                command.testOrder()).ifPresentOrElse(
-                detailsResponse -> completeSearch(orderId, detailsResponse, orderTimeoutSeconds, notifyClient),
-                () -> failSearch(orderId, notifyClient)
-        );
+    private void acquireSearchPermit() {
+        if (!detailsSearchPermits.tryAcquire()) {
+            throw new ServiceUnavailableException("Достигнут лимит одновременных поисков реквизитов.");
+        }
     }
 
     private ClientOrderSummary findSummary(UUID orderId) {

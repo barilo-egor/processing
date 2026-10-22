@@ -18,6 +18,7 @@ import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
+import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
@@ -44,11 +45,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.NestedExceptionUtils;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.core.task.TaskRejectedException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -131,7 +132,10 @@ class OrderApiServiceTest {
     @Autowired
     private ApplicationEvents applicationEvents;
 
-    private final TaskExecutor detailsSearchExecutor = mock(TaskExecutor.class);
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    private final Executor virtualTaskExecutor = mock(Executor.class);
 
     private final MerchantCallbackProcessor merchantCallbackProcessor = mock(MerchantCallbackProcessor.class);
 
@@ -139,10 +143,14 @@ class OrderApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        orderApiService = orderApiService(200);
+    }
+
+    private OrderApiService orderApiService(int concurrencyLimit) {
         DetailsSearchService detailsSearchService = new DetailsSearchService(merchantDetailsReceiver,
                 randomDetailsReceiver);
-        orderApiService = new OrderApiService(detailsSearchService, clientService, orderService,
-                new OrderFacade(orderService), merchantCallbackProcessor, detailsSearchExecutor);
+        return new OrderApiService(detailsSearchService, clientService, orderService, new OrderFacade(orderService),
+                merchantCallbackProcessor, virtualTaskExecutor, concurrencyLimit, eventPublisher);
     }
 
     @ParameterizedTest
@@ -758,7 +766,7 @@ class OrderApiServiceTest {
 
     private Runnable captureSearchTask() {
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
-        verify(detailsSearchExecutor).execute(captor.capture());
+        verify(virtualTaskExecutor).execute(captor.capture());
         return captor.getValue();
     }
 
@@ -787,7 +795,7 @@ class OrderApiServiceTest {
         assertEquals(OrderStatus.SEARCHING, order.status());
         assertEquals(expectedCallbackUrl, order.callbackUrl());
         assertEquals(OrderStatus.SEARCHING, orderRepository.findById(order.id()).orElseThrow().getStatus());
-        verify(detailsSearchExecutor).execute(any());
+        verify(virtualTaskExecutor).execute(any());
         verifyNoInteractions(merchantDetailsReceiver, randomDetailsReceiver);
         assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
     }
@@ -839,7 +847,7 @@ class OrderApiServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"Connection is not available", "Deadlock found"})
-    @DisplayName("Непредвиденная ошибка асинхронного поиска не должна пробрасываться из задачи, ордер остаётся в SEARCHING.")
+    @DisplayName("Непредвиденная ошибка асинхронного поиска не должна пробрасываться из задачи, ордер остаётся в SEARCHING, создаётся инцидент.")
     void createOrder_shouldNotThrowFromSearchTaskIfUnexpectedError(String message) {
         Client client = getDummyClient();
         when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
@@ -847,10 +855,19 @@ class OrderApiServiceTest {
         ClientOrderSummary created = orderApiService.createOrderAsync(
                 command(client.getId(), asyncRequest("https://example.com/callback"), 30, false));
 
+        long before = System.currentTimeMillis();
         assertDoesNotThrow(captureSearchTask()::run);
 
         assertEquals(OrderStatus.SEARCHING, orderRepository.findById(created.id()).orElseThrow().getStatus());
         assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+        List<AsyncDetailsSearchErrorEvent> events = applicationEvents.stream(AsyncDetailsSearchErrorEvent.class)
+                .toList();
+        assertEquals(1, events.size());
+        assertAll(
+                () -> assertEquals(created.id(), events.getFirst().orderId()),
+                () -> assertEquals(message, events.getFirst().error()),
+                () -> assertTrue(events.getFirst().errorTimestamp() >= before)
+        );
     }
 
     @ParameterizedTest
@@ -886,23 +903,119 @@ class OrderApiServiceTest {
         ClientOrderSummary order = orderApiService.createOrder(command(client.getId(), request, 30, false));
 
         assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.status());
-        verifyNoInteractions(detailsSearchExecutor);
+        verifyNoInteractions(virtualTaskExecutor);
+    }
+
+    private CreateOrderCommand asyncCommand(Client client) {
+        return command(client.getId(), asyncRequest("https://example.com/callback"), 30, false);
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1000, 7300})
-    @DisplayName("Если пул поиска переполнен, ордер должен удаляться и бросаться ServiceUnavailableException.")
-    void createOrder_shouldDeleteOrderAndThrowIfSearchRejected(int amount) {
+    @ValueSource(ints = {1, 3})
+    @DisplayName("Если достигнут лимит поисков, асинхронное создание должно бросать ServiceUnavailableException, не создавая ордер.")
+    void createOrderAsync_shouldThrowWithoutOrderIfLimitReached(int concurrencyLimit) {
         Client client = getDummyClient();
-        doThrow(new TaskRejectedException("Concurrency limit reached")).when(detailsSearchExecutor).execute(any());
-        CreateOrderRequest request = new CreateOrderRequest(UUID.randomUUID().toString(), amount,
-                Set.of(RequestMethod.CARD), "https://example.com/callback", "1235153208");
-        CreateOrderCommand command = command(client.getId(), request, 30, false);
+        OrderApiService service = orderApiService(concurrencyLimit);
+        for (int i = 0; i < concurrencyLimit; i++) {
+            service.createOrderAsync(asyncCommand(client));
+        }
+        CreateOrderRequest request = asyncRequest("https://example.com/callback");
 
-        assertThrows(ServiceUnavailableException.class, () -> orderApiService.createOrderAsync(command));
+        assertThrows(ServiceUnavailableException.class,
+                () -> service.createOrderAsync(command(client.getId(), request, 30, false)));
 
-        assertEquals(0, orderRepository.count());
+        assertEquals(concurrencyLimit, orderRepository.count());
+        assertFalse(orderService.existsByInternalId(request.internalId()));
+        verify(virtualTaskExecutor, times(concurrencyLimit)).execute(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    @DisplayName("Если достигнут лимит поисков, синхронное создание должно бросать ServiceUnavailableException, не создавая ордер и не запрашивая реквизиты.")
+    void createOrder_shouldThrowWithoutOrderIfLimitReached(int concurrencyLimit) {
+        Client client = getDummyClient();
+        OrderApiService service = orderApiService(concurrencyLimit);
+        for (int i = 0; i < concurrencyLimit; i++) {
+            service.createOrderAsync(asyncCommand(client));
+        }
+        CreateOrderRequest request = asyncRequest(null);
+
+        assertThrows(ServiceUnavailableException.class,
+                () -> service.createOrder(command(client.getId(), request, 30, false)));
+
         assertFalse(orderService.existsByInternalId(request.internalId()));
         verifyNoInteractions(merchantDetailsReceiver);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    @DisplayName("После завершения асинхронного поиска лимит должен освобождаться.")
+    void createOrderAsync_shouldReleasePermitAfterSearch(int concurrencyLimit) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(Optional.empty());
+        OrderApiService service = orderApiService(concurrencyLimit);
+        for (int i = 0; i < concurrencyLimit; i++) {
+            service.createOrderAsync(asyncCommand(client));
+        }
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(virtualTaskExecutor, times(concurrencyLimit)).execute(captor.capture());
+        captor.getAllValues().forEach(Runnable::run);
+
+        for (int i = 0; i < concurrencyLimit; i++) {
+            assertDoesNotThrow(() -> service.createOrderAsync(asyncCommand(client)));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Connection is not available", "Deadlock found"})
+    @DisplayName("Если асинхронный поиск упал с ошибкой, лимит должен освобождаться.")
+    void createOrderAsync_shouldReleasePermitIfSearchFailed(String message) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
+                .thenThrow(new IllegalStateException(message));
+        OrderApiService service = orderApiService(1);
+        service.createOrderAsync(asyncCommand(client));
+
+        captureSearchTask().run();
+
+        assertDoesNotThrow(() -> service.createOrderAsync(asyncCommand(client)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    @DisplayName("После синхронного создания лимит должен освобождаться, в том числе при ошибке.")
+    void createOrder_shouldReleasePermitAfterSearch(int concurrencyLimit) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30))).thenReturn(Optional.empty());
+        OrderApiService service = orderApiService(concurrencyLimit);
+        CreateOrderRequest duplicate = asyncRequest(null);
+        service.createOrder(command(client.getId(), duplicate, 30, false));
+
+        for (int i = 0; i < concurrencyLimit; i++) {
+            assertThrows(BadRequestException.class,
+                    () -> service.createOrder(command(client.getId(), duplicate, 30, false)));
+        }
+        for (int i = 0; i < concurrencyLimit; i++) {
+            service.createOrderAsync(asyncCommand(client));
+        }
+        verify(virtualTaskExecutor, times(concurrencyLimit)).execute(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    @DisplayName("Если асинхронное создание упало до запуска поиска, лимит должен освобождаться.")
+    void createOrderAsync_shouldReleasePermitIfCreationFailed(int concurrencyLimit) {
+        Client client = getDummyClient();
+        OrderApiService service = orderApiService(concurrencyLimit);
+        CreateOrderRequest duplicate = asyncRequest(null);
+        service.createOrderAsync(command(client.getId(), duplicate, 30, false));
+        captureSearchTask().run();
+        clearInvocations(virtualTaskExecutor);
+
+        for (int i = 0; i < concurrencyLimit; i++) {
+            assertThrows(BadRequestException.class,
+                    () -> service.createOrderAsync(command(client.getId(), duplicate, 30, false)));
+        }
+        verifyNoInteractions(virtualTaskExecutor);
     }
 }

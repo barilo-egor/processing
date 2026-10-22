@@ -64,10 +64,6 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    public void deleteById(UUID id) {
-        orderRepository.deleteById(id);
-    }
-
     public Optional<Order> findById(UUID id) {
         return orderRepository.findById(id);
     }

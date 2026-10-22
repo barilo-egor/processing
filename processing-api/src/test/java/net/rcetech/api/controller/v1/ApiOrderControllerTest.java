@@ -422,8 +422,8 @@ class ApiOrderControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Достигнут лимит одновременных асинхронных поисков реквизитов.", "Пул переполнен."})
-    @DisplayName("Если пул поиска переполнен, метод должен вернуть 503.")
+    @ValueSource(strings = {"Достигнут лимит одновременных поисков реквизитов.", "Лимит исчерпан."})
+    @DisplayName("Если достигнут лимит поисков реквизитов, метод должен вернуть 503.")
     void createOrder_shouldReturn503IfSearchRejected(String message) throws Exception {
         when(orderApiService.createOrderAsync(any())).thenThrow(new ServiceUnavailableException(message));
         mockMvc.perform(

@@ -1,6 +1,7 @@
 package net.rcetech.incidents;
 
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
 import net.rcetech.meta.incidents.BalanceUpdateErrorEvent;
 import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
 import net.rcetech.meta.incidents.IncidentEvent;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -42,6 +42,20 @@ class IncidentEventListenerTest {
         );
     }
 
+    static Stream<Arguments> onlyIfNoUnresolvedEvents() {
+        return Stream.of(
+                Arguments.of(new DetailsSearchErrorEvent(UUID.fromString("7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17"),
+                        "Неизвестная ошибка GRPC 14", 1_760_000_000_000L), IncidentType.DETAILS_SEARCH_ERROR),
+                Arguments.of(new DetailsSearchErrorEvent(UUID.fromString("3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97"),
+                        "Непредвиденная ошибка: Connection refused", 1_790_262_057_999L),
+                        IncidentType.DETAILS_SEARCH_ERROR),
+                Arguments.of(new AsyncDetailsSearchErrorEvent(UUID.fromString("9a4c2e7b-5d1f-4b38-8e6a-2f7c9d0b3e51"),
+                        "Deadlock found", 1_791_100_000_000L), IncidentType.ASYNC_DETAILS_SEARCH_ERROR),
+                Arguments.of(new AsyncDetailsSearchErrorEvent(UUID.fromString("b2e8d4f1-6c3a-4e97-9d05-7a1f3c8e6b24"),
+                        "Connection is not available", 1_792_400_000_000L), IncidentType.ASYNC_DETAILS_SEARCH_ERROR)
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("events")
     @DisplayName("Метод должен сохранить инцидент с типом и временем ошибки из события.")
@@ -53,17 +67,12 @@ class IncidentEventListenerTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "7d2b9e4c-1a6f-4e83-a5d0-9c3b8f6e2a17,Неизвестная ошибка GRPC 14,1760000000000",
-            "3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97,Непредвиденная ошибка: Connection refused,1790262057999"
-    })
+    @MethodSource("onlyIfNoUnresolvedEvents")
     @DisplayName("Метод должен сохранить инцидент об ошибке поиска реквизитов, только если нет необработанного такого типа.")
-    void incident_shouldSaveIfNoUnresolved(UUID orderId, String error, long errorTimestamp) {
-        DetailsSearchErrorEvent event = new DetailsSearchErrorEvent(orderId, error, errorTimestamp);
-
+    void incident_shouldSaveIfNoUnresolved(IncidentEvent event, IncidentType type) {
         incidentEventListener.incident(event);
 
-        verify(incidentService).saveIfNoUnresolved(IncidentType.DETAILS_SEARCH_ERROR, event, errorTimestamp);
+        verify(incidentService).saveIfNoUnresolved(type, event, event.errorTimestamp());
         verifyNoMoreInteractions(incidentService);
     }
 }

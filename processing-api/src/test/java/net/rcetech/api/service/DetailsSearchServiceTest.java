@@ -1,5 +1,6 @@
 package net.rcetech.api.service;
 
+import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
 import net.rcetech.api.merchantdetails.MerchantDetailsReceiver;
@@ -49,8 +50,8 @@ class DetailsSearchServiceTest {
         when(merchantDetailsReceiver.getDetails(order.getClient().getId(), order.getId(), request, timeoutSeconds))
                 .thenReturn(expected);
 
-        assertEquals(expected, detailsSearchService.search(order.getClient().getId(), order.getId(), request,
-                timeoutSeconds, false));
+        assertEquals(expected, detailsSearchService.search(order,
+                new CreateOrderCommand(order.getClient().getId(), request, timeoutSeconds, false)));
         verifyNoInteractions(randomDetailsReceiver);
     }
 
@@ -64,8 +65,8 @@ class DetailsSearchServiceTest {
         when(randomDetailsReceiver.getDetails(order.getClient().getId(), order.getId(), request, timeoutSeconds))
                 .thenReturn(expected);
 
-        assertEquals(expected, detailsSearchService.search(order.getClient().getId(), order.getId(), request,
-                timeoutSeconds, true));
+        assertEquals(expected, detailsSearchService.search(order,
+                new CreateOrderCommand(order.getClient().getId(), request, timeoutSeconds, true)));
         verifyNoInteractions(merchantDetailsReceiver);
     }
 
