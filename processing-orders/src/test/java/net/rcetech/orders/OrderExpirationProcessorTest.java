@@ -5,6 +5,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.DisplayName;
@@ -17,9 +18,6 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -32,18 +30,11 @@ import static org.mockito.Mockito.mockStatic;
 @DataJpaTest
 @Import({OrderExpirationProcessor.class, OrderFacade.class, OrderService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 class OrderExpirationProcessorTest {
-
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

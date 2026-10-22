@@ -5,6 +5,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
@@ -24,9 +25,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 
 import java.time.Instant;
 import java.util.List;
@@ -35,24 +33,17 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
 
 @DataJpaTest
 @Import({OrderSearchTimeoutProcessor.class, OrderFacade.class, OrderService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 @RecordApplicationEvents
 class OrderSearchTimeoutProcessorTest {
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

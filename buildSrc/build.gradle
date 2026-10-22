@@ -4,10 +4,13 @@ plugins {
 
 repositories {
     gradlePluginPortal()
+    mavenCentral()
 }
 
 dependencies {
     implementation 'org.springframework.boot:org.springframework.boot.gradle.plugin:4.1.0'
     implementation 'io.spring.dependency-management:io.spring.dependency-management.gradle.plugin:1.1.7'
     implementation 'com.google.protobuf:protobuf-gradle-plugin:0.10.0'
+    implementation 'org.testcontainers:testcontainers-mysql:2.0.5'
+    runtimeOnly 'com.mysql:mysql-connector-j:9.7.0'
 }

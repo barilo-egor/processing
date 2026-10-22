@@ -5,6 +5,7 @@ import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
@@ -32,9 +33,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -50,7 +48,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ApiOrderControllerSecurityTest {
 
@@ -62,15 +59,9 @@ class ApiOrderControllerSecurityTest {
     @MockitoBean
     private OrderApiService orderApiService;
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

@@ -1,0 +1,9 @@
+import net.rcetech.gradle.MySqlTestContainerArguments
+import net.rcetech.gradle.MySqlTestContainerService
+
+def mySql = gradle.sharedServices.registerIfAbsent('mySqlTestContainer', MySqlTestContainerService) {}
+
+tasks.named('test') {
+    usesService(mySql)
+    jvmArgumentProviders.add(new MySqlTestContainerArguments(mySql, project.name.replace('-', '_')))
+}

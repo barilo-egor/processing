@@ -7,6 +7,7 @@ import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
@@ -37,9 +38,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -50,7 +48,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
-@Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ClientService.class, WithdrawalRequestService.class})
 @RecordApplicationEvents
@@ -65,14 +62,9 @@ class WithdrawalRequestServiceTest {
         }
     }
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
     }
 
     @MockitoBean

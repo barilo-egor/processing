@@ -1,5 +1,6 @@
 package net.rcetech.security.session;
 
+import net.rcetech.domain.test.SharedMySQLContainer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -16,9 +17,6 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionEvent;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -32,18 +30,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 @Import(JdbcOidcSessionRegistry.class)
 class JdbcOidcSessionRegistryTest {
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

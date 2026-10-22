@@ -6,6 +6,7 @@ import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
@@ -26,9 +27,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.math.BigDecimal;
@@ -43,19 +41,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 @RecordApplicationEvents
 @Import(ClientDeletionService.class)
 class ClientDeletionServiceTest {
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

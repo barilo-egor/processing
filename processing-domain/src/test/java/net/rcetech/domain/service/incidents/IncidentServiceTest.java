@@ -7,6 +7,7 @@ import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;
 import net.rcetech.domain.repository.support.SupportUserRepository;
 import net.rcetech.domain.service.support.SupportUserService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.incidents.IncidentSaveErrorEvent;
@@ -36,9 +37,6 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -52,21 +50,15 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({IncidentService.class, SupportUserService.class, IncidentConfig.class})
 @RecordApplicationEvents
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class IncidentServiceTest {
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

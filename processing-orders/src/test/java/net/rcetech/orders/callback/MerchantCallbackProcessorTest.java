@@ -8,6 +8,7 @@ import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.incidents.MerchantCallbackHandleErrorEvent;
 import net.rcetech.meta.incidents.OrderStatusTransitionRejectedEvent;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -35,9 +36,6 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -47,12 +45,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({OrderService.class, MerchantCallbackService.class})
-@Testcontainers
 @RecordApplicationEvents
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class MerchantCallbackProcessorTest {
@@ -75,15 +72,9 @@ class MerchantCallbackProcessorTest {
         }
     }
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired
