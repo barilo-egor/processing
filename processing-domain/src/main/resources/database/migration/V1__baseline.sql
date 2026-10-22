@@ -31,24 +31,26 @@ create table orders
     id                    binary(16)    not null,
     version               bigint        not null,
     created_at            timestamp(0)  not null,
-    expires_at            timestamp(0)  not null,
+    expires_at            timestamp(0),
     client_id             binary(16)    not null,
     internal_id           varchar(255)  not null,
     status                varchar(30)   not null,
     amount                integer       not null,
-    merchant              varchar(30)   not null,
-    merchant_order_id     varchar(255)  not null,
-    merchant_order_status varchar(255)  not null,
-    method                varchar(30)   not null,
-    details               varchar(1000) not null,
-    bank                  varchar(255)  not null,
+    merchant              varchar(30),
+    merchant_order_id     varchar(255),
+    merchant_order_status varchar(255),
+    method                varchar(30),
+    details               varchar(1000),
+    bank                  varchar(255),
     callback_url          varchar(255),
     primary key (id),
     constraint unique_internal_id unique (internal_id),
     constraint unique_merchant_order_id unique (merchant, merchant_order_id),
     constraint fk_orders_client foreign key (client_id) references client (id),
     constraint check_orders_amount check (amount > 0),
-    constraint check_orders_expires_at check (expires_at > created_at)
+    constraint check_orders_expires_at check (expires_at > created_at),
+    index idx_orders_status_expires_at (status, expires_at),
+    index idx_orders_status_created_at (status, created_at)
 );
 
 create table support_user
@@ -114,13 +116,15 @@ create table merchant_callback
 (
     id                 bigint       not null auto_increment,
     created_at         timestamp(0) not null,
-    order_id           binary(16)   not null,
+    processed_at       timestamp(0),
+    order_id           binary(16),
     merchant           varchar(30)  not null,
     merchant_order_id  varchar(300),
     status             varchar(50)  not null,
     status_description varchar(50),
     primary key (id),
-    constraint fk_merchant_callback_order foreign key (order_id) references orders (id)
+    constraint fk_merchant_callback_order foreign key (order_id) references orders (id),
+    index idx_merchant_callback_merchant_order_id_processed_at (merchant, merchant_order_id, processed_at)
 );
 
 create table incident

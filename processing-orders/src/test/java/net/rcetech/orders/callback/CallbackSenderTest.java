@@ -8,6 +8,7 @@ import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.config.EnableConfiguration;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -124,7 +125,7 @@ class CallbackSenderTest {
         String expectedJson = objectMapper.writeValueAsString(maybeOrder.get());
         stubFor(post("/callback").willReturn(status(statusCode)));
 
-        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus(), OrderStatusChangeSource.MERCHANT_CALLBACK, true));
 
         WireMock.verify(1, postRequestedFor(urlEqualTo("/callback"))
                 .withHeader("Content-Type", equalTo("application/json"))
@@ -140,8 +141,20 @@ class CallbackSenderTest {
         assertTrue(maybeOrder.isPresent());
         stubFor(post("/callback").willReturn(WireMock.status(500)));
 
-        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus(), OrderStatusChangeSource.MERCHANT_CALLBACK, true));
 
         WireMock.verify(3, postRequestedFor(urlEqualTo("/callback")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {200, 500})
+    @DisplayName("КБ не должен отправляться, если в событии указано не уведомлять клиента.")
+    void sendCallback_shouldNotSendIfNotifyClientFalse(int statusCode) {
+        Order order = getDummyOrder(getDummyClient());
+        stubFor(post("/callback").willReturn(status(statusCode)));
+
+        callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus(), OrderStatusChangeSource.MERCHANT_CALLBACK, false));
+
+        WireMock.verify(0, postRequestedFor(urlEqualTo("/callback")));
     }
 }

@@ -5,15 +5,15 @@ import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.ClientFieldNotSetErrorData;
+import net.rcetech.meta.incidents.ClientCommissionPercentNotSetEvent;
+import net.rcetech.meta.incidents.ClientMinWithdrawalAmountNotSetEvent;
 import net.rcetech.meta.util.CalculateUtil;
 import net.rcetech.rates.RatePair;
 import net.rcetech.rates.RateService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,17 +37,18 @@ public class WithdrawalRequestService {
 
     private final RateService rateService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final TransactionService transactionService;
 
     public WithdrawalRequestService(WithdrawalRequestRepository withdrawalRequestRepository,
-                                    ClientService clientService, RateService rateService, IncidentService incidentService,
+                                    ClientService clientService, RateService rateService,
+                                    ApplicationEventPublisher eventPublisher,
                                     TransactionService transactionService) {
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.clientService = clientService;
         this.rateService = rateService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
         this.transactionService = transactionService;
     }
 
@@ -58,21 +59,13 @@ public class WithdrawalRequestService {
         if (Objects.isNull(client.getCommissionPercent())) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Не установлен процент комиссии для клиента {}.", timestamp, clientId);
-            incidentService.save(
-                    IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET,
-                    new ClientFieldNotSetErrorData(clientId),
-                    timestamp
-            );
+            eventPublisher.publishEvent(new ClientCommissionPercentNotSetEvent(clientId, timestamp));
             throw new BaseException("Не установлен процент комиссии для клиента " + client.getId() + ".", timestamp);
         }
         if (Objects.isNull(client.getMinWithdrawalAmount())) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Не установлена минимальная сумма вывода клиента {}.", timestamp, clientId);
-            incidentService.save(
-                    IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET,
-                    new ClientFieldNotSetErrorData(clientId),
-                    timestamp
-            );
+            eventPublisher.publishEvent(new ClientMinWithdrawalAmountNotSetEvent(clientId, timestamp));
             throw new BaseException("Не установлена минимальная сумма вывода клиента " + client.getId() + ".", timestamp);
         }
         if (amount < client.getMinWithdrawalAmount()) {

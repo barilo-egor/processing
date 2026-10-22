@@ -5,8 +5,11 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
+import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.*;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.meta.orders.dto.OrderFilter;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import org.junit.jupiter.api.DisplayName;
@@ -14,11 +17,13 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -515,7 +520,8 @@ class OrderServiceTest {
                                                    String merchantOrderStatus) {
         Order order = saveOrder(statusFrom, "OLD");
 
-        OrderStatusChange change = orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus);
+        OrderStatusChange change = orderService.updateStatus(order.getId(), statusTo, OrderStatusChangeSource.MERCHANT_CALLBACK,
+                merchantOrderStatus);
 
         assertEquals(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.ALLOWED), change);
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
@@ -543,7 +549,8 @@ class OrderServiceTest {
         Order order = saveOrder(statusFrom, "OLD");
 
         OrderStatusChange change = assertDoesNotThrow(
-                () -> orderService.updateStatus(order.getId(), statusTo, merchantOrderStatus));
+                () -> orderService.updateStatus(order.getId(), statusTo, OrderStatusChangeSource.MERCHANT_CALLBACK,
+                merchantOrderStatus));
 
         assertEquals(new OrderStatusChange(statusFrom, statusTo, OrderStatusTransition.SKIPPED), change);
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
@@ -564,7 +571,8 @@ class OrderServiceTest {
         UUID orderId = order.getId();
 
         OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
-                () -> orderService.updateStatus(orderId, statusTo, merchantOrderStatus));
+                () -> orderService.updateStatus(orderId, statusTo, OrderStatusChangeSource.MERCHANT_CALLBACK,
+                        merchantOrderStatus));
 
         assertEquals(OrderStatus.SUCCESS, exception.getStatusFrom());
         assertEquals(statusTo, exception.getStatusTo());
@@ -573,6 +581,56 @@ class OrderServiceTest {
         assertEquals(OrderStatus.SUCCESS, actual.getStatus());
         assertEquals("PAID", actual.getMerchantOrderStatus());
         assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @CsvSource({
+            "CANCELED,MERCHANT_CALLBACK,PAID",
+            "TIMEOUT,MERCHANT_CALLBACK,SUCCESS",
+            "CANCELED,SYSTEM,PAID",
+            "DISPUTE,CLIENT,SUCCESS"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен выбросить OrderStatusUpdateException и не менять ордер, если ордер без реквизитов переводится в SUCCESS не поддержкой.")
+    void updateStatus_shouldThrowIfSuccessWithoutDetailsNotBySupport(OrderStatus statusFrom,
+                                                                     OrderStatusChangeSource source,
+                                                                     String merchantOrderStatus) {
+        Order order = saveOrderWithoutDetails(statusFrom);
+        UUID orderId = order.getId();
+
+        OrderStatusUpdateException exception = assertThrows(OrderStatusUpdateException.class,
+                () -> orderService.updateStatus(orderId, OrderStatus.SUCCESS, source, merchantOrderStatus));
+
+        assertEquals(statusFrom, exception.getStatusFrom());
+        assertEquals(OrderStatus.SUCCESS, exception.getStatusTo());
+        assertEquals("Переход ордера из статуса «" + statusFrom.getDescription()
+                + "» в статус «Успешный» запрещён.", exception.getMessage());
+        Order actual = orderRepository.findById(orderId).orElseThrow();
+        assertEquals(statusFrom, actual.getStatus());
+        assertEquals("OLD", actual.getMerchantOrderStatus());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @CsvSource({
+            "CANCELED,PAID",
+            "DISPUTE,SUCCESS"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен перевести ордер без реквизитов в SUCCESS, если переводит поддержка.")
+    void updateStatus_shouldAllowSuccessWithoutDetailsBySupport(OrderStatus statusFrom, String merchantOrderStatus) {
+        Order order = saveOrderWithoutDetails(statusFrom);
+
+        OrderStatusChange change = orderService.updateStatus(order.getId(), OrderStatus.SUCCESS,
+                OrderStatusChangeSource.SUPPORT, merchantOrderStatus);
+
+        assertEquals(new OrderStatusChange(statusFrom, OrderStatus.SUCCESS, OrderStatusTransition.ALLOWED), change);
+        assertEquals(OrderStatus.SUCCESS, orderRepository.findById(order.getId()).orElseThrow().getStatus());
+        assertEquals(1, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    Order saveOrderWithoutDetails(OrderStatus status) {
+        Order order = saveOrder(status, "OLD");
+        order.setDetails(null);
+        return orderRepository.save(order);
     }
 
     @ValueSource(strings = {
@@ -584,10 +642,250 @@ class OrderServiceTest {
     void updateStatus_shouldKeepMerchantOrderStatusIfNull(String merchantOrderStatus) {
         Order order = saveOrder(OrderStatus.NEW, merchantOrderStatus);
 
-        orderService.updateStatus(order.getId(), OrderStatus.TIMEOUT, null);
+        orderService.updateStatus(order.getId(), OrderStatus.TIMEOUT, OrderStatusChangeSource.SYSTEM, null);
 
         Order actual = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.TIMEOUT, actual.getStatus());
         assertEquals(merchantOrderStatus, actual.getMerchantOrderStatus());
+    }
+
+    @CsvSource({
+            "SEARCHING,NEW,SYSTEM,true,Т-Банк",
+            "SEARCHING,DETAILS_NOT_FOUND,SYSTEM,false,Сбербанк",
+            "NEW,SUCCESS,SUPPORT,false,ВТБ",
+            "NEW,CANCELED,CLIENT,true,Альфа-Банк"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен применить изменения ордера и опубликовать событие с источником и признаком уведомления клиента, если переход разрешён.")
+    void updateStatus_shouldApplyChangesAndPublishNotifyClientIfAllowed(OrderStatus statusFrom, OrderStatus statusTo,
+                                                                         OrderStatusChangeSource source,
+                                                                         boolean notifyClient, String bank) {
+        Order order = saveOrder(statusFrom, "OLD");
+
+        orderService.updateStatus(order.getId(), statusTo, source, notifyClient,
+                orderToUpdate -> orderToUpdate.setBank(bank));
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(statusTo, actual.getStatus());
+        assertEquals(bank, actual.getBank());
+        assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), statusTo, source, notifyClient)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+    }
+
+    @CsvSource({
+            "CANCELED,NEW,Т-Банк",
+            "DETAILS_NOT_FOUND,NEW,Сбербанк"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод не должен применять изменения ордера, если переход пропускается.")
+    void updateStatus_shouldNotApplyChangesIfSkipped(OrderStatus statusFrom, OrderStatus statusTo, String bank) {
+        Order order = saveOrder(statusFrom, "OLD");
+
+        OrderStatusChange change = orderService.updateStatus(order.getId(), statusTo, OrderStatusChangeSource.SYSTEM, false,
+                orderToUpdate -> orderToUpdate.setBank(bank));
+
+        assertEquals(OrderStatusTransition.SKIPPED, change.transition());
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(statusFrom, actual.getStatus());
+        assertEquals("ALFA", actual.getBank());
+        assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count());
+    }
+
+    @ValueSource(strings = {
+            "5000",
+            "12000"
+    })
+    @ParameterizedTest
+    @DisplayName("Ордер в статусе SEARCHING должен сохраняться без реквизитов, данных мерчанта и времени истечения.")
+    void save_shouldSaveSearchingOrderWithoutDetails(int amount) {
+        Order order = searchingOrder(getDummyClient(), amount);
+
+        orderRepository.saveAndFlush(order);
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(OrderStatus.SEARCHING, actual.getStatus()),
+                () -> assertEquals(amount, actual.getAmount()),
+                () -> assertNull(actual.getExpiresAt()),
+                () -> assertNull(actual.getMerchant()),
+                () -> assertNull(actual.getMerchantOrderId()),
+                () -> assertNull(actual.getMerchantOrderStatus()),
+                () -> assertNull(actual.getMethod()),
+                () -> assertNull(actual.getDetails()),
+                () -> assertNull(actual.getBank())
+        );
+    }
+
+    @ValueSource(ints = {
+            2,
+            5
+    })
+    @ParameterizedTest
+    @DisplayName("Несколько ордеров без мерчанта и идентификатора ордера мерчанта должны сохраняться без нарушения уникальности.")
+    void save_shouldSaveSeveralOrdersWithoutMerchantOrderId(int count) {
+        Client client = getDummyClient();
+
+        for (int i = 0; i < count; i++) {
+            orderRepository.saveAndFlush(searchingOrder(client, 5000));
+        }
+
+        assertEquals(count, orderRepository.count());
+    }
+
+    @CsvSource({
+            "ALFA_TEAM,ONLY_PAYS,8f1c2d3e",
+            "ONLY_PAYS,ALFA_TEAM,c4b5a6d7"
+    })
+    @ParameterizedTest
+    @DisplayName("Ордера разных мерчантов с одинаковым идентификатором ордера мерчанта должны сохраняться.")
+    void save_shouldSaveSameMerchantOrderIdForDifferentMerchants(Merchant first, Merchant second,
+                                                                 String merchantOrderId) {
+        Client client = getDummyClient();
+
+        orderRepository.saveAndFlush(merchantOrder(client, first, merchantOrderId));
+        orderRepository.saveAndFlush(merchantOrder(client, second, merchantOrderId));
+
+        assertEquals(2, orderRepository.count());
+    }
+
+    @CsvSource({
+            "ALFA_TEAM,8f1c2d3e",
+            "ONLY_PAYS,c4b5a6d7"
+    })
+    @ParameterizedTest
+    @DisplayName("Должен быть брошен DataIntegrityViolationException, если у мерчанта уже есть ордер с таким же идентификатором.")
+    void save_shouldThrowIfMerchantOrderIdDuplicated(Merchant merchant, String merchantOrderId) {
+        Client client = getDummyClient();
+        orderRepository.saveAndFlush(merchantOrder(client, merchant, merchantOrderId));
+        Order duplicate = merchantOrder(client, merchant, merchantOrderId);
+
+        assertThrows(DataIntegrityViolationException.class, () -> orderRepository.saveAndFlush(duplicate));
+    }
+
+    @CsvSource({
+            "a1f3c2d4,1000,https://example.com/callback",
+            "b7e9d0c1,7300,https://google.com/callback"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен сохранить ордер в статусе SEARCHING с переданными данными.")
+    void createOrder_shouldSaveSearchingOrder(String internalId, int amount, String callbackUrl) {
+        Client client = getDummyClient();
+
+        Order order = orderService.createOrder(client, internalId, amount, callbackUrl);
+
+        Order actual = orderRepository.findById(order.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(OrderStatus.SEARCHING, actual.getStatus()),
+                () -> assertEquals(client.getId(), actual.getClient().getId()),
+                () -> assertEquals(internalId, actual.getInternalId()),
+                () -> assertEquals(amount, actual.getAmount()),
+                () -> assertEquals(callbackUrl, actual.getCallbackUrl()),
+                () -> assertNotNull(actual.getCreatedAt()),
+                () -> assertNull(actual.getExpiresAt()),
+                () -> assertNull(actual.getDetails())
+        );
+    }
+
+    @CsvSource({
+            "c4d2e8f1,1000",
+            "d9a7b3e5,7300"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен бросить BadRequestException и не сохранять ордер, если ордер с таким internalId уже существует.")
+    void createOrder_shouldThrowIfInternalIdNotUnique(String internalId, int amount) {
+        Client client = getDummyClient();
+        orderService.createOrder(client, internalId, amount, null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> orderService.createOrder(client, internalId, amount, null));
+
+        assertAll(
+                () -> assertEquals(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE, exception.getMessage()),
+                () -> assertEquals(1, orderRepository.findAll().stream()
+                        .filter(order -> internalId.equals(order.getInternalId())).count())
+        );
+    }
+
+    @ValueSource(strings = {
+            "https://example.com/client-callback",
+            "https://google.com/client-callback"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен сохранить ордер с callback url клиента, если он не передан.")
+    void createOrder_shouldUseClientCallbackUrlIfNotPassed(String clientCallbackUrl) {
+        Client client = getDummyClient();
+        client.setCallbackUrl(clientCallbackUrl);
+
+        Order order = orderService.createOrder(client, UUID.randomUUID().toString(), 5000, null);
+
+        assertEquals(clientCallbackUrl, orderRepository.findById(order.getId()).orElseThrow().getCallbackUrl());
+    }
+
+    @CsvSource({
+            "NEW,Т-Банк",
+            "DETAILS_NOT_FOUND,Сбербанк"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть проекцию ордера, если ордер принадлежит клиенту.")
+    void findByIdAndClientId_shouldReturnProjectionOfClientOrder(OrderStatus status, String bank) {
+        Order order = saveOrder(status, "OLD");
+        order.setBank(bank);
+        orderRepository.saveAndFlush(order);
+
+        ClientOrderSummary actual = orderService.findByIdAndClientId(order.getId(), order.getClient().getId(),
+                ClientOrderSummary.class).orElseThrow();
+
+        assertAll(
+                () -> assertEquals(order.getId(), actual.id()),
+                () -> assertEquals(status, actual.status()),
+                () -> assertEquals(bank, actual.bank()),
+                () -> assertEquals(order.getInternalId(), actual.internalId())
+        );
+    }
+
+    @ValueSource(strings = {
+            "2f6c1d9e-8a10-4b7e-9d05-6a4f9c3b2e71",
+            "c3b2e71a-1c2f-4f0e-8d05-7b0f1c524f3e"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть пустой Optional, если ордер принадлежит другому клиенту.")
+    void findByIdAndClientId_shouldReturnEmptyIfOrderOfAnotherClient(UUID anotherClientId) {
+        Order order = getDummyOrder(getDummyClient());
+
+        assertTrue(orderService.findByIdAndClientId(order.getId(), anotherClientId, ClientOrderSummary.class)
+                .isEmpty());
+    }
+
+    @EnumSource(value = OrderStatus.class, names = {"SEARCHING", "NEW"})
+    @ParameterizedTest
+    @DisplayName("Ордер должен сохраняться без URL для колбэков.")
+    void save_shouldSaveOrderWithoutCallbackUrl(OrderStatus status) {
+        Order order = searchingOrder(getDummyClient(), 5000);
+        order.setStatus(status);
+        order.setCallbackUrl(null);
+
+        orderRepository.saveAndFlush(order);
+
+        assertNull(orderRepository.findById(order.getId()).orElseThrow().getCallbackUrl());
+    }
+
+    private Order searchingOrder(Client client, int amount) {
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setCreatedAt(Instant.now());
+        order.setClient(client);
+        order.setInternalId(UUID.randomUUID().toString());
+        order.setStatus(OrderStatus.SEARCHING);
+        order.setAmount(amount);
+        order.setCallbackUrl("https://google.com/callback");
+        return order;
+    }
+
+    private Order merchantOrder(Client client, Merchant merchant, String merchantOrderId) {
+        Order order = new Order();
+        order.setMerchant(merchant);
+        order.setMerchantOrderId(merchantOrderId);
+        fillFields(order, client);
+        return order;
     }
 }

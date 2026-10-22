@@ -3,27 +3,22 @@ package net.rcetech.billing;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
-import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
-import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.config.MetaWebConfig;
-import net.rcetech.meta.incidents.IncidentStatus;
-import net.rcetech.meta.incidents.IncidentType;
+import net.rcetech.meta.incidents.TransactionCreationErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
         TransactionService.class, OrderService.class, TransactionEventListener.class, ClientService.class,
-        IncidentService.class, SupportUserService.class, MetaWebConfig.class
+        MetaWebConfig.class
 })
 @RecordApplicationEvents
 class TransactionEventListenerTest {
@@ -88,17 +83,8 @@ class TransactionEventListenerTest {
     @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired
-    private IncidentRepository incidentRepository;
-
     @MockitoBean
     private ClientMapper clientMapper;
-
-    @AfterEach
-    void cleanUp() {
-        // инциденты сохраняются в отдельной транзакции и не откатываются вместе с тестовой
-        incidentRepository.deleteAll();
-    }
 
     Client getDummyClient() {
         Client client = new Client();
@@ -162,7 +148,7 @@ class TransactionEventListenerTest {
         order.setId(orderId);
         fillFields(order, client);
         orderRepository.save(order);
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -196,7 +182,7 @@ class TransactionEventListenerTest {
         order.setId(orderId);
         fillFields(order, client);
         orderRepository.save(order);
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, status);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, status, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
@@ -213,25 +199,21 @@ class TransactionEventListenerTest {
     @DisplayName("Должен быть создан инцидент, если произошла ошибка при создании транзакции.")
     void orderStatusUpdated_shouldCreateIncidentIfCantCreateTransaction(UUID orderId) {
         // ордер не сохранен в БД, поэтому создание транзакции упадет
-        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS);
+        OrderStatusUpdatedEvent event = new OrderStatusUpdatedEvent(orderId, OrderStatus.SUCCESS, OrderStatusChangeSource.MERCHANT_CALLBACK, true);
         long before = System.currentTimeMillis();
         eventPublisher.publishEvent(event);
         TestTransaction.flagForCommit();
         TestTransaction.end();
         long after = System.currentTimeMillis();
         assertEquals(0, transactionRepository.count());
-        List<Incident> incidents = incidentRepository.findAll();
-        assertEquals(1, incidents.size());
-        Incident incident = incidents.getFirst();
+        List<TransactionCreationErrorEvent> events = applicationEvents.stream(TransactionCreationErrorEvent.class)
+                .toList();
+        assertEquals(1, events.size());
+        TransactionCreationErrorEvent incidentEvent = events.getFirst();
         assertAll(
-                () -> assertNotNull(incident.getId()),
-                () -> assertNotNull(incident.getCreatedAt()),
-                () -> assertNotNull(incident.getErrorTimestamp()),
-                () -> assertTrue(incident.getErrorTimestamp() >= before && incident.getErrorTimestamp() <= after),
-                () -> assertEquals(IncidentStatus.NEW, incident.getStatus()),
-                () -> assertEquals(IncidentType.TRANSACTION_CREATION_ERROR, incident.getType()),
-                () -> assertEquals(orderId.toString(), incident.getData().get("orderId")),
-                () -> assertEquals(OrderStatus.SUCCESS.name(), incident.getData().get("status"))
+                () -> assertEquals(orderId, incidentEvent.orderId()),
+                () -> assertEquals(OrderStatus.SUCCESS, incidentEvent.status()),
+                () -> assertTrue(incidentEvent.errorTimestamp() >= before && incidentEvent.errorTimestamp() <= after)
         );
     }
 }

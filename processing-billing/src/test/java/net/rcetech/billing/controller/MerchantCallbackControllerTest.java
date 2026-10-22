@@ -25,6 +25,7 @@ import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -107,16 +108,18 @@ class MerchantCallbackControllerTest {
         }
     }
 
-    @CsvSource({
-            "1,1790262068808,1df5da43-b74a-4046-8381-c25fc993516b,ALFA_TEAM,bb7ec0c6-9f7b-497f-8c18-06ecba259f49,PAID,Оплачено",
-            "69643546,1790262068808,435945a3-48da-43b4-8fb2-5ea7d34f63f5,EVO_PAY,83561,TIMEOUT,Истек"
-    })
+    @CsvSource(value = {
+            "1,1790262068808,1790262069000,1df5da43-b74a-4046-8381-c25fc993516b,ALFA_TEAM,bb7ec0c6-9f7b-497f-8c18-06ecba259f49,PAID,Оплачено",
+            "69643546,1790262068808,null,null,EVO_PAY,83561,TIMEOUT,Истек"
+    }, nullValues = "null")
     @ParameterizedTest
-    void get_shouldReturnJsonOfMerchantCallbackResponse(long id, long createdAt, UUID orderId, Merchant merchant,
-                                                        String merchantOrderId, String status, String statusDescription
+    void get_shouldReturnJsonOfMerchantCallbackResponse(long id, long createdAt, Long processedAt, UUID orderId,
+                                                        Merchant merchant, String merchantOrderId, String status,
+                                                        String statusDescription
     ) throws Exception {
         MerchantCallbackResponse response = new MerchantCallbackResponse(
-                id, Instant.ofEpochMilli(createdAt), orderId, merchant, merchantOrderId, status, statusDescription
+                id, Instant.ofEpochMilli(createdAt), Objects.isNull(processedAt) ? null : Instant.ofEpochMilli(processedAt),
+                orderId, merchant, merchantOrderId, status, statusDescription
         );
         when(merchantCallbackService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(response)));
 
@@ -124,9 +127,12 @@ class MerchantCallbackControllerTest {
                 .with(csrf())
                 .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].processedAt")
+                        .value(Objects.isNull(processedAt) ? null : String.valueOf(processedAt)))
+                .andExpect(jsonPath("$.content[0].orderId")
+                        .value(Objects.isNull(orderId) ? null : orderId.toString()))
                 .andExpect(jsonPath("$.content[0].id").value(String.valueOf(id)))
                 .andExpect(jsonPath("$.content[0].createdAt").value(String.valueOf(createdAt)))
-                .andExpect(jsonPath("$.content[0].orderId").value(orderId.toString()))
                 .andExpect(jsonPath("$.content[0].merchant").value(merchant.name()))
                 .andExpect(jsonPath("$.content[0].merchantOrderId").value(merchantOrderId))
                 .andExpect(jsonPath("$.content[0].status").value(status))

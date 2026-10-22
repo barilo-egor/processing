@@ -2,10 +2,9 @@ package net.rcetech.billing;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.billing.service.ClientBalanceService;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.dto.BalanceUpdateErrorData;
+import net.rcetech.meta.incidents.BalanceUpdateErrorEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -17,11 +16,11 @@ public class TransactionListener {
 
     private final ClientBalanceService clientBalanceService;
 
-    private final IncidentService incidentService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public TransactionListener(ClientBalanceService clientBalanceService, IncidentService incidentService) {
+    public TransactionListener(ClientBalanceService clientBalanceService, ApplicationEventPublisher eventPublisher) {
         this.clientBalanceService = clientBalanceService;
-        this.incidentService = incidentService;
+        this.eventPublisher = eventPublisher;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -33,11 +32,7 @@ public class TransactionListener {
             long timestamp = System.currentTimeMillis();
             log.error("{} Ошибка обновления баланса пользователя после создания транзакции {}: {}",
                     timestamp, event.transactionId(), e.getMessage(), e);
-            incidentService.save(
-                    IncidentType.BALANCE_UPDATE_ERROR,
-                    new BalanceUpdateErrorData(event.transactionId(), event.clientId()),
-                    timestamp
-            );
+            eventPublisher.publishEvent(new BalanceUpdateErrorEvent(event.transactionId(), event.clientId(), timestamp));
         }
     }
 }

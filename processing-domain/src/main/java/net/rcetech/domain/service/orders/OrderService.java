@@ -1,12 +1,16 @@
 package net.rcetech.domain.service.orders;
 
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
+import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -44,14 +49,41 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    public Order createOrder(Client client, String internalId, Integer amount, String callbackUrl) {
+        if (existsByInternalId(internalId)) {
+            throw new BadRequestException(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE);
+        }
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setCreatedAt(Instant.now());
+        order.setClient(client);
+        order.setInternalId(internalId);
+        order.setStatus(OrderStatus.SEARCHING);
+        order.setAmount(amount);
+        order.setCallbackUrl(Objects.isNull(callbackUrl) ? client.getCallbackUrl() : callbackUrl);
+        return orderRepository.save(order);
+    }
+
     public Optional<Order> findById(UUID id) {
         return orderRepository.findById(id);
+    }
+
+    public Optional<Order> findByIdForUpdate(UUID id) {
+        return orderRepository.findForUpdateById(id);
     }
 
     public <T> Optional<T> findById(UUID id, Class<T> projectionType) {
         Order order = new Order();
         order.setId(id);
         return orderRepository.findBy(Example.of(order), query -> query.as(projectionType).one());
+    }
+
+    public boolean existsByIdAndClientId(UUID id, UUID clientId) {
+        return orderRepository.existsByIdAndClientId(id, clientId);
+    }
+
+    public <T> Optional<T> findByIdAndClientId(UUID id, UUID clientId, Class<T> projectionType) {
+        return orderRepository.findByIdAndClientId(id, clientId, projectionType);
     }
 
     public Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId) {
@@ -67,18 +99,33 @@ public class OrderService {
         return orderRepository.findAllByStatusAndExpiresAtBefore(OrderStatus.NEW, Instant.now());
     }
 
-    @Transactional
-    public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, String merchantOrderStatus) {
+    public List<Order> findAllInSearchCreatedBefore(Instant createdAt) {
+        return orderRepository.findAllByStatusAndCreatedAtBefore(OrderStatus.SEARCHING, createdAt);
+    }
+
+    @Transactional(noRollbackFor = OrderStatusUpdateException.class)
+    public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, OrderStatusChangeSource source,
+                                          String merchantOrderStatus) {
+        return updateStatus(id, statusTo, source, true, order -> {
+            if (Objects.nonNull(merchantOrderStatus)) {
+                order.setMerchantOrderStatus(merchantOrderStatus);
+            }
+        });
+    }
+
+    @Transactional(noRollbackFor = OrderStatusUpdateException.class)
+    public OrderStatusChange updateStatus(UUID id, OrderStatus statusTo, OrderStatusChangeSource source,
+                                          boolean notifyClient, Consumer<Order> changes) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new BaseException(ORDER_NOT_FOUND_MESSAGE));
         OrderStatus statusFrom = order.getStatus();
-        OrderStatusTransition transition = OrderStatusTransition.of(statusFrom, statusTo);
+        OrderStatusTransition transition = resolveTransition(order, statusTo, source);
         switch (transition) {
             case ALLOWED -> {
                 order.setStatus(statusTo);
-                if (Objects.nonNull(merchantOrderStatus)) {
-                    order.setMerchantOrderStatus(merchantOrderStatus);
-                }
-                eventPublisher.publishEvent(new OrderStatusUpdatedEvent(order.getId(), order.getStatus()));
+                changes.accept(order);
+                eventPublisher.publishEvent(
+                        new OrderStatusUpdatedEvent(order.getId(), order.getStatus(), source, notifyClient)
+                );
             }
             case SKIPPED -> log.info("Переход ордера {} из статуса {} в статус {} пропущен.",
                     order.getId(), statusFrom, statusTo);
@@ -88,6 +135,16 @@ public class OrderService {
                     statusFrom, statusTo);
         }
         return new OrderStatusChange(statusFrom, statusTo, transition);
+    }
+
+    private OrderStatusTransition resolveTransition(Order order, OrderStatus statusTo,
+                                                    OrderStatusChangeSource source) {
+        OrderStatusTransition transition = OrderStatusTransition.of(order.getStatus(), statusTo);
+        if (OrderStatusTransition.ALLOWED.equals(transition) && OrderStatus.SUCCESS.equals(statusTo)
+                && Objects.isNull(order.getDetails()) && !OrderStatusChangeSource.SUPPORT.equals(source)) {
+            return OrderStatusTransition.REJECTED;
+        }
+        return transition;
     }
 
     public boolean existsById(UUID id) {

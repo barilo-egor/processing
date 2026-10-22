@@ -1,6 +1,7 @@
 package net.rcetech.domain.service.incidents;
 
 import jakarta.transaction.Transactional;
+import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.domain.repository.incidents.IncidentRepository;
@@ -11,6 +12,7 @@ import net.rcetech.meta.incidents.IncidentSaveErrorEvent;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.IncidentResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -42,7 +44,8 @@ public class IncidentService {
 
     private final SupportUserService supportUserService;
 
-    public IncidentService(IncidentRepository incidentRepository, ObjectMapper objectMapper,
+    public IncidentService(IncidentRepository incidentRepository,
+                           @Qualifier(IncidentConfig.INCIDENT_OBJECT_MAPPER) ObjectMapper objectMapper,
                            ApplicationEventPublisher eventPublisher, PlatformTransactionManager transactionManager,
                            SupportUserService supportUserService) {
         this.incidentRepository = incidentRepository;
@@ -51,6 +54,13 @@ public class IncidentService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.supportUserService = supportUserService;
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    public void saveIfNoUnresolved(IncidentType type, Object data, Long errorTimestamp) {
+        if (incidentRepository.existsByTypeAndStatus(type, IncidentStatus.NEW)) {
+            return;
+        }
+        save(type, data, errorTimestamp);
     }
 
     public void save(IncidentType type, Object data, Long errorTimestamp) {

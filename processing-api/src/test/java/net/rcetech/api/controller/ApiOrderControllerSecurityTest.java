@@ -3,10 +3,12 @@ package net.rcetech.api.controller;
 import jakarta.servlet.http.Cookie;
 import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.Client;
-import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.WebPath;
+import net.rcetech.meta.orders.OrderStatus;
+import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +85,12 @@ class ApiOrderControllerSecurityTest {
     @BeforeEach
     void setUp() {
         when(orderApiService.findAll(any(), any(), any())).thenReturn(Page.empty());
-        when(orderApiService.createOrder(any(), any(), any(), anyBoolean())).thenReturn(new Order());
+        when(orderApiService.createOrder(any())).thenReturn(summary());
+    }
+
+    private static ClientOrderSummary summary() {
+        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(), OrderStatus.NEW,
+                1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
     }
 
     private Client createClient() {
@@ -200,7 +207,8 @@ class ApiOrderControllerSecurityTest {
         endpoint.verifyCalled(orderApiService, keyOwner.getId(), orderId);
         verify(orderApiService, never()).findAll(eq(sessionClient.getId()), any(), any());
         verify(orderApiService, never()).findByIdAndClientId(eq(sessionClient.getId()), any());
-        verify(orderApiService, never()).createOrder(eq(sessionClient.getId()), any(), any(), anyBoolean());
+        verify(orderApiService, never())
+                .createOrder(argThat(command -> sessionClient.getId().equals(command.clientId())));
         verify(orderApiService, never()).cancelOrder(eq(sessionClient.getId()), any());
     }
 

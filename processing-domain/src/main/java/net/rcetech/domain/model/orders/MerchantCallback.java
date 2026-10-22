@@ -24,7 +24,9 @@ public class MerchantCallback {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    private Instant processedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 

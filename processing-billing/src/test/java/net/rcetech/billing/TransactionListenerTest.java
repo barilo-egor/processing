@@ -4,22 +4,16 @@ import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.clients.Client;
-import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
-import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.domain.service.clients.ClientService;
-import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.OrderService;
-import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionCreatedEvent;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.config.MetaWebConfig;
-import net.rcetech.meta.incidents.IncidentStatus;
-import net.rcetech.meta.incidents.IncidentType;
-import org.junit.jupiter.api.AfterEach;
+import net.rcetech.meta.incidents.BalanceUpdateErrorEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -31,6 +25,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -47,8 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
         OrderService.class, ClientService.class, ClientBalanceService.class, TransactionListener.class,
-        TransactionService.class, IncidentService.class, SupportUserService.class, MetaWebConfig.class
+        TransactionService.class, MetaWebConfig.class
 })
+@RecordApplicationEvents
 class TransactionListenerTest {
 
     @Container
@@ -75,12 +72,7 @@ class TransactionListenerTest {
     private TransactionRepository transactionRepository;
 
     @Autowired
-    private IncidentRepository incidentRepository;
-
-    @AfterEach
-    void cleanUp() {
-        incidentRepository.deleteAll();
-    }
+    private ApplicationEvents applicationEvents;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -193,18 +185,13 @@ class TransactionListenerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
         long after = System.currentTimeMillis();
-        List<Incident> incidents = incidentRepository.findAll();
-        assertEquals(1, incidents.size());
-        Incident incident = incidents.getFirst();
+        List<BalanceUpdateErrorEvent> events = applicationEvents.stream(BalanceUpdateErrorEvent.class).toList();
+        assertEquals(1, events.size());
+        BalanceUpdateErrorEvent incidentEvent = events.getFirst();
         assertAll(
-                () -> assertNotNull(incident.getId()),
-                () -> assertNotNull(incident.getCreatedAt()),
-                () -> assertNotNull(incident.getErrorTimestamp()),
-                () -> assertTrue(incident.getErrorTimestamp() >= before && incident.getErrorTimestamp() <= after),
-                () -> assertEquals(IncidentStatus.NEW, incident.getStatus()),
-                () -> assertEquals(IncidentType.BALANCE_UPDATE_ERROR, incident.getType()),
-                () -> assertEquals(transactionId.toString(), incident.getData().get("transactionId")),
-                () -> assertEquals(clientId.toString(), incident.getData().get("clientId"))
+                () -> assertEquals(transactionId, incidentEvent.transactionId()),
+                () -> assertEquals(clientId, incidentEvent.clientId()),
+                () -> assertTrue(incidentEvent.errorTimestamp() >= before && incidentEvent.errorTimestamp() <= after)
         );
     }
 

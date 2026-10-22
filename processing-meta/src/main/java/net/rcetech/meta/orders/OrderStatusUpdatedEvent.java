@@ -4,5 +4,7 @@ import java.util.UUID;
 
 public record OrderStatusUpdatedEvent(
         UUID orderId,
-        OrderStatus orderStatus
+        OrderStatus orderStatus,
+        OrderStatusChangeSource source,
+        boolean notifyClient
 ) {}

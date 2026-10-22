@@ -2,7 +2,6 @@ package net.rcetech.api.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.service.OrderApiService;
-import net.rcetech.domain.mapping.orders.OrderMapper;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -25,17 +24,14 @@ public class ClientOrderController {
 
     private final OrderApiService orderApiService;
 
-    private final OrderMapper orderMapper;
-
-    public ClientOrderController(OrderApiService orderApiService, OrderMapper orderMapper) {
+    public ClientOrderController(OrderApiService orderApiService) {
         this.orderApiService = orderApiService;
-        this.orderMapper = orderMapper;
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClientOrderSummary> getOrder(@PathVariable UUID id, Principal principal) {
-        return new ResponseEntity<>(orderMapper.toOrderSummary(
-                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id)),
+        return new ResponseEntity<>(
+                orderApiService.findByIdAndClientId(UUID.fromString(principal.getName()), id),
                 HttpStatus.OK
         );
     }

@@ -2,6 +2,7 @@ package net.rcetech.api.merchantdetails;
 
 import net.rcetech.api.dto.CreateOrderRequest;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -9,6 +10,6 @@ import java.util.UUID;
  */
 public interface MerchantDetailsReceiver {
 
-    ApiDetailsResponse getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
+    Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
                                   Integer timeoutSeconds);
 }

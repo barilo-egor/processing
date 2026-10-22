@@ -11,6 +11,8 @@ public record MerchantCallbackResponse(
         Long id,
         @JsonSerialize(using = InstantToMillisSerializer.class)
         Instant createdAt,
+        @JsonSerialize(using = InstantToMillisSerializer.class)
+        Instant processedAt,
         UUID orderId,
         Merchant merchant,
         String merchantOrderId,

@@ -43,7 +43,7 @@
 ## Приложение
 
 ### Конфиг `config/config.yml`
-- [ ] В `spring.profiles.active` нет `disable-security`, `md-test-details`, `md-test-callback`, `mh-test` и `dev`.
+- [ ] В `spring.profiles.active` нет `disable-security`, `md-test-callback`, `mh-test` и `dev`.
 - [ ] `spring.security.oauth2.client.provider.keycloak-provider.issuer-uri` указывает на **публичный** адрес реалма, `https://auth.example.com/realms/processing`. Он должен совпадать с `iss` в токенах.
 - [ ] Сервер приложения может открыть этот публичный адрес. Если трафик к Keycloak должен идти через WireGuard, на сервере приложения домен Keycloak указывает на его WireGuard-адрес (например, через `/etc/hosts`), и nginx Keycloak слушает на этом интерфейсе с тем же сертификатом.
 - [ ] `processing.uri.manage-account` указывает на публичный адрес: `https://auth.example.com/realms/processing/account`.
