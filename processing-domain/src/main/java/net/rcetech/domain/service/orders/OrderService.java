@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
@@ -48,6 +50,9 @@ public class OrderService {
     }
 
     public Order createOrder(Client client, String internalId, Integer amount, String callbackUrl) {
+        if (existsByInternalId(internalId)) {
+            throw new BadRequestException(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE);
+        }
         Order order = new Order();
         order.setId(UUID.randomUUID());
         order.setCreatedAt(Instant.now());

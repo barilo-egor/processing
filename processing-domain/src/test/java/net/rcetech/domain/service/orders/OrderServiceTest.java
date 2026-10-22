@@ -5,6 +5,8 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
+import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.orders.*;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -781,6 +783,26 @@ class OrderServiceTest {
                 () -> assertNotNull(actual.getCreatedAt()),
                 () -> assertNull(actual.getExpiresAt()),
                 () -> assertNull(actual.getDetails())
+        );
+    }
+
+    @CsvSource({
+            "c4d2e8f1,1000",
+            "d9a7b3e5,7300"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен бросить BadRequestException и не сохранять ордер, если ордер с таким internalId уже существует.")
+    void createOrder_shouldThrowIfInternalIdNotUnique(String internalId, int amount) {
+        Client client = getDummyClient();
+        orderService.createOrder(client, internalId, amount, null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> orderService.createOrder(client, internalId, amount, null));
+
+        assertAll(
+                () -> assertEquals(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE, exception.getMessage()),
+                () -> assertEquals(1, orderRepository.findAll().stream()
+                        .filter(order -> internalId.equals(order.getInternalId())).count())
         );
     }
 

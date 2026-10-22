@@ -59,6 +59,8 @@ class ApiMerchantDetailsGrpcServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(detailsBlockingStub.withDeadlineAfter(anyLong(), any(TimeUnit.class)))
+                .thenReturn(detailsBlockingStub);
         apiMerchantDetailsGrpcService =  new ApiMerchantDetailsGrpcService(
                 detailsMapper, detailsBlockingStub, "processing", eventPublisher
         );
@@ -111,10 +113,15 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {30, 120})
-    @DisplayName("Метод должен вернуть пустой Optional без инцидента, если реквизиты не найдены.")
-    void getDetails_shouldReturnEmptyWithoutIncidentIfNotFound(int timeoutSeconds) {
-        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
+    @CsvSource({
+            "NOT_FOUND,30",
+            "NOT_FOUND,120",
+            "DEADLINE_EXCEEDED,30",
+            "DEADLINE_EXCEEDED,120"
+    })
+    @DisplayName("Метод должен вернуть пустой Optional без инцидента, если реквизиты не найдены или истёк таймаут поиска.")
+    void getDetails_shouldReturnEmptyWithoutIncidentIfNotFound(Status.Code code, int timeoutSeconds) {
+        when(detailsBlockingStub.detailsRequest(any())).thenThrow(new StatusRuntimeException(Status.fromCode(code)));
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD),
                 "https://example.com/callback", "534690"
@@ -196,6 +203,26 @@ class ApiMerchantDetailsGrpcServiceTest {
                     () -> assertTrue(result.get().isEmpty()),
                     () -> assertTrue(callCancelled.await(5, TimeUnit.SECONDS)),
                     () -> assertFalse(searchThread.isInterrupted())
+            );
+            verifyNoInteractions(eventPublisher);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    @DisplayName("Поиск должен прерываться по истечении таймаута поиска и возвращать пустой Optional без инцидента.")
+    void getDetails_shouldCancelGrpcCallAfterTimeout(int timeoutSeconds) throws Exception {
+        CountDownLatch callCancelled = new CountDownLatch(1);
+        try (InProcessDetails inProcessDetails = new InProcessDetails((request, responseObserver) ->
+                Context.current().addListener(context -> callCancelled.countDown(), Runnable::run))) {
+            long before = System.nanoTime();
+            Optional<ApiDetailsResponse> result = inProcessDetails.service()
+                    .getDetails(UUID.randomUUID(), UUID.randomUUID(), createOrderRequest(), timeoutSeconds);
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before);
+            assertAll(
+                    () -> assertTrue(result.isEmpty()),
+                    () -> assertTrue(elapsedMillis >= TimeUnit.SECONDS.toMillis(timeoutSeconds) - 100),
+                    () -> assertTrue(callCancelled.await(5, TimeUnit.SECONDS))
             );
             verifyNoInteractions(eventPublisher);
         }

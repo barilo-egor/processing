@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -49,7 +50,7 @@ public class ApiMerchantDetailsGrpcService {
      * Получает реквизиты мерчанта по clientId и деталям запроса через gRPC.
      *
      * @return {@link ApiDetailsResponse} с найденными реквизитами или пустой Optional, если реквизиты не найдены
-     * (gRPC NOT_FOUND), поиск отменён через {@link #cancelSearch(UUID)} или при поиске произошла ошибка. Об ошибке
+     * (gRPC NOT_FOUND), истёк таймаут поиска (gRPC DEADLINE_EXCEEDED), поиск отменён через {@link #cancelSearch(UUID)} или при поиске произошла ошибка. Об ошибке
      * создаётся инцидент, если необработанного инцидента такого типа ещё нет.
      */
     public Optional<ApiDetailsResponse> getDetails(UUID clientId, UUID orderId, CreateOrderRequest clientOrderRequest,
@@ -69,9 +70,9 @@ public class ApiMerchantDetailsGrpcService {
                     .setOwnerId(clientId.toString())
                     .setInitiatorApp(applicationName)
                     .build();
-            DetailsResponseGrpc grpcResponse = context.call(() -> detailsBlockingStub.detailsRequest(
-                    detailsRequestGrpc
-            ));
+            DetailsResponseGrpc grpcResponse = context.call(() -> detailsBlockingStub
+                    .withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS)
+                    .detailsRequest(detailsRequestGrpc));
             return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
@@ -80,6 +81,10 @@ public class ApiMerchantDetailsGrpcService {
                     : statusException.getStatus().getCode().value();
             if (code == Code.NOT_FOUND_VALUE) {
                 log.info("Не найдены реквизиты по ордеру {}: {}", orderId, clientOrderRequest);
+                return Optional.empty();
+            }
+            if (code == Code.DEADLINE_EXCEEDED_VALUE) {
+                log.info("Истёк таймаут поиска реквизитов по ордеру {}: {}", orderId, clientOrderRequest);
                 return Optional.empty();
             }
             if (code == Code.CANCELLED_VALUE && context.isCancelled()) {

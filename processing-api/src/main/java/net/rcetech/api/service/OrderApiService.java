@@ -12,7 +12,6 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
-import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
 import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.orders.OrderStatus;
@@ -66,38 +65,25 @@ public class OrderApiService {
     }
 
     public ClientOrderSummary createOrder(CreateOrderCommand command) {
-        Client client = findClient(command.clientId());
-        Order order = createSearchingOrder(client, command.request());
+        Client client = clientService.findById(command.clientId())
+                .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
+        CreateOrderRequest request = command.request();
+        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
         searchDetails(command, order.getId(), client.getOrderTimeoutSeconds(), false);
         return findSummary(order.getId());
     }
 
     public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
-        Client client = findClient(command.clientId());
-        Order order = createSearchingOrder(client, command.request());
+        Client client = clientService.findById(command.clientId())
+                .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
+        CreateOrderRequest request = command.request();
+        Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
         ClientOrderSummary summary = findSummary(order.getId());
         submitSearch(command, order.getId(), client.getOrderTimeoutSeconds());
         if (Objects.isNull(summary.callbackUrl())) {
             log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
         }
         return summary;
-    }
-
-    private Client findClient(UUID clientId) {
-        return clientService.findById(clientId)
-                .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + clientId));
-    }
-
-    private Order createSearchingOrder(Client client, CreateOrderRequest createOrderRequest) {
-        if (orderService.existsByInternalId(createOrderRequest.internalId())) {
-            throw new BadRequestException(ExceptionMessage.INTERNAL_ID_NOT_UNIQUE);
-        }
-        return orderService.createOrder(
-                client,
-                createOrderRequest.internalId(),
-                createOrderRequest.amount(),
-                createOrderRequest.callbackUrl()
-        );
     }
 
     private void submitSearch(CreateOrderCommand command, UUID orderId, int orderTimeoutSeconds) {
