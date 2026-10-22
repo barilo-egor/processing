@@ -91,7 +91,12 @@ node {
 
 
 tasks.register('installFrontend') {
-    dependsOn('installClient', 'installSupport')
+    dependsOn('installClient', 'installSupport', 'installNoRole')
+}
+
+tasks.register('installNoRole', Sync) {
+    from(new File(rootDir, 'frontend/no-role'))
+    into(new File(rootDir, 'config/frontend/no-role'))
 }
 
 tasks.register('installClient', NpmTask) {
