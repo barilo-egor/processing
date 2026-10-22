@@ -6,6 +6,7 @@ import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.config.EnableConfiguration;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
@@ -24,9 +25,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import org.wiremock.spring.EnableWireMock;
 import tgb.cryptoexchange.commons.enums.Merchant;
 import tools.jackson.core.StreamWriteFeature;
@@ -50,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 )
 @Import({CallbackSender.class, OrderService.class, CallbackHttpSender.class, OrdersWebConfig.class, EnableConfiguration.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 @EnableWireMock
 class CallbackSenderTest {
 
@@ -60,15 +57,9 @@ class CallbackSenderTest {
             .findAndAddModules()
             .build();
 
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

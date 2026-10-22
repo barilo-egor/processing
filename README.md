@@ -43,6 +43,12 @@
         Далее необходимо открыть созданного пользователя, перейти на вкладку <code>Role mapping</code> и добавить необходимые роли.
     </li>
     <li>
+        Открыть клиента приложения в "Clients" (его <code>client-id</code> указывается в <code>keycloak-bff</code>), на вкладке
+        "Settings" в блоке "Capability config" включить "Client authentication" и "Service accounts roles". Затем на вкладке
+        "Service accounts roles" нажать "Assign role" -> "Client roles" и выбрать <code>realm-management</code> ->
+        <code>manage-users</code>. Сервисный аккаунт нужен, чтобы при удалении клиента приложение завершало его сессии в Keycloak.
+    </li>
+    <li>
         Вернуться в проект, в корне создать директорию config и в ней файл config.yml:
 <pre><code>
 spring:

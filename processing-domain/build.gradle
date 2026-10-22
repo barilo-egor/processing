@@ -1,5 +1,7 @@
 plugins {
     id 'processing'
+    id 'processing-mysql-tests'
+    id 'java-test-fixtures'
 }
 
 dependencies {
@@ -19,6 +21,9 @@ dependencies {
 
     implementation 'org.mapstruct:mapstruct:1.6.3'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+    testFixturesImplementation 'org.springframework:spring-test'
+    testFixturesApi 'org.testcontainers:testcontainers-mysql'
 
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-mysql'

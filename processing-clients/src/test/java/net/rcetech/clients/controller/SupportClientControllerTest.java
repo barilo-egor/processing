@@ -1,11 +1,13 @@
 package net.rcetech.clients.controller;
 
 import net.rcetech.domain.service.clients.ApiKeyService;
+import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
@@ -43,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,6 +63,9 @@ class SupportClientControllerTest {
 
     @MockitoBean
     private ClientService clientService;
+
+    @MockitoBean
+    private ClientDeletionService clientDeletionService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -273,5 +279,53 @@ class SupportClientControllerTest {
         ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
         verify(clientService).update(eq(clientId), captor.capture());
         assertEquals(expected, captor.getValue());
+    }
+
+    @ValueSource(strings = {
+            "6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c",
+            "0a9b8c7d-6e5f-4a3b-9c1d-2e3f4a5b6c7d"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен удалить клиента и вернуть 204.")
+    void delete_shouldDeleteClient(UUID clientId) throws Exception {
+        mockMvc.perform(delete("/api/support/client/" + clientId)
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+        verify(clientDeletionService).delete(clientId);
+    }
+
+    @ValueSource(strings = {"Клиент не найден.", "Клиент уже удалён."})
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть 400, если сервис выбросил BadRequestException.")
+    void delete_shouldReturnBadRequestIfServiceThrows(String message) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        doThrow(new BadRequestException(message)).when(clientDeletionService).delete(clientId);
+        mockMvc.perform(delete("/api/support/client/" + clientId)
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(message));
+    }
+
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN"})
+    @ParameterizedTest
+    @DisplayName("Удаление клиента должно быть запрещено для всех кроме администратора.")
+    void delete_shouldReturnForbiddenIfNotAdmin(Role role) throws Exception {
+        mockMvc.perform(delete("/api/support/client/21c28723-95ab-4349-a918-ec3b0ce26ad4")
+                        .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role.name()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(clientDeletionService);
+    }
+
+    @ValueSource(strings = {"6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c", "0a9b8c7d-6e5f-4a3b-9c1d-2e3f4a5b6c7d"})
+    @ParameterizedTest
+    @DisplayName("Удаление клиента без CSRF-токена должно быть запрещено.")
+    void delete_shouldReturnForbiddenWithoutCsrf(UUID clientId) throws Exception {
+        mockMvc.perform(delete("/api/support/client/" + clientId)
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name())))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(clientDeletionService);
     }
 }

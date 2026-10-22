@@ -7,6 +7,7 @@ import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.MerchantCallbackSpecifications;
 import net.rcetech.domain.repository.orders.OrderRepository;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.billing.dto.MerchantCallbackFilter;
 import net.rcetech.meta.billing.dto.MerchantCallbackResponse;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -26,9 +27,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -40,17 +38,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(MerchantCallbackService.class)
-@Testcontainers
 class MerchantCallbackServiceTest {
-
-    @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
     }
 
     @Autowired

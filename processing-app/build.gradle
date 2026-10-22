@@ -89,6 +89,9 @@ tasks.register('copyConfigToDockerDir', Copy) {
 node {
     download = true
     version = '26.8.1'
+    // npm workspace с client и support: зависимости ставятся из корня frontend/ по package-lock.json
+    nodeProjectDir = file('../frontend')
+    npmInstallCommand = 'ci'
 }
 
 
@@ -102,11 +105,13 @@ tasks.register('installNoRole', Sync) {
 }
 
 tasks.register('installClient', NpmTask) {
+    dependsOn('npmInstall')
     workingDir = file('../frontend/client')
     args = ['run', 'build']
 }
 
 tasks.register('installSupport', NpmTask) {
+    dependsOn('npmInstall')
     workingDir = file('../frontend/support')
     args = ['run', 'build']
 }

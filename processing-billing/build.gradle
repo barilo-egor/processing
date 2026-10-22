@@ -1,5 +1,6 @@
 plugins {
     id 'processing'
+    id 'processing-mysql-tests'
 }
 
 dependencies {
@@ -21,6 +22,7 @@ dependencies {
     compileOnly 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 
     testImplementation 'jakarta.servlet:jakarta.servlet-api'
+    testImplementation testFixtures(project(':processing-domain'))
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'

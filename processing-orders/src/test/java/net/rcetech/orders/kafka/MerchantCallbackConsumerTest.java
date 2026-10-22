@@ -3,6 +3,7 @@ package net.rcetech.orders.kafka;
 import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.service.orders.MerchantCallbackService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.Profiles;
 import net.rcetech.meta.incidents.MerchantCallbackHandleErrorEvent;
 import net.rcetech.meta.orders.MerchantCallbackEvent;
@@ -37,7 +38,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
-import org.testcontainers.mysql.MySQLContainer;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Duration;
@@ -107,19 +107,13 @@ class MerchantCallbackConsumerTest {
             "}";
 
     @Container
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.46");
-
-    @Container
     static KafkaContainer kafkaContainer = new KafkaContainer("apache/kafka-native:3.8.0");
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mySQLContainer::getUsername);
-        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+        SharedMySQLContainer.register(registry);
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
         registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
-        registry.add("spring.flyway.locations", () -> "classpath:database/migration");
     }
 
     @Autowired

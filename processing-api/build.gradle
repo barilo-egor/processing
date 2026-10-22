@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'processing'
+    id 'processing-mysql-tests'
     id 'com.google.protobuf'
     id 'idea'
 }
@@ -23,6 +24,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-oauth2-core'
     testImplementation 'org.springframework.security:spring-security-oauth2-client'
     testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
+    testImplementation testFixtures(project(':processing-domain'))
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
