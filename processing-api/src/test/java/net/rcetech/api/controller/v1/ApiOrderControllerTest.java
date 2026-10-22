@@ -10,7 +10,6 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.meta.config.MetaSecurityConfig;
-import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.orders.OrderStatus;
@@ -435,29 +434,6 @@ class ApiOrderControllerTest {
                                 .header("Async-Request", true)
                 ).andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.description").value("Contact support."));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    @DisplayName("Если для асинхронного создания нет адреса КБ, метод должен вернуть 400 с текстом ошибки.")
-    void createOrder_shouldReturn400IfAsyncWithoutCallbackUrl(boolean testOrder) throws Exception {
-        when(orderApiService.createOrderAsync(any()))
-                .thenThrow(new BadRequestException(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED));
-        mockMvc.perform(
-                        post("/api/v1/order")
-                                .with(apiKeyOf(UUID.randomUUID()))
-                                .content("""
-                                        {
-                                            "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
-                                            "amount": 5000,
-                                            "methods": ["CARD"],
-                                            "userId": "163637435086"
-                                        }""")
-                                .header("Content-Type", "application/json")
-                                .header("Async-Request", true)
-                                .header("Test-Order", testOrder)
-                ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED));
     }
 
     @ParameterizedTest

@@ -74,12 +74,12 @@ public class OrderApiService {
 
     public ClientOrderSummary createOrderAsync(CreateOrderCommand command) {
         Client client = findClient(command.clientId());
-        if (Objects.isNull(command.request().callbackUrl()) && Objects.isNull(client.getCallbackUrl())) {
-            throw new BadRequestException(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED);
-        }
         Order order = createSearchingOrder(client, command.request());
         ClientOrderSummary summary = findSummary(order.getId());
         submitSearch(command, order.getId(), client.getOrderTimeoutSeconds());
+        if (Objects.isNull(summary.callbackUrl())) {
+            log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
+        }
         return summary;
     }
 

@@ -769,13 +769,15 @@ class OrderApiServiceTest {
 
     @ParameterizedTest
     @CsvSource(value = {
-            "https://example.com/callback,null",
-            "null,https://google.com/merchant-details/callback",
-            "https://example.com/callback,https://google.com/merchant-details/callback"
+            "https://example.com/callback,null,https://example.com/callback",
+            "null,https://google.com/merchant-details/callback,https://google.com/merchant-details/callback",
+            "https://example.com/callback,https://google.com/merchant-details/callback,https://example.com/callback",
+            "null,null,null"
     }, nullValues = "null")
     @DisplayName("Асинхронное создание должно вернуть ордер в SEARCHING и запустить поиск в пуле, не дожидаясь его.")
     void createOrder_shouldReturnSearchingOrderAndSubmitSearchIfAsync(String requestCallbackUrl,
-                                                                      String clientCallbackUrl) {
+                                                                      String clientCallbackUrl,
+                                                                      String expectedCallbackUrl) {
         Client client = getDummyClient();
         client.setCallbackUrl(clientCallbackUrl);
 
@@ -783,6 +785,7 @@ class OrderApiServiceTest {
                 command(client.getId(), asyncRequest(requestCallbackUrl), 30, false));
 
         assertEquals(OrderStatus.SEARCHING, order.status());
+        assertEquals(expectedCallbackUrl, order.callbackUrl());
         assertEquals(OrderStatus.SEARCHING, orderRepository.findById(order.id()).orElseThrow().getStatus());
         verify(detailsSearchExecutor).execute(any());
         verifyNoInteractions(merchantDetailsReceiver, randomDetailsReceiver);
@@ -869,23 +872,6 @@ class OrderApiServiceTest {
         assertEquals(List.of(new OrderStatusUpdatedEvent(created.id(), OrderStatus.CANCELED,
                         OrderStatusChangeSource.CLIENT, true)),
                 applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"a27fc526-017c-440a-b680-0f672983aeaf", "internal-7731"})
-    @DisplayName("Асинхронное создание без адреса КБ в запросе и у клиента должно бросать BadRequestException без сохранения ордера.")
-    void createOrder_shouldThrowIfAsyncWithoutCallbackUrl(String internalId) {
-        Client client = getDummyClient();
-        CreateOrderRequest request = new CreateOrderRequest(internalId, 5000, Set.of(RequestMethod.CARD), null,
-                "1235153208");
-        CreateOrderCommand command = command(client.getId(), request, 30, false);
-
-        BadRequestException exception = assertThrows(BadRequestException.class,
-                () -> orderApiService.createOrderAsync(command));
-
-        assertEquals(ExceptionMessage.ASYNC_CALLBACK_URL_REQUIRED, exception.getMessage());
-        assertEquals(0, orderRepository.count());
-        verifyNoInteractions(detailsSearchExecutor, merchantDetailsReceiver);
     }
 
     @ParameterizedTest
