@@ -24,19 +24,28 @@ import net.rcetech.orders.callback.MerchantCallbackProcessor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.RecordComponent;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class OrderApiService {
 
-    private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
+    private static final String ORDER_NOT_FOUND_MESSAGE = "Ордер не найден.";
+
+    private static final Set<String> SORTABLE_FIELDS = Arrays.stream(ClientOrderSummary.class.getRecordComponents())
+            .map(RecordComponent::getName)
+            .collect(Collectors.toUnmodifiableSet());
 
     private final DetailsSearchService detailsSearchService;
 
@@ -159,6 +168,11 @@ public class OrderApiService {
     }
 
     public Page<ClientOrderSummary> findAll(UUID clientId, ClientOrderFilter filter, Pageable pageable) {
+        for (Sort.Order order : pageable.getSort()) {
+            if (!SORTABLE_FIELDS.contains(order.getProperty())) {
+                throw new BadRequestException("Сортировка по полю «" + order.getProperty() + "» не поддерживается.");
+            }
+        }
         return orderService.findAll(OrderSpecifications.matches(clientId, filter), pageable, ClientOrderSummary.class);
     }
 

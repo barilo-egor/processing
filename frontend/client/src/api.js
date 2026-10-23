@@ -18,6 +18,8 @@
      GET    /api/client/withdrawal-request?id&status&address&createdAtFrom&createdAtTo&page&size&sort
      POST   /api/client/withdrawal-request?amount=&address=   — создание
      PATCH  /api/client/withdrawal-request/{id}               — отмена
+     GET    /api/client/docs                -> [{ id, title }] — страницы документации
+     GET    /api/client/docs/{id}           -> { id, title, content } — content в Markdown; нет — 404
      GET    /api/common/dictionary          -> {ИмяПеречисления: [...]}
 
    Ошибки 400 бэк отдаёт с понятным текстом в description — его и
@@ -81,6 +83,9 @@ export async function logout() {
   form.submit();
 }
 
+// Перезагрузка из-за 401 уже запущена — повторно не запускаем.
+let reloadingOn401 = false;
+
 /* Единая точка входа для запросов.
    options:
      method  — 'GET' по умолчанию
@@ -114,10 +119,16 @@ export async function request(url, options = {}) {
   }
 
   // 401 — сессия истекла, 403 — вход есть, но прав на действие нет.
+  // 401 — сессия истекла: перезагружаем страницу, сервер сам отправит на вход
+  // (Keycloak) и после входа вернёт сюда же. Промис не завершаем, чтобы до
+  // перезагрузки не мелькали тосты с ошибкой; при нескольких 401 сразу
+  // перезагрузка запускается один раз.
   if (res.status === 401) {
-    const err = new Error('Сессия истекла, войдите заново');
-    err.unauthorized = true;
-    throw err;
+    if (!reloadingOn401) {
+      reloadingOn401 = true;
+      window.location.reload();
+    }
+    return new Promise(() => {});
   }
   if (res.status === 403) {
     const err = new Error('Нет доступа');
@@ -196,6 +207,15 @@ export const api = {
 
   deleteApiKey: (id) =>
       request(`${CLIENT_API}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Документация: список страниц для роли пользователя [{ id, title }] — порядок = порядок в меню.
+  async docs() {
+    const d = await request(`${CLIENT_API}/docs`);
+    return Array.isArray(d) ? d.filter((x) => x && x.id && x.title) : [];
+  },
+
+  // Страница документации: { id, title, content }, content — Markdown (GFM). Нет страницы — 404.
+  doc: (id) => request(`${CLIENT_API}/docs/${encodeURIComponent(id)}`),
 
   // Словари перечислений: статусы, способы оплаты, операции и т.д.
   async dictionary() {

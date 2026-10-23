@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
+import Markdown from './Markdown.jsx';
 
 /* ============================================================
    Личный кабинет администратора API.
@@ -26,14 +27,17 @@ function readCollapsed() {
   try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
 }
 
+// Порядок пунктов меню: «Заявки на вывод» — сразу под «Ордера»,
+// «История мерчантов» — сразу над «КБ мерчантов».
 const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
-  { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
-  { id: 'merchantHistory', title: 'История мерчантов', icon: 'fa-solid fa-clock-rotate-left' },
-  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
+  { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
+  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
+  { id: 'merchantHistory', title: 'История мерчантов', icon: 'fa-solid fa-clock-rotate-left' },
   { id: 'callbacks', title: 'КБ мерчантов', icon: 'fa-solid fa-rotate' },
+  { id: 'incidents', title: 'Инциденты', icon: 'fa-solid fa-triangle-exclamation' },
 ];
 
 /* Разделы только для администратора: оператор их не видит (ТЗ «Скрыть «Клиенты»
@@ -48,6 +52,8 @@ export default function App() {
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [toast, setToast] = useState(null);
+  // Страницы документации [{ id, title }]; пусто — пункта «Документация» в меню нет.
+  const [docs, setDocs] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
   // Справочник мерчантов: name -> displayName для показа человеку.
   const [merchants, setMerchants] = useState([]);
@@ -58,6 +64,10 @@ export default function App() {
   // Операции (CREDIT/DEBIT) и типы транзакций — для раздела «Транзакции».
   const [operations, setOperations] = useState([]);
   const [txTypes, setTxTypes] = useState([]);
+  // Статусы и типы инцидентов — для раздела «Инциденты».
+  // У типа: summary — в таблицу, description — описание, guide — «Что необходимо сделать».
+  const [incidentStatuses, setIncidentStatuses] = useState([]);
+  const [incidentTypes, setIncidentTypes] = useState([]);
   // Клиент, выбранный переходом из таблицы в конфигурацию мерчантов.
   const [configClient, setConfigClient] = useState(null);
   // Роли вошедшего пользователя; null — ещё загружаются.
@@ -103,6 +113,8 @@ export default function App() {
           if (Array.isArray(wStatuses) && wStatuses.length) setWithdrawalStatuses(wStatuses);
           if (Array.isArray(d?.Operation) && d.Operation.length) setOperations(d.Operation);
           if (Array.isArray(d?.TransactionType) && d.TransactionType.length) setTxTypes(d.TransactionType);
+          if (Array.isArray(d?.IncidentStatus) && d.IncidentStatus.length) setIncidentStatuses(d.IncidentStatus);
+          if (Array.isArray(d?.IncidentType) && d.IncidentType.length) setIncidentTypes(d.IncidentType);
         })
         .catch(() => { /* без словаря покажутся коды значений */ });
   }, []);
@@ -111,6 +123,14 @@ export default function App() {
     setConfigClient(client);
     setSection('merchants');
   };
+
+  // Документация: список страниц — один раз при открытии кабинета.
+  // Ошибку не показываем: без списка пункта «Документация» просто нет.
+  useEffect(() => {
+    let alive = true;
+    api.docs().then((list) => { if (alive) setDocs(list); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // Escape закрывает выехавшее меню.
   useEffect(() => {
@@ -130,7 +150,10 @@ export default function App() {
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
-  const current = SECTIONS.find((s) => s.id === section);
+  const docId = docIdOf(section);
+  const current = docId
+      ? { id: section, title: docs.find((d) => d.id === docId)?.title || 'Документация' }
+      : SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
@@ -163,6 +186,7 @@ export default function App() {
                   <span>{s.title}</span>
                 </button>
             ))}
+            <DocsNav docs={docs} section={section} collapsed={collapsed} onOpen={goTo} />
           </nav>
           {/* Свернуть/развернуть меню — только на широком экране. */}
           <button
@@ -238,6 +262,18 @@ export default function App() {
             {section === 'callbacks' && (
                 <CallbacksSection merchants={merchants} showToast={showToast} />
             )}
+            {section === 'incidents' && (
+                <IncidentsSection
+                    incidentStatuses={incidentStatuses}
+                    incidentTypes={incidentTypes}
+                    orderStatuses={orderStatuses}
+                    merchants={merchants}
+                    methods={methods}
+                    showToast={showToast}
+                    canOpenClient={isAdmin}
+                />
+            )}
+            {docId && <DocPage key={docId} id={docId} />}
           </main>
         </div>
 
@@ -429,6 +465,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
               <i className="fa-solid fa-magnifying-glass" /> Поиск
             </button>
             <button type="button" className="btn btn-secondary" onClick={reset}>Сбросить</button>
+            <RefreshButton onClick={() => load(applied, page, sort)} loading={loading} />
           </div>
         </div>
 
@@ -525,6 +562,90 @@ function Pagination({ page, total, onPage, busy, label }) {
   );
 }
 
+
+/* ==================== Документация ==================== */
+/* Список страниц приходит при открытии кабинета (GET /docs) — бэк сам
+   отбирает страницы по роли пользователя. В меню — пункт «Документация»
+   с подпунктами-страницами. Если страниц нет (или список не загрузился),
+   пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
+const DOC_PREFIX = 'doc:';
+const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
+
+/* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
+function DocsNav({ docs, section, collapsed, onOpen }) {
+  const activeId = docIdOf(section);
+  const [open, setOpen] = useState(Boolean(activeId));
+  // Открыли страницу документации — подменю раскрыто.
+  useEffect(() => { if (activeId) setOpen(true); }, [activeId]);
+
+  if (!docs.length) return null;
+  return (
+      <div className="nav-group">
+        <button
+            type="button"
+            className={`nav-item nav-group-head${activeId ? ' has-active' : ''}`}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            title={collapsed ? 'Документация' : undefined}
+        >
+          <i className="fa-solid fa-book" />
+          <span>Документация</span>
+          <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} nav-caret`} />
+        </button>
+        {open && (
+            <div className="nav-sub">
+              {docs.map((d) => (
+                  <button
+                      key={d.id}
+                      type="button"
+                      className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
+                      onClick={() => onOpen(DOC_PREFIX + d.id)}
+                      title={collapsed ? d.title : undefined}
+                  >
+                    <i className="fa-regular fa-file-lines" />
+                    <span>{d.title}</span>
+                  </button>
+              ))}
+            </div>
+        )}
+      </div>
+  );
+}
+
+/* Страница документации: GET /docs/{id}, текст — Markdown (GFM). */
+/* Заголовок страницы (title) — в верхней панели кабинета, как у остальных разделов. */
+function DocPage({ id }) {
+  const [state, setState] = useState({ loading: true, page: null, error: '' });
+
+  useEffect(() => {
+    let alive = true;
+    setState({ loading: true, page: null, error: '' });
+    api.doc(id)
+        .then((page) => { if (alive) setState({ loading: false, page, error: '' }); })
+        .catch((e) => {
+          if (!alive) return;
+          // 404 — страницы нет или она недоступна роли пользователя.
+          setState({
+            loading: false,
+            page: null,
+            error: e.status === 404 ? 'Страница не найдена' : (e.message || 'Не удалось загрузить страницу'),
+          });
+        });
+    return () => { alive = false; };
+  }, [id]);
+
+  if (state.loading) {
+    return <div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>;
+  }
+  if (state.error) {
+    return <div className="state"><i className="fa-regular fa-file-excel" /> {state.error}</div>;
+  }
+  return (
+      <article className="doc-page">
+        <Markdown source={state.page?.content} />
+      </article>
+  );
+}
 
 /* ==================== Меню аккаунта ==================== */
 /* Логин администратора в правом углу верхней панели.
@@ -825,6 +946,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
               Сбросить
             </button>
+            <RefreshButton onClick={() => load(applied, page, sort)} loading={loading} />
           </div>
         </div>
 
@@ -1251,6 +1373,23 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+
+  // Перерасчёт баланса по сумме транзакций клиента (ТЗ «Инциденты»).
+  // Бэк возвращает клиента после пересчёта — обновляем карточку и таблицу;
+  // несохранённые правки в полях настроек при этом не теряются.
+  const onRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const updated = await api.recalculateBalance(client.id);
+      if (updated && typeof updated === 'object') onUpdated({ ...client, ...updated });
+      showToast('Баланс пересчитан', 'success');
+    } catch (e) {
+      showToast(e.message || 'Не удалось пересчитать баланс', 'error');
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   // Клиент мог обновиться снаружи (например, после сохранения) —
   // подхватываем новые значения.
@@ -1482,14 +1621,20 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
             </div>
           </div>
 
-          <div className="modal-foot">
-            <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>
-              Отмена
+          <div className="modal-foot modal-foot-split">
+            <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={onRecalculate}>
+              <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
+              Перерасчёт баланса
             </button>
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={onSave}>
-              <i className="fa-solid fa-check" />
-              Сохранить
-            </button>
+            <div className="foot-right">
+              <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>
+                Отмена
+              </button>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={onSave}>
+                <i className="fa-solid fa-check" />
+                Сохранить
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1812,6 +1957,7 @@ function MerchantsSection({ client, showToast, onPickClient }) {
             <button type="button" className="btn btn-secondary" onClick={() => { setSearch(''); setApplied(''); }}>
               Сбросить
             </button>
+            <RefreshButton onClick={() => client?.id && load(client.id)} loading={loading} />
           </div>
         </div>
 
@@ -2209,6 +2355,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
             <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
               Сбросить
             </button>
+            <RefreshButton onClick={() => setReloadKey((k) => k + 1)} loading={loading} />
           </div>
         </div>
 
@@ -2459,6 +2606,7 @@ function CallbacksSection({ merchants, showToast }) {
             <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
               Сбросить
             </button>
+            <RefreshButton onClick={() => load(applied, page, sort)} loading={loading} />
           </div>
         </div>
 
@@ -2472,6 +2620,7 @@ function CallbacksSection({ merchants, showToast }) {
               <SortTh field="merchantOrderId" sort={sort} onSort={onSort}>ID у мерчанта</SortTh>
               <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
               <SortTh field="statusDescription" sort={sort} onSort={onSort}>Описание статуса</SortTh>
+              <SortTh field="processedAt" sort={sort} onSort={onSort}>Обработан</SortTh>
             </tr>
             </thead>
             <tbody>
@@ -2485,6 +2634,8 @@ function CallbacksSection({ merchants, showToast }) {
                         показываем как пришла, без перевода и цветов (решение бэка). */}
                   <td className="mono">{c.status || '—'}</td>
                   <td>{c.statusDescription || '—'}</td>
+                  {/* Время обработки КБ (processedAt); пока не обработан — прочерк */}
+                  <td className="mono nowrap">{fmtDateTime(c.processedAt)}</td>
                 </tr>
             ))}
             </tbody>
@@ -2506,9 +2657,530 @@ function CallbacksSection({ merchants, showToast }) {
   );
 }
 
+/* ==================== Раздел «Инциденты» ==================== */
+/* Инциденты системы: ситуации, которые бэк не смог обработать сам
+   (не обновился баланс, не задана комиссия клиента и т. п.).
+   Фильтр, таблица с сортировкой и пагинацией, карточка по двойному клику
+   и обработка (NEW → RESOLVED) с необязательным комментарием.
+   Подписи типов и статусов — из словаря: IncidentType { name, summary,
+   description, guide }, IncidentStatus { name, description }. */
+
+const EMPTY_INC_FILTER = {
+  id: '', status: '', type: '',
+  // Дата создания
+  dateMode: 'equal',
+  date: '', time: '',
+  dateFrom: '', timeFrom: '',
+  dateTo: '', timeTo: '',
+  // Дата обработки
+  rDateMode: 'equal',
+  rDate: '', rTime: '',
+  rDateFrom: '', rTimeFrom: '',
+  rDateTo: '', rTimeTo: '',
+};
+
+// По ТЗ записи идут от новых к старым — это и есть сортировка по умолчанию.
+const INC_DEFAULT_SORT = { field: 'createdAt', dir: 'desc' };
+
+const INC_COMMENT_MAX = 1000;
+
+/* Переход к связанной сущности из карточки инцидента — по типу инцидента.
+   key — ключ в data, откуда берётся идентификатор. Для КБ мерчанта в data
+   лежит ID ордера у мерчанта, поэтому ордер ищется по merchantOrderId. */
+const INCIDENT_LINKS = {
+  BALANCE_UPDATE_ERROR: { kind: 'client', key: 'clientId' },
+  TRANSACTION_CREATION_ERROR: { kind: 'order', key: 'orderId' },
+  CLIENT_COMMISSION_PERCENT_NOT_SET: { kind: 'client', key: 'clientId' },
+  CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET: { kind: 'client', key: 'clientId' },
+  MERCHANT_CALLBACK_HANDLE_ERROR: { kind: 'merchantOrder', key: 'merchantOrderId' },
+  ORDER_STATUS_TRANSITION_REJECTED: { kind: 'order', key: 'orderId' },
+};
+
+const incidentStatusMod = (name) => (name === 'NEW' ? 'info' : name === 'RESOLVED' ? 'ok' : 'neutral');
+
+/* Диапазон дат фильтра -> { from, to } в миллисекундах.
+   p — префикс полей черновика: '' для даты создания, 'r' для даты обработки. */
+function incRange(f, p) {
+  const k = (name) => (p ? p + name.charAt(0).toUpperCase() + name.slice(1) : name);
+  return f[k('dateMode')] === 'equal'
+      ? { from: dateTimeToMs(f[k('date')], f[k('time')], 'start'), to: dateTimeToMs(f[k('date')], f[k('time')], 'end') }
+      : { from: dateTimeToMs(f[k('dateFrom')], f[k('timeFrom')], 'start'), to: dateTimeToMs(f[k('dateTo')], f[k('timeTo')], 'end') };
+}
+
+function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merchants, methods, showToast, canOpenClient }) {
+  const [draft, setDraft] = useState(EMPTY_INC_FILTER);
+  const [applied, setApplied] = useState(EMPTY_INC_FILTER);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState(INC_DEFAULT_SORT);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [card, setCard] = useState(null);         // открытая карточка инцидента
+  const [resolving, setResolving] = useState(null); // инцидент в окне обработки
+
+  const load = useCallback(async (f, pageNum, srt) => {
+    setLoading(true);
+    try {
+      const created = incRange(f, '');
+      const resolved = incRange(f, 'r');
+      const r = await api.incidents({
+        page: pageNum,
+        size: PAGE_SIZE,
+        id: f.id.trim(),
+        status: f.status,
+        type: f.type,
+        createdAtFrom: created.from,
+        createdAtTo: created.to,
+        resolvedAtFrom: resolved.from,
+        resolvedAtTo: resolved.to,
+        // Без выбранной сортировки параметр не шлём — api подставит «новые сверху».
+        ...(srt ? { sort: sortParam(srt) } : {}),
+      });
+      setRows(r.items);
+      setTotal(r.total);
+    } catch (e) {
+      setRows([]);
+      setTotal(0);
+      showToast(e.message || 'Не удалось загрузить инциденты', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(applied, page, sort); }, [applied, page, sort, reloadKey, load]);
+
+  // ID инцидента — число: буквы бэк не примет, проверяем до запроса.
+  const idInvalid = draft.id.trim() !== '' && !/^\d+$/.test(draft.id.trim());
+
+  const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const search = () => { if (idInvalid) return; setPage(0); setApplied(draft); };
+  const reset = () => {
+    setPage(0); setSort(INC_DEFAULT_SORT); setDraft(EMPTY_INC_FILTER); setApplied(EMPTY_INC_FILTER);
+  };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
+  const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text ?? ''));
+      showToast('Скопировано', 'success');
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  };
+
+  const typeOf = (name) => incidentTypes.find((t) => t.name === name);
+  // В таблице — краткое описание типа (summary), а не константа и не description.
+  const typeLabel = (name) => typeOf(name)?.summary || name || '—';
+  const statusLabel = (name) => incidentStatuses.find((s) => s.name === name)?.description || name || '—';
+
+  const onResolved = () => {
+    setResolving(null);
+    setCard(null);
+    showToast('Инцидент обработан', 'success');
+    setReloadKey((k) => k + 1);
+  };
+
+  // Блок даты фильтра: «Равна» / «Диапазон», время необязательно — как в остальных разделах.
+  const dateGroup = (label, idp, p) => {
+    const k = (name) => (p ? p + name.charAt(0).toUpperCase() + name.slice(1) : name);
+    const mode = draft[k('dateMode')];
+    return (
+        <div className={`date-group${mode === 'range' ? ' date-group-range' : ''}`}>
+          <div className="field">
+            <label htmlFor={`${idp}-mode`}>{label}</label>
+            <select id={`${idp}-mode`} value={mode} onChange={(e) => set(k('dateMode'), e.target.value)}>
+              <option value="equal">Равна</option>
+              <option value="range">Диапазон</option>
+            </select>
+          </div>
+          <div className="date-fields">
+            {mode === 'equal' ? (
+                <DateTimeField
+                    id={`${idp}-date`} label="Дата"
+                    date={draft[k('date')]} time={draft[k('time')]}
+                    onDate={(v) => set(k('date'), v)} onTime={(v) => set(k('time'), v)}
+                />
+            ) : (
+                <>
+                  <DateTimeField
+                      id={`${idp}-from`} label="С"
+                      date={draft[k('dateFrom')]} time={draft[k('timeFrom')]}
+                      onDate={(v) => set(k('dateFrom'), v)} onTime={(v) => set(k('timeFrom'), v)}
+                  />
+                  <DateTimeField
+                      id={`${idp}-to`} label="По"
+                      date={draft[k('dateTo')]} time={draft[k('timeTo')]}
+                      onDate={(v) => set(k('dateTo'), v)} onTime={(v) => set(k('timeTo'), v)}
+                  />
+                </>
+            )}
+          </div>
+        </div>
+    );
+  };
+
+  return (
+      <>
+        <div className="card filter-card">
+          <div className="filter-grid filter-grid-3">
+            <div className="field">
+              <label htmlFor="inc-id">ID инцидента</label>
+              <input id="inc-id" value={draft.id} placeholder="Номер инцидента" inputMode="numeric"
+                     className={idInvalid ? 'invalid' : ''}
+                     onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
+              {idInvalid && <span className="field-error">ID инцидента — целое число</span>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="inc-status">Статус</label>
+              <select id="inc-status" value={draft.status} onChange={(e) => set('status', e.target.value)}>
+                <option value="">Все</option>
+                {incidentStatuses.map((s) => (
+                    <option key={s.name} value={s.name}>{s.description || s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label htmlFor="inc-type">Тип</label>
+              <select id="inc-type" value={draft.type} onChange={(e) => set('type', e.target.value)}>
+                <option value="">Все</option>
+                {incidentTypes.map((t) => (
+                    <option key={t.name} value={t.name}>{t.summary || t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {dateGroup('Дата создания', 'inc-c', '')}
+            {dateGroup('Дата обработки', 'inc-r', 'r')}
+          </div>
+
+          <div className="filter-actions">
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid}>
+              <i className="fa-solid fa-magnifying-glass" />
+              Поиск
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
+              Сбросить
+            </button>
+            <RefreshButton onClick={() => setReloadKey((k) => k + 1)} loading={loading} />
+          </div>
+        </div>
+
+        <p className="table-hint">Двойной клик по строке — подробная информация по инциденту</p>
+
+        <div className="table-wrap">
+          <table className="grid grid-incidents">
+            <thead>
+            <tr>
+              <SortTh field="id" sort={sort} onSort={onSort}>ID</SortTh>
+              <SortTh field="createdAt" sort={sort} onSort={onSort}>Создан</SortTh>
+              <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
+              <SortTh field="errorTimestamp" sort={sort} onSort={onSort}>Время ошибки</SortTh>
+              <SortTh field="type" sort={sort} onSort={onSort}>Тип</SortTh>
+              <SortTh field="resolvedById" sort={sort} onSort={onSort}>Обработал</SortTh>
+              <SortTh field="resolvedAt" sort={sort} onSort={onSort}>Обработан</SortTh>
+              <SortTh field="comment" sort={sort} onSort={onSort}>Комментарий</SortTh>
+              <th className="c-act" aria-label="Действия" />
+            </tr>
+            </thead>
+            <tbody>
+            {rows.map((r) => (
+                <tr key={r.id} onDoubleClick={() => setCard(r)} title="Двойной клик — карточка инцидента">
+                  <td className="mono strong">{r.id}</td>
+                  <td className="mono nowrap">{fmtDateTime(r.createdAt)}</td>
+                  <td>
+                    <span className={`badge badge-${incidentStatusMod(r.status)}`}>{statusLabel(r.status)}</span>
+                  </td>
+                  <td className="mono nowrap">{fmtDateTime(r.errorTimestamp)}</td>
+                  <td className="inc-type">{typeLabel(r.type)}</td>
+                  <td className="c-id"><CopyValue value={r.resolvedById} onCopy={copy} /></td>
+                  <td className="mono nowrap">{fmtDateTime(r.resolvedAt)}</td>
+                  <td className="inc-comment">
+                    {r.comment ? <span className="ellipsis" title={r.comment}>{r.comment}</span> : '—'}
+                  </td>
+                  <td className="c-act">
+                    {r.status === 'NEW' && (
+                        <button
+                            type="button"
+                            className="icon-btn icon-btn-resolve"
+                            title="Обработать"
+                            aria-label={`Обработать инцидент ${r.id}`}
+                            onClick={(e) => { e.stopPropagation(); setResolving(r); }}
+                            onDoubleClick={(e) => e.stopPropagation()}
+                        >
+                          <i className="fa-solid fa-screwdriver-wrench" />
+                        </button>
+                    )}
+                  </td>
+                </tr>
+            ))}
+            </tbody>
+          </table>
+
+          {!loading && rows.length === 0 && (
+              <div className="table-empty">Инцидентов не найдено</div>
+          )}
+          {loading && (
+              <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
+          )}
+        </div>
+
+        <Pagination
+            page={page} total={total} busy={loading}
+            onPage={setPage} label="Всего инцидентов"
+        />
+
+        {card && (
+            <IncidentCard
+                incident={card}
+                type={typeOf(card.type)}
+                orderStatuses={orderStatuses}
+                merchants={merchants}
+                methods={methods}
+                showToast={showToast}
+                canOpenClient={canOpenClient}
+                onCopy={copy}
+                onClose={() => setCard(null)}
+            />
+        )}
+        {resolving && (
+            <ResolveIncidentDialog
+                incident={resolving}
+                typeLabel={typeLabel(resolving.type)}
+                showToast={showToast}
+                onCancel={() => setResolving(null)}
+                onResolved={onResolved}
+                onFailed={() => { setResolving(null); setReloadKey((k) => k + 1); }}
+            />
+        )}
+      </>
+  );
+}
+
+/* Текст описания с подставленными значениями.
+   В description плейсхолдеры вида ${key}; значение берётся из data[key]
+   и выводится отдельной меткой с копированием. Ключа нет в data —
+   оставляем плейсхолдер как есть, чтобы было видно, чего не хватает. */
+function IncidentText({ template, data, onCopy }) {
+  if (!template) return <span className="dim">—</span>;
+  const parts = String(template).split(/\$\{([^}]+)\}/);
+  return (
+      <>
+        {parts.map((part, i) => {
+          if (i % 2 === 0) return part ? <span key={i}>{part}</span> : null;
+          const value = data?.[part];
+          if (value === undefined || value === null || value === '') {
+            return <span key={i} className="mono dim">{`\${${part}}`}</span>;
+          }
+          return (
+              <span key={i} className="inc-chip" title="Скопировать" onClick={() => onCopy(value)}>
+                <span className="mono">{String(value)}</span>
+                <i className="fa-regular fa-copy" />
+              </span>
+          );
+        })}
+      </>
+  );
+}
+
+/* ---- Карточка инцидента ----
+   Описание (description с подстановкой из data), «Что необходимо сделать»
+   (guide) и кнопка перехода к связанной сущности по типу инцидента. */
+function IncidentCard({ incident, type, orderStatuses, merchants, methods, showToast, canOpenClient, onCopy, onClose }) {
+  const [client, setClient] = useState(null); // карточка клиента поверх
+  const [order, setOrder] = useState(null);   // карточка ордера поверх
+  const [opening, setOpening] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !client && !order) onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose, client, order]);
+
+  const link = INCIDENT_LINKS[incident.type];
+  const linkId = link ? incident.data?.[link.key] : null;
+  // «Карточка клиента» ведёт в раздел «Клиенты» — оператору её не показываем (как в карточке ордера).
+  const showLink = Boolean(link && linkId && (link.kind !== 'client' || canOpenClient));
+
+  const openLink = async () => {
+    setOpening(true);
+    try {
+      if (link.kind === 'client') {
+        const r = await api.clients({ id: linkId, page: 0, size: 1 });
+        if (!r.items[0]) { showToast('Клиент не найден', 'error'); return; }
+        setClient(r.items[0]);
+      } else if (link.kind === 'order') {
+        const o = await api.order(linkId);
+        if (!o) { showToast('Ордер не найден', 'error'); return; }
+        setOrder(o);
+      } else {
+        // В data — ID ордера у мерчанта: ищем ордер по нему.
+        const r = await api.orders({ merchantOrderId: linkId, page: 0, size: 1 });
+        if (!r.items[0]) { showToast('Ордер не найден', 'error'); return; }
+        setOrder(r.items[0]);
+      }
+    } catch (e) {
+      showToast(e.message || 'Не удалось открыть карточку', 'error');
+    } finally {
+      setOpening(false);
+    }
+  };
+
+  return (
+      <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="modal inc-card" role="dialog" aria-modal="true" aria-labelledby="inc-title">
+          <div className="ocard-head">
+            <span className="ocard-ico inc-ico"><i className="fa-solid fa-triangle-exclamation" /></span>
+            <div className="ocard-title">
+              <span className="ocard-name" id="inc-title">Инцидент №{incident.id}</span>
+              <span className="ocard-sub">
+                {type?.summary || incident.type || '—'} · {fmtDateTime(incident.createdAt)}
+              </span>
+            </div>
+            <button type="button" className="close-x" onClick={onClose} aria-label="Закрыть">×</button>
+          </div>
+
+          <div className="modal-body">
+            <h3 className="eyebrow inc-label">Описание инцидента</h3>
+            <div className="inc-box">
+              <IncidentText template={type?.description} data={incident.data} onCopy={onCopy} />
+            </div>
+
+            {type?.guide && (
+                <>
+                  <h3 className="eyebrow inc-label">Что необходимо сделать</h3>
+                  <div className="inc-box">
+                    <IncidentText template={type.guide} data={incident.data} onCopy={onCopy} />
+                  </div>
+                </>
+            )}
+
+            {showLink && (
+                <button type="button" className="btn btn-outline inc-link" onClick={openLink} disabled={opening}>
+                  {opening && <i className="fa-solid fa-spinner fa-spin" />}
+                  {link.kind === 'client' ? 'Карточка клиента' : 'Карточка ордера'}
+                </button>
+            )}
+          </div>
+
+          <div className="modal-foot">
+            <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
+          </div>
+        </div>
+
+        {client && (
+            <ClientCard
+                client={client}
+                methods={methods}
+                onClose={() => setClient(null)}
+                onUpdated={setClient}
+                onCopy={onCopy}
+                showToast={showToast}
+            />
+        )}
+        {order && (
+            <OrderCard
+                order={order}
+                orderStatuses={orderStatuses}
+                merchants={merchants}
+                methods={methods}
+                onClose={() => setOrder(null)}
+                onCopy={onCopy}
+                showToast={showToast}
+                canOpenClient={canOpenClient}
+            />
+        )}
+      </div>
+  );
+}
+
+/* ---- Окно обработки инцидента: необязательный комментарий ---- */
+function ResolveIncidentDialog({ incident, typeLabel, showToast, onCancel, onResolved, onFailed }) {
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, busy]);
+
+  const apply = async () => {
+    setBusy(true);
+    try {
+      await api.resolveIncident(incident.id, comment.trim());
+      onResolved();
+    } catch (e) {
+      // Уже обработанный инцидент бэк сейчас отдаёт 500 без пояснения («Contact support.»),
+      // поэтому подсказываем вероятную причину и перечитываем таблицу.
+      showToast(
+          e.status === 500
+              ? 'Не удалось обработать: возможно, инцидент уже обработан'
+              : (e.message || 'Не удалось обработать инцидент'),
+          'error',
+      );
+      setBusy(false);
+      onFailed();
+    }
+  };
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="ri-title">
+          <div className="ocard-head">
+            <span className="ocard-ico"><i className="fa-solid fa-check" /></span>
+            <div className="ocard-title">
+              <span className="ocard-name" id="ri-title">Обработка инцидента</span>
+              <span className="ocard-sub">Инцидент №{incident.id} · {typeLabel}</span>
+            </div>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <label className="eyebrow inc-label" htmlFor="ri-comment">Комментарий</label>
+            <textarea
+                id="ri-comment"
+                className="inc-textarea"
+                rows={3}
+                maxLength={INC_COMMENT_MAX}
+                placeholder="Что было сделано"
+                value={comment}
+                disabled={busy}
+                autoFocus
+                onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Отмена</button>
+            <button type="button" className="btn btn-primary" onClick={apply} disabled={busy}>
+              {busy && <i className="fa-solid fa-spinner fa-spin" />}
+              Обработать
+            </button>
+          </div>
+        </div>
+      </div>
+  );
+}
+
+/* ---- «Обновить» в форме поиска ----
+   Есть во всех разделах с таблицами: перечитывает текущую страницу с уже
+   применённым фильтром и сортировкой (что набрано в полях, но не применено
+   «Поиском», не учитывается). Стоит в одной строке с «Поиск»/«Сбросить»,
+   чтобы не занимать место над таблицей. */
+function RefreshButton({ onClick, loading }) {
+  return (
+      <button type="button" className="btn btn-secondary" onClick={onClick} disabled={loading} title="Перечитать данные">
+        <i className={`fa-solid fa-rotate-right${loading ? ' fa-spin' : ''}`} />
+        Обновить
+      </button>
+  );
+}
+
 /* ---- Дата и необязательное время двумя полями рядом ----
    Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Транзакции»,
-   «Заявки на вывод», «КБ мерчантов». */
+   «Заявки на вывод», «КБ мерчантов», «Инциденты». */
 function DateTimeField({ id, label, date, time, onDate, onTime }) {
   return (
       <div className="field">
@@ -2780,14 +3452,8 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
             <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
               Сбросить
             </button>
+            <RefreshButton onClick={refresh} loading={loading} />
           </div>
-        </div>
-
-        <div className="table-toolbar">
-          <button type="button" className="btn btn-secondary" onClick={refresh} disabled={loading}>
-            <i className={`fa-solid fa-rotate-right${loading ? ' fa-spin' : ''}`} />
-            Обновить
-          </button>
         </div>
 
         <div className="table-wrap">
@@ -3053,6 +3719,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
             <button type="button" className="btn btn-secondary" onClick={reset} disabled={loading}>
               Сбросить
             </button>
+            <RefreshButton onClick={() => setReloadKey((k) => k + 1)} loading={loading} />
             <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
               <i className="fa-solid fa-plus" />
               Создать транзакцию

@@ -15,6 +15,7 @@ import {
   PAGE_SIZE,
   shorten,
 } from './api.js';
+import Markdown from './Markdown.jsx';
 
 /* ============================================================
    Личный кабинет клиента API.
@@ -40,11 +41,12 @@ function readCollapsed() {
   try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
 }
 
+// «Заявки на вывод» — сразу под «Ордера», как в кабинете администратора.
 const SECTIONS = [
   { id: 'profile', title: 'Профиль', icon: 'fa-solid fa-user-gear' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
-  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
+  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
 ];
 
 export default function App() {
@@ -55,6 +57,8 @@ export default function App() {
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [toast, setToast] = useState(null);
+  // Страницы документации [{ id, title }]; пусто — пункта «Документация» в меню нет.
+  const [docs, setDocs] = useState([]);
   // Профиль грузим один раз: логин нужен в шапке, id — для сохранения
   // Callback URL.
   const [profile, setProfile] = useState(null);
@@ -102,6 +106,14 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
+  // Документация: список страниц — один раз при открытии кабинета.
+  // Ошибку не показываем: без списка пункта «Документация» просто нет.
+  useEffect(() => {
+    let alive = true;
+    api.docs().then((list) => { if (alive) setDocs(list); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   // Escape закрывает выехавшее меню.
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -120,7 +132,10 @@ export default function App() {
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
-  const current = SECTIONS.find((s) => s.id === section);
+  const docId = docIdOf(section);
+  const current = docId
+      ? { id: section, title: docs.find((d) => d.id === docId)?.title || 'Документация' }
+      : SECTIONS.find((s) => s.id === section);
 
   return (
       <div className="layout">
@@ -153,6 +168,7 @@ export default function App() {
                   <span>{s.title}</span>
                 </button>
             ))}
+            <DocsNav docs={docs} section={section} collapsed={collapsed} onOpen={goTo} />
           </nav>
           {/* Свернуть/развернуть меню — только на широком экране. */}
           <button
@@ -204,6 +220,7 @@ export default function App() {
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
             {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} />}
+            {docId && <DocPage key={docId} id={docId} />}
           </main>
         </div>
 
@@ -212,6 +229,90 @@ export default function App() {
   );
 }
 
+
+/* ==================== Документация ==================== */
+/* Список страниц приходит при открытии кабинета (GET /docs) — бэк сам
+   отбирает страницы по роли пользователя. В меню — пункт «Документация»
+   с подпунктами-страницами. Если страниц нет (или список не загрузился),
+   пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
+const DOC_PREFIX = 'doc:';
+const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
+
+/* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
+function DocsNav({ docs, section, collapsed, onOpen }) {
+  const activeId = docIdOf(section);
+  const [open, setOpen] = useState(Boolean(activeId));
+  // Открыли страницу документации — подменю раскрыто.
+  useEffect(() => { if (activeId) setOpen(true); }, [activeId]);
+
+  if (!docs.length) return null;
+  return (
+      <div className="nav-group">
+        <button
+            type="button"
+            className={`nav-item nav-group-head${activeId ? ' has-active' : ''}`}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            title={collapsed ? 'Документация' : undefined}
+        >
+          <i className="fa-solid fa-book" />
+          <span>Документация</span>
+          <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} nav-caret`} />
+        </button>
+        {open && (
+            <div className="nav-sub">
+              {docs.map((d) => (
+                  <button
+                      key={d.id}
+                      type="button"
+                      className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
+                      onClick={() => onOpen(DOC_PREFIX + d.id)}
+                      title={collapsed ? d.title : undefined}
+                  >
+                    <i className="fa-regular fa-file-lines" />
+                    <span>{d.title}</span>
+                  </button>
+              ))}
+            </div>
+        )}
+      </div>
+  );
+}
+
+/* Страница документации: GET /docs/{id}, текст — Markdown (GFM). */
+/* Заголовок страницы (title) — в верхней панели кабинета, как у остальных разделов. */
+function DocPage({ id }) {
+  const [state, setState] = useState({ loading: true, page: null, error: '' });
+
+  useEffect(() => {
+    let alive = true;
+    setState({ loading: true, page: null, error: '' });
+    api.doc(id)
+        .then((page) => { if (alive) setState({ loading: false, page, error: '' }); })
+        .catch((e) => {
+          if (!alive) return;
+          // 404 — страницы нет или она недоступна роли пользователя.
+          setState({
+            loading: false,
+            page: null,
+            error: e.status === 404 ? 'Страница не найдена' : (e.message || 'Не удалось загрузить страницу'),
+          });
+        });
+    return () => { alive = false; };
+  }, [id]);
+
+  if (state.loading) {
+    return <div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>;
+  }
+  if (state.error) {
+    return <div className="state"><i className="fa-regular fa-file-excel" /> {state.error}</div>;
+  }
+  return (
+      <article className="doc-page">
+        <Markdown source={state.page?.content} />
+      </article>
+  );
+}
 
 /* ==================== Меню аккаунта ==================== */
 /* Логин клиента в правом углу верхней панели. Клик раскрывает меню
@@ -882,9 +983,11 @@ function DateFilter({ idPrefix, value, onChange }) {
   );
 }
 
-/* Панель фильтра: поля в строку, под ними «Поиск» и «Сбросить».
+/* Панель фильтра: поля в строку, под ними «Поиск», «Сбросить» и «Обновить».
+   «Обновить» перечитывает текущую страницу с уже применённым фильтром —
+   стоит здесь, а не над таблицей, чтобы не занимать место.
    extra — кнопки справа (например, «Создать заявку»). */
-function FilterPanel({ children, onSearch, onReset, extra }) {
+function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra }) {
   // Enter в любом поле панели запускает поиск.
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') onSearch();
@@ -901,6 +1004,12 @@ function FilterPanel({ children, onSearch, onReset, extra }) {
           <button type="button" className="btn btn-secondary" onClick={onReset}>
             Сбросить
           </button>
+          {onRefresh && (
+              <button type="button" className="btn btn-secondary" onClick={onRefresh} disabled={refreshing} title="Перечитать данные">
+                <i className={`fa-solid fa-rotate-right${refreshing ? ' fa-spin' : ''}`} />
+                Обновить
+              </button>
+          )}
           {extra && <div className="filters-extra">{extra}</div>}
         </div>
       </section>
@@ -981,7 +1090,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
           <SelectField
               id="orders-status"
               label="Статус"
@@ -1238,7 +1347,7 @@ function TransactionsSection({ dict, showToast }) {
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
           <div className="field field-wide">
             <label htmlFor="tx-id">ID транзакции</label>
             <input
@@ -1364,6 +1473,8 @@ function WithdrawalsSection({ dict, showToast }) {
         <FilterPanel
             onSearch={onSearch}
             onReset={onReset}
+            onRefresh={list.reload}
+            refreshing={list.loading}
             extra={(
                 <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
                   <i className="fa-solid fa-plus" />

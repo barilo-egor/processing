@@ -145,7 +145,7 @@ class TransactionControllerTest {
                         .content(json)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("field 'clientId' should not be null")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «clientId» должно быть заполнено.")));
     }
 
     @ValueSource(strings = {
@@ -163,7 +163,7 @@ class TransactionControllerTest {
                 .content(json)
         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("field 'operation' should not be null")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «operation» должно быть заполнено.")));
     }
 
     @ValueSource(strings = {
@@ -181,7 +181,7 @@ class TransactionControllerTest {
                         .content(json)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("field 'amount' should not be null")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «amount» должно быть заполнено.")));
     }
 
     @ValueSource(strings = {
@@ -199,7 +199,7 @@ class TransactionControllerTest {
                         .content(json)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("field 'amount' should be positive or zero")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «amount» должно быть больше или равно нулю.")));
     }
 
     @ValueSource(strings = {
@@ -219,6 +219,6 @@ class TransactionControllerTest {
                         .content(json)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("field 'comment' should not be blank")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «comment» должно быть заполнено.")));
     }
 }

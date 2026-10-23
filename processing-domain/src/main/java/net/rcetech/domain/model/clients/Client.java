@@ -91,7 +91,7 @@ public class Client implements Persistable<UUID> {
     private BigDecimal commissionPercent;
 
     @Column
-    @PositiveOrZero(message = "should be positive or zero.")
+    @PositiveOrZero(message = "должно быть больше или равно нулю")
     private Integer balance;
 
     @ElementCollection(fetch = FetchType.LAZY)

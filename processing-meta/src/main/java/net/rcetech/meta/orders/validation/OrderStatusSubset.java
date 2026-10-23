@@ -16,7 +16,7 @@ public @interface OrderStatusSubset {
 
     OrderStatus[] anyOf();
 
-    String message() default "Недопустимый статус ордера.";
+    String message() default "содержит недопустимый статус ордера";
 
     Class<?>[] groups() default {};
 

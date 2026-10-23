@@ -152,6 +152,59 @@ class IncidentServiceTest {
         assertEquals(unresolved.getId(), actual.getFirst().getId());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "STUCK_SEARCH_ORDER_ERROR,3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97,e5b1c9d3-2f7a-4c86-a0e4-8d3b6f1a9c72",
+            "DETAILS_SEARCH_ERROR,9a4c2e7b-5d1f-4b38-8e6a-2f7c9d0b3e51,b2e8d4f1-6c3a-4e97-9d05-7a1f3c8e6b24"
+    })
+    @DisplayName("Метод должен сохранить инцидент, если необработанного инцидента такого типа по этому ордеру нет.")
+    void saveIfNoUnresolvedForOrder_shouldSaveIfNoUnresolvedIncidentOfTypeForOrder(IncidentType type, UUID orderId,
+                                                                                   UUID otherOrderId) {
+        Incident otherOrder = new Incident();
+        otherOrder.setType(type);
+        otherOrder.setData(Map.of("orderId", otherOrderId.toString()));
+        saveDummyIncident(otherOrder);
+        Incident resolved = new Incident();
+        resolved.setType(type);
+        resolved.setStatus(IncidentStatus.RESOLVED);
+        resolved.setData(Map.of("orderId", orderId.toString()));
+        saveDummyIncident(resolved);
+        Incident anotherType = new Incident();
+        anotherType.setType(IncidentType.ORDER_STATUS_TRANSITION_REJECTED);
+        anotherType.setData(Map.of("orderId", orderId.toString()));
+        saveDummyIncident(anotherType);
+
+        incidentService.saveIfNoUnresolvedForOrder(type, orderId, Map.of("orderId", orderId.toString()),
+                1_760_000_000_000L);
+
+        assertEquals(1, incidentRepository.findAll().stream()
+                .filter(incident -> type.equals(incident.getType()))
+                .filter(incident -> IncidentStatus.NEW.equals(incident.getStatus()))
+                .filter(incident -> orderId.toString().equals(incident.getData().get("orderId")))
+                .count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "STUCK_SEARCH_ORDER_ERROR,3c8e1f5a-7b2d-4a9e-b6c0-4d1e8f2a5b97",
+            "DETAILS_SEARCH_ERROR,9a4c2e7b-5d1f-4b38-8e6a-2f7c9d0b3e51"
+    })
+    @DisplayName("Метод не должен сохранять инцидент, если необработанный инцидент такого типа по этому ордеру уже есть.")
+    void saveIfNoUnresolvedForOrder_shouldNotSaveIfUnresolvedIncidentOfTypeForOrderExists(IncidentType type,
+                                                                                          UUID orderId) {
+        Incident unresolved = new Incident();
+        unresolved.setType(type);
+        unresolved.setData(Map.of("orderId", orderId.toString()));
+        saveDummyIncident(unresolved);
+
+        incidentService.saveIfNoUnresolvedForOrder(type, orderId, Map.of("orderId", orderId.toString()),
+                1_760_000_000_000L);
+
+        List<Incident> actual = incidentRepository.findAll();
+        assertEquals(1, actual.size());
+        assertEquals(unresolved.getId(), actual.getFirst().getId());
+    }
+
     @Test
     @DisplayName("Метод должен сохранить инцидент со статусом NEW, переданным типом, данными и временем ошибки.")
     void save_shouldSaveIncident() {

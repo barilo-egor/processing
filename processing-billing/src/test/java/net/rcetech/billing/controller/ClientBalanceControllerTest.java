@@ -86,7 +86,7 @@ class ClientBalanceControllerTest {
     @DisplayName("Если клиент не найден, должен вернуться статус 400.")
     void recalculate_shouldReturnBadRequestIfClientNotFound(String role, UUID id) throws Exception {
         when(clientBalanceService.recalculate(id, SupportClientProjection.class))
-                .thenThrow(new BadRequestException("Client with id " + id + " not found"));
+                .thenThrow(new BadRequestException("Клиент с идентификатором " + id + " не найден."));
 
         mockMvc.perform(post(RECALCULATION_PATH, id)
                         .with(csrf())

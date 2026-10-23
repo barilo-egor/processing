@@ -670,7 +670,7 @@ table.grid-tx td { vertical-align: middle; }
 table.grid-tx .badge { white-space: nowrap; }
 
 /* ---- КБ мерчантов ---- */
-table.grid-callbacks { min-width: 960px; }
+table.grid-callbacks { min-width: 1080px; }
 table.grid-callbacks td { vertical-align: middle; }
 .tx-comment { color: var(--text-dim); min-width: 220px; }
 
@@ -890,4 +890,114 @@ table.grid-mh td { white-space: nowrap; }
 @media (max-width: 560px) {
   .modal-foot-split { flex-wrap: wrap; }
   .modal-foot-split .btn { flex: 1 1 auto; }
+}
+
+/* ============================================================
+   Раздел «Инциденты»
+   ============================================================ */
+table.grid-incidents { min-width: 1120px; }
+/* Тип — в одну строку: краткое описание короткое, перенос растягивал строки */
+table.grid-incidents td.inc-type { white-space: nowrap; }
+table.grid-incidents td { vertical-align: middle; }
+.inc-comment { max-width: 140px; color: var(--text-dim); }
+/* Девять колонок: отступы чуть меньше, чтобы на обычном экране «Обработать» помещалась без прокрутки */
+table.grid-incidents th, table.grid-incidents td { padding-left: 10px; padding-right: 10px; }
+.ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Кнопка «Обработать» в строке — акцентная, видна сразу */
+.icon-btn-resolve {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.icon-btn-resolve:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Карточка инцидента */
+.inc-card { max-width: 600px; }
+.inc-ico { background: #b45309; color: #fff; }
+.inc-label { display: block; margin: 6px 0 8px; }
+.inc-box {
+  padding: 14px 16px; margin-bottom: 14px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; line-height: 1.9;
+}
+/* Подставленное значение: метка с копированием по клику */
+.inc-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 1px 8px; margin: 0 2px; border-radius: 6px; cursor: pointer;
+  font-size: 12.5px; line-height: 1.6; word-break: break-all;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.inc-chip i { font-size: 11px; opacity: .75; }
+.inc-chip:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.btn-outline {
+  background: transparent; color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.btn-outline:not(:disabled):hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.inc-link { margin-top: 2px; }
+
+/* Окно обработки: поле комментария */
+.inc-textarea {
+  width: 100%; box-sizing: border-box; min-height: 80px; resize: vertical;
+  padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; line-height: 1.45; color: var(--text); background: var(--bg);
+}
+.inc-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* Карточка клиента: «Перерасчёт баланса» слева, «Отмена»/«Сохранить» справа */
+.foot-right { display: flex; gap: 10px; margin-left: auto; }
+
+/* ============================================================
+   Документация: пункт меню с подпунктами и страница
+   ============================================================ */
+.nav-group { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.nav-group-head { width: 100%; }
+.nav-group-head.has-active { color: var(--text); }
+.nav-caret { margin-left: auto; font-size: 11px !important; width: auto !important; opacity: .7; }
+.nav-sub { display: flex; flex-direction: column; gap: 2px; }
+/* Подпункты — с отступом, текст в несколько строк, если название длинное */
+.nav-sub-item { padding-left: 24px; font-size: 13.5px; line-height: 1.35; }
+.nav-sub-item i { font-size: 13px; }
+@media (min-width: 721px) {
+  /* Свёрнутое меню: подпункты — только иконки, без отступа, стрелка скрыта */
+  .sidebar.collapsed .nav-caret { display: none; }
+  .sidebar.collapsed .nav-sub-item { padding-left: 0; }
+}
+
+/* Страница документации */
+.doc-page {
+  max-width: 920px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px 26px 26px;
+}
+.doc-content { font-size: 14.5px; line-height: 1.65; color: var(--text); }
+.doc-content > :first-child { margin-top: 0; }
+.doc-content > :last-child { margin-bottom: 0; }
+.doc-content h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.doc-content h3 { margin: 22px 0 8px; font-size: 15.5px; font-weight: 800; }
+.doc-content h4 { margin: 18px 0 6px; font-size: 14.5px; font-weight: 700; }
+.doc-content p { margin: 0 0 12px; }
+.doc-content ul, .doc-content ol { margin: 0 0 12px; padding-left: 22px; }
+.doc-content li { margin: 4px 0; }
+.doc-content li > ul, .doc-content li > ol { margin: 4px 0 0; }
+.doc-content strong { font-weight: 700; }
+.doc-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em;
+  padding: 1px 6px; border-radius: 5px;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.doc-content a { color: var(--accent); }
+.doc-content hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.doc-table { overflow-x: auto; margin: 0 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.doc-table table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.doc-table th, .doc-table td { padding: 9px 12px; text-align: left; vertical-align: top; }
+.doc-table thead th {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text-dim); background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.doc-table tbody tr + tr td { border-top: 1px solid var(--border); }
+@media (max-width: 720px) {
+  .doc-page { padding: 16px; }
 }

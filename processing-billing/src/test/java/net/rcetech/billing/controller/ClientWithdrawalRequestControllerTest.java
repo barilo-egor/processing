@@ -136,7 +136,7 @@ class ClientWithdrawalRequestControllerTest {
                 .with(csrf())
                 .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("Required parameter 'amount' is not present")));
+                .andExpect(jsonPath("$.description").value("Не передан обязательный параметр «amount»."));
     }
 
     @Test
@@ -147,7 +147,7 @@ class ClientWithdrawalRequestControllerTest {
                         .with(csrf())
                         .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("Required parameter 'address' is not present")));
+                .andExpect(jsonPath("$.description").value("Не передан обязательный параметр «address»."));
     }
 
     @ParameterizedTest

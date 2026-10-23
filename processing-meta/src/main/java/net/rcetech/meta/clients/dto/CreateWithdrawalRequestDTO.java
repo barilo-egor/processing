@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record CreateWithdrawalRequestDTO(
-        @NotNull(message = "Client ID mandatory")
-        @Positive(message = "Client ID must be positive")
+        @NotNull(message = "должно быть заполнено")
+        @Positive(message = "должно быть больше нуля")
         Long clientId,
 
-        @NotNull(message = "Amount mandatory")
-        @Positive(message = "Amount must be greater than zero")
+        @NotNull(message = "должно быть заполнено")
+        @Positive(message = "должно быть больше нуля")
         Integer amount,
 
-        @NotBlank(message = "Wallet mandatory")
+        @NotBlank(message = "должно быть заполнено")
         String wallet,
 
         String comment

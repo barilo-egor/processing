@@ -1,6 +1,5 @@
 package net.rcetech.domain.service.incidents;
 
-import jakarta.transaction.Transactional;
 import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.support.SupportUser;
@@ -22,6 +21,8 @@ import org.springframework.data.jpa.domain.PredicateSpecification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -63,20 +64,35 @@ public class IncidentService {
         save(type, data, errorTimestamp);
     }
 
+    public void saveIfNoUnresolvedForOrder(IncidentType type, UUID orderId, Object data, Long errorTimestamp) {
+        if (incidentRepository.countByTypeAndStatusAndOrderId(type.name(), IncidentStatus.NEW.name(),
+                orderId.toString()) > 0) {
+            return;
+        }
+        save(type, data, errorTimestamp);
+    }
+
     public void save(IncidentType type, Object data, Long errorTimestamp) {
         try {
-            transactionTemplate.executeWithoutResult(status -> {
-                Incident incident = new Incident();
-                incident.setCreatedAt(Instant.now());
-                incident.setErrorTimestamp(errorTimestamp);
-                incident.setStatus(IncidentStatus.NEW);
-                incident.setType(type);
-                incident.setData(objectMapper.convertValue(data, new TypeReference<>() {}));
-                incidentRepository.save(incident);
-            });
+            transactionTemplate.executeWithoutResult(status -> saveIncident(type, data, errorTimestamp));
         } catch (Exception e) {
             eventPublisher.publishEvent(new IncidentSaveErrorEvent(type, data, e));
         }
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void saveInCurrentTransaction(IncidentType type, Object data, Long errorTimestamp) {
+        saveIncident(type, data, errorTimestamp);
+    }
+
+    private void saveIncident(IncidentType type, Object data, Long errorTimestamp) {
+        Incident incident = new Incident();
+        incident.setCreatedAt(Instant.now());
+        incident.setErrorTimestamp(errorTimestamp);
+        incident.setStatus(IncidentStatus.NEW);
+        incident.setType(type);
+        incident.setData(objectMapper.convertValue(data, new TypeReference<>() {}));
+        incidentRepository.save(incident);
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Incident> filter, Pageable pageable, Class<T> projectionType) {

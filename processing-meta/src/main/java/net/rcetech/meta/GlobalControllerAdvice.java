@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.exception.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
@@ -13,12 +14,19 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterErrors;
 import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.net.URI;
@@ -27,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 @NullMarked
@@ -35,7 +44,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     private static final String TIMESTAMP = "timestamp";
     private static final String DESCRIPTION = "description";
-    private static final String CONTACT_SUPPORT = "Contact support.";
+    private static final String CONTACT_SUPPORT = "Обратитесь в поддержку.";
     private static final String NOT_HANDLED_ERROR_LOG = "{} Controller not handled error: {}";
     private static final String INTERNAL_SERVER_ERROR_TITLE = "Internal Server Error";
     private static final String INTERNAL_SERVER_ERROR_TYPE = "/errors/internal-server-error";
@@ -141,7 +150,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
             if (result instanceof ParameterErrors errors) {
                 appendFieldErrors(message, errors.getFieldErrors());
             } else {
-                result.getResolvableErrors().forEach(error -> message.append(error.getDefaultMessage()));
+                result.getResolvableErrors().forEach(error -> appendSentence(message, error.getDefaultMessage()));
             }
         }
         problemDetail.setProperty(DESCRIPTION, message.toString());
@@ -150,8 +159,18 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     private void appendFieldErrors(StringBuilder message, List<FieldError> fieldErrors) {
         for (FieldError error : fieldErrors) {
-            message.append("field '").append(error.getField()).append("' ").append(error.getDefaultMessage()).append(";");
+            String reason = error.isBindingFailure()
+                    ? "содержит некорректное значение «" + error.getRejectedValue() + "»"
+                    : error.getDefaultMessage();
+            appendSentence(message, "Поле «" + error.getField() + "» " + reason + ".");
         }
+    }
+
+    private void appendSentence(StringBuilder message, @Nullable String sentence) {
+        if (!message.isEmpty()) {
+            message.append(' ');
+        }
+        message.append(sentence);
     }
 
     private ProblemDetail getBadRequestProblemDetail(Exception ex) {
@@ -170,16 +189,17 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         log.error("Not readable body error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = createProblemDetail(ex, status, "Failed to read request",
                 null, null, request);
+        problemDetail.setDetail(null);
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
         if (ex.getCause() instanceof InvalidFormatException invalidFormatException) {
             return new ResponseEntity<>(handle(invalidFormatException), HttpStatus.BAD_REQUEST);
         }
         if (Objects.nonNull(ex.getMessage()) && ex.getMessage().startsWith("Required request body is missing")) {
-            problemDetail.setProperty(DESCRIPTION, "Required body is missing.");
+            problemDetail.setProperty(DESCRIPTION, "Тело запроса не передано.");
         } else if (ex.getCause() instanceof InvalidFormatException) {
             problemDetail.setProperty(DESCRIPTION, ex.getCause().getMessage());
         } else {
-            problemDetail.setProperty(DESCRIPTION, "The request body is missing or contains invalid data.");
+            problemDetail.setProperty(DESCRIPTION, "Тело запроса содержит некорректные данные.");
         }
         return handleExceptionInternal(ex, problemDetail, headers, status, request);
     }
@@ -189,8 +209,62 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         problemDetail.setTitle(BAD_REQUEST_TITLE);
         problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
         problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
-        problemDetail.setProperty(DESCRIPTION, "Unknown value '" + ex.getValue() + "'.");
+        String field = ex.getPath().stream()
+                .map(JacksonException.Reference::getPropertyName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("."));
+        problemDetail.setProperty(DESCRIPTION, field.isEmpty()
+                ? "Некорректное значение «" + ex.getValue() + "»."
+                : "Поле «" + field + "» содержит некорректное значение «" + ex.getValue() + "».");
         return problemDetail;
+    }
+
+    @Override
+    protected @Nullable ResponseEntity<Object> handleExceptionInternal(Exception ex, @Nullable Object body,
+                                                                      HttpHeaders headers, HttpStatusCode statusCode,
+                                                                      WebRequest request) {
+        Object resolvedBody = Objects.isNull(body) && ex instanceof ErrorResponse errorResponse
+                ? errorResponse.getBody()
+                : body;
+        if (resolvedBody instanceof ProblemDetail problemDetail && !hasDescription(problemDetail)) {
+            log.error("Request error: {}", ex.getMessage(), ex);
+            problemDetail.setDetail(null);
+            problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
+            problemDetail.setProperty(DESCRIPTION, describe(ex, statusCode));
+        }
+        return super.handleExceptionInternal(ex, resolvedBody, headers, statusCode, request);
+    }
+
+    private boolean hasDescription(ProblemDetail problemDetail) {
+        Map<String, Object> properties = problemDetail.getProperties();
+        return Objects.nonNull(properties) && properties.containsKey(DESCRIPTION);
+    }
+
+    private String describe(Exception ex, HttpStatusCode statusCode) {
+        if (ex instanceof TypeMismatchException typeMismatch) {
+            return "Параметр «" + typeMismatch.getPropertyName() + "» содержит некорректное значение «"
+                    + typeMismatch.getValue() + "».";
+        }
+        if (ex instanceof MissingServletRequestParameterException missingParameter) {
+            return "Не передан обязательный параметр «" + missingParameter.getParameterName() + "».";
+        }
+        if (ex instanceof MissingRequestHeaderException missingHeader) {
+            return "Не передан обязательный заголовок «" + missingHeader.getHeaderName() + "».";
+        }
+        if (ex instanceof HttpMediaTypeNotSupportedException mediaType) {
+            MediaType contentType = mediaType.getContentType();
+            return Objects.isNull(contentType)
+                    ? "Не передан заголовок Content-Type."
+                    : "Тип содержимого «" + contentType.getType() + "/" + contentType.getSubtype()
+                    + "» не поддерживается.";
+        }
+        if (ex instanceof HttpRequestMethodNotSupportedException method) {
+            return "HTTP-метод «" + method.getMethod() + "» не поддерживается.";
+        }
+        if (ex instanceof NoResourceFoundException) {
+            return "Ресурс не найден.";
+        }
+        return statusCode.is5xxServerError() ? CONTACT_SUPPORT : "Некорректный запрос.";
     }
 
     @ExceptionHandler({ ServiceUnavailableException.class })

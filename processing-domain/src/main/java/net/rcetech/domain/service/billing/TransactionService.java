@@ -100,7 +100,7 @@ public class TransactionService {
     public void createManualCorrect(UUID creatorId, ManualCorrectTransaction manualCorrectTransaction) {
         Optional<Client> maybeClient = clientService.findById(manualCorrectTransaction.clientId());
         if (maybeClient.isEmpty()) {
-            throw new BadRequestException("Client " + manualCorrectTransaction.clientId() + " not found");
+            throw new BadRequestException("Клиент с идентификатором " + manualCorrectTransaction.clientId() + " не найден.");
         }
         Transaction transaction = new Transaction();
         transaction.setCreatedAt(Instant.now());

@@ -21,7 +21,8 @@ public class IncidentTypeDictionaryField implements DictionaryField {
                 .map(type -> Map.<String, Object>of(
                         "name", type.name(),
                         "summary", type.getSummary(),
-                        "description", type.getDescription())
+                        "description", type.getDescription(),
+                        "guide", type.getGuide())
                 ).toList();
     }
 }

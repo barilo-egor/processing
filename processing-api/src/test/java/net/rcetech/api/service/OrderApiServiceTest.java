@@ -47,7 +47,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -395,7 +397,7 @@ class OrderApiServiceTest {
     @DisplayName("Метод должен бросить исключение, если ордер не найден.")
     void cancelOrder_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id) {
         UUID orderId = UUID.randomUUID();
-        assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(orderId, id), "Order not found");
+        assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(orderId, id), "Ордер не найден.");
     }
 
     Order getDummyOrder(Client client) {
@@ -425,7 +427,7 @@ class OrderApiServiceTest {
         UUID orderId = order.getId();
         UUID notOwnerClientId = UUID.randomUUID();
         assertThrows(BadRequestException.class, () -> orderApiService.cancelOrder(notOwnerClientId, orderId),
-                "Order not found");
+                "Ордер не найден.");
     }
 
     @RepeatedTest(value = 2)
@@ -497,6 +499,35 @@ class OrderApiServiceTest {
                 expectedOrders.stream().map(Order::getId).collect(Collectors.toSet()),
                 actual.getContent().stream().map(ClientOrderSummary::id).collect(Collectors.toSet())
         );
+    }
+
+    @ValueSource(strings = {"foo", "merchant", "merchantOrderId", "expiresAt", "client"})
+    @ParameterizedTest
+    @DisplayName("Метод должен отклонить сортировку по полю, которого нет в ответе клиенту.")
+    void findAll_shouldRejectUnsupportedSortField(String field) {
+        Client client = getDummyClient();
+        getDummyOrder(client);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> orderApiService.findAll(
+                client.getId(), new ClientOrderFilter(null, null), PageRequest.of(0, 10, Sort.by("createdAt", field))
+        ));
+
+        assertEquals("Сортировка по полю «" + field + "» не поддерживается.", exception.getMessage());
+    }
+
+    @ValueSource(strings = {"id", "createdAt", "internalId", "status", "amount", "method", "details", "bank",
+            "callbackUrl"})
+    @ParameterizedTest
+    @DisplayName("Метод должен сортировать по любому полю ответа клиенту.")
+    void findAll_shouldSortBySupportedField(String field) {
+        Client client = getDummyClient();
+        Set<UUID> expected = Set.of(getDummyOrder(client).getId(), getDummyOrder(client).getId());
+
+        Page<ClientOrderSummary> actual = orderApiService.findAll(
+                client.getId(), new ClientOrderFilter(null, null), PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, field))
+        );
+
+        assertEquals(expected, actual.getContent().stream().map(ClientOrderSummary::id).collect(Collectors.toSet()));
     }
 
     @ValueSource(strings = {"TIMEOUT", "SUCCESS"})

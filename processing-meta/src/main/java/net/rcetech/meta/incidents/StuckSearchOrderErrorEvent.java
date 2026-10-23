@@ -6,7 +6,7 @@ public record StuckSearchOrderErrorEvent(
         UUID orderId,
         String error,
         long errorTimestamp
-) implements IncidentEvent {
+) implements OrderIncidentEvent {
 
     @Override
     public IncidentType type() {
