@@ -670,7 +670,7 @@ table.grid-tx td { vertical-align: middle; }
 table.grid-tx .badge { white-space: nowrap; }
 
 /* ---- КБ мерчантов ---- */
-table.grid-callbacks { min-width: 960px; }
+table.grid-callbacks { min-width: 1080px; }
 table.grid-callbacks td { vertical-align: middle; }
 .tx-comment { color: var(--text-dim); min-width: 220px; }
 
@@ -948,3 +948,56 @@ table.grid-incidents th, table.grid-incidents td { padding-left: 10px; padding-r
 
 /* Карточка клиента: «Перерасчёт баланса» слева, «Отмена»/«Сохранить» справа */
 .foot-right { display: flex; gap: 10px; margin-left: auto; }
+
+/* ============================================================
+   Документация: пункт меню с подпунктами и страница
+   ============================================================ */
+.nav-group { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.nav-group-head { width: 100%; }
+.nav-group-head.has-active { color: var(--text); }
+.nav-caret { margin-left: auto; font-size: 11px !important; width: auto !important; opacity: .7; }
+.nav-sub { display: flex; flex-direction: column; gap: 2px; }
+/* Подпункты — с отступом, текст в несколько строк, если название длинное */
+.nav-sub-item { padding-left: 24px; font-size: 13.5px; line-height: 1.35; }
+.nav-sub-item i { font-size: 13px; }
+@media (min-width: 721px) {
+  /* Свёрнутое меню: подпункты — только иконки, без отступа, стрелка скрыта */
+  .sidebar.collapsed .nav-caret { display: none; }
+  .sidebar.collapsed .nav-sub-item { padding-left: 0; }
+}
+
+/* Страница документации */
+.doc-page {
+  max-width: 920px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px 26px 26px;
+}
+.doc-content { font-size: 14.5px; line-height: 1.65; color: var(--text); }
+.doc-content > :first-child { margin-top: 0; }
+.doc-content > :last-child { margin-bottom: 0; }
+.doc-content h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.doc-content h3 { margin: 22px 0 8px; font-size: 15.5px; font-weight: 800; }
+.doc-content h4 { margin: 18px 0 6px; font-size: 14.5px; font-weight: 700; }
+.doc-content p { margin: 0 0 12px; }
+.doc-content ul, .doc-content ol { margin: 0 0 12px; padding-left: 22px; }
+.doc-content li { margin: 4px 0; }
+.doc-content li > ul, .doc-content li > ol { margin: 4px 0 0; }
+.doc-content strong { font-weight: 700; }
+.doc-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em;
+  padding: 1px 6px; border-radius: 5px;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.doc-content a { color: var(--accent); }
+.doc-content hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.doc-table { overflow-x: auto; margin: 0 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.doc-table table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.doc-table th, .doc-table td { padding: 9px 12px; text-align: left; vertical-align: top; }
+.doc-table thead th {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text-dim); background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.doc-table tbody tr + tr td { border-top: 1px solid var(--border); }
+@media (max-width: 720px) {
+  .doc-page { padding: 16px; }
+}

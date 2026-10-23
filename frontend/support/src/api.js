@@ -22,9 +22,12 @@
      GET   /api/support/transaction?id&client&createdAtFrom&createdAtTo&page&size&sort
      POST  /api/support/transaction   <- { clientId, operation, amount, comment }
            тип MANUAL_CORRECT бэк ставит сам
+     GET   /api/support/docs           -> [{ id, title }] — страницы документации для роли
+     GET   /api/support/docs/{id}      -> { id, title, content } — content в Markdown; нет — 404
      GET   /api/support/support-user  -> { id, username, registeredAt } — вошедший администратор
      GET   /api/support/support-user/roles -> ["ADMIN"] | ["OPERATOR"] — роли вошедшего пользователя
      GET   /api/support/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
+           -> { content: [{ id, createdAt, processedAt, orderId, merchant, merchantOrderId, status, statusDescription }], page }
      GET   /api/support/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort
            -> { content: [{ id, createdAt, status, errorTimestamp, type, data, resolvedById, resolvedAt, comment }], page }
      PATCH /api/support/incident/{id}  <- { comment } — обработка: NEW → RESOLVED
@@ -258,6 +261,15 @@ export const api = {
       totalPages: d?.page?.totalPages ?? 1,
     };
   },
+
+  // Документация: список страниц для роли пользователя [{ id, title }] — порядок = порядок в меню.
+  async docs() {
+    const d = await request(`${SUPPORT_API}/docs`);
+    return Array.isArray(d) ? d.filter((x) => x && x.id && x.title) : [];
+  },
+
+  // Страница документации: { id, title, content }, content — Markdown (GFM). Нет страницы — 404.
+  doc: (id) => request(`${SUPPORT_API}/docs/${encodeURIComponent(id)}`),
 
   // Вошедший администратор (для шапки): { id, username, registeredAt }.
   supportUser: () => request(`${SUPPORT_API}/support-user`),

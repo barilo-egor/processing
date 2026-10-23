@@ -18,6 +18,8 @@
      GET    /api/client/withdrawal-request?id&status&address&createdAtFrom&createdAtTo&page&size&sort
      POST   /api/client/withdrawal-request?amount=&address=   — создание
      PATCH  /api/client/withdrawal-request/{id}               — отмена
+     GET    /api/client/docs                -> [{ id, title }] — страницы документации
+     GET    /api/client/docs/{id}           -> { id, title, content } — content в Markdown; нет — 404
      GET    /api/common/dictionary          -> {ИмяПеречисления: [...]}
 
    Ошибки 400 бэк отдаёт с понятным текстом в description — его и
@@ -205,6 +207,15 @@ export const api = {
 
   deleteApiKey: (id) =>
       request(`${CLIENT_API}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Документация: список страниц для роли пользователя [{ id, title }] — порядок = порядок в меню.
+  async docs() {
+    const d = await request(`${CLIENT_API}/docs`);
+    return Array.isArray(d) ? d.filter((x) => x && x.id && x.title) : [];
+  },
+
+  // Страница документации: { id, title, content }, content — Markdown (GFM). Нет страницы — 404.
+  doc: (id) => request(`${CLIENT_API}/docs/${encodeURIComponent(id)}`),
 
   // Словари перечислений: статусы, способы оплаты, операции и т.д.
   async dictionary() {
