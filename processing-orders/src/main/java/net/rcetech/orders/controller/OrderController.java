@@ -47,7 +47,7 @@ public class OrderController {
     @GetMapping("/{id}")
     public OrderResponse getOrder(@PathVariable UUID id) {
         return orderService.findById(id, OrderResponse.class)
-                .orElseThrow(() -> new BadRequestException("Order not found"));
+                .orElseThrow(() -> new BadRequestException("Ордер не найден."));
     }
 
     @PatchMapping("/{id}")

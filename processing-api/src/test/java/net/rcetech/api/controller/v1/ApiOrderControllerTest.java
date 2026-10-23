@@ -108,14 +108,14 @@ class ApiOrderControllerTest {
         mockMvc.perform(post("/api/v1/order")
                         .with(apiKeyOf(UUID.randomUUID())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Failed to read request"))
+                .andExpect(jsonPath("$.detail").doesNotExist())
                 .andExpect(jsonPath("$.instance").value("/api/v1/order"))
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.title").value("Bad Request"))
                 .andExpect(jsonPath("$.timestamp").isNotEmpty())
                 .andExpect(jsonPath("$.timestamp").isNumber())
                 .andExpect(jsonPath("$.description")
-                        .value("Required body is missing."));
+                        .value("Тело запроса не передано."));
     }
 
     @ParameterizedTest
@@ -123,10 +123,10 @@ class ApiOrderControllerTest {
             "Duplicate entry 'order-1' for key 'orders.unique_internal_id'|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
             "Duplicate entry 'order-2' for key unique_internal_id|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
             "unique_internal_id|400|" + ExceptionMessage.INTERNAL_ID_NOT_UNIQUE,
-            "Duplicate entry 'order-1' for key 'orders.unique_internal_id_v2'|500|Contact support.",
-            "Duplicate entry 'order-1' for key 'orders.not_unique_internal_id'|500|Contact support.",
-            "Duplicate entry 'ALFA_TEAM-1' for key 'orders.unique_merchant_order_id'|500|Contact support.",
-            "Column 'amount' cannot be null|500|Contact support."
+            "Duplicate entry 'order-1' for key 'orders.unique_internal_id_v2'|500|Обратитесь в поддержку.",
+            "Duplicate entry 'order-1' for key 'orders.not_unique_internal_id'|500|Обратитесь в поддержку.",
+            "Duplicate entry 'ALFA_TEAM-1' for key 'orders.unique_merchant_order_id'|500|Обратитесь в поддержку.",
+            "Column 'amount' cannot be null|500|Обратитесь в поддержку."
     })
     @DisplayName("Метод должен вернуть 400 при нарушении известного ограничения БД и 500 при нарушении остальных.")
     void createOrder_shouldMapDataIntegrityViolationByConstraint(String causeMessage, int status,
@@ -165,7 +165,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'internalId' should be not blank;"));
+                .andExpect(jsonPath("$.description").value("Поле «internalId» должно быть заполнено."));
     }
 
     @Test
@@ -184,7 +184,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'internalId' should be not blank;"));
+                .andExpect(jsonPath("$.description").value("Поле «internalId» должно быть заполнено."));
     }
 
     @Test
@@ -202,7 +202,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'amount' should be not empty;"));
+                .andExpect(jsonPath("$.description").value("Поле «amount» должно быть заполнено."));
     }
 
     @Test
@@ -221,7 +221,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'amount' should be positive;"));
+                .andExpect(jsonPath("$.description").value("Поле «amount» должно быть больше нуля."));
     }
 
     @Test
@@ -239,7 +239,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'methods' should contains at least one;"));
+                .andExpect(jsonPath("$.description").value("Поле «methods» должно содержать хотя бы одно значение."));
     }
 
     @Test
@@ -258,7 +258,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'methods' should contains at least one;"));
+                .andExpect(jsonPath("$.description").value("Поле «methods» должно содержать хотя бы одно значение."));
     }
 
     @ParameterizedTest
@@ -284,7 +284,7 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'callbackUrl' should be valid and starts with https;"));
+                .andExpect(jsonPath("$.description").value("Поле «callbackUrl» должно быть корректным адресом с протоколом https."));
     }
 
     @ParameterizedTest
@@ -434,7 +434,7 @@ class ApiOrderControllerTest {
                                 .header("Content-Type", "application/json")
                                 .header("Async-Request", true)
                 ).andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.description").value("Contact support."));
+                .andExpect(jsonPath("$.description").value("Обратитесь в поддержку."));
     }
 
     @ParameterizedTest
@@ -761,5 +761,104 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.content[0].details").value(expected.details()))
                 .andExpect(jsonPath("$.content[0].bank").value(expected.bank()))
                 .andExpect(jsonPath("$.content[0].callbackUrl").value(expected.callbackUrl()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"CRYPTO", "QR"})
+    @DisplayName("Метод должен вернуть 400 с названием поля, если в methods передан неизвестный метод.")
+    void createOrder_shouldReturnBadRequestOnUnknownMethod(String method) throws Exception {
+        String content = """
+                {
+                    "internalId": "order-1",
+                    "amount": 5000,
+                    "methods": ["%s"]
+                }""".formatted(method);
+        mockMvc.perform(post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").doesNotExist())
+                .andExpect(jsonPath("$.timestamp").isNumber())
+                .andExpect(jsonPath("$.description")
+                        .value("Поле «methods» содержит некорректное значение «" + method + "»."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{bad", "[1, 2"})
+    @DisplayName("Метод должен вернуть 400, если тело не является корректным JSON.")
+    void createOrder_shouldReturnBadRequestOnMalformedJson(String content) throws Exception {
+        mockMvc.perform(post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Тело запроса содержит некорректные данные."));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "Search-Timeout-Seconds,abc",
+            "Test-Order,maybe",
+            "Async-Request,12"
+    })
+    @DisplayName("Метод должен вернуть 400 с названием заголовка, если значение заголовка не преобразуется к типу.")
+    void createOrder_shouldReturnBadRequestOnInvalidHeader(String header, String value) throws Exception {
+        String content = """
+                {
+                    "internalId": "order-1",
+                    "amount": 5000,
+                    "methods": ["CARD"]
+                }""";
+        mockMvc.perform(post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content(content)
+                        .header("Content-Type", "application/json")
+                        .header(header, value))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").doesNotExist())
+                .andExpect(jsonPath("$.timestamp").isNumber())
+                .andExpect(jsonPath("$.description")
+                        .value("Параметр «" + header + "» содержит некорректное значение «" + value + "»."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"text/plain", "application/xml"})
+    @DisplayName("Метод должен вернуть 415, если тип содержимого не JSON.")
+    void createOrder_shouldReturnUnsupportedMediaType(String contentType) throws Exception {
+        mockMvc.perform(post("/api/v1/order")
+                        .with(apiKeyOf(UUID.randomUUID()))
+                        .content("{}")
+                        .header("Content-Type", contentType))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.detail").doesNotExist())
+                .andExpect(jsonPath("$.description")
+                        .value("Тип содержимого «" + contentType + "» не поддерживается."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"abc", "123"})
+    @DisplayName("Получение и отмена ордера должны вернуть 400, если идентификатор не UUID.")
+    void getAndCancelOrder_shouldReturnBadRequestOnInvalidId(String id) throws Exception {
+        String description = "Параметр «id» содержит некорректное значение «" + id + "».";
+        mockMvc.perform(get("/api/v1/order/" + id).with(apiKeyOf(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(description));
+        mockMvc.perform(patch("/api/v1/order/" + id).with(apiKeyOf(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(description));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "status,PAID",
+            "method,CRYPTO"
+    })
+    @DisplayName("Список ордеров должен вернуть 400, если в фильтре неизвестное значение.")
+    void getOrders_shouldReturnBadRequestOnUnknownFilterValue(String param, String value) throws Exception {
+        mockMvc.perform(get("/api/v1/order").param(param, value).with(apiKeyOf(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description")
+                        .value("Поле «" + param + "» содержит некорректное значение «" + value + "»."));
     }
 }

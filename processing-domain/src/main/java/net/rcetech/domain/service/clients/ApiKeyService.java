@@ -19,6 +19,8 @@ import java.util.Optional;
 @Service
 public class ApiKeyService {
 
+    public static final int MAX_API_KEYS_PER_CLIENT = 10;
+
     private final ApiKeyRepository apiKeyRepository;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -31,6 +33,10 @@ public class ApiKeyService {
         // TODO могут быть дубли в многопоточке
         if (apiKeyRepository.existsByClientIdAndName(client.getId(), name)) {
             throw new BadRequestException("Апи ключ с именем " + name + " уже существует.");
+        }
+        if (apiKeyRepository.countByClientId(client.getId()) >= MAX_API_KEYS_PER_CLIENT) {
+            throw new BadRequestException("Достигнут лимит в " + MAX_API_KEYS_PER_CLIENT
+                    + " апи ключей. Удалите ненужный, чтобы создать новый.");
         }
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);

@@ -33,6 +33,6 @@ public class ClientBalanceService {
         Client client = clientService.findForUpdate(clientId);
         client.setBalance(transactionService.calculateBalance(clientId));
         return clientService.findById(clientId, projectionType)
-                .orElseThrow(() -> new BadRequestException("Client with id " + clientId + " not found"));
+                .orElseThrow(() -> new BadRequestException("Клиент с идентификатором " + clientId + " не найден."));
     }
 }

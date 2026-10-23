@@ -19,11 +19,11 @@ import java.util.Set;
  * @param userId идентификатор конечного пользователя, который будет совершать оплату
  */
 public record CreateOrderRequest(
-        @NotBlank(message = "should be not blank") String internalId,
-        @NotNull(message = "should be not empty")
-        @Positive(message = "should be positive") Integer amount,
-        @NotEmpty(message = "should contains at least one") Set<RequestMethod> methods,
-        @URL(protocol = "https", message = "should be valid and starts with https")
+        @NotBlank(message = "должно быть заполнено") String internalId,
+        @NotNull(message = "должно быть заполнено")
+        @Positive(message = "должно быть больше нуля") Integer amount,
+        @NotEmpty(message = "должно содержать хотя бы одно значение") Set<RequestMethod> methods,
+        @URL(protocol = "https", message = "должно быть корректным адресом с протоколом https")
         String callbackUrl,
         String userId
 ) {}

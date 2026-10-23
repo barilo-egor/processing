@@ -22,9 +22,9 @@ public class CallbackHttpSender {
     @Retryable(
             value = RestClientResponseException.class,
             multiplierString = "${app.retry.callback.multiplier:3.0}",
-            delayString = "${app.retry.callback.delay:5000}",
+            delayString = "${app.retry.callback.delay:10000}",
             maxDelayString = "${app.retry.callback.maxDelay:120000}",
-            maxRetriesString = "${app.retry.callback.maxRetries:2}"
+            maxRetriesString = "${app.retry.callback.maxRetries:3}"
     )
     public void send(ClientOrderSummary order) {
         callbackRestClient.post()

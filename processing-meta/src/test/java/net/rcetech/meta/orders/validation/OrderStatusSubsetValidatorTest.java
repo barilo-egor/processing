@@ -53,6 +53,6 @@ class OrderStatusSubsetValidatorTest {
         assertEquals(1, violations.size());
         ConstraintViolation<Target> violation = violations.iterator().next();
         assertEquals("status", violation.getPropertyPath().toString());
-        assertEquals("Недопустимый статус ордера.", violation.getMessage());
+        assertEquals("содержит недопустимый статус ордера", violation.getMessage());
     }
 }

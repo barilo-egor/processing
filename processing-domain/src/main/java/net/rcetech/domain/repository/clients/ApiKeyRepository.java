@@ -15,6 +15,8 @@ public interface ApiKeyRepository extends JpaRepository<ApiKey, Long> {
 
     boolean existsByClientIdAndName(UUID clientId, String name);
 
+    long countByClientId(UUID clientId);
+
     List<ApiKeyResponseDTO> findAllByClientId(UUID clientId);
 
     @Query("select a from ApiKey a left join fetch a.client where a.hash = :hash")

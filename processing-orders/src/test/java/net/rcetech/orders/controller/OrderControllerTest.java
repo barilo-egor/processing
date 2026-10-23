@@ -306,7 +306,7 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"" + status.name() + "\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("field 'status' Недопустимый статус ордера.;"));
+                .andExpect(jsonPath("$.description").value("Поле «status» содержит недопустимый статус ордера."));
         verifyNoInteractions(orderFacade);
     }
 

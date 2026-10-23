@@ -5,7 +5,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.validation.OrderStatusSubset;
 
 public record OrderUpdateRequest(
-        @NotNull(message = "Статус ордера обязателен.")
+        @NotNull(message = "должно быть заполнено")
         @OrderStatusSubset(anyOf = {OrderStatus.SUCCESS, OrderStatus.CANCELED, OrderStatus.DISPUTE})
         OrderStatus status
 ) { }

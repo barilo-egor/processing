@@ -125,16 +125,16 @@ class CallbackSenderTest {
 
     @ParameterizedTest
     @ValueSource(ints = {400, 500})
-    @DisplayName("КБ должен отправиться 3 раза, если возвращаются ошибочные статусы.")
-    void sendCallback_shouldRetryIfNot20xStatus() {
+    @DisplayName("КБ должен отправиться 4 раза: исходная попытка и 3 повтора, если возвращаются ошибочные статусы.")
+    void sendCallback_shouldRetryIfNot20xStatus(int statusCode) {
         Order order = getDummyOrder(getDummyClient());
         Optional<ClientOrderSummary> maybeOrder = orderService.findById(order.getId(), ClientOrderSummary.class);
         assertTrue(maybeOrder.isPresent());
-        stubFor(post("/callback").willReturn(WireMock.status(500)));
+        stubFor(post("/callback").willReturn(WireMock.status(statusCode)));
 
         callbackSender.sendCallback(new OrderStatusUpdatedEvent(order.getId(), order.getStatus(), OrderStatusChangeSource.MERCHANT_CALLBACK, true));
 
-        WireMock.verify(3, postRequestedFor(urlEqualTo("/callback")));
+        WireMock.verify(4, postRequestedFor(urlEqualTo("/callback")));
     }
 
     @ParameterizedTest

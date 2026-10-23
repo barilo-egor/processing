@@ -8,13 +8,13 @@ import net.rcetech.meta.billing.Operation;
 import java.util.UUID;
 
 public record ManualCorrectTransaction(
-        @NotNull(message = "should not be null")
+        @NotNull(message = "должно быть заполнено")
         UUID clientId,
-        @NotNull(message = "should not be null")
+        @NotNull(message = "должно быть заполнено")
         Operation operation,
-        @NotNull(message = "should not be null")
-        @PositiveOrZero(message = "should be positive or zero")
+        @NotNull(message = "должно быть заполнено")
+        @PositiveOrZero(message = "должно быть больше или равно нулю")
         Integer amount,
-        @NotBlank(message = "should not be blank")
+        @NotBlank(message = "должно быть заполнено")
         String comment
 ) {}
