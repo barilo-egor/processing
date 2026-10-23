@@ -1,23 +1,23 @@
 package net.rcetech.incidents;
 
 import net.rcetech.domain.service.incidents.IncidentService;
-import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
-import net.rcetech.meta.incidents.BalanceUpdateErrorEvent;
-import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
-import net.rcetech.meta.incidents.IncidentEvent;
-import net.rcetech.meta.incidents.IncidentType;
-import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
-import net.rcetech.meta.incidents.TransactionCreationErrorEvent;
+import net.rcetech.incidents.handler.DefaultIncidentHandler;
+import net.rcetech.incidents.handler.IncidentHandler;
+import net.rcetech.incidents.handler.OrderIncidentHandler;
+import net.rcetech.meta.incidents.*;
 import net.rcetech.meta.orders.OrderStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -30,8 +30,17 @@ class IncidentEventListenerTest {
     @Mock
     private IncidentService incidentService;
 
-    @InjectMocks
     private IncidentEventListener incidentEventListener;
+
+    @BeforeEach
+    void setUp() {
+        List<IncidentHandler> handlers = new ArrayList<>(List.of(
+                new DefaultIncidentHandler(incidentService),
+                new OrderIncidentHandler(incidentService)
+        ));
+        AnnotationAwareOrderComparator.sort(handlers);
+        incidentEventListener = new IncidentEventListener(handlers);
+    }
 
     static Stream<Arguments> events() {
         return Stream.of(
