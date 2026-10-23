@@ -1,6 +1,7 @@
 package net.rcetech.security.session;
 
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
@@ -108,6 +109,7 @@ public class JdbcOidcSessionRegistry implements OidcSessionRegistry {
     }
 
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES)
+    @SchedulerLock(name = "JdbcOidcSessionRegistry.deleteOrphans", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void deleteOrphans() {
         deleteOrphans(Instant.now().minus(ORPHAN_TTL));
     }

@@ -1,6 +1,7 @@
 package net.rcetech.orders;
 
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.incidents.StuckSearchOrderErrorEvent;
@@ -40,6 +41,7 @@ public class OrderSearchTimeoutProcessor {
     }
 
     @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.SECONDS)
+    @SchedulerLock(name = "OrderSearchTimeoutProcessor.checkStuckInSearchOrders", lockAtMostFor = "PT5M", lockAtLeastFor = "PT25S")
     public void checkStuckInSearchOrders() {
         for (Order order : orderService.findAllInSearchCreatedBefore(Instant.now().minusSeconds(stuckAfterSeconds))) {
             try {

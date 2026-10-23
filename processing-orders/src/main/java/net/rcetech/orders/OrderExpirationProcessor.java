@@ -1,6 +1,7 @@
 package net.rcetech.orders;
 
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.orders.OrderStatus;
@@ -27,6 +28,7 @@ public class OrderExpirationProcessor {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    @SchedulerLock(name = "OrderExpirationProcessor.checkExpiredOrders", lockAtMostFor = "PT1M", lockAtLeastFor = "PT4S")
     public void checkExpiredOrders() {
         List<Order> newOrders = orderService.findAllExpired();
         for (Order order : newOrders) {
