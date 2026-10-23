@@ -6,6 +6,7 @@ import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.domain.test.SharedMySQLContainer;
+import net.rcetech.meta.incidents.OrderExpirationErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.DisplayName;
@@ -18,18 +19,26 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 
 @DataJpaTest
 @Import({OrderExpirationProcessor.class, OrderFacade.class, OrderService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@RecordApplicationEvents
 class OrderExpirationProcessorTest {
 
     @DynamicPropertySource
@@ -45,6 +54,12 @@ class OrderExpirationProcessorTest {
 
     @Autowired
     private OrderExpirationProcessor orderExpirationProcessor;
+
+    @MockitoSpyBean
+    private OrderFacade orderFacade;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     Client getDummyClient() {
         Client client = new Client();
@@ -147,5 +162,37 @@ class OrderExpirationProcessorTest {
             orderExpirationProcessor.checkExpiredOrders();
         }
         assertTrue(orderRepository.findAll().stream().allMatch(o -> OrderStatus.TIMEOUT.equals(o.getStatus())));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Deadlock found", "Connection is not available"})
+    @DisplayName("Ошибка по одному просроченному ордеру должна создавать инцидент и не мешать обработке остальных.")
+    void checkExpiredOrders_shouldProcessOtherOrdersIfOneFailed(String message) {
+        Client client = getDummyClient();
+        Order failed = new Order();
+        failed.setExpiresAt(Instant.now().minusSeconds(60));
+        fillFields(failed, client);
+        orderRepository.save(failed);
+        Order other = new Order();
+        other.setExpiresAt(Instant.now().minusSeconds(120));
+        fillFields(other, client);
+        orderRepository.save(other);
+        doThrow(new IllegalStateException(message)).when(orderFacade)
+                .routeOrder(eq(OrderStatus.TIMEOUT), eq(failed.getId()), any(), any());
+        long before = System.currentTimeMillis();
+
+        orderExpirationProcessor.checkExpiredOrders();
+        long after = System.currentTimeMillis();
+
+        assertEquals(OrderStatus.NEW, orderRepository.findById(failed.getId()).orElseThrow().getStatus());
+        assertEquals(OrderStatus.TIMEOUT, orderRepository.findById(other.getId()).orElseThrow().getStatus());
+        List<OrderExpirationErrorEvent> events = applicationEvents.stream(OrderExpirationErrorEvent.class).toList();
+        assertEquals(1, events.size());
+        assertAll(
+                () -> assertEquals(failed.getId(), events.getFirst().orderId()),
+                () -> assertEquals(message, events.getFirst().error()),
+                () -> assertTrue(events.getFirst().errorTimestamp() >= before
+                        && events.getFirst().errorTimestamp() <= after)
+        );
     }
 }

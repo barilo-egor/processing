@@ -1,29 +1,28 @@
 package net.rcetech.incidents;
 
-import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.incidents.handler.IncidentHandler;
+import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.incidents.IncidentEvent;
-import net.rcetech.meta.incidents.OrderIncidentEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class IncidentEventListener {
 
-    private final IncidentService incidentService;
+    private final List<IncidentHandler> handlers;
 
-    public IncidentEventListener(IncidentService incidentService) {
-        this.incidentService = incidentService;
+    public IncidentEventListener(List<IncidentHandler> handlers) {
+        this.handlers = handlers;
     }
 
     @EventListener
     public void incident(IncidentEvent event) {
-        if (event.onlyIfNoUnresolved() && event instanceof OrderIncidentEvent orderEvent) {
-            incidentService.saveIfNoUnresolvedForOrder(event.type(), orderEvent.orderId(), event,
-                    event.errorTimestamp());
-        } else if (event.onlyIfNoUnresolved()) {
-            incidentService.saveIfNoUnresolved(event.type(), event, event.errorTimestamp());
-        } else {
-            incidentService.save(event.type(), event, event.errorTimestamp());
-        }
+        handlers.stream()
+                .filter(handler -> handler.supports(event))
+                .findFirst()
+                .orElseThrow(() -> new BaseException("Не найден обработчик инцидента " + event.type() + "."))
+                .handle(event);
     }
 }
