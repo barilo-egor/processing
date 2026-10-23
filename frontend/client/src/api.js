@@ -81,6 +81,9 @@ export async function logout() {
   form.submit();
 }
 
+// Перезагрузка из-за 401 уже запущена — повторно не запускаем.
+let reloadingOn401 = false;
+
 /* Единая точка входа для запросов.
    options:
      method  — 'GET' по умолчанию
@@ -114,10 +117,16 @@ export async function request(url, options = {}) {
   }
 
   // 401 — сессия истекла, 403 — вход есть, но прав на действие нет.
+  // 401 — сессия истекла: перезагружаем страницу, сервер сам отправит на вход
+  // (Keycloak) и после входа вернёт сюда же. Промис не завершаем, чтобы до
+  // перезагрузки не мелькали тосты с ошибкой; при нескольких 401 сразу
+  // перезагрузка запускается один раз.
   if (res.status === 401) {
-    const err = new Error('Сессия истекла, войдите заново');
-    err.unauthorized = true;
-    throw err;
+    if (!reloadingOn401) {
+      reloadingOn401 = true;
+      window.location.reload();
+    }
+    return new Promise(() => {});
   }
   if (res.status === 403) {
     const err = new Error('Нет доступа');

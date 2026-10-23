@@ -25,6 +25,10 @@
      GET   /api/support/support-user  -> { id, username, registeredAt } — вошедший администратор
      GET   /api/support/support-user/roles -> ["ADMIN"] | ["OPERATOR"] — роли вошедшего пользователя
      GET   /api/support/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
+     GET   /api/support/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort
+           -> { content: [{ id, createdAt, status, errorTimestamp, type, data, resolvedById, resolvedAt, comment }], page }
+     PATCH /api/support/incident/{id}  <- { comment } — обработка: NEW → RESOLVED
+     POST  /api/support/client/{id}/balance/recalculation -> клиент после пересчёта баланса
      GET   /api/support/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
            -> { content, page }; orderId здесь — ID у мерчанта
    ============================================================ */
@@ -84,6 +88,9 @@ export async function logout() {
   form.submit();
 }
 
+// Перезагрузка из-за 401 уже запущена — повторно не запускаем.
+let reloadingOn401 = false;
+
 /* Единая точка входа для запросов.
    options:
      method  — 'GET' по умолчанию
@@ -117,10 +124,16 @@ export async function request(url, options = {}) {
   // 401 — сессия истекла (сервер может ответить и редиректом на форму
   // входа — тогда вместо JSON придёт HTML, это ловится ниже).
   // 403 — вход есть, но прав на действие нет.
+  // 401 — сессия истекла: перезагружаем страницу, сервер сам отправит на вход
+  // (Keycloak) и после входа вернёт сюда же. Промис не завершаем, чтобы до
+  // перезагрузки не мелькали тосты с ошибкой; при нескольких 401 сразу
+  // перезагрузка запускается один раз.
   if (res.status === 401) {
-    const err = new Error('Сессия истекла, войдите заново');
-    err.unauthorized = true;
-    throw err;
+    if (!reloadingOn401) {
+      reloadingOn401 = true;
+      window.location.reload();
+    }
+    return new Promise(() => {});
   }
   if (res.status === 403) {
     const err = new Error('Нет доступа');
@@ -282,6 +295,29 @@ export const api = {
       totalPages: d?.page?.totalPages ?? 1,
     };
   },
+
+  /* Инциденты системы. Возвращает { items, total, totalPages }.
+     Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
+  async incidents(params) {
+    const d = await request(`${SUPPORT_API}/incident`, {
+      params: { sort: 'createdAt,desc', ...params },
+    });
+    const items = Array.isArray(d?.content) ? d.content : [];
+    return {
+      items,
+      total: d?.page?.totalElements ?? items.length,
+      totalPages: d?.page?.totalPages ?? 1,
+    };
+  },
+
+  /* Обработка инцидента: NEW → RESOLVED. Комментарий необязателен —
+     пустую строку бэк сохраняет как null. Обработавшим бэк ставит текущего пользователя. */
+  resolveIncident: (id, comment) =>
+      request(`${SUPPORT_API}/incident/${encodeURIComponent(id)}`, { method: 'PATCH', body: { comment } }),
+
+  // Перерасчёт баланса клиента по сумме его транзакций. Возвращает клиента после пересчёта.
+  recalculateBalance: (clientId) =>
+      request(`${SUPPORT_API}/client/${encodeURIComponent(clientId)}/balance/recalculation`, { method: 'POST' }),
 
   /* Ручная корректировка баланса: { clientId, operation, amount, comment }.
      Тип «Ручная корректировка» (MANUAL_CORRECT) бэк проставляет сам. */

@@ -40,11 +40,12 @@ function readCollapsed() {
   try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
 }
 
+// «Заявки на вывод» — сразу под «Ордера», как в кабинете администратора.
 const SECTIONS = [
   { id: 'profile', title: 'Профиль', icon: 'fa-solid fa-user-gear' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
-  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
+  { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
 ];
 
 export default function App() {
@@ -882,9 +883,11 @@ function DateFilter({ idPrefix, value, onChange }) {
   );
 }
 
-/* Панель фильтра: поля в строку, под ними «Поиск» и «Сбросить».
+/* Панель фильтра: поля в строку, под ними «Поиск», «Сбросить» и «Обновить».
+   «Обновить» перечитывает текущую страницу с уже применённым фильтром —
+   стоит здесь, а не над таблицей, чтобы не занимать место.
    extra — кнопки справа (например, «Создать заявку»). */
-function FilterPanel({ children, onSearch, onReset, extra }) {
+function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra }) {
   // Enter в любом поле панели запускает поиск.
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') onSearch();
@@ -901,6 +904,12 @@ function FilterPanel({ children, onSearch, onReset, extra }) {
           <button type="button" className="btn btn-secondary" onClick={onReset}>
             Сбросить
           </button>
+          {onRefresh && (
+              <button type="button" className="btn btn-secondary" onClick={onRefresh} disabled={refreshing} title="Перечитать данные">
+                <i className={`fa-solid fa-rotate-right${refreshing ? ' fa-spin' : ''}`} />
+                Обновить
+              </button>
+          )}
           {extra && <div className="filters-extra">{extra}</div>}
         </div>
       </section>
@@ -981,7 +990,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
           <SelectField
               id="orders-status"
               label="Статус"
@@ -1238,7 +1247,7 @@ function TransactionsSection({ dict, showToast }) {
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
           <div className="field field-wide">
             <label htmlFor="tx-id">ID транзакции</label>
             <input
@@ -1364,6 +1373,8 @@ function WithdrawalsSection({ dict, showToast }) {
         <FilterPanel
             onSearch={onSearch}
             onReset={onReset}
+            onRefresh={list.reload}
+            refreshing={list.loading}
             extra={(
                 <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
                   <i className="fa-solid fa-plus" />
