@@ -205,6 +205,59 @@ class IncidentServiceTest {
         assertEquals(unresolved.getId(), actual.getFirst().getId());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "CLIENT_COMMISSION_PERCENT_NOT_SET,5b9d2e4a-8c1f-4a76-b3e0-7d4c2a9f6e18,a1c7e3f9-4d2b-4e85-9b6a-0f3d8c5e2a71",
+            "CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET,d8f2a6c4-3e9b-4b17-a5d1-6c0e4f8b2d93,2e6b9d1f-7a4c-4f38-8c2e-5b1a9d7f3c46"
+    })
+    @DisplayName("Метод должен сохранить инцидент, если необработанного инцидента такого типа по этому клиенту нет.")
+    void saveIfNoUnresolvedForClient_shouldSaveIfNoUnresolvedIncidentOfTypeForClient(IncidentType type, UUID clientId,
+                                                                                     UUID otherClientId) {
+        Incident otherClient = new Incident();
+        otherClient.setType(type);
+        otherClient.setData(Map.of("clientId", otherClientId.toString()));
+        saveDummyIncident(otherClient);
+        Incident resolved = new Incident();
+        resolved.setType(type);
+        resolved.setStatus(IncidentStatus.RESOLVED);
+        resolved.setData(Map.of("clientId", clientId.toString()));
+        saveDummyIncident(resolved);
+        Incident anotherType = new Incident();
+        anotherType.setType(IncidentType.BALANCE_UPDATE_ERROR);
+        anotherType.setData(Map.of("clientId", clientId.toString()));
+        saveDummyIncident(anotherType);
+
+        incidentService.saveIfNoUnresolvedForClient(type, clientId, Map.of("clientId", clientId.toString()),
+                1_760_000_000_000L);
+
+        assertEquals(1, incidentRepository.findAll().stream()
+                .filter(incident -> type.equals(incident.getType()))
+                .filter(incident -> IncidentStatus.NEW.equals(incident.getStatus()))
+                .filter(incident -> clientId.toString().equals(incident.getData().get("clientId")))
+                .count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CLIENT_COMMISSION_PERCENT_NOT_SET,5b9d2e4a-8c1f-4a76-b3e0-7d4c2a9f6e18",
+            "CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET,d8f2a6c4-3e9b-4b17-a5d1-6c0e4f8b2d93"
+    })
+    @DisplayName("Метод не должен сохранять инцидент, если необработанный инцидент такого типа по этому клиенту уже есть.")
+    void saveIfNoUnresolvedForClient_shouldNotSaveIfUnresolvedIncidentOfTypeForClientExists(IncidentType type,
+                                                                                            UUID clientId) {
+        Incident unresolved = new Incident();
+        unresolved.setType(type);
+        unresolved.setData(Map.of("clientId", clientId.toString()));
+        saveDummyIncident(unresolved);
+
+        incidentService.saveIfNoUnresolvedForClient(type, clientId, Map.of("clientId", clientId.toString()),
+                1_760_000_000_000L);
+
+        List<Incident> actual = incidentRepository.findAll();
+        assertEquals(1, actual.size());
+        assertEquals(unresolved.getId(), actual.getFirst().getId());
+    }
+
     @Test
     @DisplayName("Метод должен сохранить инцидент со статусом NEW, переданным типом, данными и временем ошибки.")
     void save_shouldSaveIncident() {

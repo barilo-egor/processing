@@ -14,4 +14,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
     @Query(value = "select count(*) from incident where type = :type and status = :status "
             + "and data ->> '$.orderId' = :orderId", nativeQuery = true)
     long countByTypeAndStatusAndOrderId(String type, String status, String orderId);
+
+    @Query(value = "select count(*) from incident where type = :type and status = :status "
+            + "and data ->> '$.clientId' = :clientId", nativeQuery = true)
+    long countByTypeAndStatusAndClientId(String type, String status, String clientId);
 }

@@ -72,6 +72,14 @@ public class IncidentService {
         save(type, data, errorTimestamp);
     }
 
+    public void saveIfNoUnresolvedForClient(IncidentType type, UUID clientId, Object data, Long errorTimestamp) {
+        if (incidentRepository.countByTypeAndStatusAndClientId(type.name(), IncidentStatus.NEW.name(),
+                clientId.toString()) > 0) {
+            return;
+        }
+        save(type, data, errorTimestamp);
+    }
+
     public void save(IncidentType type, Object data, Long errorTimestamp) {
         try {
             transactionTemplate.executeWithoutResult(status -> saveIncident(type, data, errorTimestamp));

@@ -1,6 +1,7 @@
 package net.rcetech.incidents;
 
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.incidents.handler.ClientIncidentHandler;
 import net.rcetech.incidents.handler.DefaultIncidentHandler;
 import net.rcetech.incidents.handler.IncidentHandler;
 import net.rcetech.incidents.handler.OrderIncidentHandler;
@@ -36,7 +37,8 @@ class IncidentEventListenerTest {
     void setUp() {
         List<IncidentHandler> handlers = new ArrayList<>(List.of(
                 new DefaultIncidentHandler(incidentService),
-                new OrderIncidentHandler(incidentService)
+                new OrderIncidentHandler(incidentService),
+                new ClientIncidentHandler(incidentService)
         ));
         AnnotationAwareOrderComparator.sort(handlers);
         incidentEventListener = new IncidentEventListener(handlers);
@@ -79,6 +81,23 @@ class IncidentEventListenerTest {
         );
     }
 
+    static Stream<Arguments> onlyIfNoUnresolvedForClientEvents() {
+        return Stream.of(
+                Arguments.of(new ClientCommissionPercentNotSetEvent(
+                        UUID.fromString("5b9d2e4a-8c1f-4a76-b3e0-7d4c2a9f6e18"), 1_790_262_057_999L),
+                        IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET),
+                Arguments.of(new ClientCommissionPercentNotSetEvent(
+                        UUID.fromString("a1c7e3f9-4d2b-4e85-9b6a-0f3d8c5e2a71"), 1_793_500_000_000L),
+                        IncidentType.CLIENT_COMMISSION_PERCENT_NOT_SET),
+                Arguments.of(new ClientMinWithdrawalAmountNotSetEvent(
+                        UUID.fromString("d8f2a6c4-3e9b-4b17-a5d1-6c0e4f8b2d93"), 1_791_800_000_000L),
+                        IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET),
+                Arguments.of(new ClientMinWithdrawalAmountNotSetEvent(
+                        UUID.fromString("2e6b9d1f-7a4c-4f38-8c2e-5b1a9d7f3c46"), 1_794_200_000_000L),
+                        IncidentType.CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET)
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("events")
     @DisplayName("Метод должен сохранить инцидент с типом и временем ошибки из события.")
@@ -106,6 +125,16 @@ class IncidentEventListenerTest {
         incidentEventListener.incident(event);
 
         verify(incidentService).saveIfNoUnresolvedForOrder(type, event.orderId(), event, event.errorTimestamp());
+        verifyNoMoreInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("onlyIfNoUnresolvedForClientEvents")
+    @DisplayName("Метод должен сохранить инцидент по клиенту, только если нет необработанного такого типа по этому клиенту.")
+    void incident_shouldSaveIfNoUnresolvedForClient(ClientIncidentEvent event, IncidentType type) {
+        incidentEventListener.incident(event);
+
+        verify(incidentService).saveIfNoUnresolvedForClient(type, event.clientId(), event, event.errorTimestamp());
         verifyNoMoreInteractions(incidentService);
     }
 }
