@@ -83,6 +83,22 @@ class PathSeparationSecurityTest {
                         .map(role -> Arguments.of(path, role)));
     }
 
+    static Stream<Arguments> sessionApiPaths() {
+        return Stream.of(
+                Arguments.of(WebPath.SUPPORT_API_PATH + "/client"),
+                Arguments.of(WebPath.CLIENT_API_PATH + "/profile"),
+                Arguments.of(WebPath.COMMON_API_PATH + "/dictionary")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("sessionApiPaths")
+    @DisplayName("Запрос к API без сессии получает 401, а не редирект на вход.")
+    void noSession_onApiPath_shouldReturnUnauthorized(String path) throws Exception {
+        mockMvc.perform(get(path))
+                .andExpect(status().isUnauthorized());
+    }
+
     @ParameterizedTest
     @MethodSource("supportPaths")
     @DisplayName("Сессия клиента не даёт доступа к API поддержки.")
