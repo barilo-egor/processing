@@ -954,7 +954,7 @@ table.grid-incidents th, table.grid-incidents td { padding-left: 10px; padding-r
 /* ============================================================
    Документация: пункт меню с подпунктами и страница
    ============================================================ */
-.nav-group { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.nav-group { display: flex; flex-direction: column; gap: 4px; }
 .nav-group-head { width: 100%; }
 .nav-group-head.has-active { color: var(--text); }
 .nav-caret { margin-left: auto; font-size: 11px !important; width: auto !important; opacity: .7; }
