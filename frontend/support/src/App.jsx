@@ -1,6 +1,5 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
-import Markdown from './Markdown.jsx';
 
 /* ============================================================
    Личный кабинет администратора API.
@@ -571,6 +570,7 @@ function Pagination({ page, total, onPage, busy, label }) {
    с подпунктами-страницами. Если страниц нет (или список не загрузился),
    пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
 const DOC_PREFIX = 'doc:';
+const Markdown = lazy(() => import('./Markdown.jsx'));
 const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
 
 /* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
@@ -662,7 +662,9 @@ function DocPage({ id }) {
   }
   return (
       <article className="doc-page">
-        <Markdown source={state.page?.content} />
+        <Suspense fallback={<div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>}>
+          <Markdown source={state.page?.content} />
+        </Suspense>
       </article>
   );
 }
