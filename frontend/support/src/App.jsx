@@ -46,7 +46,7 @@ const SECTIONS = [
 const ADMIN_ONLY_SECTIONS = new Set(['clients', 'merchants']);
 
 export default function App() {
-  const [section, setSection] = useState('orders');
+  const [section, setSection] = useState(() => sectionFromUrl('orders'));
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
@@ -149,6 +149,8 @@ export default function App() {
   };
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
+
+  useEffect(() => { syncDocUrl(section); }, [section]);
 
   const docId = docIdOf(section);
   const current = docId
@@ -570,6 +572,24 @@ function Pagination({ page, total, onPage, busy, label }) {
    пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
 const DOC_PREFIX = 'doc:';
 const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
+
+/* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
+const DOC_PARAM = 'doc';
+
+function sectionFromUrl(fallback) {
+  const id = new URLSearchParams(window.location.search).get(DOC_PARAM);
+  return id ? DOC_PREFIX + id : fallback;
+}
+
+function syncDocUrl(section) {
+  const url = new URL(window.location.href);
+  const id = docIdOf(section);
+  if (url.searchParams.get(DOC_PARAM) === id) return;
+  if (id) url.searchParams.set(DOC_PARAM, id);
+  else url.searchParams.delete(DOC_PARAM);
+  url.hash = '';
+  window.history.replaceState(window.history.state, '', url);
+}
 
 /* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
 function DocsNav({ docs, section, collapsed, onOpen }) {

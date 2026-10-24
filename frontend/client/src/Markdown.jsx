@@ -1,209 +1,317 @@
-/* ============================================================
-   Показ страниц документации (Markdown → React).
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
+import rehypeSlug from 'rehype-slug';
+import { createLowlight } from 'lowlight';
+import bash from 'highlight.js/lib/languages/bash';
+import http from 'highlight.js/lib/languages/http';
+import json from 'highlight.js/lib/languages/json';
 
-   Бэк отдаёт текст страницы в GitHub Flavored Markdown (см. коллекцию:
-   «Страница документации»). В тексте только: заголовки ##/###, абзацы,
-   нумерованные и маркированные списки, **жирный**, `код`, таблицы GFM
-   и разделитель ---. HTML-вставок и картинок нет.
+const SPY_OFFSET = 96;
 
-   Поэтому вместо сторонней библиотеки — небольшой разбор этого набора:
-   без новых зависимостей в package.json. Всё выводится как React-элементы
-   (без dangerouslySetInnerHTML), так что текст страницы не может вставить
-   в кабинет свою разметку или скрипт.
-   ============================================================ */
+const lowlight = createLowlight({ bash, http, json });
 
-const RE_HEADING = /^(#{1,6})\s+(.*)$/;
-const RE_HR = /^\s*([-*_])(\s*\1){2,}\s*$/;
-const RE_UL = /^(\s*)[-*+]\s+(.*)$/;
-const RE_OL = /^(\s*)(\d+)[.)]\s+(.*)$/;
-const RE_TABLE_SEP = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
+const RE_ENDPOINT = /^(GET|POST|PUT|PATCH|DELETE) (\/\S*)$/;
+const RE_HTTP_STATUS = /^([1-5]\d\d) ([A-Za-z][A-Za-z -]*)$/;
+const RE_ENUM = /^[A-Z][A-Z0-9_]*$/;
+const RE_FINAL_STATUS = /(^|[.!?]\s+)Конечный статус/;
+const RE_MSG_TOKEN = /(<[^<>]+>|[A-Za-z][A-Za-z0-9-]*)/;
+const MESSAGE_HEAD = 'Сообщение';
+const NOWRAP_MAX = 24;
 
-const isTableRow = (line) => /^\s*\|.*\|\s*$/.test(line);
+const ALERTS = {
+    NOTE: { label: 'Примечание', icon: 'fa-solid fa-circle-info' },
+    TIP: { label: 'Рекомендация', icon: 'fa-regular fa-lightbulb' },
+    IMPORTANT: { label: 'Важно', icon: 'fa-solid fa-circle-exclamation' },
+    WARNING: { label: 'Внимание', icon: 'fa-solid fa-triangle-exclamation' },
+    CAUTION: { label: 'Осторожно', icon: 'fa-solid fa-circle-xmark' },
+};
 
-/* Ячейки строки таблицы: «| a | b |» → ['a', 'b']. Экранированный \| — часть текста. */
-function splitRow(line) {
-    const inner = line.trim().replace(/^\|/, '').replace(/\|$/, '');
-    const cells = [];
-    let cur = '';
-    for (let i = 0; i < inner.length; i += 1) {
-        if (inner[i] === '\\' && inner[i + 1] === '|') { cur += '|'; i += 1; continue; }
-        if (inner[i] === '|') { cells.push(cur.trim()); cur = ''; continue; }
-        cur += inner[i];
-    }
-    cells.push(cur.trim());
-    return cells;
+const STATUS_TONE = {
+    SEARCHING: 'cyan',
+    DETAILS_NOT_FOUND: 'red',
+    NEW: 'blue',
+    SUCCESS: 'green',
+    CANCELED: 'grey',
+    TIMEOUT: 'amber',
+    DISPUTE: 'purple',
+};
+
+const isExternal = (href) => /^https?:\/\//i.test(href || '');
+
+const el = (tagName, className, children = [], extra = {}) => ({
+    type: 'element', tagName, properties: { className: [].concat(className), ...extra }, children,
+});
+const text = (value) => ({ type: 'text', value });
+const isEl = (n, tag) => n?.type === 'element' && (!tag || n.tagName === tag);
+const textOf = (n) => (n.type === 'text' ? n.value : (n.children ?? []).map(textOf).join(''));
+const elements = (n) => (n.children ?? []).filter((c) => isEl(c));
+const meaningful = (n) => (n.children ?? []).filter((c) => !(c.type === 'text' && !c.value.trim()));
+const addClass = (n, cls) => { n.properties.className = [...(n.properties.className ?? []), cls]; };
+
+function endpoint(p) {
+    const kids = meaningful(p);
+    const m = kids.length === 1 && isEl(kids[0], 'code') ? RE_ENDPOINT.exec(textOf(kids[0])) : null;
+    if (!m) return;
+    Object.assign(p, el('div', 'doc-endpoint', [], { dataMethod: m[1], dataPath: m[2] }));
 }
 
-function alignOf(sep) {
-    const s = sep.trim();
-    if (s.startsWith(':') && s.endsWith(':')) return 'center';
-    if (s.endsWith(':')) return 'right';
-    return undefined;
+function alert(quote) {
+    const first = elements(quote)[0];
+    const head = first && isEl(first, 'p') ? first.children[0] : null;
+    const m = head?.type === 'text' ? /^\[!(\w+)\][ \t]*([^\n]*)\n?/.exec(head.value) : null;
+    const kind = m && ALERTS[m[1].toUpperCase()];
+    if (!kind) return;
+    head.value = head.value.slice(m[0].length);
+    if (!textOf(first).trim()) quote.children.splice(quote.children.indexOf(first), 1);
+    const title = el('div', 'doc-alert-title', [el('i', kind.icon.split(' ')), text(m[2].trim() || kind.label)]);
+    Object.assign(quote, el('div', ['doc-alert', `doc-alert-${m[1].toLowerCase()}`], [title, ...quote.children]));
 }
 
-/* ---------- Строчная разметка: `код`, **жирный**, *курсив*, [ссылка](url) ---------- */
-const RE_INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|\*([^*\s][^*]*?)\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
-
-function renderInline(text, keyBase = 'i') {
-    const out = [];
-    let last = 0;
-    let m;
-    let n = 0;
-    // Своё регулярное выражение на каждый вызов: renderInline вызывается рекурсивно
-    // (жирный внутри ссылки и т. п.), а у общего /g-выражения сбился бы lastIndex.
-    const re = new RegExp(RE_INLINE.source, 'g');
-    while ((m = re.exec(text)) !== null) {
-        if (m.index > last) out.push(text.slice(last, m.index));
-        const key = `${keyBase}-${n += 1}`;
-        if (m[1]) {
-            out.push(<code key={key}>{m[2].replace(/^ (.*) $/, '$1')}</code>);
-        } else if (m[3] !== undefined || m[4] !== undefined) {
-            out.push(<strong key={key}>{renderInline(m[3] ?? m[4], key)}</strong>);
-        } else if (m[5] !== undefined) {
-            out.push(<em key={key}>{renderInline(m[5], key)}</em>);
-        } else if (m[6] !== undefined) {
-            // Ссылки — только http(s), открываются в новой вкладке.
-            const href = /^https?:\/\//i.test(m[7]) ? m[7] : null;
-            out.push(href
-                ? <a key={key} href={href} target="_blank" rel="noopener noreferrer">{renderInline(m[6], key)}</a>
-                : <span key={key}>{renderInline(m[6], key)}</span>);
-        }
-        last = re.lastIndex;
-    }
-    if (last < text.length) out.push(text.slice(last));
-    return out;
+function httpBadge(code, short) {
+    const m = RE_HTTP_STATUS.exec(textOf(code));
+    if (!m) return false;
+    const children = short ? [text(m[1])] : [el('b', [], [text(m[1])]), text(` ${m[2]}`)];
+    Object.assign(code, el('span', ['doc-http', `doc-http-${m[1][0]}xx`], children, { title: `${m[1]} ${m[2]}` }));
+    return true;
 }
 
-/* ---------- Списки (с вложенностью по отступу) ---------- */
-function parseList(lines, start) {
-    const first = lines[start];
-    const ordered = !RE_UL.test(first) && RE_OL.test(first);
-    const baseIndent = (ordered ? RE_OL : RE_UL).exec(first)[1].length;
-    const startNum = ordered ? Number(RE_OL.exec(first)[2]) : 1;
-    const items = [];
-    let i = start;
+function messages(td) {
+    td.children = td.children.filter((c) => !isEl(c, 'br')).map((c) => {
+        if (!isEl(c, 'code') || !/[А-Яа-яЁё]/.test(textOf(c))) return c;
+        const parts = textOf(c).split(RE_MSG_TOKEN)
+            .map((part, k) => (k % 2 === 1 ? el('code', [], [text(part)]) : text(part)))
+            .filter((n) => textOf(n));
+        return el('span', 'doc-msg', parts);
+    });
+}
 
-    while (i < lines.length) {
-        const line = lines[i];
-        const mu = RE_UL.exec(line);
-        const mo = RE_OL.exec(line);
-        const m = ordered ? (mu ? null : mo) : mu;
-        const indent = m ? m[1].length : -1;
+function statusCell(td, row) {
+    const kids = meaningful(td);
+    const code = kids.length === 1 && isEl(kids[0], 'code') ? textOf(kids[0]) : null;
+    if (!code || !RE_ENUM.test(code)) return;
+    const badge = el('span', ['doc-badge', `doc-tone-${STATUS_TONE[code] ?? 'grey'}`], [text(code)]);
+    const final = elements(row).some((cell) => RE_FINAL_STATUS.test(textOf(cell)))
+        ? [el('i', ['fa-solid', 'fa-lock', 'doc-final'], [], { title: 'Конечный статус' })]
+        : [];
+    td.children = [badge, ...final];
+}
 
-        if (m && indent === baseIndent) {
-            items.push({ text: ordered ? m[3] : m[2], children: [] });
-            i += 1;
-            continue;
+function mergeStatusRows(rows) {
+    let group = null;
+    for (const row of rows) {
+        const first = elements(row)[0];
+        const key = first && meaningful(first).length === 1 && first.children.some((c) => isEl(c, 'span')
+            && c.properties.className.includes('doc-http')) ? textOf(first) : null;
+        if (key && group?.key === key) {
+            group.cell.properties.rowSpan = (group.cell.properties.rowSpan ?? 1) + 1;
+            row.children.splice(row.children.indexOf(first), 1);
+        } else {
+            group = key ? { key, cell: first } : null;
         }
-        if (!items.length) break;
-        // Вложенный список — пункт с большим отступом.
-        if ((mu || mo) && ((mu || mo)[1].length > baseIndent)) {
-            const nested = parseList(lines, i);
-            items[items.length - 1].children.push(nested.node);
-            i = nested.next;
-            continue;
-        }
-        // Продолжение текста пункта на следующей строке (с отступом).
-        if (line.trim() && /^\s+/.test(line) && !(mu || mo)) {
-            items[items.length - 1].text += ` ${line.trim()}`;
-            i += 1;
-            continue;
-        }
-        break;
     }
+}
 
-    const Tag = ordered ? 'ol' : 'ul';
-    const node = (
-        <Tag key={`l-${start}`} start={ordered && startNum !== 1 ? startNum : undefined}>
-            {items.map((it, k) => (
-                <li key={k}>{renderInline(it.text, `l${start}-${k}`)}{it.children}</li>
-            ))}
+function table(node) {
+    const thead = elements(node).find((c) => isEl(c, 'thead'));
+    const tbody = elements(node).find((c) => isEl(c, 'tbody'));
+    const heads = thead ? elements(elements(thead)[0]).map((th) => textOf(th).trim()) : [];
+    const rows = tbody ? elements(tbody).filter((r) => isEl(r, 'tr')) : [];
+
+    for (const row of rows) {
+        elements(row).forEach((td, k) => {
+            if (heads[k] === MESSAGE_HEAD) messages(td);
+            if (k === 0 && heads[0] === 'Статус') statusCell(td, row);
+            elements(td).filter((c) => isEl(c, 'code')).forEach((c) => httpBadge(c, true));
+            if (textOf(td).length <= NOWRAP_MAX) addClass(td, 'doc-nowrap');
+        });
+    }
+    mergeStatusRows(rows);
+}
+
+function highlight(pre) {
+    const code = elements(pre)[0];
+    const lang = (code?.properties.className ?? []).find((c) => String(c).startsWith('language-'))
+        ?.slice('language-'.length);
+    if (!lang || !lowlight.registered(lang)) return;
+    code.children = lowlight.highlight(lang, textOf(code)).children;
+}
+
+function rehypeDoc() {
+    return (tree) => {
+        const walk = (node) => {
+            if (isEl(node, 'table')) { table(node); return; }
+            if (isEl(node, 'pre')) { highlight(node); return; }
+            if (isEl(node, 'p')) endpoint(node);
+            if (isEl(node, 'blockquote')) alert(node);
+            if (isEl(node, 'code')) httpBadge(node, false);
+            (node.children ?? []).forEach(walk);
+        };
+        walk(tree);
+    };
+}
+
+const REHYPE = [rehypeRaw, rehypeSanitize, rehypeSlug, rehypeDoc];
+
+function copyText(value, onDone) {
+    navigator.clipboard?.writeText(value).then(onDone).catch(() => {});
+}
+
+function useFlag() {
+    const [on, setOn] = useState(false);
+    const raise = () => {
+        setOn(true);
+        setTimeout(() => setOn(false), 1500);
+    };
+    return [on, raise];
+}
+
+function CodeBlock({ node, children }) {
+    const ref = useRef(null);
+    const [copied, flagCopied] = useFlag();
+    const cls = node?.children?.[0]?.properties?.className ?? [];
+    const lang = cls.find((c) => String(c).startsWith('language-'))?.slice('language-'.length);
+
+    return (
+        <div className="doc-code">
+            <div className="doc-code-head">
+                <span>{lang || 'text'}</span>
+                <button type="button" onClick={() => copyText(ref.current?.textContent ?? '', flagCopied)} title="Скопировать">
+                    <i className={copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'} />
+                    {copied ? 'Скопировано' : 'Копировать'}
+                </button>
+            </div>
+            <pre ref={ref}>{children}</pre>
+        </div>
+    );
+}
+
+function Endpoint({ method, path }) {
+    const [copied, flagCopied] = useFlag();
+    return (
+        <div className="doc-endpoint">
+            <span className={`doc-method doc-method-${method.toLowerCase()}`}>{method}</span>
+            <code className="doc-endpoint-path">{path}</code>
+            <button type="button" className="doc-endpoint-copy" onClick={() => copyText(path, flagCopied)} title="Скопировать путь">
+                <i className={copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'} />
+            </button>
+        </div>
+    );
+}
+
+function Heading({ level, id, children, onAnchor }) {
+    const Tag = `h${level}`;
+    const [copied, flagCopied] = useFlag();
+    if (!id) return <Tag>{children}</Tag>;
+    const open = (e) => {
+        onAnchor(e, `#${id}`);
+        copyText(window.location.href, flagCopied);
+    };
+    return (
+        <Tag id={id} className="doc-heading">
+            {children}
+            <a href={`#${id}`} className="doc-heading-link" onClick={open} title="Скопировать ссылку на раздел">
+                <i className={copied ? 'fa-solid fa-check' : 'fa-solid fa-link'} />
+            </a>
         </Tag>
     );
-    return { node, next: i };
-}
-
-/* ---------- Блоки ---------- */
-function parseBlocks(src) {
-    const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
-    const blocks = [];
-    let i = 0;
-
-    const startsBlock = (line, next) => RE_HEADING.test(line) || RE_HR.test(line)
-        || RE_UL.test(line) || RE_OL.test(line)
-        || (isTableRow(line) && next !== undefined && RE_TABLE_SEP.test(next));
-
-    while (i < lines.length) {
-        const line = lines[i];
-
-        if (!line.trim()) { i += 1; continue; }
-
-        const h = RE_HEADING.exec(line);
-        if (h) {
-            // # в тексте не бывает (вынесен в title), но на всякий случай — как ##.
-            const level = Math.min(Math.max(h[1].length, 2), 4);
-            const Tag = `h${level}`;
-            blocks.push(<Tag key={`h-${i}`}>{renderInline(h[2].replace(/\s+#+\s*$/, ''), `h${i}`)}</Tag>);
-            i += 1;
-            continue;
-        }
-
-        if (RE_HR.test(line)) {
-            blocks.push(<hr key={`hr-${i}`} />);
-            i += 1;
-            continue;
-        }
-
-        if (isTableRow(line) && i + 1 < lines.length && RE_TABLE_SEP.test(lines[i + 1])) {
-            const head = splitRow(line);
-            const aligns = splitRow(lines[i + 1]).map(alignOf);
-            const rows = [];
-            i += 2;
-            while (i < lines.length && isTableRow(lines[i])) {
-                rows.push(splitRow(lines[i]));
-                i += 1;
-            }
-            blocks.push(
-                <div className="doc-table" key={`t-${i}`}>
-                    <table>
-                        <thead>
-                        <tr>{head.map((c, k) => <th key={k} style={{ textAlign: aligns[k] }}>{renderInline(c, `th${i}-${k}`)}</th>)}</tr>
-                        </thead>
-                        <tbody>
-                        {rows.map((r, ri) => (
-                            <tr key={ri}>
-                                {head.map((_, k) => (
-                                    <td key={k} style={{ textAlign: aligns[k] }}>{renderInline(r[k] ?? '', `td${i}-${ri}-${k}`)}</td>
-                                ))}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>,
-            );
-            continue;
-        }
-
-        if (RE_UL.test(line) || RE_OL.test(line)) {
-            const list = parseList(lines, i);
-            blocks.push(list.node);
-            i = list.next;
-            continue;
-        }
-
-        // Абзац: строки до пустой или до начала другого блока; переносы внутри — пробелы (как в GFM).
-        const para = [line.trim()];
-        i += 1;
-        while (i < lines.length && lines[i].trim() && !startsBlock(lines[i], lines[i + 1])) {
-            para.push(lines[i].trim());
-            i += 1;
-        }
-        blocks.push(<p key={`p-${i}`}>{renderInline(para.join(' '), `p${i}`)}</p>);
-    }
-
-    return blocks;
 }
 
 export default function Markdown({ source }) {
-    return <div className="doc-content">{parseBlocks(source)}</div>;
+    const ref = useRef(null);
+    const [toc, setToc] = useState([]);
+    const [activeId, setActiveId] = useState(null);
+
+    const findAnchor = (id) => ref.current?.querySelector(`[id="${CSS.escape(id)}"]`);
+
+    useEffect(() => {
+        const headings = ref.current?.querySelectorAll('.doc-content h2[id], .doc-content h3[id]') ?? [];
+        setToc(Array.from(headings, (h) => ({
+            id: h.id,
+            title: h.textContent,
+            level: Number(h.tagName[1]),
+        })));
+        const hash = decodeURIComponent(window.location.hash.slice(1));
+        if (hash) findAnchor(hash)?.scrollIntoView({ block: 'start' });
+    }, [source]);
+
+    useEffect(() => {
+        if (toc.length < 2) return undefined;
+        const update = () => {
+            const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+            let current = toc[0].id;
+            for (const t of toc) {
+                const h = document.getElementById(t.id);
+                if (h && h.getBoundingClientRect().top <= SPY_OFFSET) current = t.id;
+            }
+            setActiveId(atBottom ? toc[toc.length - 1].id : current);
+        };
+        update();
+        window.addEventListener('scroll', update, { passive: true });
+        window.addEventListener('resize', update);
+        return () => {
+            window.removeEventListener('scroll', update);
+            window.removeEventListener('resize', update);
+        };
+    }, [toc]);
+
+    const openAnchor = (e, href) => {
+        e.preventDefault();
+        const id = decodeURIComponent(href.slice(1));
+        const target = findAnchor(id);
+        if (!target) return;
+        window.history.replaceState(window.history.state, '', `#${encodeURIComponent(id)}`);
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActiveId(id);
+    };
+
+    const components = {
+        h1: ({ node, ...props }) => <Heading level={2} {...props} onAnchor={openAnchor} />,
+        h2: ({ node, ...props }) => <Heading level={2} {...props} onAnchor={openAnchor} />,
+        h3: ({ node, ...props }) => <Heading level={3} {...props} onAnchor={openAnchor} />,
+        h5: ({ node, ...props }) => <h4 {...props} />,
+        h6: ({ node, ...props }) => <h4 {...props} />,
+        a: ({ node, href, children }) => {
+            if (href?.startsWith('#')) return <a href={href} onClick={(e) => openAnchor(e, href)}>{children}</a>;
+            if (isExternal(href)) return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+            return <span>{children}</span>;
+        },
+        div: ({ node, ...props }) => (node.properties.className?.includes('doc-endpoint')
+            ? <Endpoint method={node.properties.dataMethod} path={node.properties.dataPath} />
+            : <div {...props} />),
+        table: ({ node, ...props }) => <div className="doc-table"><table {...props} /></div>,
+        pre: CodeBlock,
+    };
+
+    const hasToc = toc.length > 1;
+
+    return (
+        <div ref={ref} className={`doc-layout${hasToc ? ' with-toc' : ''}`}>
+            <div className="doc-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={REHYPE} components={components}>
+                    {String(source || '')}
+                </ReactMarkdown>
+            </div>
+            {hasToc && (
+                <nav className="doc-toc" aria-label="Содержание">
+                    <div className="doc-toc-title"><i className="fa-solid fa-list-ul" /> На этой странице</div>
+                    <ul>
+                        {toc.map((t) => (
+                            <li key={t.id}>
+                                <a
+                                    href={`#${t.id}`}
+                                    className={`doc-toc-l${t.level}${activeId === t.id ? ' active' : ''}`}
+                                    onClick={(e) => openAnchor(e, `#${t.id}`)}
+                                >
+                                    {t.title}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+            )}
+        </div>
+    );
 }
