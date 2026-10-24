@@ -1,6 +1,5 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
-import Markdown from './Markdown.jsx';
 
 /* ============================================================
    Личный кабинет администратора API.
@@ -33,10 +32,16 @@ const SECTIONS = [
   { id: 'clients', title: 'Клиенты', icon: 'fa-solid fa-users' },
   { id: 'orders', title: 'Ордера', icon: 'fa-solid fa-receipt' },
   { id: 'withdrawals', title: 'Заявки на вывод', icon: 'fa-solid fa-money-bill-transfer' },
-  { id: 'merchants', title: 'Конфигурация мерчантов', icon: 'fa-solid fa-sliders' },
   { id: 'transactions', title: 'Транзакции', icon: 'fa-solid fa-right-left' },
-  { id: 'merchantHistory', title: 'История мерчантов', icon: 'fa-solid fa-clock-rotate-left' },
-  { id: 'callbacks', title: 'КБ мерчантов', icon: 'fa-solid fa-rotate' },
+  {
+    group: 'Мерчанты',
+    icon: 'fa-solid fa-store',
+    items: [
+      { id: 'merchants', title: 'Конфигурация мерчантов', navTitle: 'Конфигурация', icon: 'fa-solid fa-sliders' },
+      { id: 'merchantHistory', title: 'История мерчантов', navTitle: 'История', icon: 'fa-solid fa-clock-rotate-left' },
+      { id: 'callbacks', title: 'КБ мерчантов', navTitle: 'КБ', icon: 'fa-solid fa-rotate' },
+    ],
+  },
   { id: 'incidents', title: 'Инциденты', icon: 'fa-solid fa-triangle-exclamation' },
 ];
 
@@ -45,8 +50,10 @@ const SECTIONS = [
    ADMIN включает OPERATOR, поэтому признак «видит всё» — наличие ADMIN. */
 const ADMIN_ONLY_SECTIONS = new Set(['clients', 'merchants']);
 
+const SECTION_LIST = SECTIONS.flatMap((s) => s.items || [s]);
+
 export default function App() {
-  const [section, setSection] = useState('orders');
+  const [section, setSection] = useState(() => sectionFromUrl('orders'));
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
@@ -75,7 +82,9 @@ export default function App() {
   const [roles, setRoles] = useState(null);
   const isAdmin = Array.isArray(roles) && roles.includes('ADMIN');
   const canSee = (id) => isAdmin || !ADMIN_ONLY_SECTIONS.has(id);
-  const visibleSections = SECTIONS.filter((s) => canSee(s.id));
+  const visibleSections = SECTIONS
+      .map((s) => (s.items ? { ...s, items: s.items.filter((i) => canSee(i.id)) } : s))
+      .filter((s) => (s.items ? s.items.length > 0 : canSee(s.id)));
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ message, type, key: Date.now() });
@@ -150,10 +159,12 @@ export default function App() {
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
+  useEffect(() => { syncDocUrl(section); }, [section]);
+
   const docId = docIdOf(section);
   const current = docId
       ? { id: section, title: docs.find((d) => d.id === docId)?.title || 'Документация' }
-      : SECTIONS.find((s) => s.id === section);
+      : SECTION_LIST.find((s) => s.id === section);
 
   return (
       <div className="layout">
@@ -174,7 +185,28 @@ export default function App() {
             </button>
           </div>
           <nav className="nav">
-            {visibleSections.map((s) => (
+            {visibleSections.map((s) => (s.items ? (
+                <NavGroup
+                    key={s.group}
+                    title={s.group}
+                    icon={s.icon}
+                    active={s.items.some((i) => i.id === section)}
+                    collapsed={collapsed}
+                >
+                  {s.items.map((i) => (
+                      <button
+                          key={i.id}
+                          type="button"
+                          className={`nav-item nav-sub-item${section === i.id ? ' active' : ''}`}
+                          onClick={() => goTo(i.id)}
+                          title={collapsed ? i.title : undefined}
+                      >
+                        <i className={i.icon} />
+                        <span>{i.navTitle || i.title}</span>
+                      </button>
+                  ))}
+                </NavGroup>
+            ) : (
                 <button
                     key={s.id}
                     type="button"
@@ -185,7 +217,7 @@ export default function App() {
                   <i className={s.icon} />
                   <span>{s.title}</span>
                 </button>
-            ))}
+            )))}
             <DocsNav docs={docs} section={section} collapsed={collapsed} onOpen={goTo} />
           </nav>
           {/* Свернуть/развернуть меню — только на широком экране. */}
@@ -569,46 +601,68 @@ function Pagination({ page, total, onPage, busy, label }) {
    с подпунктами-страницами. Если страниц нет (или список не загрузился),
    пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
 const DOC_PREFIX = 'doc:';
+const Markdown = lazy(() => import('./Markdown.jsx'));
 const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
 
-/* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
-function DocsNav({ docs, section, collapsed, onOpen }) {
-  const activeId = docIdOf(section);
-  const [open, setOpen] = useState(Boolean(activeId));
-  // Открыли страницу документации — подменю раскрыто.
-  useEffect(() => { if (activeId) setOpen(true); }, [activeId]);
+/* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
+const DOC_PARAM = 'doc';
 
-  if (!docs.length) return null;
+function sectionFromUrl(fallback) {
+  const id = new URLSearchParams(window.location.search).get(DOC_PARAM);
+  return id ? DOC_PREFIX + id : fallback;
+}
+
+function syncDocUrl(section) {
+  const url = new URL(window.location.href);
+  const id = docIdOf(section);
+  if (url.searchParams.get(DOC_PARAM) === id) return;
+  if (id) url.searchParams.set(DOC_PARAM, id);
+  else url.searchParams.delete(DOC_PARAM);
+  url.hash = '';
+  window.history.replaceState(window.history.state, '', url);
+}
+
+function NavGroup({ title, icon, active, collapsed, children }) {
+  const [open, setOpen] = useState(active);
+  useEffect(() => { if (active) setOpen(true); }, [active]);
+
   return (
       <div className="nav-group">
         <button
             type="button"
-            className={`nav-item nav-group-head${activeId ? ' has-active' : ''}`}
+            className={`nav-item nav-group-head${active ? ' has-active' : ''}`}
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            title={collapsed ? 'Документация' : undefined}
+            title={collapsed ? title : undefined}
         >
-          <i className="fa-solid fa-book" />
-          <span>Документация</span>
+          <i className={icon} />
+          <span>{title}</span>
           <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} nav-caret`} />
         </button>
-        {open && (
-            <div className="nav-sub">
-              {docs.map((d) => (
-                  <button
-                      key={d.id}
-                      type="button"
-                      className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
-                      onClick={() => onOpen(DOC_PREFIX + d.id)}
-                      title={collapsed ? d.title : undefined}
-                  >
-                    <i className="fa-regular fa-file-lines" />
-                    <span>{d.title}</span>
-                  </button>
-              ))}
-            </div>
-        )}
+        {open && <div className="nav-sub">{children}</div>}
       </div>
+  );
+}
+
+/* Пункт меню «Документация» со страницами-подпунктами. */
+function DocsNav({ docs, section, collapsed, onOpen }) {
+  const activeId = docIdOf(section);
+  if (!docs.length) return null;
+  return (
+      <NavGroup title="Документация" icon="fa-solid fa-book" active={Boolean(activeId)} collapsed={collapsed}>
+        {docs.map((d) => (
+            <button
+                key={d.id}
+                type="button"
+                className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
+                onClick={() => onOpen(DOC_PREFIX + d.id)}
+                title={collapsed ? d.title : undefined}
+            >
+              <i className="fa-regular fa-file-lines" />
+              <span>{d.title}</span>
+            </button>
+        ))}
+      </NavGroup>
   );
 }
 
@@ -642,7 +696,9 @@ function DocPage({ id }) {
   }
   return (
       <article className="doc-page">
-        <Markdown source={state.page?.content} />
+        <Suspense fallback={<div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>}>
+          <Markdown source={state.page?.content} />
+        </Suspense>
       </article>
   );
 }
@@ -2967,23 +3023,30 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
 function IncidentText({ template, data, onCopy }) {
   if (!template) return <span className="dim">—</span>;
   const parts = String(template).split(/\$\{([^}]+)\}/);
-  return (
-      <>
-        {parts.map((part, i) => {
-          if (i % 2 === 0) return part ? <span key={i}>{part}</span> : null;
-          const value = data?.[part];
-          if (value === undefined || value === null || value === '') {
-            return <span key={i} className="mono dim">{`\${${part}}`}</span>;
-          }
-          return (
-              <span key={i} className="inc-chip" title="Скопировать" onClick={() => onCopy(value)}>
-                <span className="mono">{String(value)}</span>
-                <i className="fa-regular fa-copy" />
-              </span>
-          );
-        })}
-      </>
-  );
+  const renderValue = (key) => {
+    const value = data?.[key];
+    if (value === undefined || value === null || value === '') {
+      return <span className="mono dim">{`\${${key}}`}</span>;
+    }
+    return (
+        <span className="inc-chip" title="Скопировать" onClick={() => onCopy(value)}>
+          <span className="mono">{String(value)}</span>
+          <i className="fa-regular fa-copy" />
+        </span>
+    );
+  };
+  const nodes = [];
+  let text = parts[0];
+  for (let i = 1; i < parts.length; i += 2) {
+    const before = text.match(/\S*$/)[0];
+    const after = parts[i + 1].match(/^\S*/)[0];
+    const head = text.slice(0, text.length - before.length);
+    if (head) nodes.push(<span key={`t${i}`}>{head}</span>);
+    nodes.push(<span key={i} className="inc-nowrap">{before}{renderValue(parts[i])}{after}</span>);
+    text = parts[i + 1].slice(after.length);
+  }
+  if (text) nodes.push(<span key="tail">{text}</span>);
+  return <>{nodes}</>;
 }
 
 /* ---- Карточка инцидента ----

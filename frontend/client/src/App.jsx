@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
 import {
   api,
   dateFilterParams,
@@ -15,7 +15,6 @@ import {
   PAGE_SIZE,
   shorten,
 } from './api.js';
-import Markdown from './Markdown.jsx';
 
 /* ============================================================
    Личный кабинет клиента API.
@@ -51,7 +50,7 @@ const SECTIONS = [
 
 export default function App() {
   // По умолчанию открываются «Ордера» — основной раздел для клиента.
-  const [section, setSection] = useState('orders');
+  const [section, setSection] = useState(() => sectionFromUrl('orders'));
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
@@ -131,6 +130,8 @@ export default function App() {
   };
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
+
+  useEffect(() => { syncDocUrl(section); }, [section]);
 
   const docId = docIdOf(section);
   const current = docId
@@ -236,7 +237,26 @@ export default function App() {
    с подпунктами-страницами. Если страниц нет (или список не загрузился),
    пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
 const DOC_PREFIX = 'doc:';
+const Markdown = lazy(() => import('./Markdown.jsx'));
 const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
+
+/* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
+const DOC_PARAM = 'doc';
+
+function sectionFromUrl(fallback) {
+  const id = new URLSearchParams(window.location.search).get(DOC_PARAM);
+  return id ? DOC_PREFIX + id : fallback;
+}
+
+function syncDocUrl(section) {
+  const url = new URL(window.location.href);
+  const id = docIdOf(section);
+  if (url.searchParams.get(DOC_PARAM) === id) return;
+  if (id) url.searchParams.set(DOC_PARAM, id);
+  else url.searchParams.delete(DOC_PARAM);
+  url.hash = '';
+  window.history.replaceState(window.history.state, '', url);
+}
 
 /* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
 function DocsNav({ docs, section, collapsed, onOpen }) {
@@ -309,7 +329,9 @@ function DocPage({ id }) {
   }
   return (
       <article className="doc-page">
-        <Markdown source={state.page?.content} />
+        <Suspense fallback={<div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>}>
+          <Markdown source={state.page?.content} />
+        </Suspense>
       </article>
   );
 }
