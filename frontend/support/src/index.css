@@ -929,6 +929,8 @@ table.grid-incidents th, table.grid-incidents td { padding-left: 10px; padding-r
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
+.inc-nowrap { white-space: nowrap; }
+.inc-nowrap .inc-chip { white-space: normal; }
 .inc-chip i { font-size: 11px; opacity: .75; }
 .inc-chip:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 .btn-outline {

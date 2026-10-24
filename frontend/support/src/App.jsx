@@ -2989,23 +2989,30 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
 function IncidentText({ template, data, onCopy }) {
   if (!template) return <span className="dim">—</span>;
   const parts = String(template).split(/\$\{([^}]+)\}/);
-  return (
-      <>
-        {parts.map((part, i) => {
-          if (i % 2 === 0) return part ? <span key={i}>{part}</span> : null;
-          const value = data?.[part];
-          if (value === undefined || value === null || value === '') {
-            return <span key={i} className="mono dim">{`\${${part}}`}</span>;
-          }
-          return (
-              <span key={i} className="inc-chip" title="Скопировать" onClick={() => onCopy(value)}>
-                <span className="mono">{String(value)}</span>
-                <i className="fa-regular fa-copy" />
-              </span>
-          );
-        })}
-      </>
-  );
+  const renderValue = (key) => {
+    const value = data?.[key];
+    if (value === undefined || value === null || value === '') {
+      return <span className="mono dim">{`\${${key}}`}</span>;
+    }
+    return (
+        <span className="inc-chip" title="Скопировать" onClick={() => onCopy(value)}>
+          <span className="mono">{String(value)}</span>
+          <i className="fa-regular fa-copy" />
+        </span>
+    );
+  };
+  const nodes = [];
+  let text = parts[0];
+  for (let i = 1; i < parts.length; i += 2) {
+    const before = text.match(/\S*$/)[0];
+    const after = parts[i + 1].match(/^\S*/)[0];
+    const head = text.slice(0, text.length - before.length);
+    if (head) nodes.push(<span key={`t${i}`}>{head}</span>);
+    nodes.push(<span key={i} className="inc-nowrap">{before}{renderValue(parts[i])}{after}</span>);
+    text = parts[i + 1].slice(after.length);
+  }
+  if (text) nodes.push(<span key="tail">{text}</span>);
+  return <>{nodes}</>;
 }
 
 /* ---- Карточка инцидента ----
