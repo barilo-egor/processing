@@ -1,8 +1,11 @@
 package net.rcetech.domain.service.orders;
 
 import net.rcetech.domain.model.orders.ClientCallback;
+import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.ClientCallbackRepository;
+import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.incidents.ClientCallbackDeliveryUnknownIncident;
 import net.rcetech.meta.incidents.IncidentType;
@@ -21,10 +24,14 @@ public class ClientCallbackService {
 
     private final ClientCallbackRepository clientCallbackRepository;
 
+    private final OrderRepository orderRepository;
+
     private final IncidentService incidentService;
 
-    public ClientCallbackService(ClientCallbackRepository clientCallbackRepository, IncidentService incidentService) {
+    public ClientCallbackService(ClientCallbackRepository clientCallbackRepository, OrderRepository orderRepository,
+                                 IncidentService incidentService) {
         this.clientCallbackRepository = clientCallbackRepository;
+        this.orderRepository = orderRepository;
         this.incidentService = incidentService;
     }
 
@@ -55,7 +62,22 @@ public class ClientCallbackService {
 
     @Transactional
     public ClientCallback markSending(Long id) {
-        ClientCallback callback = getById(id);
+        return markSending(getById(id));
+    }
+
+    @Transactional
+    public ClientCallback markResending(UUID orderId) {
+        Order order = orderRepository.findForUpdateById(orderId)
+                .orElseThrow(() -> new BadRequestException("Ордер не найден."));
+        ClientCallback callback = clientCallbackRepository.findFirstByOrderIdOrderByIdDesc(orderId)
+                .filter(last -> ClientCallbackStatus.FAILED.equals(last.getStatus())
+                        && order.getStatus().equals(last.getOrderStatus()))
+                .orElseThrow(() -> new BadRequestException(
+                        "Повторно отправить можно только недоставленный КБ о текущем статусе ордера."));
+        return markSending(callback);
+    }
+
+    private ClientCallback markSending(ClientCallback callback) {
         callback.setAttempts(callback.getAttempts() + 1);
         callback.setStatus(ClientCallbackStatus.SENDING);
         callback.setLastAttemptAt(Instant.now());
@@ -86,9 +108,9 @@ public class ClientCallbackService {
     public void markDeliveryUnknown(Long id, long errorTimestamp) {
         ClientCallback callback = getById(id);
         callback.setStatus(ClientCallbackStatus.FAILED);
-        incidentService.saveInCurrentTransaction(IncidentType.CLIENT_CALLBACK_DELIVERY_UNKNOWN,
-                new ClientCallbackDeliveryUnknownIncident(callback.getOrderId(), callback.getOrderStatus(),
-                        callback.getUrl()), errorTimestamp);
+        incidentService.saveInCurrentTransactionIfNoUnresolvedForOrder(IncidentType.CLIENT_CALLBACK_DELIVERY_UNKNOWN,
+                callback.getOrderId(), new ClientCallbackDeliveryUnknownIncident(callback.getOrderId(),
+                        callback.getOrderStatus(), callback.getUrl()), errorTimestamp);
     }
 
     @Transactional

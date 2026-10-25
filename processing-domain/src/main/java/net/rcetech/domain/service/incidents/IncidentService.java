@@ -93,6 +93,16 @@ public class IncidentService {
         saveIncident(type, data, errorTimestamp);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void saveInCurrentTransactionIfNoUnresolvedForOrder(IncidentType type, UUID orderId, Object data,
+                                                               Long errorTimestamp) {
+        if (incidentRepository.countByTypeAndStatusAndOrderId(type.name(), IncidentStatus.NEW.name(),
+                orderId.toString()) > 0) {
+            return;
+        }
+        saveIncident(type, data, errorTimestamp);
+    }
+
     private void saveIncident(IncidentType type, Object data, Long errorTimestamp) {
         Incident incident = new Incident();
         incident.setCreatedAt(Instant.now());

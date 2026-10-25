@@ -12,9 +12,13 @@ import net.rcetech.domain.service.orders.ClientCallbackService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.incidents.Incident;
+import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.domain.repository.incidents.IncidentRepository;
+import net.rcetech.domain.repository.support.SupportUserRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.support.SupportUserService;
+import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.ServiceException;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.orders.ClientCallbackStatus;
 import net.rcetech.meta.orders.OrderStatus;
@@ -24,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +42,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.AopTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.wiremock.spring.EnableWireMock;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
@@ -47,15 +54,23 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.reset;
 
 @DataJpaTest
@@ -90,8 +105,11 @@ class CallbackDispatcherTest {
     @Autowired
     private ClientRepository clientRepository;
 
-    @Autowired
+    @MockitoSpyBean
     private ClientCallbackRepository clientCallbackRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @MockitoSpyBean
     private ClientCallbackService clientCallbackService;
@@ -103,6 +121,9 @@ class CallbackDispatcherTest {
     private IncidentRepository incidentRepository;
 
     @Autowired
+    private SupportUserRepository supportUserRepository;
+
+    @Autowired
     private CallbackDispatcher callbackDispatcher;
 
     @Value("${wiremock.server.baseUrl}")
@@ -110,7 +131,7 @@ class CallbackDispatcherTest {
 
     @BeforeEach
     void setUp() {
-        reset(clientCallbackService, incidentService);
+        reset(clientCallbackService, incidentService, clientCallbackRepository);
         clientCallbackRepository.deleteAll();
     }
 
@@ -231,7 +252,8 @@ class CallbackDispatcherTest {
         clientCallbackRepository.save(stuck);
         doThrow(new IllegalStateException("incident table is locked"))
                 .when(AopTestUtils.<IncidentService>getUltimateTargetObject(incidentService))
-                .saveInCurrentTransaction(eq(IncidentType.CLIENT_CALLBACK_DELIVERY_UNKNOWN), any(), anyLong());
+                .saveInCurrentTransactionIfNoUnresolvedForOrder(eq(IncidentType.CLIENT_CALLBACK_DELIVERY_UNKNOWN),
+                        any(), any(), anyLong());
 
         callbackDispatcher.dispatch();
 
@@ -357,6 +379,279 @@ class CallbackDispatcherTest {
         WireMock.verify(orders, postRequestedFor(urlEqualTo("/callback")));
     }
 
+    @ParameterizedTest
+    @CsvSource(value = {
+            "SUCCESS;{\"status\":\"SUCCESS\"};4",
+            "CANCELED;{\"status\":\"CANCELED\"};1"
+    }, delimiter = ';')
+    @DisplayName("Последний недоставленный КБ о текущем статусе должен быть отправлен повторно и помечен отправленным.")
+    void resend_shouldSendLastFailedAndMarkSent(OrderStatus orderStatus, String payload, int attempts) {
+        stubFor(post("/callback").willReturn(status(200)));
+        UUID orderId = saveOrder(orderStatus).getId();
+        ClientCallback callback = saveCallback(orderId, orderStatus, wireMockUrl + "/callback", payload,
+                ClientCallbackStatus.FAILED, attempts);
+
+        callbackDispatcher.resend(orderId);
+
+        WireMock.verify(1, postRequestedFor(urlEqualTo("/callback"))
+                .withHeader("Content-Type", equalTo("application/json"))
+                .withRequestBody(equalTo(payload)));
+        ClientCallback actual = clientCallbackRepository.findById(callback.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(ClientCallbackStatus.SENT, actual.getStatus()),
+                () -> assertEquals(attempts + 1, actual.getAttempts()),
+                () -> assertNotNull(actual.getSentAt())
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {400, 503})
+    @DisplayName("Повторно отправленный и не доставленный КБ должен помечаться недоставленным без повторов и инцидента.")
+    void resend_shouldMarkFailedWithoutRetryIfNotDelivered(int statusCode) {
+        stubFor(post("/callback").willReturn(status(statusCode)));
+        UUID orderId = saveOrder(OrderStatus.SUCCESS).getId();
+        ClientCallback callback = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{}",
+                ClientCallbackStatus.FAILED, 4);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> callbackDispatcher.resend(orderId));
+        callbackDispatcher.dispatch();
+
+        assertEquals("КБ не доставлен: сервер клиента не принял запрос.", exception.getMessage());
+        assertEquals(ClientCallbackStatus.FAILED,
+                clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
+        WireMock.verify(1, postRequestedFor(urlEqualTo("/callback")));
+        assertTrue(deliveryUnknownIncidents(orderId).isEmpty());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ClientCallbackStatus.class, names = {"PENDING", "SENDING", "SENT"})
+    @DisplayName("КБ не должен отправляться повторно, если последний КБ ордера не помечен недоставленным.")
+    void resend_shouldRejectIfLastNotFailed(ClientCallbackStatus callbackStatus) {
+        UUID orderId = saveOrder(OrderStatus.SUCCESS).getId();
+        ClientCallback callback = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{}",
+                callbackStatus, 1);
+
+        assertRejected(orderId);
+        assertEquals(callbackStatus, clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"SUCCESS,DISPUTE", "NEW,TIMEOUT"})
+    @DisplayName("КБ не должен отправляться повторно, если статус ордера сменился.")
+    void resend_shouldRejectIfOrderStatusChanged(OrderStatus callbackOrderStatus, OrderStatus orderStatus) {
+        UUID orderId = saveOrder(orderStatus).getId();
+        ClientCallback callback = saveCallback(orderId, callbackOrderStatus, wireMockUrl + "/callback", "{}",
+                ClientCallbackStatus.FAILED, 4);
+
+        assertRejected(orderId);
+        assertEquals(ClientCallbackStatus.FAILED,
+                clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ClientCallbackStatus.class, names = {"PENDING", "SENT"})
+    @DisplayName("Недоставленный КБ не должен отправляться повторно, если он не последний КБ ордера.")
+    void resend_shouldRejectIfFailedNotLast(ClientCallbackStatus lastStatus) {
+        UUID orderId = saveOrder(OrderStatus.SUCCESS).getId();
+        ClientCallback failed = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{\"n\":1}",
+                ClientCallbackStatus.FAILED, 4);
+        saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{\"n\":2}", lastStatus, 0);
+
+        assertRejected(orderId);
+        assertEquals(ClientCallbackStatus.FAILED,
+                clientCallbackRepository.findById(failed.getId()).orElseThrow().getStatus());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "true,Повторно отправить можно только недоставленный КБ о текущем статусе ордера.",
+            "false,Ордер не найден."
+    })
+    @DisplayName("КБ не должен отправляться повторно, если по ордеру нет КБ или ордер не найден.")
+    void resend_shouldRejectIfNoCallbackOrOrder(boolean orderExists, String message) {
+        UUID orderId = orderExists ? saveOrder(OrderStatus.SUCCESS).getId() : UUID.randomUUID();
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> callbackDispatcher.resend(orderId));
+
+        assertEquals(message, exception.getMessage());
+        WireMock.verify(0, postRequestedFor(anyUrl()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false,1", "true,2"})
+    @DisplayName("Зависший повторный КБ должен создавать инцидент, только если по ордеру нет необработанного инцидента.")
+    void resend_shouldNotDuplicateUnresolvedIncidentIfResendStuck(boolean firstResolved, int expectedIncidents) {
+        stubFor(post("/callback").willReturn(status(200)));
+        UUID orderId = saveOrder(OrderStatus.SUCCESS).getId();
+        ClientCallback callback = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{}",
+                ClientCallbackStatus.SENDING, 1);
+        makeStuck(callback.getId());
+        callbackDispatcher.dispatch();
+        if (firstResolved) {
+            SupportUser supportUser = new SupportUser();
+            supportUser.setId(UUID.randomUUID());
+            supportUser.setUsername("support" + supportUser.getId());
+            supportUserRepository.save(supportUser);
+            incidentService.resolve(deliveryUnknownIncidents(orderId).getFirst().getId(), supportUser.getId(),
+                    "Проверено");
+        }
+        doThrow(new IllegalStateException("db is down")).when(clientCallbackService).markSent(eq(callback.getId()));
+
+        assertThrows(IllegalStateException.class, () -> callbackDispatcher.resend(orderId));
+        assertEquals(ClientCallbackStatus.SENDING,
+                clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
+        makeStuck(callback.getId());
+        callbackDispatcher.dispatch();
+
+        WireMock.verify(1, postRequestedFor(urlEqualTo("/callback")));
+        assertEquals(ClientCallbackStatus.FAILED,
+                clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
+        assertEquals(expectedIncidents, deliveryUnknownIncidents(orderId).size());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"SUCCESS,DISPUTE", "CANCELED,SUCCESS"})
+    @DisplayName("Смена статуса во время проверки повторного КБ должна ждать блокировку ордера, а её КБ — отправляться после повторного.")
+    void resend_shouldBlockStatusChangeUntilSendingCommitted(OrderStatus orderStatus, OrderStatus nextStatus)
+            throws Exception {
+        stubFor(post("/callback").willReturn(status(200)));
+        UUID orderId = saveOrder(orderStatus).getId();
+        ClientCallback failed = saveCallback(orderId, orderStatus, wireMockUrl + "/callback", "{\"n\":1}",
+                ClientCallbackStatus.FAILED, 4);
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        pauseResendUnderLock(orderId, locked, release);
+
+        CompletableFuture<Void> resend = CompletableFuture.runAsync(() -> callbackDispatcher.resend(orderId));
+        assertTrue(locked.await(10, TimeUnit.SECONDS));
+        CompletableFuture<Void> statusChange = CompletableFuture.runAsync(
+                () -> changeStatusWithCallback(orderId, nextStatus, "{\"n\":2}"));
+        assertThrows(TimeoutException.class, () -> statusChange.get(500, TimeUnit.MILLISECONDS));
+        assertEquals(1, findCallbacks(orderId).size());
+        release.countDown();
+        resend.get(10, TimeUnit.SECONDS);
+        statusChange.get(10, TimeUnit.SECONDS);
+        callbackDispatcher.dispatch();
+
+        List<ClientCallback> callbacks = findCallbacks(orderId);
+        assertAll(
+                () -> assertEquals(failed.getId(), callbacks.getFirst().getId()),
+                () -> assertEquals(nextStatus, callbacks.getLast().getOrderStatus()),
+                () -> assertTrue(callbacks.stream()
+                        .allMatch(callback -> ClientCallbackStatus.SENT.equals(callback.getStatus())))
+        );
+        assertEquals(List.of("{\"n\":1}", "{\"n\":2}"), deliveredBodies());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"SUCCESS,DISPUTE", "CANCELED,SUCCESS"})
+    @DisplayName("КБ смены статуса не должен отправляться, пока повторный КБ ещё отправляется.")
+    void resend_shouldHoldNextCallbackWhileSending(OrderStatus orderStatus, OrderStatus nextStatus) throws Exception {
+        stubFor(post("/callback").withRequestBody(equalTo("{\"n\":1}"))
+                .willReturn(status(200).withFixedDelay(1500)));
+        stubFor(post("/callback").withRequestBody(equalTo("{\"n\":2}")).willReturn(status(200)));
+        UUID orderId = saveOrder(orderStatus).getId();
+        ClientCallback failed = saveCallback(orderId, orderStatus, wireMockUrl + "/callback", "{\"n\":1}",
+                ClientCallbackStatus.FAILED, 4);
+
+        CompletableFuture<Void> resend = CompletableFuture.runAsync(() -> callbackDispatcher.resend(orderId));
+        await().atMost(Duration.ofSeconds(10)).until(() -> ClientCallbackStatus.SENDING.equals(
+                clientCallbackRepository.findById(failed.getId()).orElseThrow().getStatus()));
+        changeStatusWithCallback(orderId, nextStatus, "{\"n\":2}");
+        callbackDispatcher.dispatch();
+
+        assertEquals(ClientCallbackStatus.PENDING, findCallbacks(orderId).getLast().getStatus());
+        resend.get(10, TimeUnit.SECONDS);
+        callbackDispatcher.dispatch();
+
+        assertTrue(findCallbacks(orderId).stream()
+                .allMatch(callback -> ClientCallbackStatus.SENT.equals(callback.getStatus())));
+        assertEquals(List.of("{\"n\":1}", "{\"n\":2}"), deliveredBodies());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 4})
+    @DisplayName("Из одновременных повторных отправок КБ должна выполниться только одна.")
+    void resend_shouldSendOnceIfConcurrent(int concurrent) throws Exception {
+        stubFor(post("/callback").willReturn(status(200)));
+        UUID orderId = saveOrder(OrderStatus.SUCCESS).getId();
+        ClientCallback failed = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{}",
+                ClientCallbackStatus.FAILED, 4);
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        pauseResendUnderLock(orderId, locked, release);
+
+        CompletableFuture<Void> first = CompletableFuture.runAsync(() -> callbackDispatcher.resend(orderId));
+        assertTrue(locked.await(10, TimeUnit.SECONDS));
+        List<CompletableFuture<Void>> others = IntStream.range(1, concurrent)
+                .mapToObj(i -> CompletableFuture.runAsync(() -> callbackDispatcher.resend(orderId)))
+                .toList();
+        assertThrows(TimeoutException.class,
+                () -> CompletableFuture.allOf(others.toArray(CompletableFuture[]::new)).get(500, TimeUnit.MILLISECONDS));
+        release.countDown();
+        first.get(10, TimeUnit.SECONDS);
+
+        for (CompletableFuture<Void> other : others) {
+            ExecutionException exception = assertThrows(ExecutionException.class,
+                    () -> other.get(10, TimeUnit.SECONDS));
+            assertInstanceOf(BadRequestException.class, exception.getCause());
+        }
+        WireMock.verify(1, postRequestedFor(urlEqualTo("/callback")));
+        ClientCallback actual = clientCallbackRepository.findById(failed.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(ClientCallbackStatus.SENT, actual.getStatus()),
+                () -> assertEquals(5, actual.getAttempts())
+        );
+    }
+
+    private void pauseResendUnderLock(UUID orderId, CountDownLatch locked, CountDownLatch release) {
+        doAnswer(invocation -> {
+            locked.countDown();
+            assertTrue(release.await(10, TimeUnit.SECONDS));
+            return mockingDetails(clientCallbackRepository).getMockCreationSettings().getDefaultAnswer()
+                    .answer(invocation);
+        }).when(clientCallbackRepository).findFirstByOrderIdOrderByIdDesc(orderId);
+    }
+
+    private void changeStatusWithCallback(UUID orderId, OrderStatus status, String payload) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
+            Order order = orderRepository.findForUpdateById(orderId).orElseThrow();
+            order.setStatus(status);
+            clientCallbackService.create(orderId, status, wireMockUrl + "/callback", payload);
+        });
+    }
+
+    private List<String> deliveredBodies() {
+        return WireMock.getAllServeEvents().stream()
+                .sorted(Comparator.comparing(event -> event.getRequest().getLoggedDate()))
+                .map(event -> event.getRequest().getBodyAsString())
+                .toList();
+    }
+
+    private void assertRejected(UUID orderId) {
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> callbackDispatcher.resend(orderId));
+        assertEquals("Повторно отправить можно только недоставленный КБ о текущем статусе ордера.",
+                exception.getMessage());
+        WireMock.verify(0, postRequestedFor(anyUrl()));
+    }
+
+    private ClientCallback saveCallback(UUID orderId, OrderStatus orderStatus, String url, String payload,
+                                        ClientCallbackStatus status, int attempts) {
+        ClientCallback callback = clientCallbackService.create(orderId, orderStatus, url, payload);
+        callback.setStatus(status);
+        callback.setAttempts(attempts);
+        callback.setLastAttemptAt(attempts > 0 ? Instant.now() : null);
+        return clientCallbackRepository.save(callback);
+    }
+
+    private void makeStuck(Long callbackId) {
+        ClientCallback callback = clientCallbackRepository.findById(callbackId).orElseThrow();
+        callback.setLastAttemptAt(Instant.now().minusSeconds(31));
+        clientCallbackRepository.save(callback);
+    }
+
     private List<Incident> deliveryUnknownIncidents(UUID orderId) {
         return incidentRepository.findAll().stream()
                 .filter(incident -> IncidentType.CLIENT_CALLBACK_DELIVERY_UNKNOWN.equals(incident.getType()))
@@ -370,6 +665,10 @@ class CallbackDispatcherTest {
     }
 
     private Order saveOrder() {
+        return saveOrder(OrderStatus.SUCCESS);
+    }
+
+    private Order saveOrder(OrderStatus status) {
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
@@ -381,7 +680,7 @@ class CallbackDispatcherTest {
         order.setExpiresAt(Instant.now().plusSeconds(900));
         order.setClient(client);
         order.setInternalId(UUID.randomUUID().toString());
-        order.setStatus(OrderStatus.SUCCESS);
+        order.setStatus(status);
         order.setAmount(5000);
         order.setMerchant(Merchant.ALFA_TEAM);
         order.setMerchantOrderId(UUID.randomUUID().toString());

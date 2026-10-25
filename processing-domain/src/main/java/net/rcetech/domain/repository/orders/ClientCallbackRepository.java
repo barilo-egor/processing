@@ -10,9 +10,12 @@ import org.springframework.data.jpa.repository.Query;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface ClientCallbackRepository extends JpaRepository<ClientCallback, Long> {
 
+    // TODO исправить чтобы не по меньшему айди, а по меньшей дате создания
     @Query("""
             select c1 from ClientCallback c1
             where c1.status = net.rcetech.meta.orders.ClientCallbackStatus.PENDING
@@ -26,6 +29,8 @@ public interface ClientCallbackRepository extends JpaRepository<ClientCallback, 
               )
             order by c1.id""")
     List<ClientCallback> findReadyToSend(Instant now, Limit limit);
+
+    Optional<ClientCallback> findFirstByOrderIdOrderByIdDesc(UUID orderId);
 
     List<ClientCallback> findAllByStatusAndLastAttemptAtBefore(ClientCallbackStatus status, Instant lastAttemptAt);
 

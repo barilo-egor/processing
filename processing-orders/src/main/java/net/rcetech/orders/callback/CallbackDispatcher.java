@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.rcetech.domain.model.orders.ClientCallback;
 import net.rcetech.domain.service.orders.ClientCallbackService;
+import net.rcetech.meta.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +67,19 @@ public class CallbackDispatcher {
                         .map(callback -> CompletableFuture.runAsync(() -> attempt(callback), virtualTaskExecutor))
                         .toArray(CompletableFuture[]::new))
                 .join();
+    }
+
+    public void resend(UUID orderId) {
+        ClientCallback sending = clientCallbackService.markResending(orderId);
+        try {
+            callbackHttpSender.send(sending);
+        } catch (CallbackSendException e) {
+            log.warn("КБ {} по ордеру {} не доставлен при повторной отправке поддержкой: {}", sending.getId(),
+                    orderId, e.getMessage());
+            clientCallbackService.markFailed(sending.getId());
+            throw new ServiceException("КБ не доставлен: сервер клиента не принял запрос.");
+        }
+        clientCallbackService.markSent(sending.getId());
     }
 
     private void failStuckInSending() {

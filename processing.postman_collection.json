@@ -3679,6 +3679,223 @@
           ]
         },
         {
+          "name": "client-callback",
+          "item": [
+            {
+              "name": "Повторная отправка КБ клиенту",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                  "host": [
+                    "{{processing_support_api_url}}"
+                  ],
+                  "path": [
+                    "client-callback",
+                    "{{orderId}}"
+                  ]
+                },
+                "description": "Метод для повторной отправки клиенту КБ по ордеру поддержкой. Отправляется последний КБ ордера, если он не доставлен (статус `FAILED`) и статус ордера с тех пор не менялся. КБ отправляется сразу, в обход очереди, с сохранёнными адресом и телом, без автоматических повторов. Пока КБ отправляется, следующие КБ по ордеру ждут его завершения.\n\nПараметры пути:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| orderId | `uuid` | Идентификатор ордера. | Обязательный |\n\nОшибки `400`:\n\n- ордер не найден;\n- по ордеру нет КБ, последний КБ не помечен недоставленным или статус ордера сменился.\n\nОшибка `500`: сервер клиента не ответил кодом `2xx` или недоступен, КБ остаётся недоставленным."
+              },
+              "response": [
+                {
+                  "name": "КБ отправлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "plain",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "0"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "КБ нельзя отправить повторно",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"type\": \"/docs/errors/bad-request\",\n    \"title\": \"Bad Request\",\n    \"status\": 400,\n    \"instance\": \"/api/support/client-callback/6f1c2b9e-3d4a-4b8e-9a2f-1e7d5c3b2a10\",\n    \"timestamp\": 1792864800000,\n    \"description\": \"Повторно отправить можно только недоставленный КБ о текущем статусе ордера.\"\n}"
+                },
+                {
+                  "name": "КБ не доставлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Internal Server Error",
+                  "code": 500,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"type\": \"/errors/internal-server-error\",\n    \"title\": \"КБ не доставлен: сервер клиента не принял запрос.\",\n    \"status\": 500,\n    \"instance\": \"/api/support/client-callback/6f1c2b9e-3d4a-4b8e-9a2f-1e7d5c3b2a10\",\n    \"timestamp\": 1792864800000,\n    \"description\": \"Обратитесь в поддержку.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "merchant-config",
           "item": [
             {
