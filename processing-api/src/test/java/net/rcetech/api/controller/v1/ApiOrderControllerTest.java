@@ -487,8 +487,8 @@ class ApiOrderControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {301, 600})
-    @DisplayName("Метод должен вернуть 400 без создания ордера, если таймаут поиска больше 300 секунд.")
+    @ValueSource(ints = {61, 300})
+    @DisplayName("Метод должен вернуть 400 без создания ордера, если таймаут поиска больше 60 секунд.")
     void createOrder_shouldReturn400IfTimeoutTooLarge(Integer timeoutSeconds) throws Exception {
         String content = """
                 {
@@ -505,13 +505,13 @@ class ApiOrderControllerTest {
                         .header("Content-Type", "application/json")
                         .header("Search-Timeout-Seconds", timeoutSeconds)
         ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("Таймаут поиска реквизитов не может превышать 300 секунд."));
+                .andExpect(jsonPath("$.description").value("Таймаут поиска реквизитов не может превышать 60 секунд."));
         verifyNoInteractions(orderApiService);
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {5, 300})
-    @DisplayName("Метод должен создать ордер, если таймаут поиска от 5 до 300 секунд.")
+    @ValueSource(ints = {5, 60})
+    @DisplayName("Метод должен создать ордер, если таймаут поиска от 5 до 60 секунд.")
     void createOrder_shouldCreateOrderIfTimeoutWithinLimit(Integer timeoutSeconds) throws Exception {
         String content = """
                 {

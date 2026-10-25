@@ -33,7 +33,7 @@ public class OrderSearchTimeoutProcessor {
 
     public OrderSearchTimeoutProcessor(OrderFacade orderFacade, OrderService orderService,
                                        ApplicationEventPublisher eventPublisher,
-                                       @Value("${details-search.timeout.max-seconds:300}") int maxTimeoutSeconds) {
+                                       @Value("${details-search.timeout.max-seconds:60}") int maxTimeoutSeconds) {
         this.orderFacade = orderFacade;
         this.orderService = orderService;
         this.eventPublisher = eventPublisher;
