@@ -530,42 +530,58 @@ class OrderApiServiceTest {
         assertEquals(expected, actual.getContent().stream().map(ClientOrderSummary::id).collect(Collectors.toSet()));
     }
 
-    @ValueSource(strings = {"TIMEOUT", "SUCCESS"})
-    @ParameterizedTest
-    @DisplayName("Метод должен вернуть отфильтрованные по статусу ордера.")
-    void findAll_shouldFilterOrdersByStatus(OrderStatus status) {
-        Client client = getDummyClient();
-        Order nonTargetOrder = getDummyOrder(client);
-        assertNotEquals(nonTargetOrder.getStatus(), status);
-        Order targerOrder = getDummyOrder(client);
-        targerOrder.setStatus(status);
-
-        Page<ClientOrderSummary> actual = orderApiService.findAll(
-                client.getId(),
-                new ClientOrderFilter(status, null), Pageable.ofSize(10)
+    static Stream<Arguments> findAll_shouldFilterOrdersByStatus() {
+        return Stream.of(
+                Arguments.of(Set.of(OrderStatus.TIMEOUT)),
+                Arguments.of(Set.of(OrderStatus.SUCCESS, OrderStatus.CANCELED))
         );
-
-        assertEquals(1, actual.getContent().size());
-        assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
     }
 
-    @ValueSource(strings = {"SBP"})
+    @MethodSource
     @ParameterizedTest
-    @DisplayName("Метод должен вернуть отфильтрованные по методу ордера.")
-    void findAll_shouldFilterOrdersByMethod(RequestMethod method) {
+    @DisplayName("Метод должен вернуть ордера в любом из статусов фильтра.")
+    void findAll_shouldFilterOrdersByStatus(Set<OrderStatus> statuses) {
         Client client = getDummyClient();
         Order nonTargetOrder = getDummyOrder(client);
-        assertNotEquals(nonTargetOrder.getMethod(), method);
-        Order targerOrder = getDummyOrder(client);
-        targerOrder.setMethod(method);
+        assertFalse(statuses.contains(nonTargetOrder.getStatus()));
+        Set<UUID> expected = statuses.stream().map(status -> {
+            Order order = getDummyOrder(client);
+            order.setStatus(status);
+            return order.getId();
+        }).collect(Collectors.toSet());
 
         Page<ClientOrderSummary> actual = orderApiService.findAll(
                 client.getId(),
-                new ClientOrderFilter(null, method), Pageable.ofSize(10)
+                new ClientOrderFilter(statuses, null), Pageable.ofSize(10)
         );
 
-        assertEquals(1, actual.getContent().size());
-        assertEquals(targerOrder.getId(), actual.getContent().getFirst().id());
+        assertEquals(expected, actual.getContent().stream().map(ClientOrderSummary::id).collect(Collectors.toSet()));
+    }
+
+    static Stream<Arguments> findAll_shouldFilterOrdersByMethod() {
+        return Stream.of(
+                Arguments.of(Set.of(RequestMethod.SBP), 1),
+                Arguments.of(Set.of(RequestMethod.SBP, RequestMethod.CARD), 2)
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть ордера с любым из методов фильтра.")
+    void findAll_shouldFilterOrdersByMethod(Set<RequestMethod> methods, int expectedCount) {
+        Client client = getDummyClient();
+        Order cardOrder = getDummyOrder(client);
+        cardOrder.setMethod(RequestMethod.CARD);
+        Order sbpOrder = getDummyOrder(client);
+        sbpOrder.setMethod(RequestMethod.SBP);
+
+        Page<ClientOrderSummary> actual = orderApiService.findAll(
+                client.getId(),
+                new ClientOrderFilter(null, methods), Pageable.ofSize(10)
+        );
+
+        assertEquals(expectedCount, actual.getContent().size());
+        assertTrue(actual.getContent().stream().allMatch(order -> methods.contains(order.method())));
     }
 
 

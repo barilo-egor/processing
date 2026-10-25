@@ -30,8 +30,8 @@ public class OrderSpecifications {
             if (Objects.isNull(filter)) {
                 return builder.and(predicates.toArray(new Predicate[0]));
             }
-            addSimpleEqual(predicates, builder, from.get(Order_.status), filter.status());
-            addSimpleEqual(predicates, builder, from.get(Order_.method), filter.method());
+            addIn(predicates, from.get(Order_.status), filter.status());
+            addIn(predicates, from.get(Order_.method), filter.method());
             return builder.and(predicates.toArray(new Predicate[0]));
         };
     }

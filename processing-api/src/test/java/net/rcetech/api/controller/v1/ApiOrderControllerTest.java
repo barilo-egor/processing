@@ -15,6 +15,7 @@ import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
+import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.CustomMatcher;
@@ -52,6 +53,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -860,5 +862,50 @@ class ApiOrderControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description")
                         .value("Поле «" + param + "» содержит некорректное значение «" + value + "»."));
+    }
+
+    static Stream<Arguments> getOrders_shouldBindMultipleFilterValues() {
+        return Stream.of(
+                Arguments.of(new String[]{"NEW"}, new String[]{"SBP"},
+                        Set.of(OrderStatus.NEW), Set.of(RequestMethod.SBP)),
+                Arguments.of(new String[]{"SUCCESS", "TIMEOUT"}, new String[]{"CARD", "SBP"},
+                        Set.of(OrderStatus.SUCCESS, OrderStatus.TIMEOUT), Set.of(RequestMethod.CARD, RequestMethod.SBP))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    @DisplayName("Список ордеров должен принять несколько значений статуса и метода.")
+    void getOrders_shouldBindMultipleFilterValues(String[] statuses, String[] methods,
+                                                  Set<OrderStatus> expectedStatuses,
+                                                  Set<RequestMethod> expectedMethods) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(orderApiService.findAll(eq(clientId), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/v1/order").param("status", statuses).param("method", methods)
+                        .with(apiKeyOf(clientId)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<ClientOrderFilter> captor = ArgumentCaptor.forClass(ClientOrderFilter.class);
+        verify(orderApiService).findAll(eq(clientId), captor.capture(), any());
+        assertEquals(expectedStatuses, captor.getValue().status());
+        assertEquals(expectedMethods, captor.getValue().method());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"status", "method"})
+    @DisplayName("Список ордеров не должен фильтровать по параметру с пустым значением.")
+    void getOrders_shouldIgnoreEmptyFilterValue(String param) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(orderApiService.findAll(eq(clientId), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/v1/order").param(param, "").with(apiKeyOf(clientId)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<ClientOrderFilter> captor = ArgumentCaptor.forClass(ClientOrderFilter.class);
+        verify(orderApiService).findAll(eq(clientId), captor.capture(), any());
+        ClientOrderFilter filter = captor.getValue();
+        assertTrue(Optional.ofNullable(filter.status()).map(Set::isEmpty).orElse(true));
+        assertTrue(Optional.ofNullable(filter.method()).map(Set::isEmpty).orElse(true));
     }
 }

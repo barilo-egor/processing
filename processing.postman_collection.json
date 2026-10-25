@@ -35,12 +35,12 @@
                     {
                       "key": "status",
                       "value": "",
-                      "description": "Статус ордера"
+                      "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                     },
                     {
                       "key": "method",
                       "value": "",
-                      "description": "Метод ордера"
+                      "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                     },
                     {
                       "key": "page",
@@ -83,12 +83,12 @@
                         {
                           "key": "status",
                           "value": "",
-                          "description": "Статус ордера"
+                          "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                         },
                         {
                           "key": "method",
                           "value": "",
-                          "description": "Метод ордера"
+                          "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                         },
                         {
                           "key": "page",
@@ -2094,12 +2094,12 @@
                     {
                       "key": "status",
                       "value": "",
-                      "description": "Статус ордера"
+                      "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                     },
                     {
                       "key": "method",
                       "value": "",
-                      "description": "Метод ордера"
+                      "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                     },
                     {
                       "key": "page",
@@ -2146,12 +2146,12 @@
                         {
                           "key": "status",
                           "value": "",
-                          "description": "Статус ордера"
+                          "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                         },
                         {
                           "key": "method",
                           "value": "",
-                          "description": "Метод ордера"
+                          "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                         },
                         {
                           "key": "page",
