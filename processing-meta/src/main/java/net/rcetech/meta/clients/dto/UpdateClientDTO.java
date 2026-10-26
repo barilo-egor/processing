@@ -12,5 +12,6 @@ public record UpdateClientDTO(
         @Positive Integer orderTimeoutSeconds,
         Set<RequestMethod> methods,
         String comment,
-        Integer minWithdrawalAmount
+        Integer minWithdrawalAmount,
+        Boolean ipRestrictionEnabled
 ) {}

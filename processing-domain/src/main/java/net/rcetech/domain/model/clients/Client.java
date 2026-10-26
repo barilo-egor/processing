@@ -109,6 +109,12 @@ public class Client implements Persistable<UUID> {
 
     private Integer minWithdrawalAmount;
 
+    /**
+     * Ограничивать ли запросы клиента белым списком IP-адресов.
+     */
+    @Column(nullable = false)
+    private boolean ipRestrictionEnabled = true;
+
     @Transient
     private boolean isNew = true;
 

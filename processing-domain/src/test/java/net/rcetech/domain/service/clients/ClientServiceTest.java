@@ -74,7 +74,10 @@ class ClientServiceTest {
     void save_shouldSaveWithDefaultValues() {
         Client dummyClient = getDummyClient();
         Client actual = clientService.save(dummyClient);
-        assertEquals(0, actual.getBalance());
+        assertAll(
+                () -> assertEquals(0, actual.getBalance()),
+                () -> assertTrue(actual.isIpRestrictionEnabled())
+        );
     }
 
     @ParameterizedTest
@@ -311,7 +314,7 @@ class ClientServiceTest {
             clientRepository.save(getDummyClient());
         }
         UpdateClientDTO updateClientDTO = new UpdateClientDTO(
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
         assertThrows(BadRequestException.class,
                 () -> clientService.update(id, updateClientDTO));
@@ -321,7 +324,7 @@ class ClientServiceTest {
     @DisplayName("Метод не должен обновлять поля, если в DTO они null.")
     void update_shouldNotUpdateFieldsIfNull() {
         UpdateClientDTO updateClientDTO = new UpdateClientDTO(
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
         Client client = new Client();
         UUID clientId = UUID.randomUUID();
@@ -329,6 +332,7 @@ class ClientServiceTest {
         fillRequiredFields(client);
         client.setComment("comment");
         client.setMinWithdrawalAmount(1000);
+        client.setIpRestrictionEnabled(false);
         clientRepository.save(client);
         clientService.update(clientId, updateClientDTO);
         Client updated = clientRepository.findById(clientId).orElseThrow(IllegalStateException::new);
@@ -338,18 +342,20 @@ class ClientServiceTest {
                 () -> assertNull(updated.getCallbackUrl()),
                 () -> assertTrue(updated.getMethods().isEmpty()),
                 () -> assertEquals("comment", client.getComment()),
-                () -> assertEquals(1000, client.getMinWithdrawalAmount())
+                () -> assertEquals(1000, client.getMinWithdrawalAmount()),
+                () -> assertFalse(updated.isIpRestrictionEnabled())
         );
     }
 
     @CsvSource("""
-            25.0,500,CARD;SBP,qwerty,50000
-            13.5,1200,CARD,qwerty qwerty,1000
+            25.0,500,CARD;SBP,qwerty,50000,false
+            13.5,1200,CARD,qwerty qwerty,1000,true
             """)
     @ParameterizedTest
     @DisplayName("Метод должен обновить все переданные поля.")
     void update_shouldUpdateClient(BigDecimal commissionPercent, Integer orderTimeoutSeconds,
-                                   String methodsString, String comment, Integer minWithdrawalAmount) {
+                                   String methodsString, String comment, Integer minWithdrawalAmount,
+                                   boolean ipRestrictionEnabled) {
         assertNotEquals(Client.DEFAULT_ORDER_TIMEOUT, orderTimeoutSeconds,
                 "Для теста нужно отличное от дефолтного значение времени таймаута ордера.");
         UUID id = UUID.randomUUID();
@@ -361,7 +367,7 @@ class ClientServiceTest {
                 .map(RequestMethod::valueOf)
                 .collect(Collectors.toSet());
         UpdateClientDTO updateClientDTO = new UpdateClientDTO(
-                commissionPercent, orderTimeoutSeconds, methods, comment, minWithdrawalAmount
+                commissionPercent, orderTimeoutSeconds, methods, comment, minWithdrawalAmount, ipRestrictionEnabled
         );
         clientService.update(id, updateClientDTO);
         Client updated = clientRepository.findById(id).orElseThrow(IllegalStateException::new);
@@ -370,7 +376,8 @@ class ClientServiceTest {
                 () -> assertEquals(orderTimeoutSeconds, updated.getOrderTimeoutSeconds()),
                 () -> assertEquals(methods, updated.getMethods()),
                 () -> assertEquals(comment, updated.getComment()),
-                () -> assertEquals(minWithdrawalAmount, updated.getMinWithdrawalAmount())
+                () -> assertEquals(minWithdrawalAmount, updated.getMinWithdrawalAmount()),
+                () -> assertEquals(ipRestrictionEnabled, updated.isIpRestrictionEnabled())
         );
     }
 
@@ -394,7 +401,7 @@ class ClientServiceTest {
         assertNotNull(client.getId());
 
         clientService.update(client.getId(), new UpdateClientDTO(
-                null, null, Set.of(), null, null)
+                null, null, Set.of(), null, null, null)
         );
         Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
         assertTrue(updated.getMethods().isEmpty());

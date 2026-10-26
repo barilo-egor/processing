@@ -4955,7 +4955,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": \"some comment\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"minWithdrawalAmount\": 15000,\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": \"some comment\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"ipRestrictionEnabled\": true,\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"minWithdrawalAmount\": 15000,\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -4966,7 +4966,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000,\n    \"ipRestrictionEnabled\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4999,7 +4999,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
+                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000,\n    \"ipRestrictionEnabled\": true\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -5073,7 +5073,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"ipRestrictionEnabled\": true,\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             },
@@ -5162,7 +5162,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
+                  "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"ipRestrictionEnabled\": true,\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             }

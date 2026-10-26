@@ -118,6 +118,7 @@ class SupportClientControllerTest {
             resultActions.andExpect(jsonPath("$.content[" + i + "].methods", Matchers.hasItems("CARD", "SBP")));
             resultActions.andExpect(jsonPath("$.content[" + i + "].comment").value("comment"));
             resultActions.andExpect(jsonPath("$.content[" + i + "].minWithdrawalAmount").value(50000));
+            resultActions.andExpect(jsonPath("$.content[" + i + "].ipRestrictionEnabled").value(false));
             i++;
         }
     }
@@ -175,6 +176,11 @@ class SupportClientControllerTest {
             @Override
             public Integer getMinWithdrawalAmount() {
                 return 50000;
+            }
+
+            @Override
+            public Boolean getIpRestrictionEnabled() {
+                return false;
             }
         };
     }
@@ -247,7 +253,9 @@ class SupportClientControllerTest {
             "{\"status\":\"BLOCKED\",\"orderTimeoutSeconds\":500, \"callbackUrl\":\"https://example.com\"}",
             "{\"callbackUrl\":\"https://example.com\"}",
             "{\"methods\":[\"CARD\",\"SBP\"]}",
-            "{\"comment\":\"some comment\",\"minWithdrawalAmount\":5004}"
+            "{\"comment\":\"some comment\",\"minWithdrawalAmount\":5004}",
+            "{\"ipRestrictionEnabled\":false}",
+            "{\"ipRestrictionEnabled\":true}"
     })
     @DisplayName("Сериализация должна пройти без ошибок.")
     void update_shouldUpdateClient(String json) throws Exception {

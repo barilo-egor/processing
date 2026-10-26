@@ -59,7 +59,7 @@ class ClientFacadeTest {
                 .thenReturn(supportClientProjection);
 
         SupportClientProjection actual = clientFacade.update(UUID.randomUUID(), new UpdateClientDTO(
-                null, null, null, null, null
+                null, null, null, null, null, null
                 )
         );
 

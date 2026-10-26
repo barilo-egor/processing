@@ -7,3 +7,6 @@ create table ip_address
     constraint unique_ip_address_client_address unique (client_id, address),
     constraint fk_ip_address_client foreign key (client_id) references client (id) on delete cascade
 );
+
+alter table client
+    add column ip_restriction_enabled boolean not null default true;
