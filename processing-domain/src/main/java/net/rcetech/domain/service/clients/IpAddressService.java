@@ -2,10 +2,12 @@ package net.rcetech.domain.service.clients;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.clients.IpAddress;
+import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.clients.IpAddressRepository;
 import net.rcetech.meta.clients.dto.IpAddressResponseDTO;
 import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -24,12 +26,18 @@ public class IpAddressService {
 
     private final IpAddressRepository ipAddressRepository;
 
-    public IpAddressService(IpAddressRepository ipAddressRepository) {
+    private final ClientRepository clientRepository;
+
+    public IpAddressService(IpAddressRepository ipAddressRepository, ClientRepository clientRepository) {
         this.ipAddressRepository = ipAddressRepository;
+        this.clientRepository = clientRepository;
     }
 
+    @Transactional
     public IpAddressResponseDTO create(String address, Client client) {
         String normalized = normalize(address);
+        Client lockedClient = clientRepository.findForUpdateById(client.getId())
+                .orElseThrow(() -> new BadRequestException("Клиент не найден."));
         if (ipAddressRepository.existsByClientIdAndAddress(client.getId(), normalized)) {
             throw new BadRequestException("IP-адрес " + normalized + " уже добавлен.");
         }
@@ -39,7 +47,7 @@ public class IpAddressService {
         }
         IpAddress ipAddress = new IpAddress();
         ipAddress.setAddress(normalized);
-        ipAddress.setClient(client);
+        ipAddress.setClient(lockedClient);
         ipAddressRepository.save(ipAddress);
         return new IpAddressResponseDTO(ipAddress.getId(), ipAddress.getAddress());
     }

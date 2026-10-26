@@ -14,9 +14,15 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.function.IntConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,6 +92,27 @@ class ApiKeyServiceTest {
         assertEquals(ApiKeyService.MAX_API_KEYS_PER_CLIENT, apiKeyRepository.countByClientId(client.getId()));
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {12, 20})
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("При параллельном создании у клиента не должно появиться больше 10 ключей.")
+    void create_shouldNotExceedLimitConcurrently(int threads) throws InterruptedException {
+        Client client = saveClient();
+        try {
+            List<String> errors = runConcurrently(threads, i -> apiKeyService.create("key_" + i, client));
+
+            assertAll(
+                    () -> assertEquals(ApiKeyService.MAX_API_KEYS_PER_CLIENT,
+                            apiKeyRepository.countByClientId(client.getId())),
+                    () -> assertEquals(threads - ApiKeyService.MAX_API_KEYS_PER_CLIENT, errors.size()),
+                    () -> assertTrue(errors.stream().allMatch(
+                            "Достигнут лимит в 10 апи ключей. Удалите ненужный, чтобы создать новый."::equals))
+            );
+        } finally {
+            clientRepository.deleteById(client.getId());
+        }
+    }
+
     private void createKeys(Client client, int count) {
         for (int i = 0; i < count; i++) {
             apiKeyService.create("key_" + i, client);
@@ -99,5 +126,30 @@ class ApiKeyServiceTest {
         client.setRegisteredAt(Instant.now());
         client.setBalance(0);
         return clientRepository.save(client);
+    }
+
+    private List<String> runConcurrently(int threads, IntConsumer task) throws InterruptedException {
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+        try (ExecutorService executor = Executors.newFixedThreadPool(threads)) {
+            for (int i = 0; i < threads; i++) {
+                int index = i;
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    task.accept(index);
+                    return null;
+                }));
+            }
+            start.countDown();
+        }
+        List<String> errors = new ArrayList<>();
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                errors.add(e.getCause().getMessage());
+            }
+        }
+        return errors;
     }
 }
