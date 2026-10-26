@@ -4,8 +4,10 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.clients.IpAddress;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.clients.IpAddressRepository;
+import net.rcetech.meta.clients.IpAddressesChangedEvent;
 import net.rcetech.meta.clients.dto.IpAddressResponseDTO;
 import net.rcetech.meta.exception.BadRequestException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +32,13 @@ public class IpAddressService {
 
     private final ClientRepository clientRepository;
 
-    public IpAddressService(IpAddressRepository ipAddressRepository, ClientRepository clientRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public IpAddressService(IpAddressRepository ipAddressRepository, ClientRepository clientRepository,
+                            ApplicationEventPublisher eventPublisher) {
         this.ipAddressRepository = ipAddressRepository;
         this.clientRepository = clientRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -51,6 +57,7 @@ public class IpAddressService {
         ipAddress.setAddress(normalized);
         ipAddress.setClient(lockedClient);
         ipAddressRepository.save(ipAddress);
+        eventPublisher.publishEvent(new IpAddressesChangedEvent(List.of(normalized)));
         return new IpAddressResponseDTO(ipAddress.getId(), ipAddress.getAddress());
     }
 
@@ -69,7 +76,11 @@ public class IpAddressService {
                 .orElseThrow(() -> new BadRequestException("Некорректный IP-адрес " + trimmed + "."));
     }
 
-    private Optional<String> toCanonical(String address) {
+    public boolean isUsed(String address) {
+        return ipAddressRepository.existsByAddress(address);
+    }
+
+    public Optional<String> toCanonical(String address) {
         if (!IPV4_PATTERN.matcher(address).matches() && !IPV6_PATTERN.matcher(address).matches()) {
             return Optional.empty();
         }
@@ -84,10 +95,11 @@ public class IpAddressService {
         return ipAddressRepository.findAllByClientIdOrderById(client.getId());
     }
 
+    @Transactional
     public void delete(Client client, Long id) {
-        if (!ipAddressRepository.existsByIdAndClientId(id, client.getId())) {
-            throw new BadRequestException("Запись с идентификатором " + id + " не найдена.");
-        }
-        ipAddressRepository.deleteById(id);
+        IpAddress ipAddress = ipAddressRepository.findByIdAndClientId(id, client.getId())
+                .orElseThrow(() -> new BadRequestException("Запись с идентификатором " + id + " не найдена."));
+        ipAddressRepository.delete(ipAddress);
+        eventPublisher.publishEvent(new IpAddressesChangedEvent(List.of(ipAddress.getAddress())));
     }
 }

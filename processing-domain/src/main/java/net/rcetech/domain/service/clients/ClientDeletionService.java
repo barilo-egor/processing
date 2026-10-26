@@ -2,17 +2,20 @@ package net.rcetech.domain.service.clients;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.clients.IpAddress;
 import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.meta.clients.ClientDeletedEvent;
+import net.rcetech.meta.clients.IpAddressesChangedEvent;
 import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -48,6 +51,7 @@ public class ClientDeletionService {
     public void delete(UUID id) {
         Client client = clientRepository.findForUpdateById(id)
                 .orElseThrow(() -> new BadRequestException("Клиент не найден."));
+        List<String> ipAddresses = client.getIpAddresses().stream().map(IpAddress::getAddress).toList();
         int callbacks = merchantCallbackRepository.detachOrdersByClientId(id);
         int orders = orderRepository.deleteAllByClientId(id);
         int withdrawalRequests = withdrawalRequestRepository.deleteAllByClientId(id);
@@ -55,6 +59,9 @@ public class ClientDeletionService {
         clientRepository.delete(client);
         clientRepository.flush();
         eventPublisher.publishEvent(new ClientDeletedEvent(id));
+        if (!ipAddresses.isEmpty()) {
+            eventPublisher.publishEvent(new IpAddressesChangedEvent(ipAddresses));
+        }
         log.info("Удалён клиент {} ({}): ордеров {}, заявок на вывод {}, транзакций {}, отвязано КБ {}.",
                 id, client.getUsername(), orders, withdrawalRequests, transactions, callbacks);
     }

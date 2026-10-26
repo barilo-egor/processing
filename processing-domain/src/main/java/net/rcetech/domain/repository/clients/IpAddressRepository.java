@@ -5,6 +5,7 @@ import net.rcetech.meta.clients.dto.IpAddressResponseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface IpAddressRepository extends JpaRepository<IpAddress, Long> {
@@ -12,6 +13,10 @@ public interface IpAddressRepository extends JpaRepository<IpAddress, Long> {
     boolean existsByIdAndClientId(Long id, UUID clientId);
 
     boolean existsByClientIdAndAddress(UUID clientId, String address);
+
+    Optional<IpAddress> findByIdAndClientId(Long id, UUID clientId);
+
+    boolean existsByAddress(String address);
 
     long countByClientId(UUID clientId);
 
