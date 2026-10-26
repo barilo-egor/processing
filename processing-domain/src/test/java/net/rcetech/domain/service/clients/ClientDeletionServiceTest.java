@@ -12,6 +12,7 @@ import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.clients.ClientDeletedEvent;
+import net.rcetech.meta.clients.IpAddressesChangedEvent;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.RequestMethod;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -156,6 +158,31 @@ class ClientDeletionServiceTest {
 
         assertEquals(List.of(new ClientDeletedEvent(client.getId())),
                 applicationEvents.stream(ClientDeletedEvent.class).toList());
+    }
+
+    @ValueSource(ints = {1, 4})
+    @ParameterizedTest
+    @DisplayName("Метод должен опубликовать событие изменения IP-адресов со всеми адресами клиента.")
+    void delete_shouldPublishIpAddressesChangedEvent(int ipAddresses) {
+        Client client = createClientWithData(1, 1, 1, 1, 1, ipAddresses);
+
+        clientDeletionService.delete(client.getId());
+
+        assertEquals(List.of(new IpAddressesChangedEvent(IntStream.range(0, ipAddresses)
+                        .mapToObj(i -> "10.0.0." + i)
+                        .toList())),
+                applicationEvents.stream(IpAddressesChangedEvent.class).toList());
+    }
+
+    @ValueSource(ints = {0, 2})
+    @ParameterizedTest
+    @DisplayName("Метод не должен публиковать событие изменения IP-адресов, если у клиента их нет.")
+    void delete_shouldNotPublishIpAddressesChangedEventWithoutAddresses(int orders) {
+        Client client = createClientWithData(orders, 1, 1, 1, 1, 0);
+
+        clientDeletionService.delete(client.getId());
+
+        assertEquals(0, applicationEvents.stream(IpAddressesChangedEvent.class).count());
     }
 
     @ValueSource(strings = {

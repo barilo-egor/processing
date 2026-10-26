@@ -4,6 +4,7 @@ import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.clients.IpAddressRepository;
 import net.rcetech.domain.test.SharedMySQLContainer;
+import net.rcetech.meta.clients.IpAddressesChangedEvent;
 import net.rcetech.meta.clients.dto.IpAddressResponseDTO;
 import net.rcetech.meta.exception.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,8 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@RecordApplicationEvents
 @Import(IpAddressService.class)
 class IpAddressServiceTest {
 
@@ -47,6 +51,93 @@ class IpAddressServiceTest {
 
     @Autowired
     private IpAddressService ipAddressService;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
+
+    @ParameterizedTest
+    @CsvSource({
+            "192.168.1.1, 192.168.1.1",
+            "' 10.0.0.7 ', 10.0.0.7",
+            "2001:db8::1, 2001:db8:0:0:0:0:0:1"
+    })
+    @DisplayName("После добавления адреса должно публиковаться событие с нормализованным адресом.")
+    void create_shouldPublishEvent(String address, String expected) {
+        ipAddressService.create(address, saveClient());
+
+        assertEquals(List.of(new IpAddressesChangedEvent(List.of(expected))),
+                applicationEvents.stream(IpAddressesChangedEvent.class).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"192.168.1.1", "2001:db8::1"})
+    @DisplayName("Если адрес не добавлен, событие не должно публиковаться.")
+    void create_shouldNotPublishEventWhenAddressExists(String address) {
+        Client client = saveClient();
+        ipAddressService.create(address, client);
+
+        assertThrows(BadRequestException.class, () -> ipAddressService.create(address, client));
+
+        assertEquals(1, applicationEvents.stream(IpAddressesChangedEvent.class).count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "192.168.1.1, 192.168.1.1",
+            "2001:db8::1, 2001:db8:0:0:0:0:0:1"
+    })
+    @DisplayName("После удаления адреса должно публиковаться событие с удалённым адресом.")
+    void delete_shouldPublishEvent(String address, String expected) {
+        Client client = saveClient();
+        IpAddressResponseDTO created = ipAddressService.create(address, client);
+
+        ipAddressService.delete(client, created.id());
+
+        assertEquals(List.of(new IpAddressesChangedEvent(List.of(expected)),
+                        new IpAddressesChangedEvent(List.of(expected))),
+                applicationEvents.stream(IpAddressesChangedEvent.class).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"192.168.1.1", "2001:db8::1"})
+    @DisplayName("При попытке удалить чужой адрес событие не должно публиковаться.")
+    void delete_shouldNotPublishEventForOtherClientAddress(String address) {
+        IpAddressResponseDTO created = ipAddressService.create(address, saveClient());
+        Client client = saveClient();
+
+        assertThrows(BadRequestException.class, () -> ipAddressService.delete(client, created.id()));
+
+        assertEquals(1, applicationEvents.stream(IpAddressesChangedEvent.class).count());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    @DisplayName("Адрес должен считаться используемым, пока он есть хотя бы у одного клиента.")
+    void isUsed_shouldReturnTrueWhileAnyClientHasAddress(int clients) {
+        List<Client> owners = IntStream.range(0, clients).mapToObj(i -> saveClient()).toList();
+        List<IpAddressResponseDTO> created = owners.stream()
+                .map(owner -> ipAddressService.create("10.1.1.1", owner))
+                .toList();
+
+        for (int i = 0; i < clients - 1; i++) {
+            ipAddressService.delete(owners.get(i), created.get(i).id());
+        }
+
+        assertTrue(ipAddressService.isUsed("10.1.1.1"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10.1.1.1", "2001:db8:0:0:0:0:0:1"})
+    @DisplayName("Адрес должен считаться неиспользуемым, если его нет ни у одного клиента.")
+    void isUsed_shouldReturnFalseWhenNoClientHasAddress(String address) {
+        Client client = saveClient();
+        IpAddressResponseDTO created = ipAddressService.create(address, client);
+        ipAddressService.create("10.2.2.2", saveClient());
+
+        ipAddressService.delete(client, created.id());
+
+        assertFalse(ipAddressService.isUsed(address));
+    }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 4, 9})

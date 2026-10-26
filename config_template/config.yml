@@ -44,6 +44,15 @@ details-search:
     min-seconds: 5
     # Ордер в статусе SEARCHING дольше max-seconds + 30 секунд переводится шедулером в DETAILS_NOT_FOUND.
     max-seconds: 60
+cloudflare:
+  ip-list:
+    # Синхронизация белых списков IP-адресов клиентов со списком IP в Cloudflare (Manage Account → Configurations → Lists).
+    # Список должен использоваться только процессингом: адреса, которых нет ни у одного клиента, из него удаляются.
+    enabled: false
+    # API-токен с правом Account Filter Lists Edit.
+    api-token:
+    account-id:
+    list-id:
 kafka:
   group-id:
   topic:
