@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -52,15 +54,29 @@ public class IpAddressService {
         return new IpAddressResponseDTO(ipAddress.getId(), ipAddress.getAddress());
     }
 
+    public boolean isAllowed(Client client, String remoteAddress) {
+        if (!client.isIpRestrictionEnabled()) {
+            return true;
+        }
+        return Objects.nonNull(remoteAddress) && toCanonical(remoteAddress.trim())
+                .map(address -> ipAddressRepository.existsByClientIdAndAddress(client.getId(), address))
+                .orElse(false);
+    }
+
     private String normalize(String address) {
         String trimmed = address.trim();
-        if (!IPV4_PATTERN.matcher(trimmed).matches() && !IPV6_PATTERN.matcher(trimmed).matches()) {
-            throw new BadRequestException("Некорректный IP-адрес " + trimmed + ".");
+        return toCanonical(trimmed)
+                .orElseThrow(() -> new BadRequestException("Некорректный IP-адрес " + trimmed + "."));
+    }
+
+    private Optional<String> toCanonical(String address) {
+        if (!IPV4_PATTERN.matcher(address).matches() && !IPV6_PATTERN.matcher(address).matches()) {
+            return Optional.empty();
         }
         try {
-            return InetAddress.getByName(trimmed).getHostAddress();
+            return Optional.of(InetAddress.getByName(address).getHostAddress());
         } catch (UnknownHostException e) {
-            throw new BadRequestException("Некорректный IP-адрес " + trimmed + ".");
+            return Optional.empty();
         }
     }
 

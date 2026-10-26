@@ -77,6 +77,7 @@ class ClientOrderControllerSecurityTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
+        client.setIpRestrictionEnabled(false);
         return clientRepository.save(client);
     }
 

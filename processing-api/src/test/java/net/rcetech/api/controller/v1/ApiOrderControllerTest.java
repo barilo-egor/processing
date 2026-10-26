@@ -10,6 +10,7 @@ import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.service.clients.ApiKeyService;
+import net.rcetech.domain.service.clients.IpAddressService;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.ServiceUnavailableException;
@@ -78,12 +79,16 @@ class ApiOrderControllerTest {
     @MockitoBean
     private ApiKeyService apiKeyService;
 
+    @MockitoBean
+    private IpAddressService ipAddressService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         when(orderApiService.createOrder(any())).thenReturn(summary());
         when(orderApiService.createOrderAsync(any(), any())).thenReturn(summary());
+        when(ipAddressService.isAllowed(any(), any())).thenReturn(true);
     }
 
     private static ClientOrderSummary summary() {

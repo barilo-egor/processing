@@ -234,6 +234,62 @@ class IpAddressServiceTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "10.0.0.1, 10.0.0.1",
+            "2001:db8::1, 2001:0db8:0000:0000:0000:0000:0000:0001",
+            "::1, 0:0:0:0:0:0:0:1"
+    })
+    @DisplayName("Запрос с адреса из белого списка должен быть разрешён в любой записи адреса.")
+    void isAllowed_shouldAllowListedAddress(String listed, String remoteAddress) {
+        Client client = saveClient();
+        ipAddressService.create(listed, client);
+
+        assertTrue(ipAddressService.isAllowed(client, remoteAddress));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "10.0.0.1, 10.0.0.2",
+            "2001:db8::1, 2001:db8::2",
+            "10.0.0.1, not-an-ip"
+    })
+    @DisplayName("Запрос с адреса не из белого списка должен быть запрещён.")
+    void isAllowed_shouldDenyUnlistedAddress(String listed, String remoteAddress) {
+        Client client = saveClient();
+        ipAddressService.create(listed, client);
+
+        assertFalse(ipAddressService.isAllowed(client, remoteAddress));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10.0.0.1", "2001:db8::1"})
+    @DisplayName("При пустом белом списке запрос должен быть запрещён.")
+    void isAllowed_shouldDenyWhenListEmpty(String remoteAddress) {
+        assertFalse(ipAddressService.isAllowed(saveClient(), remoteAddress));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10.0.0.1", "2001:db8::1"})
+    @DisplayName("Адрес из белого списка другого клиента не должен разрешать запрос.")
+    void isAllowed_shouldDenyAddressOfOtherClient(String address) {
+        Client client = saveClient();
+        ipAddressService.create(address, saveClient());
+
+        assertFalse(ipAddressService.isAllowed(client, address));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10.0.0.1", "2001:db8::1"})
+    @DisplayName("При выключенном ограничении запрос должен быть разрешён с любого адреса.")
+    void isAllowed_shouldAllowAnyAddressWhenRestrictionDisabled(String remoteAddress) {
+        Client client = saveClient();
+        client.setIpRestrictionEnabled(false);
+        clientRepository.save(client);
+
+        assertTrue(ipAddressService.isAllowed(client, remoteAddress));
+    }
+
     private void createAddresses(Client client, int count) {
         createdAddresses(count).forEach(address -> ipAddressService.create(address, client));
     }
