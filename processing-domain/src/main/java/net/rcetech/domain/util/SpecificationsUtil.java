@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,6 +20,12 @@ public class SpecificationsUtil {
                                           Expression<T> expression, T value) {
         if (Objects.nonNull(value)) {
             predicates.add(builder.equal(expression, value));
+        }
+    }
+
+    public static <T> void addIn(List<Predicate> predicates, Expression<T> expression, Collection<T> values) {
+        if (Objects.nonNull(values) && !values.isEmpty()) {
+            predicates.add(expression.in(values));
         }
     }
 

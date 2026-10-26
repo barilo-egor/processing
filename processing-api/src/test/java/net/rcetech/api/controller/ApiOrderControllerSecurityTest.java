@@ -5,6 +5,7 @@ import net.rcetech.api.service.OrderApiService;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ApiKeyService;
+import net.rcetech.domain.service.clients.IpAddressService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.OrderStatus;
@@ -33,6 +34,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -71,6 +73,9 @@ class ApiOrderControllerSecurityTest {
     private ApiKeyService apiKeyService;
 
     @Autowired
+    private IpAddressService ipAddressService;
+
+    @Autowired
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -89,6 +94,7 @@ class ApiOrderControllerSecurityTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
+        client.setIpRestrictionEnabled(false);
         return clientRepository.save(client);
     }
 
@@ -113,6 +119,31 @@ class ApiOrderControllerSecurityTest {
         return Arrays.stream(OrderEndpoint.values())
                 .flatMap(endpoint -> Arrays.stream(Role.values())
                         .map(role -> Arguments.of(endpoint, role)));
+    }
+
+    static Stream<Arguments> endpointsAndAddresses() {
+        return Arrays.stream(OrderEndpoint.values())
+                .flatMap(endpoint -> Stream.of(
+                        Arguments.of(endpoint, "203.0.113.10", "203.0.113.11"),
+                        Arguments.of(endpoint, "2001:db8::10", "2001:db8::11")
+                ));
+    }
+
+    private Client createRestrictedClient(String... addresses) {
+        Client client = createClient();
+        client.setIpRestrictionEnabled(true);
+        clientRepository.save(client);
+        for (String address : addresses) {
+            ipAddressService.create(address, client);
+        }
+        return client;
+    }
+
+    private static RequestPostProcessor remoteAddress(String address) {
+        return request -> {
+            request.setRemoteAddr(address);
+            return request;
+        };
     }
 
     static Stream<Arguments> endpointsAndInvalidKeys() {
@@ -201,6 +232,88 @@ class ApiOrderControllerSecurityTest {
         verify(orderApiService, never())
                 .createOrder(argThat(command -> sessionClient.getId().equals(command.clientId())));
         verify(orderApiService, never()).cancelOrder(eq(sessionClient.getId()), any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("endpointsAndAddresses")
+    @DisplayName("Запрос с адреса из белого списка клиента выполняется.")
+    void listedAddress_shouldAuthorize(OrderEndpoint endpoint, String listed, String other) throws Exception {
+        Client client = createRestrictedClient(listed, other);
+        String apiKey = apiKeyService.create("key", client);
+        UUID orderId = UUID.randomUUID();
+
+        mockMvc.perform(endpoint.request(BASE_PATH, orderId)
+                        .header("Api-Key", apiKey)
+                        .with(remoteAddress(listed)))
+                .andExpect(status().is(endpoint.successStatus()));
+
+        endpoint.verifyCalled(orderApiService, client.getId(), orderId);
+    }
+
+    @ParameterizedTest
+    @MethodSource("endpointsAndAddresses")
+    @DisplayName("Запрос с адреса не из белого списка клиента получает 401.")
+    void unlistedAddress_shouldReturnUnauthorized(OrderEndpoint endpoint, String listed, String other)
+            throws Exception {
+        Client client = createRestrictedClient(listed);
+        String apiKey = apiKeyService.create("key", client);
+
+        mockMvc.perform(endpoint.request(BASE_PATH, UUID.randomUUID())
+                        .header("Api-Key", apiKey)
+                        .with(remoteAddress(other)))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("endpointsAndAddresses")
+    @DisplayName("При пустом белом списке и включённом ограничении запрос получает 401.")
+    void emptyList_shouldReturnUnauthorized(OrderEndpoint endpoint, String listed, String other) throws Exception {
+        Client client = createRestrictedClient();
+        String apiKey = apiKeyService.create("key", client);
+
+        mockMvc.perform(endpoint.request(BASE_PATH, UUID.randomUUID())
+                        .header("Api-Key", apiKey)
+                        .with(remoteAddress(listed)))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("endpointsAndAddresses")
+    @DisplayName("При выключенном ограничении запрос выполняется с адреса не из белого списка.")
+    void restrictionDisabled_shouldAuthorizeAnyAddress(OrderEndpoint endpoint, String listed, String other)
+            throws Exception {
+        Client client = createClient();
+        ipAddressService.create(listed, client);
+        String apiKey = apiKeyService.create("key", client);
+        UUID orderId = UUID.randomUUID();
+
+        mockMvc.perform(endpoint.request(BASE_PATH, orderId)
+                        .header("Api-Key", apiKey)
+                        .with(remoteAddress(other)))
+                .andExpect(status().is(endpoint.successStatus()));
+
+        endpoint.verifyCalled(orderApiService, client.getId(), orderId);
+    }
+
+    @ParameterizedTest
+    @MethodSource("endpointsAndAddresses")
+    @DisplayName("При пустом белом списке и выключенном ограничении запрос выполняется.")
+    void emptyList_restrictionDisabled_shouldAuthorize(OrderEndpoint endpoint, String address, String other)
+            throws Exception {
+        Client client = createClient();
+        String apiKey = apiKeyService.create("key", client);
+        UUID orderId = UUID.randomUUID();
+
+        mockMvc.perform(endpoint.request(BASE_PATH, orderId)
+                        .header("Api-Key", apiKey)
+                        .with(remoteAddress(address)))
+                .andExpect(status().is(endpoint.successStatus()));
+
+        endpoint.verifyCalled(orderApiService, client.getId(), orderId);
     }
 
     @ParameterizedTest

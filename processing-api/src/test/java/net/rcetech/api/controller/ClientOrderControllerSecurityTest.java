@@ -77,6 +77,7 @@ class ClientOrderControllerSecurityTest {
         client.setId(UUID.randomUUID());
         client.setUsername("test" + client.getId());
         client.setRegisteredAt(Instant.now());
+        client.setIpRestrictionEnabled(false);
         return clientRepository.save(client);
     }
 
@@ -163,8 +164,8 @@ class ClientOrderControllerSecurityTest {
 
     @ParameterizedTest
     @MethodSource("endpointsAndKeyNames")
-    @DisplayName("Запрос с валидным апи ключом без сессии получает 403.")
-    void apiKey_withoutSession_shouldReturnForbidden(OrderEndpoint endpoint, String keyName) throws Exception {
+    @DisplayName("Запрос с валидным апи ключом без сессии получает 401.")
+    void apiKey_withoutSession_shouldReturnUnauthorized(OrderEndpoint endpoint, String keyName) throws Exception {
         Client client = createClient();
         String apiKey = apiKeyService.create(keyName, client);
         String csrfToken = UUID.randomUUID().toString();
@@ -173,7 +174,7 @@ class ClientOrderControllerSecurityTest {
                         .header("Api-Key", apiKey)
                         .cookie(new Cookie("XSRF-TOKEN", csrfToken))
                         .header("X-XSRF-TOKEN", csrfToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(orderApiService);
     }

@@ -21,4 +21,5 @@ public interface SupportClientProjection {
     Set<RequestMethod> getMethods();
     String getComment();
     Integer getMinWithdrawalAmount();
+    Boolean getIpRestrictionEnabled();
 }

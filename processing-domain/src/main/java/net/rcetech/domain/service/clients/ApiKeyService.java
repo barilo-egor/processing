@@ -3,9 +3,11 @@ package net.rcetech.domain.service.clients;
 import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.clients.ApiKeyRepository;
+import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.meta.clients.dto.ApiKeyResponseDTO;
 import net.rcetech.meta.exception.BadRequestException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,14 +25,19 @@ public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
 
+    private final ClientRepository clientRepository;
+
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public ApiKeyService(ApiKeyRepository apiKeyRepository) {
+    public ApiKeyService(ApiKeyRepository apiKeyRepository, ClientRepository clientRepository) {
         this.apiKeyRepository = apiKeyRepository;
+        this.clientRepository = clientRepository;
     }
 
+    @Transactional
     public String create(String name, Client client) {
-        // TODO могут быть дубли в многопоточке
+        Client lockedClient = clientRepository.findForUpdateById(client.getId())
+                .orElseThrow(() -> new BadRequestException("Клиент не найден."));
         if (apiKeyRepository.existsByClientIdAndName(client.getId(), name)) {
             throw new BadRequestException("Апи ключ с именем " + name + " уже существует.");
         }
@@ -46,7 +53,7 @@ public class ApiKeyService {
         apiKey.setName(name);
         apiKey.setHash(keyHash);
         apiKey.setPreview(key.substring(0, 3) + "..." + key.substring(key.length() - 3));
-        apiKey.setClient(client);
+        apiKey.setClient(lockedClient);
         apiKeyRepository.save(apiKey);
         return key;
     }

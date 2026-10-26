@@ -35,12 +35,12 @@
                     {
                       "key": "status",
                       "value": "",
-                      "description": "Статус ордера"
+                      "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                     },
                     {
                       "key": "method",
                       "value": "",
-                      "description": "Метод ордера"
+                      "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                     },
                     {
                       "key": "page",
@@ -83,12 +83,12 @@
                         {
                           "key": "status",
                           "value": "",
-                          "description": "Статус ордера"
+                          "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                         },
                         {
                           "key": "method",
                           "value": "",
-                          "description": "Метод ордера"
+                          "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                         },
                         {
                           "key": "page",
@@ -1699,6 +1699,561 @@
           }
         },
         {
+          "name": "ip-address",
+          "item": [
+            {
+              "name": "Добавление IP-адреса клиента",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address"
+                  ],
+                  "query": [
+                    {
+                      "key": "address",
+                      "value": "192.168.1.1"
+                    }
+                  ]
+                },
+                "description": "Добавляет IP-адрес в белый список клиента, выполняющего запрос (клиент определяется на бэке). Принимается IPv4 или IPv6, адрес сохраняется в нормализованном виде: `::1` станет `0:0:0:0:0:0:0:1`, а `::ffff:10.0.0.1` станет `10.0.0.1`. У клиента может быть не больше 10 адресов."
+              },
+              "response": [
+                {
+                  "name": "IP-адрес добавлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": 1,\n  \"address\": \"192.168.1.1\"\n}"
+                },
+                {
+                  "name": "IP-адрес уже добавлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009886026,\n  \"description\": \"IP-адрес 192.168.1.1 уже добавлен.\"\n}"
+                },
+                {
+                  "name": "Некорректный IP-адрес",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.256",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.256"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009896026,\n  \"description\": \"Некорректный IP-адрес 192.168.1.256.\"\n}"
+                },
+                {
+                  "name": "Достигнут лимит IP-адресов",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=10.0.0.11",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "10.0.0.11"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009906026,\n  \"description\": \"Достигнут лимит в 10 IP-адресов. Удалите ненужный, чтобы добавить новый.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Получение IP-адресов клиента",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address"
+                  ]
+                },
+                "description": "Возвращает белый список IP-адресов клиента, выполняющего запрос (клиент определяется на бэке), в порядке добавления."
+              },
+              "response": [
+                {
+                  "name": "IP-адреса получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"address\": \"192.168.1.1\"\n  },\n  {\n    \"id\": 2,\n    \"address\": \"2001:db8:0:0:0:0:0:1\"\n  }\n]"
+                },
+                {
+                  "name": "IP-адреса отсутствуют",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[]"
+                }
+              ]
+            },
+            {
+              "name": "Удаление IP-адреса клиента",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address",
+                    "{{id}}"
+                  ]
+                },
+                "description": "Удаляет IP-адрес из белого списка клиента, выполняющего запрос (клиент определяется на бэке). Если адрес с переданным идентификатором существует, но не принадлежит клиенту, будет возвращён статус 400 с описанием отсутствия записи."
+              },
+              "response": [
+                {
+                  "name": "IP-адрес удалён",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "text",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "IP-адрес не найден",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address/5\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009916026,\n  \"description\": \"Запись с идентификатором 5 не найдена.\"\n}"
+                }
+              ]
+            }
+          ],
+          "description": "Белый список IP-адресов клиента, не больше 10 адресов."
+        },
+        {
           "name": "client",
           "item": [
             {
@@ -2094,12 +2649,12 @@
                     {
                       "key": "status",
                       "value": "",
-                      "description": "Статус ордера"
+                      "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                     },
                     {
                       "key": "method",
                       "value": "",
-                      "description": "Метод ордера"
+                      "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                     },
                     {
                       "key": "page",
@@ -2146,12 +2701,12 @@
                         {
                           "key": "status",
                           "value": "",
-                          "description": "Статус ордера"
+                          "description": "Статус ордера, можно передать несколько раз: status=NEW&status=SUCCESS"
                         },
                         {
                           "key": "method",
                           "value": "",
-                          "description": "Метод ордера"
+                          "description": "Метод ордера, можно передать несколько раз: method=CARD&method=SBP"
                         },
                         {
                           "key": "page",
@@ -2342,7 +2897,7 @@
                   {
                     "key": "Search-Timeout-Seconds",
                     "value": "30",
-                    "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                    "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                     "type": "text",
                     "disabled": true
                   },
@@ -2394,7 +2949,7 @@
                       {
                         "key": "Search-Timeout-Seconds",
                         "value": "30",
-                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                         "type": "text",
                         "disabled": true
                       },
@@ -2456,7 +3011,7 @@
                       {
                         "key": "Search-Timeout-Seconds",
                         "value": "30",
-                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                         "type": "text",
                         "disabled": true
                       },
@@ -2507,7 +3062,7 @@
                   "body": "{\n  \"id\": \"0b5a1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c2d\",\n  \"createdAt\": 1791202963000,\n  \"internalId\": \"qwerty10001\",\n  \"status\": \"DETAILS_NOT_FOUND\",\n  \"amount\": 5000,\n  \"method\": null,\n  \"details\": null,\n  \"bank\": null,\n  \"callbackUrl\": \"https://example.com/callback\"\n}"
                 },
                 {
-                  "name": "Таймаут поиска больше 300 секунд",
+                  "name": "Таймаут поиска больше 60 секунд",
                   "originalRequest": {
                     "method": "POST",
                     "header": [
@@ -2518,7 +3073,7 @@
                       {
                         "key": "Search-Timeout-Seconds",
                         "value": "30",
-                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                         "type": "text",
                         "disabled": true
                       },
@@ -2566,7 +3121,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Таймаут поиска реквизитов не может превышать 300 секунд.\"\n}"
+                  "body": "{\n  \"type\": \"/docs/errors/bad-request\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"instance\": \"/api/v1/order\",\n  \"timestamp\": 1791202963000,\n  \"description\": \"Таймаут поиска реквизитов не может превышать 60 секунд.\"\n}"
                 },
                 {
                   "name": "Асинхронное создание",
@@ -2580,7 +3135,7 @@
                       {
                         "key": "Search-Timeout-Seconds",
                         "value": "30",
-                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                         "type": "text",
                         "disabled": true
                       },
@@ -2641,7 +3196,7 @@
                       {
                         "key": "Search-Timeout-Seconds",
                         "value": "30",
-                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 300. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
+                        "description": "Таймаут поиска реквизитов в секундах. Допустимые границы задаются в настройках (details-search.timeout), по умолчанию от 5 до 60. Если ордер в поиске дольше максимума плюс 30 секунд, он переводится в DETAILS_NOT_FOUND. По умолчанию 30.",
                         "type": "text",
                         "disabled": true
                       },
@@ -3679,6 +4234,223 @@
           ]
         },
         {
+          "name": "client-callback",
+          "item": [
+            {
+              "name": "Повторная отправка КБ клиенту",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                  "host": [
+                    "{{processing_support_api_url}}"
+                  ],
+                  "path": [
+                    "client-callback",
+                    "{{orderId}}"
+                  ]
+                },
+                "description": "Метод для повторной отправки клиенту КБ по ордеру поддержкой. Отправляется последний КБ ордера, если он не доставлен (статус `FAILED`) и статус ордера с тех пор не менялся. КБ отправляется сразу, в обход очереди, с сохранёнными адресом и телом, без автоматических повторов. Пока КБ отправляется, следующие КБ по ордеру ждут его завершения.\n\nПараметры пути:\n\n| Параметр (Key) | Тип данных (Type) | Описание (Description) | Ограничения / Формат (Constraints) |\n| --- | --- | --- | --- |\n| orderId | `uuid` | Идентификатор ордера. | Обязательный |\n\nОшибки `400`:\n\n- ордер не найден;\n- по ордеру нет КБ, последний КБ не помечен недоставленным или статус ордера сменился.\n\nОшибка `500`: сервер клиента не ответил кодом `2xx` или недоступен, КБ остаётся недоставленным."
+              },
+              "response": [
+                {
+                  "name": "КБ отправлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "plain",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-length",
+                      "value": "0"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "КБ нельзя отправить повторно",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"type\": \"/docs/errors/bad-request\",\n    \"title\": \"Bad Request\",\n    \"status\": 400,\n    \"instance\": \"/api/support/client-callback/6f1c2b9e-3d4a-4b8e-9a2f-1e7d5c3b2a10\",\n    \"timestamp\": 1792864800000,\n    \"description\": \"Повторно отправить можно только недоставленный КБ о текущем статусе ордера.\"\n}"
+                },
+                {
+                  "name": "КБ не доставлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{processing_support_api_url}}/client-callback/{{orderId}}",
+                      "host": [
+                        "{{processing_support_api_url}}"
+                      ],
+                      "path": [
+                        "client-callback",
+                        "{{orderId}}"
+                      ]
+                    }
+                  },
+                  "status": "Internal Server Error",
+                  "code": 500,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    },
+                    {
+                      "key": "date",
+                      "value": "Sat, 24 Oct 2026 18:00:00 GMT"
+                    },
+                    {
+                      "key": "keep-alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"type\": \"/errors/internal-server-error\",\n    \"title\": \"КБ не доставлен: сервер клиента не принял запрос.\",\n    \"status\": 500,\n    \"instance\": \"/api/support/client-callback/6f1c2b9e-3d4a-4b8e-9a2f-1e7d5c3b2a10\",\n    \"timestamp\": 1792864800000,\n    \"description\": \"Обратитесь в поддержку.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "merchant-config",
           "item": [
             {
@@ -4183,7 +4955,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": \"some comment\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"minWithdrawalAmount\": 15000,\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
+                  "body": "{\n  \"content\": [\n    {\n      \"balance\": 0,\n      \"callbackUrl\": null,\n      \"comment\": \"some comment\",\n      \"commissionPercent\": 15.5,\n      \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n      \"ipRestrictionEnabled\": true,\n      \"methods\": [\n        \"CARD\",\n        \"SBP\"\n      ],\n      \"minWithdrawalAmount\": 15000,\n      \"orderTimeoutSeconds\": 800,\n      \"registeredAt\": 1791563254000,\n      \"username\": \"client\"\n    }\n  ],\n  \"page\": {\n    \"size\": 20,\n    \"number\": 0,\n    \"totalElements\": 1,\n    \"totalPages\": 1\n  }\n}"
                 }
               ]
             },
@@ -4194,7 +4966,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
+                  "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000,\n    \"ipRestrictionEnabled\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4227,7 +4999,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000\n}",
+                      "raw": "{\n    \"orderTimeoutSeconds\": \"800\",\n    \"status\": \"ACTIVE\",\n    \"commissionPercent\": 15.5,\n    \"methods\": [\"CARD\", \"SBP\"],\n    \"comment\": \"some comment\",\n    \"minWithdrawalAmount\": 15000,\n    \"ipRestrictionEnabled\": true\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -4301,7 +5073,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
+                  "body": "{\n  \"balance\": 0,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"ipRestrictionEnabled\": true,\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             },
@@ -4390,7 +5162,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
+                  "body": "{\n  \"balance\": 15000,\n  \"callbackUrl\": null,\n  \"comment\": \"some comment\",\n  \"commissionPercent\": 15.5,\n  \"id\": \"8b2c3fe9-9507-42f9-839a-e84baf7e99bf\",\n  \"ipRestrictionEnabled\": true,\n  \"methods\": [\n    \"CARD\",\n    \"SBP\"\n  ],\n  \"minWithdrawalAmount\": 15000,\n  \"orderTimeoutSeconds\": 800,\n  \"registeredAt\": 1791563254000,\n  \"username\": \"client\"\n}"
                 }
               ]
             }

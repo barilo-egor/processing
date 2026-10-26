@@ -11,7 +11,7 @@ public class SearchTimeoutValidator implements ConstraintValidator<SearchTimeout
     private final int maxSeconds;
 
     public SearchTimeoutValidator(@Value("${details-search.timeout.min-seconds:5}") int minSeconds,
-                                  @Value("${details-search.timeout.max-seconds:300}") int maxSeconds) {
+                                  @Value("${details-search.timeout.max-seconds:60}") int maxSeconds) {
         this.minSeconds = minSeconds;
         this.maxSeconds = maxSeconds;
     }

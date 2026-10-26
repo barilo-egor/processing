@@ -70,6 +70,10 @@ public class Client implements Persistable<UUID> {
     @JsonIgnore
     private List<ApiKey> apiKeys;
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    @JsonIgnore
+    private List<IpAddress> ipAddresses;
+
     /**
      * Заявки на вывод средств клиента, созданные клиентом
      */
@@ -104,6 +108,12 @@ public class Client implements Persistable<UUID> {
     private String comment;
 
     private Integer minWithdrawalAmount;
+
+    /**
+     * Ограничивать ли запросы клиента белым списком IP-адресов.
+     */
+    @Column(nullable = false)
+    private boolean ipRestrictionEnabled = true;
 
     @Transient
     private boolean isNew = true;
