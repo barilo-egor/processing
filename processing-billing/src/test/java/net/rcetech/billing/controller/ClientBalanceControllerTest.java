@@ -145,6 +145,11 @@ class ClientBalanceControllerTest {
             public Integer getMinWithdrawalAmount() {
                 return null;
             }
+
+            @Override
+            public Boolean getIpRestrictionEnabled() {
+                return true;
+            }
         };
     }
 }

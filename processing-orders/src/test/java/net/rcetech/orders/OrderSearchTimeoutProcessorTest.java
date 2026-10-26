@@ -92,8 +92,8 @@ class OrderSearchTimeoutProcessorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {335, 3600})
-    @DisplayName("Ордер в поиске реквизитов дольше 330 секунд должен перейти в DETAILS_NOT_FOUND с КБ клиенту.")
+    @ValueSource(longs = {95, 3600})
+    @DisplayName("Ордер в поиске реквизитов дольше 90 секунд должен перейти в DETAILS_NOT_FOUND с КБ клиенту.")
     void checkStuckInSearchOrders_shouldMoveStuckOrderToDetailsNotFound(long ageSeconds) {
         Order order = saveOrder(getDummyClient(), OrderStatus.SEARCHING, ageSeconds);
 
@@ -107,8 +107,8 @@ class OrderSearchTimeoutProcessorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {0, 325})
-    @DisplayName("Ордер в поиске реквизитов не дольше 330 секунд не должен меняться.")
+    @ValueSource(longs = {0, 85})
+    @DisplayName("Ордер в поиске реквизитов не дольше 90 секунд не должен меняться.")
     void checkStuckInSearchOrders_shouldNotChangeOrderIfSearchNotStuck(long ageSeconds) {
         Order order = saveOrder(getDummyClient(), OrderStatus.SEARCHING, ageSeconds);
 
