@@ -1699,6 +1699,561 @@
           }
         },
         {
+          "name": "ip-address",
+          "item": [
+            {
+              "name": "Добавление IP-адреса клиента",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address"
+                  ],
+                  "query": [
+                    {
+                      "key": "address",
+                      "value": "192.168.1.1"
+                    }
+                  ]
+                },
+                "description": "Добавляет IP-адрес в белый список клиента, выполняющего запрос (клиент определяется на бэке). Принимается IPv4 или IPv6, адрес сохраняется в нормализованном виде: `::1` станет `0:0:0:0:0:0:0:1`, а `::ffff:10.0.0.1` станет `10.0.0.1`. У клиента может быть не больше 10 адресов."
+              },
+              "response": [
+                {
+                  "name": "IP-адрес добавлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": 1,\n  \"address\": \"192.168.1.1\"\n}"
+                },
+                {
+                  "name": "IP-адрес уже добавлен",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.1",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.1"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009886026,\n  \"description\": \"IP-адрес 192.168.1.1 уже добавлен.\"\n}"
+                },
+                {
+                  "name": "Некорректный IP-адрес",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=192.168.1.256",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "192.168.1.256"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009896026,\n  \"description\": \"Некорректный IP-адрес 192.168.1.256.\"\n}"
+                },
+                {
+                  "name": "Достигнут лимит IP-адресов",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address?address=10.0.0.11",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ],
+                      "query": [
+                        {
+                          "key": "address",
+                          "value": "10.0.0.11"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009906026,\n  \"description\": \"Достигнут лимит в 10 IP-адресов. Удалите ненужный, чтобы добавить новый.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Получение IP-адресов клиента",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address"
+                  ]
+                },
+                "description": "Возвращает белый список IP-адресов клиента, выполняющего запрос (клиент определяется на бэке), в порядке добавления."
+              },
+              "response": [
+                {
+                  "name": "IP-адреса получены",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"address\": \"192.168.1.1\"\n  },\n  {\n    \"id\": 2,\n    \"address\": \"2001:db8:0:0:0:0:0:1\"\n  }\n]"
+                },
+                {
+                  "name": "IP-адреса отсутствуют",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[]"
+                }
+              ]
+            },
+            {
+              "name": "Удаление IP-адреса клиента",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Test-User",
+                    "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                  }
+                ],
+                "url": {
+                  "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                  "host": [
+                    "{{processing_client_api_url}}"
+                  ],
+                  "path": [
+                    "ip-address",
+                    "{{id}}"
+                  ]
+                },
+                "description": "Удаляет IP-адрес из белого списка клиента, выполняющего запрос (клиент определяется на бэке). Если адрес с переданным идентификатором существует, но не принадлежит клиенту, будет возвращён статус 400 с описанием отсутствия записи."
+              },
+              "response": [
+                {
+                  "name": "IP-адрес удалён",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "text",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": ""
+                },
+                {
+                  "name": "IP-адрес не найден",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Test-User",
+                        "value": "7321f213-6ab9-4d15-b950-9de1c756876a;ROLE_CLIENT"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{processing_client_api_url}}/ip-address/{{id}}",
+                      "host": [
+                        "{{processing_client_api_url}}"
+                      ],
+                      "path": [
+                        "ip-address",
+                        "{{id}}"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/problem+json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"instance\": \"/api/client/ip-address/5\",\n  \"status\": 400,\n  \"title\": \"Bad Request\",\n  \"type\": \"/docs/errors/bad-request\",\n  \"timestamp\": 1793009916026,\n  \"description\": \"Запись с идентификатором 5 не найдена.\"\n}"
+                }
+              ]
+            }
+          ],
+          "description": "Белый список IP-адресов клиента, не больше 10 адресов."
+        },
+        {
           "name": "client",
           "item": [
             {

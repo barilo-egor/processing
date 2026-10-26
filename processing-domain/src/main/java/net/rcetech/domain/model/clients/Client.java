@@ -70,6 +70,10 @@ public class Client implements Persistable<UUID> {
     @JsonIgnore
     private List<ApiKey> apiKeys;
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    @JsonIgnore
+    private List<IpAddress> ipAddresses;
+
     /**
      * Заявки на вывод средств клиента, созданные клиентом
      */

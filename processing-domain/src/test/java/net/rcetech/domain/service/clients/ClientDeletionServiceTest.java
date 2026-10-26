@@ -4,6 +4,7 @@ import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.ApiKey;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.clients.IpAddress;
 import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.test.SharedMySQLContainer;
@@ -60,15 +61,16 @@ class ClientDeletionServiceTest {
     private ApplicationEvents applicationEvents;
 
     @CsvSource({
-            "1,1,1,1,1",
-            "3,2,4,5,2",
-            "0,0,0,0,0"
+            "1,1,1,1,1,1",
+            "3,2,4,5,2,3",
+            "0,0,0,0,0,0"
     })
     @ParameterizedTest
-    @DisplayName("Метод должен удалить клиента, его ордера, заявки на вывод, транзакции, апи-ключи и методы.")
+    @DisplayName("Метод должен удалить клиента, его ордера, заявки на вывод, транзакции, апи-ключи, IP-адреса и методы.")
     void delete_shouldDeleteClientData(int orders, int callbacksPerOrder, int withdrawalRequests, int transactions,
-                                       int apiKeys) {
-        Client client = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys);
+                                       int apiKeys, int ipAddresses) {
+        Client client = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys,
+                ipAddresses);
         UUID id = client.getId();
 
         clientDeletionService.delete(id);
@@ -80,6 +82,7 @@ class ClientDeletionServiceTest {
                 () -> assertEquals(0, count("select count(w) from WithdrawalRequest w where w.client.id = :id", id)),
                 () -> assertEquals(0, count("select count(t) from Transaction t where t.client.id = :id", id)),
                 () -> assertEquals(0, count("select count(k) from ApiKey k where k.client.id = :id", id)),
+                () -> assertEquals(0, count("select count(a) from IpAddress a where a.client.id = :id", id)),
                 () -> assertEquals(0, ((Number) entityManager.getEntityManager()
                         .createNativeQuery("select count(*) from client_method where client_id = ?1")
                         .setParameter(1, toBytes(id))
@@ -94,7 +97,7 @@ class ClientDeletionServiceTest {
     @ParameterizedTest
     @DisplayName("Метод должен сохранить КБ ордеров клиента, затерев в них ордер.")
     void delete_shouldDetachCallbacks(int orders, int callbacksPerOrder) {
-        Client client = createClientWithData(orders, callbacksPerOrder, 0, 0, 0);
+        Client client = createClientWithData(orders, callbacksPerOrder, 0, 0, 0, 0);
         List<Long> callbackIds = entityManager.getEntityManager()
                 .createQuery("select c.id from MerchantCallback c where c.order.client.id = :id", Long.class)
                 .setParameter("id", client.getId())
@@ -112,15 +115,17 @@ class ClientDeletionServiceTest {
     }
 
     @CsvSource({
-            "1,1,1,1,1",
-            "2,3,2,4,3"
+            "1,1,1,1,1,1",
+            "2,3,2,4,3,2"
     })
     @ParameterizedTest
     @DisplayName("Метод не должен затрагивать данные других клиентов.")
     void delete_shouldNotTouchOtherClients(int orders, int callbacksPerOrder, int withdrawalRequests,
-                                           int transactions, int apiKeys) {
-        Client client = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys);
-        Client other = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys);
+                                           int transactions, int apiKeys, int ipAddresses) {
+        Client client = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys,
+                ipAddresses);
+        Client other = createClientWithData(orders, callbacksPerOrder, withdrawalRequests, transactions, apiKeys,
+                ipAddresses);
         UUID otherId = other.getId();
 
         clientDeletionService.delete(client.getId());
@@ -135,7 +140,9 @@ class ClientDeletionServiceTest {
                         count("select count(w) from WithdrawalRequest w where w.client.id = :id", otherId)),
                 () -> assertEquals(transactions,
                         count("select count(t) from Transaction t where t.client.id = :id", otherId)),
-                () -> assertEquals(apiKeys, count("select count(k) from ApiKey k where k.client.id = :id", otherId))
+                () -> assertEquals(apiKeys, count("select count(k) from ApiKey k where k.client.id = :id", otherId)),
+                () -> assertEquals(ipAddresses,
+                        count("select count(a) from IpAddress a where a.client.id = :id", otherId))
         );
     }
 
@@ -143,7 +150,7 @@ class ClientDeletionServiceTest {
     @ParameterizedTest
     @DisplayName("Метод должен опубликовать событие удаления клиента.")
     void delete_shouldPublishEvent(int orders) {
-        Client client = createClientWithData(orders, 1, 1, 1, 1);
+        Client client = createClientWithData(orders, 1, 1, 1, 1, 1);
 
         clientDeletionService.delete(client.getId());
 
@@ -158,7 +165,7 @@ class ClientDeletionServiceTest {
     @ParameterizedTest
     @DisplayName("Метод должен выбросить исключение и не публиковать событие, если клиент не найден.")
     void delete_shouldThrowBadRequestIfClientNotFound(UUID id) {
-        createClientWithData(1, 1, 1, 1, 1);
+        createClientWithData(1, 1, 1, 1, 1, 1);
 
         assertThrows(BadRequestException.class, () -> clientDeletionService.delete(id));
         assertEquals(0, applicationEvents.stream(ClientDeletedEvent.class).count());
@@ -179,7 +186,7 @@ class ClientDeletionServiceTest {
     }
 
     private Client createClientWithData(int orders, int callbacksPerOrder, int withdrawalRequests, int transactions,
-                                        int apiKeys) {
+                                        int apiKeys, int ipAddresses) {
         Client client = new Client();
         client.setId(UUID.randomUUID());
         client.setUsername("test_" + client.getId());
@@ -189,6 +196,10 @@ class ClientDeletionServiceTest {
         client.setApiKeys(new ArrayList<>());
         for (int i = 0; i < apiKeys; i++) {
             client.getApiKeys().add(new ApiKey(null, "preview" + i, "key" + i, UUID.randomUUID().toString(), client));
+        }
+        client.setIpAddresses(new ArrayList<>());
+        for (int i = 0; i < ipAddresses; i++) {
+            client.getIpAddresses().add(new IpAddress(null, "10.0.0." + i, client));
         }
         entityManager.persist(client);
         for (int i = 0; i < orders; i++) {
