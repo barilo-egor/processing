@@ -291,7 +291,8 @@ class ApiOrderControllerTest {
                                 .content(content)
                                 .header("Content-Type", "application/json")
                 ).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value("Поле «callbackUrl» должно быть корректным адресом с протоколом https."));
+                .andExpect(jsonPath("$.description").value("Поле «callbackUrl» должно быть адресом с протоколом https и портом 443 не длиннее 255 символов, "
+                        + "с доменным именем публичного сервера, без логина и пароля."));
     }
 
     @ParameterizedTest
