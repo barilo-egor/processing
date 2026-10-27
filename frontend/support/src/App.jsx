@@ -1,5 +1,9 @@
-import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
+// Общие для обоих кабинетов компоненты — frontend/shared.
+import ConfirmDialog from '@shared/ConfirmDialog.jsx';
+import {DocPage, DocsNav, docIdOf, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
+import ThemeToggle from '@shared/ThemeToggle.jsx';
 
 /* ============================================================
    Личный кабинет администратора API.
@@ -249,7 +253,10 @@ export default function App() {
               </button>
               <h1>{current.title}</h1>
             </div>
-            <AccountMenu />
+            <div className="topbar-right">
+              <ThemeToggle />
+              <AccountMenu isAdmin={isAdmin} />
+            </div>
           </header>
           <main className="content">
             {section === 'clients' && canSee('clients') && (
@@ -305,7 +312,7 @@ export default function App() {
                     canOpenClient={isAdmin}
                 />
             )}
-            {docId && <DocPage key={docId} id={docId} />}
+            {docId && <DocPage key={docId} id={docId} load={api.doc} />}
           </main>
         </div>
 
@@ -429,6 +436,15 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const applyUpdated = (updated) => {
     setCard(updated);
     setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  };
+
+  // Клиент удалён: карточка закрывается, список перечитывается (ТЗ «Удаление клиента»).
+  // Удалили последнего на странице — переходим на предыдущую, чтобы не остаться на пустой.
+  const onDeleted = () => {
+    setCard(null);
+    showToast('Клиент удалён', 'success');
+    if (rows.length === 1 && page > 0) setPage(page - 1);
+    else load(applied, page, sort);
   };
 
   return (
@@ -556,6 +572,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                 methods={methods}
                 onClose={() => setCard(null)}
                 onUpdated={applyUpdated}
+                onDeleted={onDeleted}
                 onCopy={copy}
                 showToast={showToast}
             />
@@ -595,113 +612,9 @@ function Pagination({ page, total, onPage, busy, label }) {
 }
 
 
-/* ==================== Документация ==================== */
-/* Список страниц приходит при открытии кабинета (GET /docs) — бэк сам
-   отбирает страницы по роли пользователя. В меню — пункт «Документация»
-   с подпунктами-страницами. Если страниц нет (или список не загрузился),
-   пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
-const DOC_PREFIX = 'doc:';
-const Markdown = lazy(() => import('./Markdown.jsx'));
-const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
-
-/* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
-const DOC_PARAM = 'doc';
-
-function sectionFromUrl(fallback) {
-  const id = new URLSearchParams(window.location.search).get(DOC_PARAM);
-  return id ? DOC_PREFIX + id : fallback;
-}
-
-function syncDocUrl(section) {
-  const url = new URL(window.location.href);
-  const id = docIdOf(section);
-  if (url.searchParams.get(DOC_PARAM) === id) return;
-  if (id) url.searchParams.set(DOC_PARAM, id);
-  else url.searchParams.delete(DOC_PARAM);
-  url.hash = '';
-  window.history.replaceState(window.history.state, '', url);
-}
-
-function NavGroup({ title, icon, active, collapsed, children }) {
-  const [open, setOpen] = useState(active);
-  useEffect(() => { if (active) setOpen(true); }, [active]);
-
-  return (
-      <div className="nav-group">
-        <button
-            type="button"
-            className={`nav-item nav-group-head${active ? ' has-active' : ''}`}
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            title={collapsed ? title : undefined}
-        >
-          <i className={icon} />
-          <span>{title}</span>
-          <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} nav-caret`} />
-        </button>
-        {open && <div className="nav-sub">{children}</div>}
-      </div>
-  );
-}
-
-/* Пункт меню «Документация» со страницами-подпунктами. */
-function DocsNav({ docs, section, collapsed, onOpen }) {
-  const activeId = docIdOf(section);
-  if (!docs.length) return null;
-  return (
-      <NavGroup title="Документация" icon="fa-solid fa-book" active={Boolean(activeId)} collapsed={collapsed}>
-        {docs.map((d) => (
-            <button
-                key={d.id}
-                type="button"
-                className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
-                onClick={() => onOpen(DOC_PREFIX + d.id)}
-                title={collapsed ? d.title : undefined}
-            >
-              <i className="fa-regular fa-file-lines" />
-              <span>{d.title}</span>
-            </button>
-        ))}
-      </NavGroup>
-  );
-}
-
-/* Страница документации: GET /docs/{id}, текст — Markdown (GFM). */
-/* Заголовок страницы (title) — в верхней панели кабинета, как у остальных разделов. */
-function DocPage({ id }) {
-  const [state, setState] = useState({ loading: true, page: null, error: '' });
-
-  useEffect(() => {
-    let alive = true;
-    setState({ loading: true, page: null, error: '' });
-    api.doc(id)
-        .then((page) => { if (alive) setState({ loading: false, page, error: '' }); })
-        .catch((e) => {
-          if (!alive) return;
-          // 404 — страницы нет или она недоступна роли пользователя.
-          setState({
-            loading: false,
-            page: null,
-            error: e.status === 404 ? 'Страница не найдена' : (e.message || 'Не удалось загрузить страницу'),
-          });
-        });
-    return () => { alive = false; };
-  }, [id]);
-
-  if (state.loading) {
-    return <div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>;
-  }
-  if (state.error) {
-    return <div className="state"><i className="fa-regular fa-file-excel" /> {state.error}</div>;
-  }
-  return (
-      <article className="doc-page">
-        <Suspense fallback={<div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>}>
-          <Markdown source={state.page?.content} />
-        </Suspense>
-      </article>
-  );
-}
+/* ==================== Документация ====================
+   Пункт меню, страница и адрес ?doc={id} — общие для обоих кабинетов:
+   frontend/shared/docs.jsx. */
 
 /* ==================== Меню аккаунта ==================== */
 /* Логин администратора в правом углу верхней панели.
@@ -711,7 +624,7 @@ function DocPage({ id }) {
    логин пока не запрашивается — показывается общая подпись. Как только
    бэк отдаст его (например, GET /api/support/support-user/current),
    достаточно подставить значение в состояние name. */
-function AccountMenu() {
+function AccountMenu({ isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
   // Логин вошедшего администратора — из GET /support-user.
@@ -768,6 +681,19 @@ function AccountMenu() {
                 <i className="fa-solid fa-user-gear" />
                 Управление аккаунтом
               </a>
+              {isAdmin && (
+                  <a
+                      className="account-item"
+                      href="/manage-users"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                      onClick={() => setOpen(false)}
+                  >
+                    <i className="fa-solid fa-users-gear" />
+                    Управление пользователями
+                  </a>
+              )}
               {/* Выход — сначала окно подтверждения, затем POST /logout (см. logout в api.js); href — запасной вариант */}
               <a
                   className="account-item is-danger"
@@ -1098,6 +1024,23 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
   // Действие в окне подтверждения (элемент ORDER_ACTIONS) и идёт ли запрос.
   const [confirmAction, setConfirmAction] = useState(null);
   const [changing, setChanging] = useState(false);
+  const [sendingCallback, setSendingCallback] = useState(false);
+
+  /* «Отправить КБ» (ТЗ «Кнопка „Отправить КБ“ в карточке ордера»): повторная
+     отправка клиенту последнего недоставленного КБ по ордеру.
+     400 — текст ошибки из ответа (например, КБ уже доставлен),
+     остальные ошибки — общий текст. */
+  const sendCallback = async () => {
+    setSendingCallback(true);
+    try {
+      await api.resendClientCallback(full.id);
+      showToast('Колбэк отправлен', 'success');
+    } catch (e) {
+      showToast(e.status === 400 && e.message ? e.message : 'Не удалось отправить колбэк', 'error');
+    } finally {
+      setSendingCallback(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -1269,14 +1212,21 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
               </div>
           )}
 
-          {/* «Открыть карточку клиента» ведёт в раздел «Клиенты» — оператору не показываем. */}
-          <div className={`modal-foot${canOpenClient ? ' modal-foot-split' : ''}`}>
-            {canOpenClient && (
-                <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
-                  <i className="fa-solid fa-user" />
-                  Открыть карточку клиента
-                </button>
-            )}
+          {/* «Открыть карточку клиента» ведёт в раздел «Клиенты» — оператору не показываем.
+              «Отправить КБ» — в том же ряду, видна всем. */}
+          <div className="modal-foot modal-foot-split">
+            <div className="foot-left">
+              {canOpenClient && (
+                  <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
+                    <i className="fa-solid fa-user" />
+                    Открыть карточку клиента
+                  </button>
+              )}
+              <button type="button" className="btn btn-outline" onClick={sendCallback} disabled={sendingCallback}>
+                <i className={sendingCallback ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'} />
+                Отправить КБ
+              </button>
+            </div>
             <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
           </div>
         </div>
@@ -1410,12 +1360,16 @@ function shortId(id) {
    что пришли в client.methods.
 
    «Отмена» закрывает окно без сохранения, после «Сохранить»
-   окно тоже закрывается. */
+   окно тоже закрывается.
+
+   «Удалить клиента» — слева в подвале, только когда карточка открыта
+   из раздела «Клиенты» (передан onDeleted). Из карточек ордера и
+   инцидента клиента не удаляем: они остались бы открытыми на удалённом. */
 
 // Предел длины комментария к клиенту (ТЗ).
 const COMMENT_MAX = 1000;
 
-function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) {
+function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, showToast }) {
   // Черновик настроек. Строки, а не числа: поле ввода всегда работает
   // со строкой, приведение и проверка — при сохранении.
   const initial = () => ({
@@ -1424,12 +1378,17 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
     minWithdrawal: client.minWithdrawalAmount ?? '',
     comment: client.comment ?? '',
     methods: Array.isArray(client.methods) ? client.methods : [],
+    ipRestriction: Boolean(client.ipRestrictionEnabled),
   });
 
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  // Открыто окно «Пересчитать баланс?» — запрос уходит только после «Да».
+  const [confirmRecalc, setConfirmRecalc] = useState(false);
+  // Открыто окно удаления клиента.
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Перерасчёт баланса по сумме транзакций клиента (ТЗ «Инциденты»).
   // Бэк возвращает клиента после пересчёта — обновляем карточку и таблицу;
@@ -1444,6 +1403,7 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
       showToast(e.message || 'Не удалось пересчитать баланс', 'error');
     } finally {
       setRecalculating(false);
+      setConfirmRecalc(false);
     }
   };
 
@@ -1453,16 +1413,16 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
   useEffect(() => { setForm(initial()); setErrors({}); },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [client.id, client.commissionPercent, client.orderTimeoutSeconds,
-        client.minWithdrawalAmount, client.comment, methodsKey]);
+        client.minWithdrawalAmount, client.comment, client.ipRestrictionEnabled, methodsKey]);
 
   // Раскрыт ли список методов: Escape тогда закрывает только его.
   const [methodsOpen, setMethodsOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen && !confirmRecalc && !confirmDelete) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, methodsOpen]);
+  }, [onClose, methodsOpen, confirmRecalc, confirmDelete]);
 
   const setField = (key, v) => {
     setForm((prev) => ({ ...prev, [key]: v }));
@@ -1517,6 +1477,9 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
     const was = [...(client.methods || [])].sort().join(',');
     const now = [...form.methods].sort().join(',');
     if (was !== now) body.methods = form.methods;
+
+    // Ограничение белого списка IP: шлём, только если переключатель изменили.
+    if (form.ipRestriction !== Boolean(client.ipRestrictionEnabled)) body.ipRestrictionEnabled = form.ipRestriction;
 
     return { body, errors: errs };
   };
@@ -1659,6 +1622,27 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
               </section>
             </div>
 
+            {/* ---------- Ограничение белого списка IP: под блоками, над комментарием ----------
+                 Включено — запросы клиента к API принимаются только с адресов
+                 из его белого списка (список ведёт сам клиент в своём кабинете). */}
+            <div className="client-switch">
+              <span className="eyebrow" id="ip-restriction-label">Ограничение белого списка IP адресов</span>
+              <label className="switch-row">
+                <span className="switch">
+                  <input
+                      type="checkbox"
+                      aria-labelledby="ip-restriction-label"
+                      checked={form.ipRestriction}
+                      disabled={saving}
+                      onChange={(e) => setField('ipRestriction', e.target.checked)}
+                  />
+                  <span className="track" />
+                  <span className="thumb" />
+                </span>
+                <span>{form.ipRestriction ? 'Включено' : 'Выключено'}</span>
+              </label>
+            </div>
+
             {/* ---------- Комментарий: во всю ширину под блоками ---------- */}
             <div className="client-comment">
               <label className="eyebrow" htmlFor="client-comment">Комментарий</label>
@@ -1678,11 +1662,17 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
           </div>
 
           <div className="modal-foot modal-foot-split">
-            <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={onRecalculate}>
-              <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
-              Перерасчёт баланса
-            </button>
+            {onDeleted && (
+                <button type="button" className="btn btn-danger-soft" disabled={saving || recalculating} onClick={() => setConfirmDelete(true)}>
+                  <i className="fa-solid fa-trash" />
+                  Удалить клиента
+                </button>
+            )}
             <div className="foot-right">
+              <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={() => setConfirmRecalc(true)}>
+                <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
+                Перерасчёт баланса
+              </button>
               <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>
                 Отмена
               </button>
@@ -1691,6 +1681,105 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
                 Сохранить
               </button>
             </div>
+          </div>
+        </div>
+
+        {confirmRecalc && (
+            <ConfirmDialog
+                title="Перерасчёт баланса"
+                busy={recalculating}
+                onConfirm={onRecalculate}
+                onCancel={() => setConfirmRecalc(false)}
+            >
+              Пересчитать баланс клиента <b>{client.username || client.id}</b> по сумме его транзакций?
+            </ConfirmDialog>
+        )}
+        {confirmDelete && (
+            <DeleteClientDialog
+                client={client}
+                showToast={showToast}
+                onCancel={() => setConfirmDelete(false)}
+                onDeleted={() => { setConfirmDelete(false); onDeleted(); }}
+            />
+        )}
+      </div>
+  );
+}
+
+/* ---- Окно удаления клиента ----
+   Логин и ID удаляемого клиента, поле для слова «удалить». Кнопка
+   «Удалить» активна, только когда введено ровно это слово: регистр
+   не учитывается, пробелы по краям отбрасываются. Удаляется всё,
+   что связано с клиентом (ордера, заявки, транзакции, токены), поэтому
+   подтверждение — вводом слова, а не одной кнопкой. */
+const DELETE_WORD = 'удалить';
+
+function DeleteClientDialog({ client, showToast, onCancel, onDeleted }) {
+  const [word, setWord] = useState('');
+  const [busy, setBusy] = useState(false);
+  const ready = word.trim().toLowerCase() === DELETE_WORD;
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || busy) return;
+      // Escape закрывает только это окно, а не карточку клиента под ним.
+      e.stopImmediatePropagation();
+      onCancel();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onCancel, busy]);
+
+  const apply = async () => {
+    if (!ready || busy) return;
+    setBusy(true);
+    try {
+      await api.deleteClient(client.id);
+      onDeleted();
+    } catch (e) {
+      showToast(e.message || 'Не удалось удалить клиента', 'error');
+      setBusy(false);
+    }
+  };
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="dc-title">
+          <div className="ocard-head">
+            <span className="ocard-ico ocard-ico-danger"><i className="fa-solid fa-trash" /></span>
+            <div className="ocard-title">
+              <span className="ocard-name" id="dc-title">Удаление клиента</span>
+              <span className="ocard-sub">{client.username || '—'}</span>
+            </div>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <p className="danger-box">
+              Клиент <b>{client.username || '—'}</b> · <b className="mono">{client.id}</b> будет удалён.
+              Действие необратимо.
+            </p>
+            <label className="eyebrow inc-label" htmlFor="dc-word">
+              Чтобы подтвердить, введите слово <b className="delete-word">{DELETE_WORD}</b>
+            </label>
+            <input
+                id="dc-word"
+                className="dc-input"
+                type="text"
+                autoComplete="off"
+                placeholder={DELETE_WORD}
+                value={word}
+                disabled={busy}
+                autoFocus
+                onChange={(e) => setWord(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') apply(); }}
+            />
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Отмена</button>
+            <button type="button" className="btn btn-danger" onClick={apply} disabled={!ready || busy}>
+              {busy && <i className="fa-solid fa-spinner fa-spin" />}
+              Удалить
+            </button>
           </div>
         </div>
       </div>
@@ -2938,7 +3027,6 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
               <SortTh field="type" sort={sort} onSort={onSort}>Тип</SortTh>
               <SortTh field="resolvedById" sort={sort} onSort={onSort}>Обработал</SortTh>
               <SortTh field="resolvedAt" sort={sort} onSort={onSort}>Обработан</SortTh>
-              <SortTh field="comment" sort={sort} onSort={onSort}>Комментарий</SortTh>
               <th className="c-act" aria-label="Действия" />
             </tr>
             </thead>
@@ -2954,9 +3042,6 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                   <td className="inc-type">{typeLabel(r.type)}</td>
                   <td className="c-id"><CopyValue value={r.resolvedById} onCopy={copy} /></td>
                   <td className="mono nowrap">{fmtDateTime(r.resolvedAt)}</td>
-                  <td className="inc-comment">
-                    {r.comment ? <span className="ellipsis" title={r.comment}>{r.comment}</span> : '—'}
-                  </td>
                   <td className="c-act">
                     {r.status === 'NEW' && (
                         <button
@@ -2999,6 +3084,8 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                 showToast={showToast}
                 canOpenClient={canOpenClient}
                 onCopy={copy}
+                onResolve={() => setResolving(card)}
+                blocked={Boolean(resolving)}
                 onClose={() => setCard(null)}
             />
         )}
@@ -3051,17 +3138,21 @@ function IncidentText({ template, data, onCopy }) {
 
 /* ---- Карточка инцидента ----
    Описание (description с подстановкой из data), «Что необходимо сделать»
-   (guide) и кнопка перехода к связанной сущности по типу инцидента. */
-function IncidentCard({ incident, type, orderStatuses, merchants, methods, showToast, canOpenClient, onCopy, onClose }) {
+   (guide), комментарий обработавшего (только если он есть) и кнопка
+   перехода к связанной сущности по типу инцидента.
+   У нового инцидента в подвале — «Обработать» слева от «Закрыть»: открывает
+   то же окно обработки, что кнопка в строке таблицы (onResolve).
+   blocked — поверх открыто окно обработки: Escape карточку не закрывает. */
+function IncidentCard({ incident, type, orderStatuses, merchants, methods, showToast, canOpenClient, onCopy, onResolve, blocked, onClose }) {
   const [client, setClient] = useState(null); // карточка клиента поверх
   const [order, setOrder] = useState(null);   // карточка ордера поверх
   const [opening, setOpening] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !client && !order) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !client && !order && !blocked) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, client, order]);
+  }, [onClose, client, order, blocked]);
 
   const link = INCIDENT_LINKS[incident.type];
   const linkId = link ? incident.data?.[link.key] : null;
@@ -3121,6 +3212,13 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
                 </>
             )}
 
+            {incident.comment && (
+                <>
+                  <h3 className="eyebrow inc-label">Комментарий</h3>
+                  <div className="inc-box inc-comment">{incident.comment}</div>
+                </>
+            )}
+
             {showLink && (
                 <button type="button" className="btn btn-outline inc-link" onClick={openLink} disabled={opening}>
                   {opening && <i className="fa-solid fa-spinner fa-spin" />}
@@ -3130,7 +3228,19 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
           </div>
 
           <div className="modal-foot">
-            <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
+            {incident.status === 'NEW' && (
+                <button type="button" className="btn btn-primary" onClick={onResolve}>
+                  <i className="fa-solid fa-screwdriver-wrench" />
+                  Обработать
+                </button>
+            )}
+            <button
+                type="button"
+                className={`btn ${incident.status === 'NEW' ? 'btn-secondary' : 'btn-primary'}`}
+                onClick={onClose}
+            >
+              Закрыть
+            </button>
           </div>
         </div>
 

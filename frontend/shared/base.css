@@ -1,0 +1,91 @@
+/* ============================================================
+   Общее для обоих кабинетов: цвета темы, закреплённая шапка,
+   кнопка смены темы.
+
+   Тема — атрибут data-theme на <html> (ставит shared/ThemeToggle.jsx):
+   'light' или 'dark'. Пока пользователь сам не выбрал, тема следует
+   настройкам системы. Блок @media — на случай, если атрибут ещё
+   не выставлен (до запуска скрипта).
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f0f1f4;
+  --text: #16181d;
+  --text-dim: #6b7280;
+  --border: #e2e4e9;
+  --border-strong: #cfd3da;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --row-hover: rgba(0, 0, 0, .04);
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warn: #b45309;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar-w: 232px;
+
+  /* Высота закреплённой шапки: под неё уходят якоря документации */
+  --topbar-h: 73px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14161a;
+  --surface: #1c1f25;
+  --surface-2: #23272e;
+  --text: #e8eaed;
+  --text-dim: #9aa1ac;
+  --border: #2c313a;
+  --border-strong: #3a404b;
+  --accent: #4b8bf5;
+  --accent-text: #ffffff;
+  --row-hover: rgba(255, 255, 255, .05);
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warn: #fbbf24;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #14161a;
+    --surface: #1c1f25;
+    --surface-2: #23272e;
+    --text: #e8eaed;
+    --text-dim: #9aa1ac;
+    --border: #2c313a;
+    --border-strong: #3a404b;
+    --accent: #4b8bf5;
+    --accent-text: #ffffff;
+    --row-hover: rgba(255, 255, 255, .05);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warn: #fbbf24;
+  }
+}
+
+/* ---- Шапка закреплена: при прокрутке остаётся сверху ----
+   Над содержимым, но под выезжающим меню (60) и затемнением (55). */
+.topbar { position: sticky; top: 0; z-index: 50; }
+
+/* Правая часть шапки: кнопка темы, меню аккаунта (у клиента ещё баланс) */
+.topbar-right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ---- Кнопка смены темы в шапке ---- */
+.theme-btn {
+  display: inline-grid; place-items: center; flex: none;
+  width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim); cursor: pointer; font-size: 15px;
+  transition: background .15s, color .15s;
+}
+.theme-btn:hover { background: var(--row-hover); color: var(--text); }
+
+@media (max-width: 720px) {
+  :root { --topbar-h: 65px; }
+}

@@ -9,7 +9,10 @@ import bash from 'highlight.js/lib/languages/bash';
 import http from 'highlight.js/lib/languages/http';
 import json from 'highlight.js/lib/languages/json';
 
-const SPY_OFFSET = 96;
+/* Заголовок считается текущим, когда дошёл до низа закреплённой шапки
+   кабинета (.topbar) плюс этот запас. */
+const SPY_GAP = 24;
+const spyOffset = () => (document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0) + SPY_GAP;
 
 const lowlight = createLowlight({ bash, http, json });
 
@@ -241,10 +244,11 @@ export default function Markdown({ source }) {
         if (toc.length < 2) return undefined;
         const update = () => {
             const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+            const offset = spyOffset();
             let current = toc[0].id;
             for (const t of toc) {
                 const h = document.getElementById(t.id);
-                if (h && h.getBoundingClientRect().top <= SPY_OFFSET) current = t.id;
+                if (h && h.getBoundingClientRect().top <= offset) current = t.id;
             }
             setActiveId(atBottom ? toc[toc.length - 1].id : current);
         };

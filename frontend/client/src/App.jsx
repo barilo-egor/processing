@@ -1,4 +1,4 @@
-import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   api,
   dateFilterParams,
@@ -15,6 +15,10 @@ import {
   PAGE_SIZE,
   shorten,
 } from './api.js';
+// Общие для обоих кабинетов компоненты — frontend/shared.
+import ConfirmDialog from '@shared/ConfirmDialog.jsx';
+import {DocPage, DocsNav, docIdOf, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
+import ThemeToggle from '@shared/ThemeToggle.jsx';
 
 /* ============================================================
    Личный кабинет клиента API.
@@ -32,6 +36,9 @@ import {
 
 // Больше десяти активных токенов у клиента быть не может.
 const TOKENS_LIMIT = 10;
+
+// Не больше 10 адресов в белом списке IP (ТЗ; бэк проверяет так же).
+const IP_LIMIT = 10;
 
 // Ключ в localStorage: свёрнуто ли боковое меню на широком экране.
 const SIDEBAR_KEY = 'client.sidebarCollapsed';
@@ -202,6 +209,7 @@ export default function App() {
             </div>
             <div className="topbar-right">
               <BalanceBadge value={profile?.balance} loading={loadingProfile && !profile} />
+              <ThemeToggle />
               <AccountMenu username={profile?.username} />
             </div>
           </header>
@@ -214,6 +222,7 @@ export default function App() {
                       showToast={showToast}
                   />
                   <ApiKeysBlock showToast={showToast} />
+                  <IpWhitelistBlock showToast={showToast} />
                 </>
             )}
             {section === 'orders' && (
@@ -221,7 +230,7 @@ export default function App() {
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
             {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} />}
-            {docId && <DocPage key={docId} id={docId} />}
+            {docId && <DocPage key={docId} id={docId} load={api.doc} />}
           </main>
         </div>
 
@@ -231,110 +240,9 @@ export default function App() {
 }
 
 
-/* ==================== Документация ==================== */
-/* Список страниц приходит при открытии кабинета (GET /docs) — бэк сам
-   отбирает страницы по роли пользователя. В меню — пункт «Документация»
-   с подпунктами-страницами. Если страниц нет (или список не загрузился),
-   пункта в меню нет совсем. Раздел страницы — 'doc:{id}'. */
-const DOC_PREFIX = 'doc:';
-const Markdown = lazy(() => import('./Markdown.jsx'));
-const docIdOf = (section) => (section.startsWith(DOC_PREFIX) ? section.slice(DOC_PREFIX.length) : null);
-
-/* Открытая страница документации — в адресе: ?doc={id}, раздел страницы — #якорь. */
-const DOC_PARAM = 'doc';
-
-function sectionFromUrl(fallback) {
-  const id = new URLSearchParams(window.location.search).get(DOC_PARAM);
-  return id ? DOC_PREFIX + id : fallback;
-}
-
-function syncDocUrl(section) {
-  const url = new URL(window.location.href);
-  const id = docIdOf(section);
-  if (url.searchParams.get(DOC_PARAM) === id) return;
-  if (id) url.searchParams.set(DOC_PARAM, id);
-  else url.searchParams.delete(DOC_PARAM);
-  url.hash = '';
-  window.history.replaceState(window.history.state, '', url);
-}
-
-/* Пункт меню «Документация»: раскрывает и сворачивает подпункты. */
-function DocsNav({ docs, section, collapsed, onOpen }) {
-  const activeId = docIdOf(section);
-  const [open, setOpen] = useState(Boolean(activeId));
-  // Открыли страницу документации — подменю раскрыто.
-  useEffect(() => { if (activeId) setOpen(true); }, [activeId]);
-
-  if (!docs.length) return null;
-  return (
-      <div className="nav-group">
-        <button
-            type="button"
-            className={`nav-item nav-group-head${activeId ? ' has-active' : ''}`}
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            title={collapsed ? 'Документация' : undefined}
-        >
-          <i className="fa-solid fa-book" />
-          <span>Документация</span>
-          <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} nav-caret`} />
-        </button>
-        {open && (
-            <div className="nav-sub">
-              {docs.map((d) => (
-                  <button
-                      key={d.id}
-                      type="button"
-                      className={`nav-item nav-sub-item${activeId === d.id ? ' active' : ''}`}
-                      onClick={() => onOpen(DOC_PREFIX + d.id)}
-                      title={collapsed ? d.title : undefined}
-                  >
-                    <i className="fa-regular fa-file-lines" />
-                    <span>{d.title}</span>
-                  </button>
-              ))}
-            </div>
-        )}
-      </div>
-  );
-}
-
-/* Страница документации: GET /docs/{id}, текст — Markdown (GFM). */
-/* Заголовок страницы (title) — в верхней панели кабинета, как у остальных разделов. */
-function DocPage({ id }) {
-  const [state, setState] = useState({ loading: true, page: null, error: '' });
-
-  useEffect(() => {
-    let alive = true;
-    setState({ loading: true, page: null, error: '' });
-    api.doc(id)
-        .then((page) => { if (alive) setState({ loading: false, page, error: '' }); })
-        .catch((e) => {
-          if (!alive) return;
-          // 404 — страницы нет или она недоступна роли пользователя.
-          setState({
-            loading: false,
-            page: null,
-            error: e.status === 404 ? 'Страница не найдена' : (e.message || 'Не удалось загрузить страницу'),
-          });
-        });
-    return () => { alive = false; };
-  }, [id]);
-
-  if (state.loading) {
-    return <div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>;
-  }
-  if (state.error) {
-    return <div className="state"><i className="fa-regular fa-file-excel" /> {state.error}</div>;
-  }
-  return (
-      <article className="doc-page">
-        <Suspense fallback={<div className="state"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>}>
-          <Markdown source={state.page?.content} />
-        </Suspense>
-      </article>
-  );
-}
+/* ==================== Документация ====================
+   Пункт меню, страница и адрес ?doc={id} — общие для обоих кабинетов:
+   frontend/shared/docs.jsx. */
 
 /* ==================== Меню аккаунта ==================== */
 /* Логин клиента в правом углу верхней панели. Клик раскрывает меню
@@ -803,6 +711,186 @@ function DeleteTokenDialog({ row, onCancel, onApply }) {
           </div>
         </div>
       </div>
+  );
+}
+
+/* ==================== Блок «Белый список IP» ====================
+   По образцу «API-токенов»: поле «IP-адрес», «Добавить» и таблица адресов
+   с удалением в строке. Названий у записей нет — адрес целиком.
+   Не больше 10 адресов: на лимите «Добавить» неактивна и выводится
+   предупреждение. Адрес проверяет бэк (IPv4 или IPv6) и сохраняет
+   в нормализованном виде (::1 → 0:0:0:0:0:0:0:1), поэтому в таблицу
+   кладём адрес из ответа, а не набранный. Ошибку 400 (неверный адрес,
+   уже добавлен) показываем под полем. Удаление — с подтверждением.
+
+   GET    /api/client/ip-address          -> [{ id, address }] в порядке добавления
+   POST   /api/client/ip-address?address= -> { id, address }
+   DELETE /api/client/ip-address/{id} */
+
+function IpWhitelistBlock({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [address, setAddress] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [toDelete, setToDelete] = useState(null); // адрес в подтверждении
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await api.ipAddresses());
+    } catch (e) {
+      showToast(e.message || 'Не удалось загрузить белый список IP', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const limitReached = rows.length >= IP_LIMIT;
+
+  const add = async () => {
+    const next = address.trim();
+    if (!next) {
+      setError('Укажите IP-адрес');
+      return;
+    }
+    setAdding(true);
+    try {
+      const row = await api.addIpAddress(next);
+      if (row && row.id != null) setRows((prev) => [...prev, row]);
+      else await load();
+      setAddress('');
+      setError('');
+      showToast('IP-адрес добавлен', 'success');
+    } catch (e) {
+      if (e.status === 400) setError(e.message || 'Не удалось добавить IP-адрес');
+      else showToast(e.message || 'Не удалось добавить IP-адрес', 'error');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await api.deleteIpAddress(toDelete.id);
+      setRows((prev) => prev.filter((r) => r.id !== toDelete.id));
+      showToast('IP-адрес удалён', 'success');
+    } catch (e) {
+      showToast(e.message || 'Не удалось удалить IP-адрес', 'error');
+      load();
+    } finally {
+      setDeleting(false);
+      setToDelete(null);
+    }
+  };
+
+  return (
+      <section className="block">
+        <div className="block-aside">
+          <h2 className="block-title">
+            Белый список IP
+            {!loading && <span className="block-count">{rows.length} из {IP_LIMIT}</span>}
+          </h2>
+          <p className="block-note">
+            IP-адреса, с которых вы обращаетесь к API. Поддерживаются IPv4 и IPv6,
+            в списке — не больше {IP_LIMIT} адресов.
+          </p>
+        </div>
+
+        <div className="block-body">
+          {limitReached && (
+              <p className="limit-box">
+                Достигнут лимит в {IP_LIMIT} адресов. Удалите ненужный, чтобы добавить новый.
+              </p>
+          )}
+
+          <div className="create-row">
+            <div className="field">
+              <label htmlFor="ip-address">IP-адрес</label>
+              <input
+                  id="ip-address"
+                  type="text"
+                  inputMode="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="203.0.113.17"
+                  value={address}
+                  disabled={adding || limitReached}
+                  className={error ? 'invalid' : ''}
+                  onChange={(e) => { setAddress(e.target.value); if (error) setError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !limitReached) add(); }}
+              />
+              {error && <span className="field-error">{error}</span>}
+            </div>
+
+            <button
+                type="button"
+                className="btn btn-primary create-btn"
+                disabled={adding || limitReached || loading}
+                onClick={add}
+            >
+              {adding ? <i className="fa-solid fa-spinner fa-spin" /> : <i className="fa-solid fa-plus" />}
+              Добавить
+            </button>
+          </div>
+
+          {loading ? (
+              <div className="state"><i className="fa-solid fa-spinner fa-spin" />Загрузка…</div>
+          ) : rows.length === 0 ? (
+              <div className="state">
+                <i className="fa-solid fa-shield-halved" />
+                Адресов пока нет.
+              </div>
+          ) : (
+              <div className="table-wrap">
+                <table className="grid grid-tokens">
+                  <thead>
+                  <tr>
+                    <th>IP-адрес</th>
+                    <th className="c-act" aria-label="Действия" />
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {rows.map((r) => (
+                      <tr key={r.id} className="no-hover">
+                        <td className="code ip-cell">{r.address}</td>
+                        <td className="c-act">
+                          <button
+                              type="button"
+                              className="icon-btn no"
+                              title="Удалить адрес"
+                              aria-label={`Удалить адрес ${r.address}`}
+                              onClick={() => setToDelete(r)}
+                          >
+                            <i className="fa-solid fa-trash" />
+                          </button>
+                        </td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
+          )}
+        </div>
+
+        {toDelete && (
+            <ConfirmDialog
+                title="Удаление IP-адреса"
+                confirmLabel="Удалить"
+                cancelLabel="Отмена"
+                confirmClass="btn-danger"
+                busy={deleting}
+                onConfirm={remove}
+                onCancel={() => setToDelete(null)}
+            >
+              Удалить адрес <b className="code">{toDelete.address}</b> из белого списка?
+            </ConfirmDialog>
+        )}
+      </section>
   );
 }
 
