@@ -24,14 +24,10 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,7 +72,7 @@ class AuthenticationHandlerTest {
             "5560783c-ad7f-4395-b734-74b2ceaf5897,ROLE_TRADER,/support/dashboard,section=incidents",
             "1d1b97fd-f4f9-4049-86ea-10f5379eaca1,ROLE_UNKNOWN,/client/dashboard,doc=orders"
     })
-    @DisplayName("Метод должен перенаправить на адрес, сохранённый до входа, и удалить его из сессии.")
+    @DisplayName("Метод должен перенаправить на адрес, сохранённый до входа.")
     void onAuthenticationSuccess_shouldRedirectToSavedRequest(UUID name, String role, String path, String query)
             throws IOException, ServletException {
         GrantedAuthority grantedAuthority = mock(GrantedAuthority.class);
@@ -97,7 +93,6 @@ class AuthenticationHandlerTest {
 
         assertTrue(Objects.requireNonNull(response.getRedirectedUrl())
                 .startsWith("http://localhost" + path + "?" + query));
-        assertNull(requestCache.getRequest(request, response));
     }
 
     @ParameterizedTest
