@@ -53,9 +53,15 @@ cloudflare:
     api-token:
     account-id:
     list-id:
+processing:
+  uri:
+    # Внешний адрес приложения (https://host) для ссылок, которые отправляются вне кабинета.
+    base-url:
 tg:
   bot:
     token:
+    # Чат, в который бот отправляет уведомления о новых инцидентах.
+    incidents-chat-id:
 kafka:
   group-id:
   topic:

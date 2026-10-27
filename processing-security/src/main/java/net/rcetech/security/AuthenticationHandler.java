@@ -1,5 +1,6 @@
 package net.rcetech.security;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,6 +28,8 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler {
 
     private final ClientService clientService;
 
+    private final AuthenticationSuccessHandler redirectHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+
     public AuthenticationHandler(SupportUserService supportUserService, ClientService clientService) {
         this.supportUserService = supportUserService;
         this.clientService = clientService;
@@ -34,7 +38,7 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+                                        Authentication authentication) throws IOException, ServletException {
         Set<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
@@ -42,16 +46,14 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler {
             String username = getUsername(authentication);
             supportUserService.createIfNotExists(UUID.fromString(authentication.getName()), username);
             log.info("Вход сотрудника поддержки {} ({}), роли {}.", authentication.getName(), username, roles);
-            response.sendRedirect("/");
         } else if (roles.contains(Role.CLIENT.withPrefix())) {
             String username = getUsername(authentication);
             clientService.createIfNotExists(UUID.fromString(authentication.getName()), username);
             log.info("Вход клиента {} ({}).", authentication.getName(), username);
-            response.sendRedirect("/");
         } else {
             log.info("Вход пользователя {} без ролей.", authentication.getName());
-            response.sendRedirect("/");
         }
+        redirectHandler.onAuthenticationSuccess(request, response, authentication);
     }
 
     private String getUsername(Authentication authentication) {

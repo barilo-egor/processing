@@ -56,8 +56,15 @@ const ADMIN_ONLY_SECTIONS = new Set(['clients', 'merchants']);
 
 const SECTION_LIST = SECTIONS.flatMap((s) => s.items || [s]);
 
+const SECTION_PARAM = 'section';
+
+function initialSection() {
+  const id = new URLSearchParams(window.location.search).get(SECTION_PARAM);
+  return SECTION_LIST.some((s) => s.id === id) ? id : sectionFromUrl('orders');
+}
+
 export default function App() {
-  const [section, setSection] = useState(() => sectionFromUrl('orders'));
+  const [section, setSection] = useState(initialSection);
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
@@ -162,6 +169,13 @@ export default function App() {
   };
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(SECTION_PARAM)) return;
+    url.searchParams.delete(SECTION_PARAM);
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
 
   useEffect(() => { syncDocUrl(section); }, [section]);
 
