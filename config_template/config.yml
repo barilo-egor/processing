@@ -61,7 +61,7 @@ tg:
   bot:
     token:
     # Чат, в который бот отправляет уведомления о новых инцидентах.
-    incidents-chat-id:
+    group-chat-id:
 kafka:
   group-id:
   topic:

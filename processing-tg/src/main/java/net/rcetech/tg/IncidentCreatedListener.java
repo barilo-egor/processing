@@ -21,7 +21,7 @@ public class IncidentCreatedListener {
     private final String incidentsUrl;
 
     public IncidentCreatedListener(MethodExecutor methodExecutor,
-                                   @Value("${tg.bot.incidents-chat-id}") Long chatId,
+                                   @Value("${tg.bot.group-chat-id}") Long chatId,
                                    @Value("${processing.uri.base-url}") String baseUrl) {
         this.methodExecutor = methodExecutor;
         this.chatId = chatId;
