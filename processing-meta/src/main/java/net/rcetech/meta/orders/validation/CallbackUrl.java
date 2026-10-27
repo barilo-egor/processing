@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Адрес КБ клиента: https, порт 443, не длиннее 255 символов, хост — доменное имя публичного сервера,
+ * Адрес КБ клиента: https, порт 443, не длиннее 2048 символов, хост — доменное имя публичного сервера,
  * без логина с паролем и фрагмента. {@code null} допустим.
  */
 @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Constraint(validatedBy = CallbackUrlValidator.class)
 public @interface CallbackUrl {
 
-    String message() default "должно быть адресом с протоколом https и портом 443 не длиннее 255 символов, "
+    String message() default "должно быть адресом с протоколом https и портом 443 не длиннее 2048 символов, "
             + "с доменным именем публичного сервера, без логина и пароля";
 
     Class<?>[] groups() default {};

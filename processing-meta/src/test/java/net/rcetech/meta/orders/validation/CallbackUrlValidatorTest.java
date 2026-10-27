@@ -92,13 +92,13 @@ class CallbackUrlValidatorTest {
         assertEquals(1, violations.size());
         ConstraintViolation<Target> violation = violations.iterator().next();
         assertEquals("callbackUrl", violation.getPropertyPath().toString());
-        assertEquals("должно быть адресом с протоколом https и портом 443 не длиннее 255 символов, "
+        assertEquals("должно быть адресом с протоколом https и портом 443 не длиннее 2048 символов, "
                 + "с доменным именем публичного сервера, без логина и пароля", violation.getMessage());
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {256, 300})
-    @DisplayName("Валидатор должен вернуть нарушение, если адрес длиннее 255 символов.")
+    @ValueSource(ints = {2049, 2100})
+    @DisplayName("Валидатор должен вернуть нарушение, если адрес длиннее 2048 символов.")
     void isValid_shouldRejectTooLongUrl(int length) {
         String prefix = "https://example.com/";
         String url = prefix + "a".repeat(length - prefix.length());
@@ -107,8 +107,8 @@ class CallbackUrlValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {254, 255})
-    @DisplayName("Валидатор должен пропустить адрес длиной до 255 символов включительно.")
+    @ValueSource(ints = {2047, 2048})
+    @DisplayName("Валидатор должен пропустить адрес длиной до 2048 символов включительно.")
     void isValid_shouldPassUrlUpToMaxLength(int length) {
         String prefix = "https://example.com/";
         String url = prefix + "a".repeat(length - prefix.length());

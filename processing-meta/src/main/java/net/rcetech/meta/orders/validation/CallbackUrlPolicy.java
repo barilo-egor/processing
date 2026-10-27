@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  */
 public final class CallbackUrlPolicy {
 
-    private static final int MAX_LENGTH = 255;
+    private static final int MAX_LENGTH = 2048;
 
     private static final String SCHEME = "https";
 
@@ -28,7 +28,7 @@ public final class CallbackUrlPolicy {
     }
 
     /**
-     * Проверяет, что адрес не длиннее 255 символов, с протоколом https и портом 443, без логина с паролем
+     * Проверяет, что адрес не длиннее 2048 символов, с протоколом https и портом 443, без логина с паролем
      * и фрагмента, а хост задан доменным именем публичного сервера.
      *
      * @param url адрес КБ

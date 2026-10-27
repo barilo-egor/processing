@@ -100,6 +100,7 @@ public class Order implements Persistable<UUID> {
     /**
      * URL на который будет отправлен HTTP запрос об изменении статуса с информацией об ордере.
      */
+    @Column(length = 2048)
     private String callbackUrl;
 
     @Transient

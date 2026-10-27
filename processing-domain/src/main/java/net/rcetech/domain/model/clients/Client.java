@@ -54,7 +54,7 @@ public class Client implements Persistable<UUID> {
     /**
      * Адрес для отправки уведомлений о смене статусов ордера.
      */
-    @Column
+    @Column(length = 2048)
     private String callbackUrl;
 
     /**
