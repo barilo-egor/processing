@@ -32,6 +32,9 @@
            -> { content: [{ id, createdAt, status, errorTimestamp, type, data, resolvedById, resolvedAt, comment }], page }
      PATCH /api/support/incident/{id}  <- { comment } — обработка: NEW → RESOLVED
      POST  /api/support/client/{id}/balance/recalculation -> клиент после пересчёта баланса
+     DELETE /api/support/client/{id}  -> 204; удаляет клиента и всё связанное (только ADMIN)
+     POST  /api/support/client-callback/{orderId} -> 200; повторная отправка клиенту последнего недоставленного КБ
+     Клиент: ipRestrictionEnabled — ограничение белого списка IP (PATCH /client/{id} тем же полем)
      GET   /api/support/merchant-history?operationId&orderId&actorId&details&merchants&amount&createdAtFrom&createdAtTo
            -> { content, page }; orderId здесь — ID у мерчанта
    ============================================================ */
@@ -330,6 +333,16 @@ export const api = {
   // Перерасчёт баланса клиента по сумме его транзакций. Возвращает клиента после пересчёта.
   recalculateBalance: (clientId) =>
       request(`${SUPPORT_API}/client/${encodeURIComponent(clientId)}/balance/recalculation`, { method: 'POST' }),
+
+  /* Удаление клиента вместе с ордерами, заявками, транзакциями и токенами.
+     Пользователь Keycloak остаётся: при следующем входе клиент создаётся заново. */
+  deleteClient: (id) =>
+      request(`${SUPPORT_API}/client/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  /* Повторная отправка клиенту КБ по ордеру. 400 — по ордеру нет КБ,
+     КБ уже доставлен или статус ордера с тех пор менялся (текст в description). */
+  resendClientCallback: (orderId) =>
+      request(`${SUPPORT_API}/client-callback/${encodeURIComponent(orderId)}`, { method: 'POST' }),
 
   /* Ручная корректировка баланса: { clientId, operation, amount, comment }.
      Тип «Ручная корректировка» (MANUAL_CORRECT) бэк проставляет сам. */

@@ -438,6 +438,15 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
     setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
+  // Клиент удалён: карточка закрывается, список перечитывается (ТЗ «Удаление клиента»).
+  // Удалили последнего на странице — переходим на предыдущую, чтобы не остаться на пустой.
+  const onDeleted = () => {
+    setCard(null);
+    showToast('Клиент удалён', 'success');
+    if (rows.length === 1 && page > 0) setPage(page - 1);
+    else load(applied, page, sort);
+  };
+
   return (
       <>
         <div className="card filter-card">
@@ -563,6 +572,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                 methods={methods}
                 onClose={() => setCard(null)}
                 onUpdated={applyUpdated}
+                onDeleted={onDeleted}
                 onCopy={copy}
                 showToast={showToast}
             />
@@ -1001,6 +1011,23 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
   // Действие в окне подтверждения (элемент ORDER_ACTIONS) и идёт ли запрос.
   const [confirmAction, setConfirmAction] = useState(null);
   const [changing, setChanging] = useState(false);
+  const [sendingCallback, setSendingCallback] = useState(false);
+
+  /* «Отправить КБ» (ТЗ «Кнопка „Отправить КБ“ в карточке ордера»): повторная
+     отправка клиенту последнего недоставленного КБ по ордеру.
+     400 — текст ошибки из ответа (например, КБ уже доставлен),
+     остальные ошибки — общий текст. */
+  const sendCallback = async () => {
+    setSendingCallback(true);
+    try {
+      await api.resendClientCallback(full.id);
+      showToast('Колбэк отправлен', 'success');
+    } catch (e) {
+      showToast(e.status === 400 && e.message ? e.message : 'Не удалось отправить колбэк', 'error');
+    } finally {
+      setSendingCallback(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -1172,14 +1199,21 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
               </div>
           )}
 
-          {/* «Открыть карточку клиента» ведёт в раздел «Клиенты» — оператору не показываем. */}
-          <div className={`modal-foot${canOpenClient ? ' modal-foot-split' : ''}`}>
-            {canOpenClient && (
-                <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
-                  <i className="fa-solid fa-user" />
-                  Открыть карточку клиента
-                </button>
-            )}
+          {/* «Открыть карточку клиента» ведёт в раздел «Клиенты» — оператору не показываем.
+              «Отправить КБ» — в том же ряду, видна всем. */}
+          <div className="modal-foot modal-foot-split">
+            <div className="foot-left">
+              {canOpenClient && (
+                  <button type="button" className="btn btn-secondary" onClick={openClient} disabled={loadingClient}>
+                    <i className="fa-solid fa-user" />
+                    Открыть карточку клиента
+                  </button>
+              )}
+              <button type="button" className="btn btn-outline" onClick={sendCallback} disabled={sendingCallback}>
+                <i className={sendingCallback ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane'} />
+                Отправить КБ
+              </button>
+            </div>
             <button type="button" className="btn btn-primary" onClick={onClose}>Закрыть</button>
           </div>
         </div>
@@ -1313,12 +1347,16 @@ function shortId(id) {
    что пришли в client.methods.
 
    «Отмена» закрывает окно без сохранения, после «Сохранить»
-   окно тоже закрывается. */
+   окно тоже закрывается.
+
+   «Удалить клиента» — слева в подвале, только когда карточка открыта
+   из раздела «Клиенты» (передан onDeleted). Из карточек ордера и
+   инцидента клиента не удаляем: они остались бы открытыми на удалённом. */
 
 // Предел длины комментария к клиенту (ТЗ).
 const COMMENT_MAX = 1000;
 
-function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) {
+function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, showToast }) {
   // Черновик настроек. Строки, а не числа: поле ввода всегда работает
   // со строкой, приведение и проверка — при сохранении.
   const initial = () => ({
@@ -1327,6 +1365,7 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
     minWithdrawal: client.minWithdrawalAmount ?? '',
     comment: client.comment ?? '',
     methods: Array.isArray(client.methods) ? client.methods : [],
+    ipRestriction: Boolean(client.ipRestrictionEnabled),
   });
 
   const [form, setForm] = useState(initial);
@@ -1335,6 +1374,8 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
   const [recalculating, setRecalculating] = useState(false);
   // Открыто окно «Пересчитать баланс?» — запрос уходит только после «Да».
   const [confirmRecalc, setConfirmRecalc] = useState(false);
+  // Открыто окно удаления клиента.
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Перерасчёт баланса по сумме транзакций клиента (ТЗ «Инциденты»).
   // Бэк возвращает клиента после пересчёта — обновляем карточку и таблицу;
@@ -1359,16 +1400,16 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
   useEffect(() => { setForm(initial()); setErrors({}); },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [client.id, client.commissionPercent, client.orderTimeoutSeconds,
-        client.minWithdrawalAmount, client.comment, methodsKey]);
+        client.minWithdrawalAmount, client.comment, client.ipRestrictionEnabled, methodsKey]);
 
   // Раскрыт ли список методов: Escape тогда закрывает только его.
   const [methodsOpen, setMethodsOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen && !confirmRecalc) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen && !confirmRecalc && !confirmDelete) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, methodsOpen, confirmRecalc]);
+  }, [onClose, methodsOpen, confirmRecalc, confirmDelete]);
 
   const setField = (key, v) => {
     setForm((prev) => ({ ...prev, [key]: v }));
@@ -1423,6 +1464,9 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
     const was = [...(client.methods || [])].sort().join(',');
     const now = [...form.methods].sort().join(',');
     if (was !== now) body.methods = form.methods;
+
+    // Ограничение белого списка IP: шлём, только если переключатель изменили.
+    if (form.ipRestriction !== Boolean(client.ipRestrictionEnabled)) body.ipRestrictionEnabled = form.ipRestriction;
 
     return { body, errors: errs };
   };
@@ -1565,6 +1609,27 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
               </section>
             </div>
 
+            {/* ---------- Ограничение белого списка IP: под блоками, над комментарием ----------
+                 Включено — запросы клиента к API принимаются только с адресов
+                 из его белого списка (список ведёт сам клиент в своём кабинете). */}
+            <div className="client-switch">
+              <span className="eyebrow" id="ip-restriction-label">Ограничение белого списка IP адресов</span>
+              <label className="switch-row">
+                <span className="switch">
+                  <input
+                      type="checkbox"
+                      aria-labelledby="ip-restriction-label"
+                      checked={form.ipRestriction}
+                      disabled={saving}
+                      onChange={(e) => setField('ipRestriction', e.target.checked)}
+                  />
+                  <span className="track" />
+                  <span className="thumb" />
+                </span>
+                <span>{form.ipRestriction ? 'Включено' : 'Выключено'}</span>
+              </label>
+            </div>
+
             {/* ---------- Комментарий: во всю ширину под блоками ---------- */}
             <div className="client-comment">
               <label className="eyebrow" htmlFor="client-comment">Комментарий</label>
@@ -1584,11 +1649,17 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
           </div>
 
           <div className="modal-foot modal-foot-split">
-            <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={() => setConfirmRecalc(true)}>
-              <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
-              Перерасчёт баланса
-            </button>
+            {onDeleted && (
+                <button type="button" className="btn btn-danger-soft" disabled={saving || recalculating} onClick={() => setConfirmDelete(true)}>
+                  <i className="fa-solid fa-trash" />
+                  Удалить клиента
+                </button>
+            )}
             <div className="foot-right">
+              <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={() => setConfirmRecalc(true)}>
+                <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
+                Перерасчёт баланса
+              </button>
               <button type="button" className="btn btn-secondary" disabled={saving} onClick={onClose}>
                 Отмена
               </button>
@@ -1610,6 +1681,94 @@ function ClientCard({ client, methods, onClose, onUpdated, onCopy, showToast }) 
               Пересчитать баланс клиента <b>{client.username || client.id}</b> по сумме его транзакций?
             </ConfirmDialog>
         )}
+        {confirmDelete && (
+            <DeleteClientDialog
+                client={client}
+                showToast={showToast}
+                onCancel={() => setConfirmDelete(false)}
+                onDeleted={() => { setConfirmDelete(false); onDeleted(); }}
+            />
+        )}
+      </div>
+  );
+}
+
+/* ---- Окно удаления клиента ----
+   Логин и ID удаляемого клиента, поле для слова «удалить». Кнопка
+   «Удалить» активна, только когда введено ровно это слово: регистр
+   не учитывается, пробелы по краям отбрасываются. Удаляется всё,
+   что связано с клиентом (ордера, заявки, транзакции, токены), поэтому
+   подтверждение — вводом слова, а не одной кнопкой. */
+const DELETE_WORD = 'удалить';
+
+function DeleteClientDialog({ client, showToast, onCancel, onDeleted }) {
+  const [word, setWord] = useState('');
+  const [busy, setBusy] = useState(false);
+  const ready = word.trim().toLowerCase() === DELETE_WORD;
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || busy) return;
+      // Escape закрывает только это окно, а не карточку клиента под ним.
+      e.stopImmediatePropagation();
+      onCancel();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onCancel, busy]);
+
+  const apply = async () => {
+    if (!ready || busy) return;
+    setBusy(true);
+    try {
+      await api.deleteClient(client.id);
+      onDeleted();
+    } catch (e) {
+      showToast(e.message || 'Не удалось удалить клиента', 'error');
+      setBusy(false);
+    }
+  };
+
+  return (
+      <div className="overlay overlay-top" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+        <div className="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="dc-title">
+          <div className="ocard-head">
+            <span className="ocard-ico ocard-ico-danger"><i className="fa-solid fa-trash" /></span>
+            <div className="ocard-title">
+              <span className="ocard-name" id="dc-title">Удаление клиента</span>
+              <span className="ocard-sub">{client.username || '—'}</span>
+            </div>
+            <button type="button" className="close-x" onClick={onCancel} disabled={busy} aria-label="Закрыть">×</button>
+          </div>
+          <div className="modal-body">
+            <p className="danger-box">
+              Клиент <b>{client.username || '—'}</b> · <b className="mono">{client.id}</b> будет удалён.
+              Действие необратимо.
+            </p>
+            <label className="eyebrow inc-label" htmlFor="dc-word">
+              Чтобы подтвердить, введите слово <b className="delete-word">{DELETE_WORD}</b>
+            </label>
+            <input
+                id="dc-word"
+                className="dc-input"
+                type="text"
+                autoComplete="off"
+                placeholder={DELETE_WORD}
+                value={word}
+                disabled={busy}
+                autoFocus
+                onChange={(e) => setWord(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') apply(); }}
+            />
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Отмена</button>
+            <button type="button" className="btn btn-danger" onClick={apply} disabled={!ready || busy}>
+              {busy && <i className="fa-solid fa-spinner fa-spin" />}
+              Удалить
+            </button>
+          </div>
+        </div>
       </div>
   );
 }

@@ -11,6 +11,9 @@
      GET    /api/client/api-key             -> [{id, name, preview}]
      POST   /api/client/api-key?name=       -> строка с полным токеном
      DELETE /api/client/api-key/{id}
+     GET    /api/client/ip-address          -> [{id, address}] — белый список IP, в порядке добавления
+     POST   /api/client/ip-address?address= -> {id, address} (адрес нормализован бэком; не больше 10)
+     DELETE /api/client/ip-address/{id}
      GET    /api/client/order?status&method&page&size&sort
      GET    /api/client/order/{id}           -> один ордер
      PATCH  /api/client/order/{id}           — отмена своего ордера (тела нет)
@@ -207,6 +210,19 @@ export const api = {
 
   deleteApiKey: (id) =>
       request(`${CLIENT_API}/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Белый список IP: [{id, address}].
+  async ipAddresses() {
+    const d = await request(`${CLIENT_API}/ip-address`);
+    return Array.isArray(d) ? d : [];
+  },
+
+  // Добавление адреса (IPv4 или IPv6) — query-параметром. 400: неверный адрес, уже есть, лимит.
+  addIpAddress: (address) =>
+      request(`${CLIENT_API}/ip-address`, { method: 'POST', params: { address } }),
+
+  deleteIpAddress: (id) =>
+      request(`${CLIENT_API}/ip-address/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   // Документация: список страниц для роли пользователя [{ id, title }] — порядок = порядок в меню.
   async docs() {

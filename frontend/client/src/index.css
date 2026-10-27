@@ -626,3 +626,16 @@ th.th-sortable.active .sort-ico { opacity: 1; color: var(--accent); }
   .sidebar.collapsed .nav-sub-item { padding-left: 0; }
 }
 
+/* ==================== Блок «Белый список IP» ==================== */
+/* Счётчик «3 из 10» справа от заголовка блока */
+.block-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.block-count { font-size: 13px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+/* Лимит адресов: предупреждение над полем */
+.limit-box {
+  margin: 0; padding: 10px 13px; border-radius: var(--radius-sm);
+  font-size: 13px; line-height: 1.5; color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+}
+/* IPv6 в полной записи длинный — переносим, а не растягиваем таблицу */
+.ip-cell { overflow-wrap: anywhere; }
