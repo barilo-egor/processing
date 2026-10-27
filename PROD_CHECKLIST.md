@@ -47,6 +47,7 @@
 - [ ] `spring.security.oauth2.client.provider.keycloak-provider.issuer-uri` указывает на **публичный** адрес реалма, `https://auth.example.com/realms/processing`. Он должен совпадать с `iss` в токенах.
 - [ ] Сервер приложения может открыть этот публичный адрес. Если трафик к Keycloak должен идти через WireGuard, на сервере приложения домен Keycloak указывает на его WireGuard-адрес (например, через `/etc/hosts`), и nginx Keycloak слушает на этом интерфейсе с тем же сертификатом.
 - [ ] `processing.uri.manage-account` указывает на публичный адрес: `https://auth.example.com/realms/processing/account`.
+- [ ] `processing.uri.manage-users` указывает на публичный адрес консоли администратора Keycloak: `https://auth.example.com/admin/processing/console/`.
 - [ ] Уровни логирования `org.springframework.security` и `org.springframework.web` не `DEBUG`.
 - [ ] Для доступа к MySQL и Kafka используются отдельные пользователи с минимальными правами, а не `root`.
 

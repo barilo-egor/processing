@@ -1,6 +1,7 @@
 package net.rcetech.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import net.rcetech.meta.user.AdminAccess;
 import net.rcetech.meta.user.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -11,8 +12,12 @@ public class RedirectController {
 
     private final String manageAccountURL;
 
-    public RedirectController(@Value("${processing.uri.manage-account}") String manageAccountURL) {
+    private final String manageUsersURL;
+
+    public RedirectController(@Value("${processing.uri.manage-account}") String manageAccountURL,
+                              @Value("${processing.uri.manage-users}") String manageUsersURL) {
         this.manageAccountURL = manageAccountURL;
+        this.manageUsersURL = manageUsersURL;
     }
 
     @GetMapping("/")
@@ -29,5 +34,11 @@ public class RedirectController {
     @GetMapping("/manage-account")
     public String redirect() {
         return "redirect:" + manageAccountURL;
+    }
+
+    @AdminAccess
+    @GetMapping("/manage-users")
+    public String redirectToUsers() {
+        return "redirect:" + manageUsersURL;
     }
 }

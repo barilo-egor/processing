@@ -56,8 +56,15 @@ const ADMIN_ONLY_SECTIONS = new Set(['clients', 'merchants']);
 
 const SECTION_LIST = SECTIONS.flatMap((s) => s.items || [s]);
 
+const SECTION_PARAM = 'section';
+
+function initialSection() {
+  const id = new URLSearchParams(window.location.search).get(SECTION_PARAM);
+  return SECTION_LIST.some((s) => s.id === id) ? id : sectionFromUrl('orders');
+}
+
 export default function App() {
-  const [section, setSection] = useState(() => sectionFromUrl('orders'));
+  const [section, setSection] = useState(initialSection);
   // Меню на узком экране (≤720px) — выезжающая панель по кнопке ☰.
   const [menuOpen, setMenuOpen] = useState(false);
   // Меню на широком экране можно свернуть до полоски с иконками; выбор запоминается.
@@ -163,6 +170,13 @@ export default function App() {
 
   const goTo = (id) => { setSection(id); setMenuOpen(false); };
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(SECTION_PARAM)) return;
+    url.searchParams.delete(SECTION_PARAM);
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+
   useEffect(() => { syncDocUrl(section); }, [section]);
 
   const docId = docIdOf(section);
@@ -255,7 +269,7 @@ export default function App() {
             </div>
             <div className="topbar-right">
               <ThemeToggle />
-              <AccountMenu />
+              <AccountMenu isAdmin={isAdmin} />
             </div>
           </header>
           <main className="content">
@@ -624,7 +638,7 @@ function Pagination({ page, total, onPage, busy, label }) {
    логин пока не запрашивается — показывается общая подпись. Как только
    бэк отдаст его (например, GET /api/support/support-user/current),
    достаточно подставить значение в состояние name. */
-function AccountMenu() {
+function AccountMenu({ isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
   // Логин вошедшего администратора — из GET /support-user.
@@ -681,6 +695,19 @@ function AccountMenu() {
                 <i className="fa-solid fa-user-gear" />
                 Управление аккаунтом
               </a>
+              {isAdmin && (
+                  <a
+                      className="account-item"
+                      href="/manage-users"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                      onClick={() => setOpen(false)}
+                  >
+                    <i className="fa-solid fa-users-gear" />
+                    Управление пользователями
+                  </a>
+              )}
               {/* Выход — сначала окно подтверждения, затем POST /logout (см. logout в api.js); href — запасной вариант */}
               <a
                   className="account-item is-danger"

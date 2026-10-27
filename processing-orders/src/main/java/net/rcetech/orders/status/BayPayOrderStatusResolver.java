@@ -12,7 +12,7 @@ public class BayPayOrderStatusResolver implements OrderStatusResolver {
     @Override
     public Set<Merchant> getMerchants() {
         return Set.of(
-                Merchant.BAY_PAY
+                Merchant.BAY_PAY, Merchant.BAY_PAY_HIGH_CHECK, Merchant.BAY_PAY_LOW_CHECK
         );
     }
 
