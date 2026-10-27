@@ -1248,6 +1248,8 @@ function OrderCard({ order, orderStatuses, merchants, methods, onClose, onCopy, 
    Из каких статусов доступен переход (ТЗ «Управление статусом ордера»):
    в SUCCESS — из любого, кроме самого SUCCESS; в CANCELED — только из NEW
    и DISPUTE; в DISPUTE — из NEW и TIMEOUT. NEW и TIMEOUT вручную не ставятся.
+   Исключение (ТЗ «Статусы „Поиск реквизитов“ и „Реквизиты не найдены“»):
+   из SEARCHING — только CANCELED, из DETAILS_NOT_FOUND — ничего.
    Окончательно переход проверяет бэк. */
 const ORDER_ACTIONS = [
   {
@@ -1257,7 +1259,9 @@ const ORDER_ACTIONS = [
   },
   {
     status: 'CANCELED', label: 'Отклонить', question: 'Отклонить ордер?',
-    from: ['NEW', 'DISPUTE'],
+    // SEARCHING — «Поиск реквизитов» (ТЗ «Статусы „Поиск реквизитов“ и „Реквизиты не найдены“»):
+    // из него доступна только отмена. Из DETAILS_NOT_FOUND переходов нет — полоса не выводится.
+    from: ['NEW', 'DISPUTE', 'SEARCHING'],
     btn: 'btn-danger', icon: 'fa-solid fa-xmark',
   },
   {
@@ -1313,11 +1317,13 @@ function Field({ label, children }) {
   );
 }
 
-/* Цвет бейджа статуса ордера. Успешный — зелёный, отменённый —
-   красный, просроченный и спорный — жёлтый, новый — нейтральный. */
+/* Цвет бейджа статуса ордера. Успешный — зелёный, отменённый и
+   «Реквизиты не найдены» — красный, просроченный и спорный — жёлтый,
+   «Поиск реквизитов» — бирюзовый (как в документации), новый — синий. */
 function orderStatusMod(name) {
   if (name === 'SUCCESS') return 'ok';
-  if (name === 'CANCELED') return 'bad';
+  if (name === 'CANCELED' || name === 'DETAILS_NOT_FOUND') return 'bad';
+  if (name === 'SEARCHING') return 'cyan';
   if (name === 'TIMEOUT' || name === 'DISPUTE') return 'warn';
   return 'info';
 }

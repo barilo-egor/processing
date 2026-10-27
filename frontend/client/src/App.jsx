@@ -995,14 +995,18 @@ function CopyCell({ value, head, tail, showToast, okText }) {
   );
 }
 
-/* Цветная метка. tone — green | blue | amber | purple | red | brown | grey. */
+/* Цветная метка. tone — green | blue | cyan | amber | purple | red | brown | grey. */
 function Badge({ tone = 'grey', children }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
 
 /* Цвет статуса ордера — по макету ТЗ. Список статусов из словаря:
-   NEW, SUCCESS, TIMEOUT, DISPUTE, CANCELED; неизвестные — серые. */
+   NEW, SUCCESS, TIMEOUT, DISPUTE, CANCELED, SEARCHING («Поиск реквизитов»),
+   DETAILS_NOT_FOUND («Реквизиты не найдены»); неизвестные — серые.
+   Цвета новых статусов — как в документации. */
 const ORDER_STATUS_TONE = {
+  SEARCHING: 'cyan',
+  DETAILS_NOT_FOUND: 'red',
   NEW: 'blue',
   SUCCESS: 'green',
   TIMEOUT: 'amber',
@@ -1281,9 +1285,11 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
    details, callbackUrl). Статус и метод — подписи из словаря.
    «Дата истечения» по ТЗ вычисляется: дата создания + время активности
    ордеров клиента (orderTimeoutSeconds из профиля).
-   «Отменить ордер» — только для NEW и DISPUTE (ТЗ «Управление статусом
-   ордера»): PATCH /order/{id}, затем карточка перечитывает ордер. */
-const CANCELABLE_ORDER = ['NEW', 'DISPUTE'];
+   «Отменить ордер» — для NEW и DISPUTE (ТЗ «Управление статусом
+   ордера») и SEARCHING — «Поиск реквизитов» (ТЗ «Статусы „Поиск
+   реквизитов“ и „Реквизиты не найдены“»); у «Реквизиты не найдены»
+   кнопки нет. PATCH /order/{id}, затем карточка перечитывает ордер. */
+const CANCELABLE_ORDER = ['NEW', 'DISPUTE', 'SEARCHING'];
 
 function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
   const [confirmCancel, setConfirmCancel] = useState(false);

@@ -961,3 +961,6 @@ table.grid-incidents th, table.grid-incidents td { padding-left: 10px; padding-r
   font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg);
 }
 .dc-input:focus { outline: none; border-color: var(--accent); }
+
+/* Статус ордера «Поиск реквизитов» — бирюзовый, как в документации */
+.badge-cyan { color: #0891b2; background: color-mix(in srgb, #0891b2 14%, transparent); }

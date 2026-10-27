@@ -245,7 +245,7 @@ export const api = {
   // Один ордер — перечитать карточку после отмены.
   order: (id) => request(`${CLIENT_API}/order/${encodeURIComponent(id)}`),
 
-  // Отмена своего ордера. Только из NEW и DISPUTE, иначе бэк отвечает 400.
+  // Отмена своего ордера. Только из NEW, DISPUTE и SEARCHING, иначе бэк отвечает 400.
   cancelOrder: (id) =>
       request(`${CLIENT_API}/order/${encodeURIComponent(id)}`, { method: 'PATCH' }),
 
