@@ -10,6 +10,7 @@ import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.incidents.IncidentCreatedEvent;
 import net.rcetech.meta.incidents.IncidentSaveErrorEvent;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
@@ -312,6 +313,17 @@ class IncidentServiceTest {
     }
 
     @ParameterizedTest
+    @EnumSource(value = IncidentType.class, names = {"DETAILS_SEARCH_ERROR", "BALANCE_UPDATE_ERROR"})
+    @DisplayName("Метод должен опубликовать IncidentCreatedEvent с идентификатором и типом сохранённого инцидента.")
+    void save_shouldPublishCreatedEvent(IncidentType type) {
+        incidentService.save(type, Map.of("orderId", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"), 1_760_000_000_000L);
+
+        Incident incident = incidentRepository.findAll().getFirst();
+        assertEquals(List.of(new IncidentCreatedEvent(incident.getId(), type)),
+                applicationEvents.stream(IncidentCreatedEvent.class).toList());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"not a map", "1760000000000"})
     @DisplayName("Метод должен опубликовать IncidentSaveErrorEvent с типом и данными инцидента, если данные не удалось преобразовать.")
     void save_shouldPublishErrorEventIfDataConversionFailed(String data) {
@@ -326,6 +338,7 @@ class IncidentServiceTest {
                 () -> assertSame(data, event.data())
         );
         assertEquals(0, incidentRepository.count());
+        assertEquals(0, applicationEvents.stream(IncidentCreatedEvent.class).count());
     }
 
     @Test
@@ -341,6 +354,7 @@ class IncidentServiceTest {
                 () -> assertNull(event.data())
         );
         assertEquals(0, incidentRepository.count());
+        assertEquals(0, applicationEvents.stream(IncidentCreatedEvent.class).count());
     }
 
     @Test

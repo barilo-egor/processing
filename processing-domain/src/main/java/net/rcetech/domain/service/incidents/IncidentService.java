@@ -7,6 +7,7 @@ import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.incidents.IncidentCreatedEvent;
 import net.rcetech.meta.incidents.IncidentSaveErrorEvent;
 import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
@@ -111,6 +112,7 @@ public class IncidentService {
         incident.setType(type);
         incident.setData(objectMapper.convertValue(data, new TypeReference<>() {}));
         incidentRepository.save(incident);
+        eventPublisher.publishEvent(new IncidentCreatedEvent(incident.getId(), type));
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Incident> filter, Pageable pageable, Class<T> projectionType) {
