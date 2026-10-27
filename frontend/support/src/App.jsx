@@ -255,7 +255,7 @@ export default function App() {
             </div>
             <div className="topbar-right">
               <ThemeToggle />
-              <AccountMenu />
+              <AccountMenu isAdmin={isAdmin} />
             </div>
           </header>
           <main className="content">
@@ -624,7 +624,7 @@ function Pagination({ page, total, onPage, busy, label }) {
    логин пока не запрашивается — показывается общая подпись. Как только
    бэк отдаст его (например, GET /api/support/support-user/current),
    достаточно подставить значение в состояние name. */
-function AccountMenu() {
+function AccountMenu({ isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
   // Логин вошедшего администратора — из GET /support-user.
@@ -681,6 +681,19 @@ function AccountMenu() {
                 <i className="fa-solid fa-user-gear" />
                 Управление аккаунтом
               </a>
+              {isAdmin && (
+                  <a
+                      className="account-item"
+                      href="/manage-users"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                      onClick={() => setOpen(false)}
+                  >
+                    <i className="fa-solid fa-users-gear" />
+                    Управление пользователями
+                  </a>
+              )}
               {/* Выход — сначала окно подтверждения, затем POST /logout (см. logout в api.js); href — запасной вариант */}
               <a
                   className="account-item is-danger"
