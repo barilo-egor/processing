@@ -53,6 +53,9 @@ cloudflare:
     api-token:
     account-id:
     list-id:
+tg:
+  bot:
+    token:
 kafka:
   group-id:
   topic:

@@ -40,7 +40,7 @@
 
 ## Архитектура
 
-Направление зависимостей модулей: `meta` ← `rates` ← `domain` ← функциональные модули (`clients`, `orders`, `billing`, `incidents`, `support`, `api`, `security`, `web`) ← `app`. Convention-плагин `buildSrc/src/main/groovy/processing.gradle` (подключается как `id 'processing'`) задаёт Java toolchain, BOM-ы Boot/Cloud, Lombok, actuator/Prometheus и MapStruct `defaultComponentModel=spring`. Во всех модулях, кроме `app`, `bootJar` отключён.
+Направление зависимостей модулей: `meta` ← `rates` ← `domain` ← функциональные модули (`clients`, `orders`, `billing`, `incidents`, `support`, `api`, `security`, `web`, `tg`) ← `app`. Convention-плагин `buildSrc/src/main/groovy/processing.gradle` (подключается как `id 'processing'`) задаёт Java toolchain, BOM-ы Boot/Cloud, Lombok, actuator/Prometheus и MapStruct `defaultComponentModel=spring`. Во всех модулях, кроме `app`, `bootJar` отключён.
 
 - **processing-meta**: общий слой контрактов без доменного кода и персистентности. Содержит DTO, enum-ы, события, исключения, `GlobalControllerAdvice`, константы `WebPath`, `MetricsConstants` и глобальную конфигурацию безопасности.
 - **processing-domain**: все JPA-сущности, репозитории, MapStruct-мапперы, основные доменные сервисы и Flyway-миграции. Функциональные модули зависят от него, а не определяют собственные сущности.

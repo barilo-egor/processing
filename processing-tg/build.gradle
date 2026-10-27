@@ -1,0 +1,16 @@
+plugins {
+    id 'processing'
+}
+
+dependencies {
+    implementation project(':processing-meta')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.telegram:telegrambots-meta:10.0.0'
+    implementation 'org.telegram:telegrambots-client:10.0.0'
+}
+
+bootJar {
+    enabled = false
+}
