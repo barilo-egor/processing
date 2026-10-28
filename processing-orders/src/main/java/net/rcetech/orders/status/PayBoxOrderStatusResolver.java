@@ -15,7 +15,8 @@ public class PayBoxOrderStatusResolver implements OrderStatusResolver {
                 Merchant.EXTASY_PAY, Merchant.EXTASY_PAY_QR, Merchant.EXTASY_PAY_RECEIPT, Merchant.EXTASY_PAY_RECEIPT_3,
                 Merchant.HELLBIT, Merchant.HELLBIT_BT,
                 Merchant.PRIME_WALLET, Merchant.PRIME_WALLET_LOW_CHECK, Merchant.PRIME_WALLET_HIGH_CHECK,
-                Merchant.PW_PAY
+                Merchant.PW_PAY,
+                Merchant.BIT_BOLIDE, Merchant.BIT_BOLIDE_WT, Merchant.BIT_BOLIDE_DEEP_LINK
         );
     }
 
