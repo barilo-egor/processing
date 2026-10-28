@@ -1,5 +1,6 @@
 package net.rcetech.meta.config;
 
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.core.StreamWriteFeature;
@@ -17,5 +18,10 @@ public class MetaWebConfig {
                 .configure(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN, true)
                 .findAndAddModules()
                 .build();
+    }
+
+    @Bean
+    public JsonMapperBuilderCustomizer missingOptionalAsNullCustomizer() {
+        return builder -> builder.enable(DeserializationFeature.USE_NULL_FOR_MISSING_REFERENCE_VALUES);
     }
 }

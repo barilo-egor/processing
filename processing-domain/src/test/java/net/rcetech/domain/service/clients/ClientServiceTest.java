@@ -420,7 +420,7 @@ class ClientServiceTest {
         clientRepository.save(client);
         assertNotNull(client.getId());
 
-        clientService.update(client.getId(), new ClientUpdateRequest(url));
+        clientService.update(client.getId(), new ClientUpdateRequest(Optional.of(url)));
         Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
         assertEquals(url, updated.getCallbackUrl());
     }
@@ -441,6 +441,24 @@ class ClientServiceTest {
         clientService.update(client.getId(), new ClientUpdateRequest(null));
         Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
         assertEquals(url, updated.getCallbackUrl());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://google.com/callback",
+            "https://yandex.com/callback"
+    })
+    @DisplayName("Метод должен удалить КБ юрл, если передан пустой Optional.")
+    void update_shouldClearCallbackUrlIfEmptyOptionalPassed(String url) {
+        Client client = new Client();
+        client.setCallbackUrl(url);
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        assertNotNull(client.getId());
+
+        clientService.update(client.getId(), new ClientUpdateRequest(Optional.empty()));
+        Client updated = clientRepository.findById(client.getId()).orElseThrow(IllegalStateException::new);
+        assertNull(updated.getCallbackUrl());
     }
 
     @ParameterizedTest

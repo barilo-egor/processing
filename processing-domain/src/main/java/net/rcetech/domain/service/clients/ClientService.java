@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -66,7 +67,11 @@ public class ClientService {
 
     @Transactional
     public ClientProjection update(UUID id, ClientUpdateRequest clientUpdateRequest) {
-        return update(id, client -> clientMapper.updateNotNull(clientUpdateRequest, client), ClientProjection.class);
+        return update(id, client -> {
+            if (Objects.nonNull(clientUpdateRequest.callbackUrl())) {
+                client.setCallbackUrl(clientUpdateRequest.callbackUrl().orElse(null));
+            }
+        }, ClientProjection.class);
     }
 
     private <T> T update(UUID id, Consumer<Client> clientMapFunction, Class<T> projectionType) {

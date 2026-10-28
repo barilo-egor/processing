@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * Адрес КБ клиента: https, порт 443, не длиннее 2048 символов, хост — доменное имя публичного сервера,
  * без логина с паролем и фрагмента. {@code null} допустим.
  */
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT, ElementType.TYPE_USE})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = CallbackUrlValidator.class)
 public @interface CallbackUrl {

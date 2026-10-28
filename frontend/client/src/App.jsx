@@ -407,7 +407,7 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
 
     setSaving(true);
     try {
-      await api.saveCallbackUrl(next);
+      await api.saveCallbackUrl(next || null);
       setSaved(next);
       setValue(next);
       showToast('Callback URL сохранён', 'success');

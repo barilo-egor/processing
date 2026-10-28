@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +44,7 @@ class ClientFacadeTest {
                 .thenThrow(OptimisticLockException.class)
                 .thenReturn(clientProjection);
 
-        ClientProjection actual = clientFacade.update(UUID.randomUUID(), new ClientUpdateRequest("https://example.com/callback"));
+        ClientProjection actual = clientFacade.update(UUID.randomUUID(), new ClientUpdateRequest(Optional.of("https://example.com/callback")));
 
         verify(clientService, times(3)).update(any(), any(ClientUpdateRequest.class));
         assertEquals(clientProjection, actual);
