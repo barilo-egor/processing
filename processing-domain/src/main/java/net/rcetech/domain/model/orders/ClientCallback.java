@@ -31,7 +31,7 @@ public class ClientCallback {
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, length = 2048)
     private String url;
 
     @Column(nullable = false, updatable = false)

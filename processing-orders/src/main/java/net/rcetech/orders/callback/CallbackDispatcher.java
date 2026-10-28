@@ -5,8 +5,10 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.rcetech.domain.model.orders.ClientCallback;
 import net.rcetech.domain.service.orders.ClientCallbackService;
 import net.rcetech.meta.exception.ServiceException;
+import net.rcetech.meta.incidents.ClientCallbackUrlForbiddenEvent;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,8 @@ public class CallbackDispatcher {
 
     private final Executor virtualTaskExecutor;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     private final long delayMillis;
 
     private final double multiplier;
@@ -42,6 +46,7 @@ public class CallbackDispatcher {
 
     public CallbackDispatcher(ClientCallbackService clientCallbackService, CallbackHttpSender callbackHttpSender,
                               @Qualifier("virtualTaskExecutor") Executor virtualTaskExecutor,
+                              ApplicationEventPublisher eventPublisher,
                               @Value("${app.retry.callback.delay:10000}") long delayMillis,
                               @Value("${app.retry.callback.multiplier:3.0}") double multiplier,
                               @Value("${app.retry.callback.maxDelay:120000}") long maxDelayMillis,
@@ -49,6 +54,7 @@ public class CallbackDispatcher {
         this.clientCallbackService = clientCallbackService;
         this.callbackHttpSender = callbackHttpSender;
         this.virtualTaskExecutor = virtualTaskExecutor;
+        this.eventPublisher = eventPublisher;
         this.delayMillis = delayMillis;
         this.multiplier = multiplier;
         this.maxDelayMillis = maxDelayMillis;
@@ -73,6 +79,10 @@ public class CallbackDispatcher {
         ClientCallback sending = clientCallbackService.markResending(orderId);
         try {
             callbackHttpSender.send(sending);
+        } catch (ForbiddenCallbackUrlException e) {
+            markUrlForbidden(sending, e);
+            throw new ServiceException("КБ не отправлен: отправку запретила система из-за адреса КБ ("
+                    + e.getMessage() + ").");
         } catch (CallbackSendException e) {
             log.warn("КБ {} по ордеру {} не доставлен при повторной отправке поддержкой: {}", sending.getId(),
                     orderId, e.getMessage());
@@ -101,12 +111,23 @@ public class CallbackDispatcher {
             ClientCallback sending = clientCallbackService.markSending(callback.getId());
             callbackHttpSender.send(sending);
             clientCallbackService.markSent(sending.getId());
+        } catch (ForbiddenCallbackUrlException e) {
+            markUrlForbidden(callback, e);
         } catch (CallbackSendException e) {
             handleFailure(e.getCallback(), e);
         } catch (Exception e) {
             log.error("Ошибка обработки КБ {} по ордеру {}: {}", callback.getId(), callback.getOrderId(),
                     e.getMessage(), e);
         }
+    }
+
+    private void markUrlForbidden(ClientCallback callback, ForbiddenCallbackUrlException e) {
+        long timestamp = System.currentTimeMillis();
+        log.error("{} Отправка КБ {} по ордеру {} запрещена системой из-за адреса {}: {}.", timestamp,
+                callback.getId(), callback.getOrderId(), callback.getUrl(), e.getMessage());
+        clientCallbackService.markFailed(callback.getId());
+        eventPublisher.publishEvent(new ClientCallbackUrlForbiddenEvent(callback.getOrderId(),
+                callback.getOrderStatus(), callback.getUrl(), e.getMessage(), timestamp));
     }
 
     private void handleFailure(ClientCallback callback, Exception e) {

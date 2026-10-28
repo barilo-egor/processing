@@ -1,8 +1,14 @@
 package net.rcetech.meta.clients.dto;
 
-import org.hibernate.validator.constraints.URL;
+import net.rcetech.meta.orders.validation.CallbackUrl;
 
-public record ClientUpdateRequest (
-        @URL(protocol = "https")
-        String callbackUrl
-){}
+import java.util.Optional;
+
+/**
+ * Изменение профиля клиентом.
+ *
+ * @param callbackUrl адрес КБ: {@code null} — не менять, пустой {@link Optional} — удалить адрес
+ */
+public record ClientUpdateRequest(
+        Optional<@CallbackUrl String> callbackUrl
+) {}

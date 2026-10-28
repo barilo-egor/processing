@@ -325,17 +325,20 @@ class IncidentServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"not a map", "1760000000000"})
-    @DisplayName("Метод должен опубликовать IncidentSaveErrorEvent с типом и данными инцидента, если данные не удалось преобразовать.")
+    @DisplayName("Метод должен опубликовать IncidentSaveErrorEvent с типом, данными инцидента и текущим временем ошибки сохранения, если данные не удалось преобразовать.")
     void save_shouldPublishErrorEventIfDataConversionFailed(String data) {
+        long before = System.currentTimeMillis();
         assertDoesNotThrow(() -> incidentService.save(IncidentType.TRANSACTION_CREATION_ERROR, data,
                 1_760_000_000_000L));
+        long after = System.currentTimeMillis();
 
         List<IncidentSaveErrorEvent> events = applicationEvents.stream(IncidentSaveErrorEvent.class).toList();
         assertEquals(1, events.size());
         IncidentSaveErrorEvent event = events.getFirst();
         assertAll(
                 () -> assertEquals(IncidentType.TRANSACTION_CREATION_ERROR, event.type()),
-                () -> assertSame(data, event.data())
+                () -> assertSame(data, event.data()),
+                () -> assertTrue(event.errorTimestamp() >= before && event.errorTimestamp() <= after)
         );
         assertEquals(0, incidentRepository.count());
         assertEquals(0, applicationEvents.stream(IncidentCreatedEvent.class).count());

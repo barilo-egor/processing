@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import net.rcetech.meta.orders.RequestMethod;
-import org.hibernate.validator.constraints.URL;
+import net.rcetech.meta.orders.validation.CallbackUrl;
 
 import java.util.Set;
 
@@ -23,7 +23,7 @@ public record CreateOrderRequest(
         @NotNull(message = "должно быть заполнено")
         @Positive(message = "должно быть больше нуля") Integer amount,
         @NotEmpty(message = "должно содержать хотя бы одно значение") Set<RequestMethod> methods,
-        @URL(protocol = "https", message = "должно быть корректным адресом с протоколом https")
+        @CallbackUrl
         String callbackUrl,
         String userId
 ) {}

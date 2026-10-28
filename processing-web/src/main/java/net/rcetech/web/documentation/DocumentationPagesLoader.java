@@ -24,10 +24,18 @@ class DocumentationPagesLoader {
 
     private static final String TITLE_PREFIX = "# ";
 
+    private static final String API_URL_PLACEHOLDER = "{{apiUrl}}";
+
     private final ResourcePatternResolver resourcePatternResolver;
 
-    DocumentationPagesLoader(ResourcePatternResolver resourcePatternResolver) {
+    private final String apiUrl;
+
+    DocumentationPagesLoader(ResourcePatternResolver resourcePatternResolver, String apiUrl) {
+        if (Objects.isNull(apiUrl) || apiUrl.isBlank()) {
+            throw new BaseException("Property processing.uri.api-url is not set");
+        }
         this.resourcePatternResolver = resourcePatternResolver;
+        this.apiUrl = apiUrl;
     }
 
     List<DocumentationPage> load(String directory) {
@@ -53,7 +61,7 @@ class DocumentationPagesLoader {
         } catch (IOException e) {
             throw new BaseException("Failed to read documentation page " + filename, e);
         }
-        return parseContent(id, text);
+        return parseContent(id, text.replace(API_URL_PLACEHOLDER, apiUrl));
     }
 
     private String getFilename(Resource resource) {

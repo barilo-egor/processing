@@ -19,6 +19,7 @@ import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.ServiceException;
+import net.rcetech.meta.incidents.ClientCallbackUrlForbiddenEvent;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.orders.ClientCallbackStatus;
 import net.rcetech.meta.orders.OrderStatus;
@@ -37,9 +38,11 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -55,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutionException;
@@ -87,10 +91,29 @@ class CallbackDispatcherTest {
     static class Configuration {
 
         @Bean
+        UrlForbiddenEvents urlForbiddenEvents() {
+            return new UrlForbiddenEvents();
+        }
+
+        @Bean
         Executor virtualTaskExecutor() {
             SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
             executor.setVirtualThreads(true);
             return executor;
+        }
+    }
+
+    static class UrlForbiddenEvents {
+
+        private final List<ClientCallbackUrlForbiddenEvent> events = new CopyOnWriteArrayList<>();
+
+        @EventListener
+        void on(ClientCallbackUrlForbiddenEvent event) {
+            events.add(event);
+        }
+
+        List<ClientCallbackUrlForbiddenEvent> forOrder(UUID orderId) {
+            return events.stream().filter(event -> orderId.equals(event.orderId())).toList();
         }
     }
 
@@ -117,6 +140,12 @@ class CallbackDispatcherTest {
     @MockitoSpyBean
     private IncidentService incidentService;
 
+    @MockitoBean
+    private CallbackTargetGuard callbackTargetGuard;
+
+    @Autowired
+    private UrlForbiddenEvents urlForbiddenEvents;
+
     @Autowired
     private IncidentRepository incidentRepository;
 
@@ -131,7 +160,7 @@ class CallbackDispatcherTest {
 
     @BeforeEach
     void setUp() {
-        reset(clientCallbackService, incidentService, clientCallbackRepository);
+        reset(clientCallbackService, incidentService, clientCallbackRepository, callbackTargetGuard);
         clientCallbackRepository.deleteAll();
     }
 
@@ -421,6 +450,70 @@ class CallbackDispatcherTest {
                 clientCallbackRepository.findById(callback.getId()).orElseThrow().getStatus());
         WireMock.verify(1, postRequestedFor(urlEqualTo("/callback")));
         assertTrue(deliveryUnknownIncidents(orderId).isEmpty());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "/callback,SUCCESS,хост example.com указывает на внутренний адрес 10.0.0.5",
+            "/other,CANCELED,хост example.com указывает на внутренний адрес 192.168.0.1"
+    })
+    @DisplayName("КБ на запрещённый адрес не должен отправляться, должен помечаться недоставленным без повторов и публиковать событие инцидента.")
+    void dispatch_shouldMarkFailedAndPublishEventIfUrlForbidden(String path, OrderStatus orderStatus, String reason)
+            throws Exception {
+        stubFor(post(path).willReturn(status(200)));
+        doThrow(new ForbiddenCallbackUrlException(reason)).when(callbackTargetGuard).check(wireMockUrl + path);
+        ClientCallback callback = clientCallbackService.create(saveOrder().getId(), orderStatus,
+                wireMockUrl + path, "{}");
+
+        callbackDispatcher.dispatch();
+        makeDue(clientCallbackRepository.findById(callback.getId()).orElseThrow());
+        callbackDispatcher.dispatch();
+
+        ClientCallback actual = clientCallbackRepository.findById(callback.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(ClientCallbackStatus.FAILED, actual.getStatus()),
+                () -> assertEquals(1, actual.getAttempts()),
+                () -> assertNull(actual.getSentAt())
+        );
+        WireMock.verify(0, postRequestedFor(urlEqualTo(path)));
+        List<ClientCallbackUrlForbiddenEvent> events = urlForbiddenEvents.forOrder(callback.getOrderId());
+        assertEquals(1, events.size());
+        assertAll(
+                () -> assertEquals(orderStatus, events.getFirst().status()),
+                () -> assertEquals(wireMockUrl + path, events.getFirst().url()),
+                () -> assertEquals(reason, events.getFirst().reason()),
+                () -> assertTrue(events.getFirst().errorTimestamp() > 0)
+        );
+        assertTrue(deliveryUnknownIncidents(callback.getOrderId()).isEmpty());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "SUCCESS,4,хост example.com указывает на внутренний адрес 127.0.0.1",
+            "CANCELED,1,хост example.com указывает на внутренний адрес 169.254.169.254"
+    })
+    @DisplayName("Повторная отправка КБ на запрещённый адрес должна отклоняться, помечать КБ недоставленным и публиковать событие инцидента.")
+    void resend_shouldMarkFailedAndPublishEventIfUrlForbidden(OrderStatus orderStatus, int attempts, String reason)
+            throws Exception {
+        stubFor(post("/callback").willReturn(status(200)));
+        doThrow(new ForbiddenCallbackUrlException(reason)).when(callbackTargetGuard).check(wireMockUrl + "/callback");
+        UUID orderId = saveOrder(orderStatus).getId();
+        ClientCallback callback = saveCallback(orderId, orderStatus, wireMockUrl + "/callback", "{}",
+                ClientCallbackStatus.FAILED, attempts);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> callbackDispatcher.resend(orderId));
+
+        assertEquals("КБ не отправлен: отправку запретила система из-за адреса КБ (" + reason + ").",
+                exception.getMessage());
+        ClientCallback actual = clientCallbackRepository.findById(callback.getId()).orElseThrow();
+        assertAll(
+                () -> assertEquals(ClientCallbackStatus.FAILED, actual.getStatus()),
+                () -> assertEquals(attempts + 1, actual.getAttempts())
+        );
+        WireMock.verify(0, postRequestedFor(urlEqualTo("/callback")));
+        List<ClientCallbackUrlForbiddenEvent> events = urlForbiddenEvents.forOrder(orderId);
+        assertEquals(1, events.size());
+        assertEquals(reason, events.getFirst().reason());
     }
 
     @ParameterizedTest

@@ -392,6 +392,10 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
   const save = async () => {
     const next = value.trim();
 
+    if (!next) {
+      setError('Укажите адрес');
+      return;
+    }
     if (!isValidCallbackUrl(next)) {
       setError('Укажите корректный URL');
       return;
@@ -418,13 +422,33 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
     }
   };
 
+  const clear = async () => {
+    if (!clientId) {
+      showToast('Профиль не загружен', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api.saveCallbackUrl(null);
+      setSaved('');
+      setValue('');
+      setError('');
+      showToast('Callback URL удалён', 'success');
+    } catch (e) {
+      showToast(e.message || 'Не удалось удалить', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
       <section className="block">
         <div className="block-aside">
           <h2 className="block-title">Callback URL</h2>
           <p className="block-note">
             Адрес, на который приходят уведомления о смене статуса ордера.
-            Оставьте поле пустым, чтобы не получать уведомления.
+            Нажмите «Очистить», чтобы не получать уведомления.
           </p>
         </div>
 
@@ -455,6 +479,17 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
               <i className="fa-solid fa-floppy-disk" />
               Сохранить
             </button>
+            {value.trim() && (
+                <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={loading || saving}
+                    onClick={clear}
+                >
+                  <i className="fa-solid fa-eraser" />
+                  Очистить
+                </button>
+            )}
           </div>
         </div>
       </section>
@@ -995,14 +1030,18 @@ function CopyCell({ value, head, tail, showToast, okText }) {
   );
 }
 
-/* Цветная метка. tone — green | blue | amber | purple | red | brown | grey. */
+/* Цветная метка. tone — green | blue | cyan | amber | purple | red | brown | grey. */
 function Badge({ tone = 'grey', children }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
 
 /* Цвет статуса ордера — по макету ТЗ. Список статусов из словаря:
-   NEW, SUCCESS, TIMEOUT, DISPUTE, CANCELED; неизвестные — серые. */
+   NEW, SUCCESS, TIMEOUT, DISPUTE, CANCELED, SEARCHING («Поиск реквизитов»),
+   DETAILS_NOT_FOUND («Реквизиты не найдены»); неизвестные — серые.
+   Цвета новых статусов — как в документации. */
 const ORDER_STATUS_TONE = {
+  SEARCHING: 'cyan',
+  DETAILS_NOT_FOUND: 'red',
   NEW: 'blue',
   SUCCESS: 'green',
   TIMEOUT: 'amber',
@@ -1281,9 +1320,11 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
    details, callbackUrl). Статус и метод — подписи из словаря.
    «Дата истечения» по ТЗ вычисляется: дата создания + время активности
    ордеров клиента (orderTimeoutSeconds из профиля).
-   «Отменить ордер» — только для NEW и DISPUTE (ТЗ «Управление статусом
-   ордера»): PATCH /order/{id}, затем карточка перечитывает ордер. */
-const CANCELABLE_ORDER = ['NEW', 'DISPUTE'];
+   «Отменить ордер» — для NEW и DISPUTE (ТЗ «Управление статусом
+   ордера») и SEARCHING — «Поиск реквизитов» (ТЗ «Статусы „Поиск
+   реквизитов“ и „Реквизиты не найдены“»); у «Реквизиты не найдены»
+   кнопки нет. PATCH /order/{id}, затем карточка перечитывает ордер. */
+const CANCELABLE_ORDER = ['NEW', 'DISPUTE', 'SEARCHING'];
 
 function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
   const [confirmCancel, setConfirmCancel] = useState(false);

@@ -4,6 +4,7 @@ import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
+import net.rcetech.meta.config.MetaWebConfig;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClientController.class)
-@Import({MetaSecurityConfig.class})
+@Import({MetaSecurityConfig.class, MetaWebConfig.class})
 class ClientControllerTest {
 
     @MockitoBean
@@ -213,5 +214,24 @@ class ClientControllerTest {
                         .with(user(UUID.randomUUID().toString()).roles(Role.CLIENT.name()))
                         .content("{\"callbackUrl\":\"%s\"}".formatted(callbackUrl)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "{\"callbackUrl\":null};true",
+            "{};false"
+    }, delimiter = ';')
+    @DisplayName("Метод должен передать пустой Optional при callbackUrl null и null при отсутствии поля.")
+    void update_shouldDistinguishNullAndAbsentUrl(String json, boolean explicitNull) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/client/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .with(user(clientId.toString()).roles(Role.CLIENT.name()))
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<ClientUpdateRequest> captor = ArgumentCaptor.forClass(ClientUpdateRequest.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(explicitNull ? Optional.empty() : null, captor.getValue().callbackUrl());
     }
 }
