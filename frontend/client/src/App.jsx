@@ -392,6 +392,10 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
   const save = async () => {
     const next = value.trim();
 
+    if (!next) {
+      setError('Укажите адрес');
+      return;
+    }
     if (!isValidCallbackUrl(next)) {
       setError('Укажите корректный URL');
       return;
@@ -407,12 +411,32 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
 
     setSaving(true);
     try {
-      await api.saveCallbackUrl(next || null);
+      await api.saveCallbackUrl(next);
       setSaved(next);
       setValue(next);
       showToast('Callback URL сохранён', 'success');
     } catch (e) {
       showToast(e.message || 'Не удалось сохранить', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clear = async () => {
+    if (!clientId) {
+      showToast('Профиль не загружен', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api.saveCallbackUrl(null);
+      setSaved('');
+      setValue('');
+      setError('');
+      showToast('Callback URL удалён', 'success');
+    } catch (e) {
+      showToast(e.message || 'Не удалось удалить', 'error');
     } finally {
       setSaving(false);
     }
@@ -424,7 +448,7 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
           <h2 className="block-title">Callback URL</h2>
           <p className="block-note">
             Адрес, на который приходят уведомления о смене статуса ордера.
-            Оставьте поле пустым, чтобы не получать уведомления.
+            Нажмите «Очистить», чтобы не получать уведомления.
           </p>
         </div>
 
@@ -455,6 +479,17 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
               <i className="fa-solid fa-floppy-disk" />
               Сохранить
             </button>
+            {value.trim() && (
+                <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={loading || saving}
+                    onClick={clear}
+                >
+                  <i className="fa-solid fa-eraser" />
+                  Очистить
+                </button>
+            )}
           </div>
         </div>
       </section>
