@@ -12,7 +12,8 @@ public class TronExOrderStatusResolver implements OrderStatusResolver {
     @Override
     public Set<Merchant> getMerchants() {
         return Set.of(
-                Merchant.TRON_EX_BT, Merchant.TRON_EX_PDF, Merchant.TRON_EX_QR, Merchant.TRON_EX_SIM
+                Merchant.TRON_EX_BT, Merchant.TRON_EX_PDF, Merchant.TRON_EX_QR, Merchant.TRON_EX_SIM,
+                Merchant.TRON_EX_DEEP_LINK
         );
     }
 
