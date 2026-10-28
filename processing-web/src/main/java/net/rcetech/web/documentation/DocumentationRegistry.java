@@ -13,8 +13,8 @@ class DocumentationRegistry {
 
     private final Map<DocumentationAccess, DocumentationPages> pages = new EnumMap<>(DocumentationAccess.class);
 
-    DocumentationRegistry(ResourcePatternResolver resourcePatternResolver) {
-        Map<String, List<DocumentationPage>> pagesByDirectory = loadDirectories(resourcePatternResolver);
+    DocumentationRegistry(ResourcePatternResolver resourcePatternResolver, String apiUrl) {
+        Map<String, List<DocumentationPage>> pagesByDirectory = loadDirectories(resourcePatternResolver, apiUrl);
         for (DocumentationAccess access : DocumentationAccess.values()) {
             List<DocumentationPage> accessPages = access.getDirectories().stream()
                     .flatMap(directory -> pagesByDirectory.get(directory).stream())
@@ -27,8 +27,9 @@ class DocumentationRegistry {
         return pages.get(DocumentationAccess.of(role));
     }
 
-    private Map<String, List<DocumentationPage>> loadDirectories(ResourcePatternResolver resourcePatternResolver) {
-        DocumentationPagesLoader pagesLoader = new DocumentationPagesLoader(resourcePatternResolver);
+    private Map<String, List<DocumentationPage>> loadDirectories(ResourcePatternResolver resourcePatternResolver,
+                                                              String apiUrl) {
+        DocumentationPagesLoader pagesLoader = new DocumentationPagesLoader(resourcePatternResolver, apiUrl);
         Map<String, List<DocumentationPage>> pagesByDirectory = new HashMap<>();
         for (DocumentationAccess access : DocumentationAccess.values()) {
             for (String directory : access.getDirectories()) {

@@ -7,6 +7,7 @@ import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -23,8 +24,10 @@ import static org.mockito.Mockito.*;
 
 class DocumentationServiceTest {
 
+    private static final String API_URL = "https://api.example.com";
+
     private final DocumentationService documentationService =
-            new DocumentationService(new PathMatchingResourcePatternResolver());
+            new DocumentationService(new PathMatchingResourcePatternResolver(), API_URL);
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
@@ -104,7 +107,7 @@ class DocumentationServiceTest {
                                               String secondDirectory, String secondFilename) throws IOException {
         ResourcePatternResolver resolver = resolver(firstDirectory, firstFilename, secondDirectory, secondFilename);
 
-        assertThrows(BaseException.class, () -> new DocumentationService(resolver));
+        assertThrows(BaseException.class, () -> new DocumentationService(resolver, API_URL));
     }
 
     @ParameterizedTest
@@ -117,7 +120,7 @@ class DocumentationServiceTest {
                                                          String secondDirectory, String secondFilename) throws IOException {
         ResourcePatternResolver resolver = resolver(firstDirectory, firstFilename, secondDirectory, secondFilename);
 
-        assertDoesNotThrow(() -> new DocumentationService(resolver));
+        assertDoesNotThrow(() -> new DocumentationService(resolver, API_URL));
     }
 
     @ParameterizedTest
@@ -127,9 +130,37 @@ class DocumentationServiceTest {
         ResourcePatternResolver resolver = mock(ResourcePatternResolver.class);
         when(resolver.getResources(anyString())).thenReturn(new Resource[0]);
 
-        new DocumentationService(resolver);
+        new DocumentationService(resolver, API_URL);
 
         verify(resolver, times(1)).getResources("classpath*:docs/" + directory + "/*.md");
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "https://api.example.com|Заголовок {{apiUrl}}|Адрес `{{apiUrl}}/api/v1`, запрос `GET {{apiUrl}}/api/v1/order`.|Заголовок https://api.example.com|Адрес `https://api.example.com/api/v1`, запрос `GET https://api.example.com/api/v1/order`.",
+            "https://gateway.rcetech.net|API|`POST {{apiUrl}}/api/v1/order`|API|`POST https://gateway.rcetech.net/api/v1/order`",
+            "https://api.other.org|Страница|Текст без адреса.|Страница|Текст без адреса."
+    })
+    @DisplayName("Плейсхолдер {{apiUrl}} в заголовке и содержимом страницы должен быть заменён на адрес API.")
+    void find_shouldReplaceApiUrlPlaceholder(String apiUrl, String heading, String body,
+                                             String title, String content) throws IOException {
+        ResourcePatternResolver resolver = mock(ResourcePatternResolver.class);
+        when(resolver.getResources(anyString())).thenReturn(new Resource[0]);
+        when(resolver.getResources("classpath*:docs/client/*.md"))
+                .thenReturn(new Resource[]{resource("01_api.md", "# " + heading + "\n" + body)});
+
+        Optional<DocumentationPage> page = new DocumentationService(resolver, apiUrl).find(Role.CLIENT, "api");
+
+        assertTrue(page.isPresent());
+        assertEquals(new DocumentationPage("api", title, content), page.get());
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    @DisplayName("Если адрес API не задан, должно быть выброшено исключение.")
+    void constructor_shouldThrowIfApiUrlNotSet(String apiUrl) {
+        assertThrows(BaseException.class, () -> new DocumentationService(new PathMatchingResourcePatternResolver(), apiUrl));
     }
 
     private ResourcePatternResolver resolver(String firstDirectory, String firstFilename,
@@ -147,7 +178,11 @@ class DocumentationServiceTest {
     }
 
     private Resource resource(String filename) {
-        return new ByteArrayResource("# Заголовок".getBytes(StandardCharsets.UTF_8)) {
+        return resource(filename, "# Заголовок");
+    }
+
+    private Resource resource(String filename, String text) {
+        return new ByteArrayResource(text.getBytes(StandardCharsets.UTF_8)) {
             @Override
             public String getFilename() {
                 return filename;
