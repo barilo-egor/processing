@@ -1,5 +1,6 @@
 package net.rcetech.domain.service.incidents;
 
+import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.support.SupportUser;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class IncidentService {
 
     private final IncidentRepository incidentRepository;
@@ -85,7 +87,9 @@ public class IncidentService {
         try {
             transactionTemplate.executeWithoutResult(status -> saveIncident(type, data, errorTimestamp));
         } catch (Exception e) {
-            eventPublisher.publishEvent(new IncidentSaveErrorEvent(type, data, e));
+            long timestamp = System.currentTimeMillis();
+            log.error("{} Ошибка сохранения инцидента {} с данными {}: {}", timestamp, type, data, e.getMessage(), e);
+            eventPublisher.publishEvent(new IncidentSaveErrorEvent(type, data, timestamp));
         }
     }
 
