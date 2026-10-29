@@ -7,6 +7,7 @@ import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.billing.TransactionRepository;
+import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.billing.Operation;
@@ -42,12 +43,16 @@ public class TransactionService {
 
     private final ClientService clientService;
 
+    private final WithdrawalRequestRepository withdrawalRequestRepository;
+
     public TransactionService(TransactionRepository transactionRepository, OrderService orderService,
-                              ApplicationEventPublisher eventPublisher, ClientService clientService) {
+                              ApplicationEventPublisher eventPublisher, ClientService clientService,
+                              WithdrawalRequestRepository withdrawalRequestRepository) {
         this.transactionRepository = transactionRepository;
         this.orderService = orderService;
         this.eventPublisher = eventPublisher;
         this.clientService = clientService;
+        this.withdrawalRequestRepository = withdrawalRequestRepository;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -110,13 +115,18 @@ public class TransactionService {
 
     @Transactional
     public void createManualCorrect(UUID creatorId, ManualCorrectTransaction manualCorrectTransaction) {
-        Optional<Client> maybeClient = clientService.findById(manualCorrectTransaction.clientId());
-        if (maybeClient.isEmpty()) {
-            throw new BadRequestException("Клиент с идентификатором " + manualCorrectTransaction.clientId() + " не найден.");
+        UUID clientId = manualCorrectTransaction.clientId();
+        Client client = clientService.findForUpdate(clientId);
+        if (Operation.DEBIT.equals(manualCorrectTransaction.operation())) {
+            int available = calculateBalance(clientId) - withdrawalRequestRepository.calculateReservedAmount(clientId);
+            if (manualCorrectTransaction.amount() > available) {
+                throw new BadRequestException(
+                        "На балансе клиента недостаточно средств с учётом заявок на вывод в статусе \"Новая\".");
+            }
         }
         Transaction transaction = new Transaction();
         transaction.setCreatedAt(Instant.now());
-        transaction.setClient(maybeClient.get());
+        transaction.setClient(client);
         transaction.setOperation(manualCorrectTransaction.operation());
         transaction.setAmount(manualCorrectTransaction.amount());
         transaction.setType(TransactionType.MANUAL_CORRECT);
