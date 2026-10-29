@@ -1293,7 +1293,7 @@ const ORDER_ACTIONS = [
   },
   {
     status: 'DISPUTE', label: 'Спор', question: 'Перевести ордер в спор?',
-    from: ['NEW', 'TIMEOUT'],
+    from: ['NEW', 'TIMEOUT', 'CANCELED'],
     btn: 'btn-dispute', icon: 'fa-solid fa-scale-balanced',
   },
 ];
