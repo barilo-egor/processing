@@ -17,6 +17,13 @@ public interface WithdrawalRequestRepository extends JpaRepository<WithdrawalReq
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<WithdrawalRequest> findForUpdateById(UUID id);
 
+    @Query("""
+            select coalesce(sum(w.grossSourceAmount), 0)
+            from WithdrawalRequest w
+            where w.client.id = :clientId and w.status = net.rcetech.meta.billing.WithdrawalRequestStatus.NEW
+            """)
+    Integer calculateReservedAmount(UUID clientId);
+
     @Modifying
     @Query("delete from WithdrawalRequest w where w.client.id = :clientId")
     int deleteAllByClientId(UUID clientId);

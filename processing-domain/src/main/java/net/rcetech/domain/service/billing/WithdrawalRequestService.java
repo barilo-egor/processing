@@ -54,8 +54,7 @@ public class WithdrawalRequestService {
 
     @Transactional
     public WithdrawalRequest create(UUID clientId, Integer amount, String address) {
-        Client client = clientService.findById(clientId)
-                .orElseThrow(() -> new BaseException("Client with id " + clientId + " not found"));
+        Client client = clientService.findForUpdate(clientId);
         if (Objects.isNull(client.getCommissionPercent())) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Не установлен процент комиссии для клиента {}.", timestamp, clientId);
@@ -71,8 +70,9 @@ public class WithdrawalRequestService {
         if (amount < client.getMinWithdrawalAmount()) {
             throw new BadRequestException("Запрошенная сумма на вывод меньше минимально допустимой.");
         }
-        Integer balance = transactionService.calculateBalance(clientId);
-        if (amount > balance) {
+        int available = transactionService.calculateBalance(clientId)
+                - withdrawalRequestRepository.calculateReservedAmount(clientId);
+        if (amount > available) {
             throw new BadRequestException("На балансе недостаточно средств.");
         }
         WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
