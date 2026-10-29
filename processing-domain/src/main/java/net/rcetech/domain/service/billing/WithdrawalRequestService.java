@@ -110,7 +110,7 @@ public class WithdrawalRequestService {
      */
     @Transactional
     public void cancel(UUID clientId, UUID id) {
-        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
+        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty() || !clientId.equals(maybeRequest.get().getClient().getId())) {
             throw new BadRequestException("Ордер не найден.");
         }
@@ -123,14 +123,15 @@ public class WithdrawalRequestService {
 
     /**
      * Обновление статуса заявки для сотрудников поддержки, так как отсутствует проверка автора заявки.
-     * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * Обновление доступно только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * При подтверждении заявки с баланса клиента списывается сумма заявки.
      *
      * @param id     идентификатор заявки
      * @param status новый статус
      */
     @Transactional
     public void updateStatus(UUID id, WithdrawalRequestStatus status) {
-        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
+        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty()) {
             throw new BadRequestException("Ордер не найден.");
         }
@@ -139,6 +140,9 @@ public class WithdrawalRequestService {
             throw new BadRequestException("Заявка должна быть в статусе \"Новая\".");
         }
         request.setStatus(status);
+        if (WithdrawalRequestStatus.APPROVED.equals(status)) {
+            transactionService.createAfterWithdrawalApproval(request);
+        }
     }
 
 }

@@ -2,6 +2,7 @@ package net.rcetech.domain.service.billing;
 
 import net.rcetech.domain.mapping.clients.ClientMapper;
 import net.rcetech.domain.model.billing.Transaction;
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.billing.TransactionRepository;
 import net.rcetech.domain.repository.billing.TransactionSpecification;
@@ -138,6 +139,43 @@ class TransactionServiceTest {
         assertAll(
                 () -> assertEquals(transaction.getId(), maybeEvent.get().transactionId()),
                 () -> assertEquals(transaction.getClient().getId(), maybeEvent.get().clientId())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0fae41bc-c171-4ad7-b4bc-1132a8149407,1000",
+            "186f758e-53ab-4973-98af-a924d1b94a10,48250"
+    })
+    @DisplayName("Метод должен создать транзакцию списания по подтверждённой заявке на вывод.")
+    void createAfterWithdrawalApproval_shouldCreateDebitTransaction(UUID requestId, Integer amount) {
+        Client client = getDummyClient();
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setId(requestId);
+        withdrawalRequest.setClient(client);
+        withdrawalRequest.setGrossSourceAmount(amount);
+
+        transactionService.createAfterWithdrawalApproval(withdrawalRequest);
+
+        List<Transaction> transactions = transactionRepository.findAll();
+        assertEquals(1, transactions.size());
+        Transaction transaction = transactions.getFirst();
+        assertAll(
+                () -> assertNotNull(transaction.getCreatedAt()),
+                () -> assertEquals(client.getId(), transaction.getClient().getId()),
+                () -> assertEquals(Operation.DEBIT, transaction.getOperation()),
+                () -> assertEquals(amount, transaction.getAmount()),
+                () -> assertEquals(TransactionType.CLIENT_WITHDRAWAL, transaction.getType()),
+                () -> assertEquals(
+                        "Подтверждение заявки на вывод " + requestId + ". Транзакция создана системой.",
+                        transaction.getComment()
+                )
+        );
+        Optional<TransactionCreatedEvent> maybeEvent = applicationEvents.stream(TransactionCreatedEvent.class).findFirst();
+        assertTrue(maybeEvent.isPresent());
+        assertAll(
+                () -> assertEquals(transaction.getId(), maybeEvent.get().transactionId()),
+                () -> assertEquals(client.getId(), maybeEvent.get().clientId())
         );
     }
 

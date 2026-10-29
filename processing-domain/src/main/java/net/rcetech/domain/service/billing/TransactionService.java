@@ -3,6 +3,7 @@ package net.rcetech.domain.service.billing;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.billing.Transaction;
 import net.rcetech.domain.model.billing.Transaction_;
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.billing.TransactionRepository;
@@ -60,6 +61,17 @@ public class TransactionService {
         transaction.setAmount(order.getAmount());
         transaction.setType(TransactionType.ORDER_CONFIRMATION);
         transaction.setComment("Подтверждение по ордеру " + order.getId() + ". Транзакция создана системой.");
+        save(transaction);
+    }
+
+    public void createAfterWithdrawalApproval(WithdrawalRequest withdrawalRequest) {
+        Transaction transaction = new Transaction();
+        transaction.setCreatedAt(Instant.now());
+        transaction.setClient(withdrawalRequest.getClient());
+        transaction.setOperation(Operation.DEBIT);
+        transaction.setAmount(withdrawalRequest.getGrossSourceAmount());
+        transaction.setType(TransactionType.CLIENT_WITHDRAWAL);
+        transaction.setComment("Подтверждение заявки на вывод " + withdrawalRequest.getId() + ". Транзакция создана системой.");
         save(transaction);
     }
 

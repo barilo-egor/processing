@@ -45,6 +45,9 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
@@ -669,5 +672,50 @@ class WithdrawalRequestServiceTest {
         Optional<WithdrawalRequest> maybeRequest =  withdrawalRequestRepository.findById(withdrawalRequest.getId());
         assertTrue(maybeRequest.isPresent());
         assertEquals(status, maybeRequest.get().getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15000, 48250})
+    @DisplayName("Метод должен списать сумму заявки с баланса клиента при подтверждении заявки.")
+    void updateStatus_shouldCreateDebitTransactionIfApproved(Integer amount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setGrossSourceAmount(amount);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        withdrawalRequestService.updateStatus(withdrawalRequest.getId(), WithdrawalRequestStatus.APPROVED);
+
+        verify(transactionService).createAfterWithdrawalApproval(argThat(request ->
+                withdrawalRequest.getId().equals(request.getId()) && amount.equals(request.getGrossSourceAmount())));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15000, 48250})
+    @DisplayName("Метод не должен списывать сумму заявки с баланса клиента при отмене заявки.")
+    void updateStatus_shouldNotCreateTransactionIfCanceled(Integer amount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setGrossSourceAmount(amount);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        withdrawalRequestService.updateStatus(withdrawalRequest.getId(), WithdrawalRequestStatus.CANCELED);
+
+        verify(transactionService, never()).createAfterWithdrawalApproval(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CANCELED", "APPROVED"})
+    @DisplayName("Метод не должен списывать сумму заявки с баланса клиента, если статус заявки не NEW.")
+    void updateStatus_shouldNotCreateTransactionIfStatusIsNotNew(WithdrawalRequestStatus status) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setStatus(status);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        UUID requestId = withdrawalRequest.getId();
+        assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.updateStatus(requestId, WithdrawalRequestStatus.APPROVED));
+
+        verify(transactionService, never()).createAfterWithdrawalApproval(any());
     }
 }
