@@ -2,21 +2,21 @@ package net.rcetech.orders.callback;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.model.incidents.Incident;
 import net.rcetech.domain.model.orders.ClientCallback;
 import net.rcetech.domain.model.orders.Order;
+import net.rcetech.domain.model.support.SupportUser;
 import net.rcetech.domain.repository.clients.ClientRepository;
+import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.repository.orders.ClientCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
-import net.rcetech.domain.service.orders.ClientCallbackService;
-import net.rcetech.domain.test.SharedMySQLContainer;
-import net.rcetech.domain.config.IncidentConfig;
-import net.rcetech.domain.model.incidents.Incident;
-import net.rcetech.domain.model.support.SupportUser;
-import net.rcetech.domain.repository.incidents.IncidentRepository;
 import net.rcetech.domain.repository.support.SupportUserRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
+import net.rcetech.domain.service.orders.ClientCallbackService;
 import net.rcetech.domain.service.support.SupportUserService;
+import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.ServiceException;
 import net.rcetech.meta.incidents.ClientCallbackUrlForbiddenEvent;
@@ -57,24 +57,15 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockingDetails;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.reset;
 
 @DataJpaTest
@@ -189,10 +180,10 @@ class CallbackDispatcherTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {400, 503})
-    @DisplayName("После ошибки КБ должен повторяться через 10, 30 и 90 секунд, а затем помечаться недоставленным без инцидента.")
+    @ValueSource(ints = {400, 503, 302, 307})
+    @DisplayName("После ошибки или редиректа КБ должен повторяться через 10, 30 и 90 секунд, а затем помечаться недоставленным без инцидента.")
     void dispatch_shouldRetryWithBackoffAndFail(int statusCode) {
-        stubFor(post("/callback").willReturn(status(statusCode)));
+        stubFor(post("/callback").willReturn(status(statusCode).withHeader("Location", wireMockUrl + "/redirected")));
         ClientCallback callback = clientCallbackService.create(saveOrder().getId(), OrderStatus.SUCCESS, wireMockUrl + "/callback",
                 "{}");
 
@@ -216,6 +207,7 @@ class CallbackDispatcherTest {
                 () -> assertNull(actual.getSentAt())
         );
         WireMock.verify(4, postRequestedFor(urlEqualTo("/callback")));
+        WireMock.verify(0, anyRequestedFor(urlEqualTo("/redirected")));
         assertTrue(deliveryUnknownIncidents(callback.getOrderId()).isEmpty());
     }
 
