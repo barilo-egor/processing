@@ -85,9 +85,13 @@ export default function App() {
   // Баланс в шапке берётся из того же профиля. Перечитываем его при каждой
   // смене раздела: баланс меняется после ордеров и заявок на вывод, а
   // кабинет может быть открыт долго. Ошибку фонового обновления не показываем.
+  const refreshProfile = useCallback(() => {
+    api.profile().then((p) => setProfile(p)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (loadingProfile) return;
-    api.profile().then((p) => setProfile(p)).catch(() => {});
+    refreshProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
@@ -230,7 +234,7 @@ export default function App() {
                 <OrdersSection dict={dict} showToast={showToast} timeoutSec={profile?.orderTimeoutSeconds} />
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
-            {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} />}
+            {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} onBalanceChange={refreshProfile} />}
             {docId && <DocPage key={docId} id={docId} load={api.doc} />}
           </main>
         </div>
@@ -1576,7 +1580,7 @@ function TransactionsSection({ dict, showToast }) {
 
 const EMPTY_WITHDRAWALS_FILTER = { id: '', status: '', address: '', ...EMPTY_DATE_FILTER };
 
-function WithdrawalsSection({ dict, showToast }) {
+function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
   const list = usePagedList(api.withdrawals, showToast, 'Не удалось загрузить заявки');
   const [draft, setDraft] = useState(EMPTY_WITHDRAWALS_FILTER);
   const [creating, setCreating] = useState(false);  // окно создания
@@ -1595,6 +1599,7 @@ function WithdrawalsSection({ dict, showToast }) {
     setCreating(false);
     showToast('Заявка создана', 'success');
     list.reloadFirst();
+    onBalanceChange();
   };
 
   const cancel = async (row) => {
@@ -1622,6 +1627,7 @@ function WithdrawalsSection({ dict, showToast }) {
       setCanceling(false);
       setToCancel(null);
       list.reload();
+      onBalanceChange();
     }
   };
 
