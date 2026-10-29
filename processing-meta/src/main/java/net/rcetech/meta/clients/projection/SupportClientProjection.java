@@ -18,6 +18,7 @@ public interface SupportClientProjection {
     Integer getOrderTimeoutSeconds();
     BigDecimal getCommissionPercent();
     Integer getBalance();
+    Integer getReservedAmount();
     Set<RequestMethod> getMethods();
     String getComment();
     Integer getMinWithdrawalAmount();

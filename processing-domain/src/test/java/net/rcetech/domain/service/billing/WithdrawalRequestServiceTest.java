@@ -45,6 +45,9 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
@@ -138,12 +141,14 @@ class WithdrawalRequestServiceTest {
         assertTrue(exception.getTimestamp() >= before && exception.getTimestamp() <= after);
     }
 
-    @Test
-    @DisplayName("Метод должен бросить BaseException, если клиент не найден.")
-    void create_shouldThrowBaseExceptionIfClientNotFound() {
-        UUID clientId = UUID.randomUUID();
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "5b7e1c2a-9d4f-4e8a-b3c6-7f0a1d2e3b4c", "e2c9a7f1-3b5d-4c8e-9a1f-6d7b8c9e0f12"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если клиент не найден.")
+    void create_shouldThrowBadRequestExceptionIfClientNotFound(UUID clientId) {
         assertThrows(
-                BaseException.class,
+                BadRequestException.class,
                 () -> withdrawalRequestService.create(clientId, null, null)
         );
     }
@@ -224,6 +229,72 @@ class WithdrawalRequestServiceTest {
 
         assertEquals(amount, actual.getGrossSourceAmount());
         assertEquals(1, withdrawalRequestRepository.count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "10000,3000,4000,3001",
+            "50000,25000,20000,5500",
+            "8000,7000,1000,1000"
+    })
+    @DisplayName("Метод должен бросить BadRequestException, если запрошенная сумма больше баланса за вычетом сумм заявок в статусе NEW.")
+    void create_shouldThrowBadRequestExceptionIfAmountGreaterThanAvailableBalance(Integer balance, Integer firstReserved,
+                                                                                  Integer secondReserved, Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        client.setMinWithdrawalAmount(1);
+        clientRepository.save(client);
+        saveRequest(client, WithdrawalRequestStatus.NEW, firstReserved);
+        saveRequest(client, WithdrawalRequestStatus.NEW, secondReserved);
+        when(transactionService.calculateBalance(client.getId())).thenReturn(balance);
+        UUID clientId = client.getId();
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> withdrawalRequestService.create(clientId, amount, "TX9zFakeAddressTRC20usdtNotReal99x")
+        );
+
+        assertEquals("На балансе недостаточно средств.", exception.getMessage());
+        assertEquals(2, withdrawalRequestRepository.count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "10000,3000,4000,3000",
+            "50000,25000,20000,5000"
+    })
+    @DisplayName("Метод должен создать заявку, если запрошенная сумма равна балансу за вычетом сумм заявок в статусе NEW.")
+    void create_shouldCreateRequestIfAmountEqualsAvailableBalance(Integer balance, Integer firstReserved,
+                                                                 Integer secondReserved, Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        saveRequest(client, WithdrawalRequestStatus.NEW, firstReserved);
+        saveRequest(client, WithdrawalRequestStatus.NEW, secondReserved);
+        when(transactionService.calculateBalance(client.getId())).thenReturn(balance);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
+
+        WithdrawalRequest actual = withdrawalRequestService.create(client.getId(), amount, "TX9zFakeAddressTRC20usdtNotReal99x");
+
+        assertEquals(amount, actual.getGrossSourceAmount());
+        assertEquals(3, withdrawalRequestRepository.count());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "APPROVED,12000",
+            "CANCELED,48250"
+    })
+    @DisplayName("Метод не должен учитывать заявки не в статусе NEW и заявки других клиентов при проверке баланса.")
+    void create_shouldIgnoreNotNewAndOtherClientRequests(WithdrawalRequestStatus status, Integer amount) {
+        Client client = getDummyClient(new BigDecimal(15));
+        Client otherClient = getDummyClient(new BigDecimal(15));
+        saveRequest(client, status, amount);
+        saveRequest(otherClient, WithdrawalRequestStatus.NEW, amount);
+        when(transactionService.calculateBalance(client.getId())).thenReturn(amount);
+        when(rateService.getRate(RatePair.USDT_RUB)).thenReturn(new BigDecimal(80));
+
+        WithdrawalRequest actual = withdrawalRequestService.create(client.getId(), amount, "TX9zFakeAddressTRC20usdtNotReal99x");
+
+        assertEquals(amount, actual.getGrossSourceAmount());
+        assertEquals(3, withdrawalRequestRepository.count());
     }
 
     @ParameterizedTest
@@ -540,6 +611,16 @@ class WithdrawalRequestServiceTest {
         assertEquals(expected.getId(), actual.getContent().getFirst().id());
     }
 
+    WithdrawalRequest saveRequest(Client client, WithdrawalRequestStatus status, Integer grossSourceAmount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setClient(client);
+        withdrawalRequest.setStatus(status);
+        withdrawalRequest.setGrossSourceAmount(grossSourceAmount);
+        withdrawalRequest.setNetSourceAmount(grossSourceAmount);
+        fillFields(withdrawalRequest);
+        return withdrawalRequestRepository.save(withdrawalRequest);
+    }
+
     WithdrawalRequest saveRequest(Client client, Instant createdAt) {
         WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
         withdrawalRequest.setCreatedAt(createdAt);
@@ -669,5 +750,50 @@ class WithdrawalRequestServiceTest {
         Optional<WithdrawalRequest> maybeRequest =  withdrawalRequestRepository.findById(withdrawalRequest.getId());
         assertTrue(maybeRequest.isPresent());
         assertEquals(status, maybeRequest.get().getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15000, 48250})
+    @DisplayName("Метод должен списать сумму заявки с баланса клиента при подтверждении заявки.")
+    void updateStatus_shouldCreateDebitTransactionIfApproved(Integer amount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setGrossSourceAmount(amount);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        withdrawalRequestService.updateStatus(withdrawalRequest.getId(), WithdrawalRequestStatus.APPROVED);
+
+        verify(transactionService).createAfterWithdrawalApproval(argThat(request ->
+                withdrawalRequest.getId().equals(request.getId()) && amount.equals(request.getGrossSourceAmount())));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15000, 48250})
+    @DisplayName("Метод не должен списывать сумму заявки с баланса клиента при отмене заявки.")
+    void updateStatus_shouldNotCreateTransactionIfCanceled(Integer amount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setGrossSourceAmount(amount);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        withdrawalRequestService.updateStatus(withdrawalRequest.getId(), WithdrawalRequestStatus.CANCELED);
+
+        verify(transactionService, never()).createAfterWithdrawalApproval(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CANCELED", "APPROVED"})
+    @DisplayName("Метод не должен списывать сумму заявки с баланса клиента, если статус заявки не NEW.")
+    void updateStatus_shouldNotCreateTransactionIfStatusIsNotNew(WithdrawalRequestStatus status) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setStatus(status);
+        fillFields(withdrawalRequest);
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        UUID requestId = withdrawalRequest.getId();
+        assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.updateStatus(requestId, WithdrawalRequestStatus.APPROVED));
+
+        verify(transactionService, never()).createAfterWithdrawalApproval(any());
     }
 }

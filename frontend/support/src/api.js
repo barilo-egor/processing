@@ -394,18 +394,6 @@ export const fmtPercent = (v) =>
 export const fmtSeconds = (v) =>
     v == null || v === '' ? '—' : `${Number(v).toLocaleString('ru-RU')} сек`;
 
-/* Баланс клиента: рубли, разделитель разрядов, две цифры после запятой.
-   ВНИМАНИЕ: имя поля в ответе бэка не подтверждено — в коллекции Postman
-   баланса нет. Сейчас читаем client.balance, см. ClientCard в App.jsx. */
-export function fmtMoney(v) {
-  if (v == null || v === '') return '—';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return '—';
-  return `${n.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ₽`;
-}
 
 /* Дата и необязательное время -> миллисекунды.
    date — строка ГГГГ-ММ-ДД из <input type="date">,

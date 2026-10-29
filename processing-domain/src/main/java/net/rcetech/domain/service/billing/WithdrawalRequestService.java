@@ -54,8 +54,7 @@ public class WithdrawalRequestService {
 
     @Transactional
     public WithdrawalRequest create(UUID clientId, Integer amount, String address) {
-        Client client = clientService.findById(clientId)
-                .orElseThrow(() -> new BaseException("Client with id " + clientId + " not found"));
+        Client client = clientService.findForUpdate(clientId);
         if (Objects.isNull(client.getCommissionPercent())) {
             long timestamp = System.currentTimeMillis();
             log.error("{} Не установлен процент комиссии для клиента {}.", timestamp, clientId);
@@ -71,8 +70,9 @@ public class WithdrawalRequestService {
         if (amount < client.getMinWithdrawalAmount()) {
             throw new BadRequestException("Запрошенная сумма на вывод меньше минимально допустимой.");
         }
-        Integer balance = transactionService.calculateBalance(clientId);
-        if (amount > balance) {
+        int available = transactionService.calculateBalance(clientId)
+                - withdrawalRequestRepository.calculateReservedAmount(clientId);
+        if (amount > available) {
             throw new BadRequestException("На балансе недостаточно средств.");
         }
         WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
@@ -110,7 +110,7 @@ public class WithdrawalRequestService {
      */
     @Transactional
     public void cancel(UUID clientId, UUID id) {
-        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
+        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty() || !clientId.equals(maybeRequest.get().getClient().getId())) {
             throw new BadRequestException("Ордер не найден.");
         }
@@ -123,14 +123,15 @@ public class WithdrawalRequestService {
 
     /**
      * Обновление статуса заявки для сотрудников поддержки, так как отсутствует проверка автора заявки.
-     * Отмена доступна только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * Обновление доступно только для заявок в статусе {@link WithdrawalRequestStatus#NEW}.
+     * При подтверждении заявки с баланса клиента списывается сумма заявки.
      *
      * @param id     идентификатор заявки
      * @param status новый статус
      */
     @Transactional
     public void updateStatus(UUID id, WithdrawalRequestStatus status) {
-        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findById(id);
+        Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty()) {
             throw new BadRequestException("Ордер не найден.");
         }
@@ -139,6 +140,9 @@ public class WithdrawalRequestService {
             throw new BadRequestException("Заявка должна быть в статусе \"Новая\".");
         }
         request.setStatus(status);
+        if (WithdrawalRequestStatus.APPROVED.equals(status)) {
+            transactionService.createAfterWithdrawalApproval(request);
+        }
     }
 
 }

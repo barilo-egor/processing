@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 @Service
 public class ClientService {
 
-    private static final String CLIENT_NOT_FOUND = "Client with id %s not found";
+    private static final String CLIENT_NOT_FOUND = "Клиент с идентификатором %s не найден.";
 
     private final ClientRepository clientRepository;
 

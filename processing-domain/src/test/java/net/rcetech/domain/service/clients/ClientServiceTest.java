@@ -2,9 +2,12 @@ package net.rcetech.domain.service.clients;
 
 import jakarta.validation.ConstraintViolationException;
 import net.rcetech.domain.mapping.clients.ClientMapper;
+import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
+import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.test.SharedMySQLContainer;
+import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
@@ -21,6 +24,7 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -68,6 +72,12 @@ class ClientServiceTest {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private WithdrawalRequestRepository withdrawalRequestRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
 
     @Test
     @DisplayName("Клиент должен быть сохранен с дефолтными значениями.")
@@ -538,6 +548,62 @@ class ClientServiceTest {
                 () -> assertEquals(id, actual.getId()),
                 () -> assertEquals(balance, actual.getBalance())
         );
+    }
+
+    @CsvSource({
+            "3000,4000,7000",
+            "25000,20000,45000"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть в проекции клиента сумму его заявок на вывод в статусе NEW.")
+    void findById_shouldReturnReservedAmountOfNewWithdrawalRequests(Integer firstReserved, Integer secondReserved,
+                                                                   Integer expected) {
+        Client client = getDummyClient();
+        clientRepository.save(client);
+        Client otherClient = getDummyClient();
+        clientRepository.save(otherClient);
+        saveWithdrawalRequest(client, WithdrawalRequestStatus.NEW, firstReserved);
+        saveWithdrawalRequest(client, WithdrawalRequestStatus.NEW, secondReserved);
+        saveWithdrawalRequest(client, WithdrawalRequestStatus.APPROVED, firstReserved);
+        saveWithdrawalRequest(client, WithdrawalRequestStatus.CANCELED, secondReserved);
+        saveWithdrawalRequest(otherClient, WithdrawalRequestStatus.NEW, firstReserved);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<SupportClientProjection> actual = clientService.findById(client.getId(), SupportClientProjection.class);
+
+        assertTrue(actual.isPresent());
+        assertEquals(expected, actual.get().getReservedAmount());
+    }
+
+    @RepeatedTest(value = 2)
+    @DisplayName("Метод должен вернуть в проекции клиента нулевую сумму резерва, если заявок на вывод в статусе NEW нет.")
+    void findById_shouldReturnZeroReservedAmountIfNoNewWithdrawalRequests() {
+        Client client = getDummyClient();
+        clientRepository.save(client);
+        saveWithdrawalRequest(client, WithdrawalRequestStatus.APPROVED, 15000);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<SupportClientProjection> actual = clientService.findById(client.getId(), SupportClientProjection.class);
+
+        assertTrue(actual.isPresent());
+        assertEquals(0, actual.get().getReservedAmount());
+    }
+
+    void saveWithdrawalRequest(Client client, WithdrawalRequestStatus status, Integer amount) {
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest();
+        withdrawalRequest.setId(UUID.randomUUID());
+        withdrawalRequest.setClient(client);
+        withdrawalRequest.setStatus(status);
+        withdrawalRequest.setCreatedAt(Instant.now());
+        withdrawalRequest.setGrossSourceAmount(amount);
+        withdrawalRequest.setCommissionPercent(BigDecimal.ONE);
+        withdrawalRequest.setNetSourceAmount(amount);
+        withdrawalRequest.setRate(new BigDecimal(80));
+        withdrawalRequest.setTargetAmount(150);
+        withdrawalRequest.setAddress("TX9zFakeAddressTRC20usdtNotReal99x");
+        withdrawalRequestRepository.save(withdrawalRequest);
     }
 
     @CsvSource({"150,700", "3000,25"})

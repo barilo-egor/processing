@@ -85,9 +85,13 @@ export default function App() {
   // Баланс в шапке берётся из того же профиля. Перечитываем его при каждой
   // смене раздела: баланс меняется после ордеров и заявок на вывод, а
   // кабинет может быть открыт долго. Ошибку фонового обновления не показываем.
+  const refreshProfile = useCallback(() => {
+    api.profile().then((p) => setProfile(p)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (loadingProfile) return;
-    api.profile().then((p) => setProfile(p)).catch(() => {});
+    refreshProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
@@ -208,7 +212,8 @@ export default function App() {
               <h1>{current.title}</h1>
             </div>
             <div className="topbar-right">
-              <BalanceBadge value={profile?.balance} loading={loadingProfile && !profile} />
+              <BalanceBadge value={profile?.balance} reserved={profile?.reservedAmount}
+                            loading={loadingProfile && !profile} />
               <ThemeToggle />
               <AccountMenu username={profile?.username} />
             </div>
@@ -229,7 +234,7 @@ export default function App() {
                 <OrdersSection dict={dict} showToast={showToast} timeoutSec={profile?.orderTimeoutSeconds} />
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
-            {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} />}
+            {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} onBalanceChange={refreshProfile} />}
             {docId && <DocPage key={docId} id={docId} load={api.doc} />}
           </main>
         </div>
@@ -249,20 +254,25 @@ export default function App() {
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
 /* ---- Баланс клиента в шапке ----
    Тот же баланс, что в карточке клиента у администратора (поле balance
-   профиля GET /api/client/profile). Формат по ТЗ: «125 001,00 ₽», ноль — «0,00 ₽». */
-function fmtBalance(v) {
-  const n = Number(v ?? 0);
-  return `${(Number.isFinite(n) ? n : 0).toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ₽`;
-}
-
-function BalanceBadge({ value, loading }) {
+   профиля GET /api/client/profile). Формат: «125000₽», ноль — «0₽».
+   Если есть резерв заявок на вывод в статусе «Новая» (поле reservedAmount),
+   он выводится в скобках: «125000(60000)₽». */
+function BalanceBadge({ value, reserved, loading }) {
+  const n = Number(value ?? 0);
+  const balance = Math.trunc(Number.isFinite(n) ? n : 0);
+  const r = Math.trunc(Number(reserved));
   return (
       <div className="balance" title="Баланс">
         <span className="balance-label">Баланс</span>
-        <span className="balance-value">{loading ? '…' : fmtBalance(value)}</span>
+        <span className="balance-value">
+          {loading ? '…' : (
+              <>
+                {balance}
+                {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
+                ₽
+              </>
+          )}
+        </span>
       </div>
   );
 }
@@ -1570,7 +1580,7 @@ function TransactionsSection({ dict, showToast }) {
 
 const EMPTY_WITHDRAWALS_FILTER = { id: '', status: '', address: '', ...EMPTY_DATE_FILTER };
 
-function WithdrawalsSection({ dict, showToast }) {
+function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
   const list = usePagedList(api.withdrawals, showToast, 'Не удалось загрузить заявки');
   const [draft, setDraft] = useState(EMPTY_WITHDRAWALS_FILTER);
   const [creating, setCreating] = useState(false);  // окно создания
@@ -1589,6 +1599,7 @@ function WithdrawalsSection({ dict, showToast }) {
     setCreating(false);
     showToast('Заявка создана', 'success');
     list.reloadFirst();
+    onBalanceChange();
   };
 
   const cancel = async (row) => {
@@ -1616,6 +1627,7 @@ function WithdrawalsSection({ dict, showToast }) {
       setCanceling(false);
       setToCancel(null);
       list.reload();
+      onBalanceChange();
     }
   };
 

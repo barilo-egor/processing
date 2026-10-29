@@ -313,6 +313,7 @@ table.grid tbody tr:hover { background: var(--row-hover); }
   color: var(--text-dim);
 }
 .balance-value { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.balance-reserve { color: var(--text-dim); font-weight: 600; cursor: help; }
 
 .account { position: relative; }
 .account-menu-head { display: none; }
