@@ -10,6 +10,7 @@ import lombok.ToString;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.RequestMethod;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.SortNatural;
 import org.springframework.data.domain.Persistable;
 
@@ -97,6 +98,13 @@ public class Client implements Persistable<UUID> {
     @Column
     @PositiveOrZero(message = "должно быть больше или равно нулю")
     private Integer balance;
+
+    /**
+     * Сумма заявок на вывод в статусе «Новая», зарезервированная на балансе
+     */
+    @Formula("(select coalesce(sum(w.gross_source_amount), 0) from withdrawal_request w"
+            + " where w.client_id = id and w.status = 'NEW')")
+    private Integer reservedAmount;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "client_method", joinColumns = @JoinColumn(name = "client_id"))

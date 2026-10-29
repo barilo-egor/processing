@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {api, dateTimeToMs, fmtDateTime, fmtMoney, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
+import {api, dateTimeToMs, fmtDateTime, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
 // Общие для обоих кабинетов компоненты — frontend/shared.
 import ConfirmDialog from '@shared/ConfirmDialog.jsx';
 import {DocPage, DocsNav, docIdOf, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
@@ -1389,6 +1389,22 @@ function shortId(id) {
 // Предел длины комментария к клиенту (ТЗ).
 const COMMENT_MAX = 1000;
 
+/* Баланс клиента: рубли без копеек, «125000₽». Если есть резерв заявок
+   на вывод в статусе «Новая», он выводится в скобках: «125000(60000)₽».
+   Читаем client.balance и client.reservedAmount. */
+function BalanceValue({ value, reserved }) {
+  const n = Number(value);
+  if (value == null || value === '' || !Number.isFinite(n)) return <span className="mono">—</span>;
+  const r = Math.trunc(Number(reserved));
+  return (
+      <span className="mono">
+        {Math.trunc(n)}
+        {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
+        ₽
+      </span>
+  );
+}
+
 function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, showToast }) {
   // Черновик настроек. Строки, а не числа: поле ввода всегда работает
   // со строкой, приведение и проверка — при сохранении.
@@ -1575,7 +1591,7 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
                 </Field>
 
                 <Field label="Баланс">
-                  <span className="mono">{fmtMoney(client.balance)}</span>
+                  <BalanceValue value={client.balance} reserved={client.reservedAmount} />
                 </Field>
               </section>
 

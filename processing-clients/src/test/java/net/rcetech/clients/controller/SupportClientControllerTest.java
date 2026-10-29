@@ -164,6 +164,11 @@ class SupportClientControllerTest {
             }
 
             @Override
+            public Integer getReservedAmount() {
+                return 25000;
+            }
+
+            @Override
             public Set<RequestMethod> getMethods() {
                 return Set.of(RequestMethod.CARD, RequestMethod.SBP);
             }

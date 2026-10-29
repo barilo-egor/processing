@@ -132,6 +132,11 @@ class ClientBalanceControllerTest {
             }
 
             @Override
+            public Integer getReservedAmount() {
+                return 0;
+            }
+
+            @Override
             public Set<RequestMethod> getMethods() {
                 return Set.of();
             }

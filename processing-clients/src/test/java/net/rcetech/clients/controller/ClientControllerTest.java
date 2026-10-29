@@ -58,13 +58,14 @@ class ClientControllerTest {
     @ParameterizedTest
     @CsvSource({
             "89b4e05b-c129-4ea3-a1d0-088d347b9cd2,smokilolik,1790181102840,http://example.com/callback," +
-                    "900,15.5,255695",
+                    "900,15.5,255695,12000",
             "a2c47cba-7b49-4d9b-961c-31220f3636e4,test1,1790181102840,http://google.net/callback," +
-                    "800,10.0,387"
+                    "800,10.0,387,0"
     })
     @DisplayName("Метод должен вернуть JSON клиента.")
     void get_shouldReturnClientJson(UUID id, String username, Long registeredAt, String callbackUrl,
-                                    Integer orderTimeoutSeconds, BigDecimal commissionPercent, Integer balance) throws Exception {
+                                    Integer orderTimeoutSeconds, BigDecimal commissionPercent, Integer balance,
+                                    Integer reservedAmount) throws Exception {
         ClientProjection clientResponseDTO = new ClientProjection() {
             @Override
             public UUID getId() {
@@ -102,6 +103,11 @@ class ClientControllerTest {
             }
 
             @Override
+            public Integer getReservedAmount() {
+                return reservedAmount;
+            }
+
+            @Override
             public Set<RequestMethod> getMethods() {
                 return Set.of(RequestMethod.CARD, RequestMethod.SBP);
             }
@@ -121,6 +127,7 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$.orderTimeoutSeconds").value(orderTimeoutSeconds))
                 .andExpect(jsonPath("$.commissionPercent").value(commissionPercent.doubleValue()))
                 .andExpect(jsonPath("$.balance").value(balance))
+                .andExpect(jsonPath("$.reservedAmount").value(reservedAmount))
                 .andExpect(jsonPath("$.comment").doesNotExist())
                 .andExpect(jsonPath("$.minWithdrawalAmount").doesNotExist());
     }
@@ -166,6 +173,11 @@ class ClientControllerTest {
             @Override
             public Integer getBalance() {
                 return 154789;
+            }
+
+            @Override
+            public Integer getReservedAmount() {
+                return 25000;
             }
 
             @Override

@@ -564,6 +564,7 @@ table.grid-withdrawals td { vertical-align: middle; }
 
 /* ---- Поле «Методы» в карточке клиента ---- */
 .dim { color: var(--text-dim); }
+.balance-reserve { color: var(--text-dim); cursor: help; }
 
 .msel { position: relative; width: 100%; max-width: 320px; }
 .msel-field {

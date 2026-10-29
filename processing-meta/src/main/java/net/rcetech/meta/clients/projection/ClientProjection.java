@@ -18,5 +18,6 @@ public interface ClientProjection {
     Integer getOrderTimeoutSeconds();
     BigDecimal getCommissionPercent();
     Integer getBalance();
+    Integer getReservedAmount();
     Set<RequestMethod> getMethods();
 }

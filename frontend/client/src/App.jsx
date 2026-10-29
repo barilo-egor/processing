@@ -208,7 +208,8 @@ export default function App() {
               <h1>{current.title}</h1>
             </div>
             <div className="topbar-right">
-              <BalanceBadge value={profile?.balance} loading={loadingProfile && !profile} />
+              <BalanceBadge value={profile?.balance} reserved={profile?.reservedAmount}
+                            loading={loadingProfile && !profile} />
               <ThemeToggle />
               <AccountMenu username={profile?.username} />
             </div>
@@ -249,20 +250,25 @@ export default function App() {
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
 /* ---- Баланс клиента в шапке ----
    Тот же баланс, что в карточке клиента у администратора (поле balance
-   профиля GET /api/client/profile). Формат по ТЗ: «125 001,00 ₽», ноль — «0,00 ₽». */
-function fmtBalance(v) {
-  const n = Number(v ?? 0);
-  return `${(Number.isFinite(n) ? n : 0).toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ₽`;
-}
-
-function BalanceBadge({ value, loading }) {
+   профиля GET /api/client/profile). Формат: «125000₽», ноль — «0₽».
+   Если есть резерв заявок на вывод в статусе «Новая» (поле reservedAmount),
+   он выводится в скобках: «125000(60000)₽». */
+function BalanceBadge({ value, reserved, loading }) {
+  const n = Number(value ?? 0);
+  const balance = Math.trunc(Number.isFinite(n) ? n : 0);
+  const r = Math.trunc(Number(reserved));
   return (
       <div className="balance" title="Баланс">
         <span className="balance-label">Баланс</span>
-        <span className="balance-value">{loading ? '…' : fmtBalance(value)}</span>
+        <span className="balance-value">
+          {loading ? '…' : (
+              <>
+                {balance}
+                {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
+                ₽
+              </>
+          )}
+        </span>
       </div>
   );
 }
