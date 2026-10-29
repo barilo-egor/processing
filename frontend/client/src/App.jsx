@@ -254,9 +254,9 @@ export default function App() {
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
 /* ---- Баланс клиента в шапке ----
    Тот же баланс, что в карточке клиента у администратора (поле balance
-   профиля GET /api/client/profile). Формат: «125000₽», ноль — «0₽».
+   профиля GET /api/client/profile). Формат: «125000 ₽», ноль — «0 ₽».
    Если есть резерв заявок на вывод в статусе «Новая» (поле reservedAmount),
-   он выводится в скобках: «125000(60000)₽». */
+   он выводится в скобках: «125000(60000) ₽». */
 function BalanceBadge({ value, reserved, loading }) {
   const n = Number(value ?? 0);
   const balance = Math.trunc(Number.isFinite(n) ? n : 0);
@@ -269,7 +269,7 @@ function BalanceBadge({ value, reserved, loading }) {
               <>
                 {balance}
                 {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
-                ₽
+                {'\u00A0'}₽
               </>
           )}
         </span>

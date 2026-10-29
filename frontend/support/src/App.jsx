@@ -1389,8 +1389,8 @@ function shortId(id) {
 // Предел длины комментария к клиенту (ТЗ).
 const COMMENT_MAX = 1000;
 
-/* Баланс клиента: рубли без копеек, «125000₽». Если есть резерв заявок
-   на вывод в статусе «Новая», он выводится в скобках: «125000(60000)₽».
+/* Баланс клиента: рубли без копеек, «125000 ₽». Если есть резерв заявок
+   на вывод в статусе «Новая», он выводится в скобках: «125000(60000) ₽».
    Читаем client.balance и client.reservedAmount. */
 function BalanceValue({ value, reserved }) {
   const n = Number(value);
@@ -1400,7 +1400,7 @@ function BalanceValue({ value, reserved }) {
       <span className="mono">
         {Math.trunc(n)}
         {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
-        ₽
+        {'\u00A0'}₽
       </span>
   );
 }
