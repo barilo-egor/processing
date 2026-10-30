@@ -322,6 +322,9 @@ class SupportClientControllerTest {
             "{\"commissionPercent\":1000}|Поле «commissionPercent» должно быть меньше 100.",
             "{\"commissionPercent\":100}|Поле «commissionPercent» должно быть меньше 100.",
             "{\"commissionPercent\":-0.1}|Поле «commissionPercent» должно быть больше или равно нулю.",
+            "{\"commissionPercent\":1.23}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
+            "{\"commissionPercent\":1.23456}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
+            "{\"commissionPercent\":99.95}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
             "{\"minWithdrawalAmount\":-5}|Поле «minWithdrawalAmount» должно быть больше нуля.",
             "{\"minWithdrawalAmount\":0}|Поле «minWithdrawalAmount» должно быть больше нуля.",
             "{\"orderTimeoutSeconds\":0}|Поле «orderTimeoutSeconds» должно быть не меньше 120.",
@@ -359,6 +362,22 @@ class SupportClientControllerTest {
                 .andExpect(jsonPath("$.description")
                         .value("Поле «" + field + "» содержит некорректное значение «" + value + "»."));
         verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "1.2", "20", "99.9"})
+    @DisplayName("Метод должен принять комиссию с одним знаком после запятой.")
+    void update_shouldAcceptCommissionWithOneFractionDigit(String commissionPercent) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"commissionPercent\":" + commissionPercent + "}"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(new BigDecimal(commissionPercent), captor.getValue().commissionPercent());
     }
 
     @ParameterizedTest
