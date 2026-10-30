@@ -4,6 +4,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.validation.SortableFields;
 import net.rcetech.support.service.MerchantHistoryService;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,8 @@ public class MerchantHistoryController {
     @GetMapping
     public PagedModel<MerchantHistoryResponse> get(
             MerchantHistoryFilter filter,
+            @SortableFields({"operationId", "createdAt", "details", "merchant", "merchantAmount", "requestedAmount",
+                    "method", "merchantOrderId", "actorId"})
             @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(new PageImpl<>(merchantHistoryService.getHistory(filter, pageable)));
     }

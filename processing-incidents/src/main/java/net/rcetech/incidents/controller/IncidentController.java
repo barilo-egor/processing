@@ -8,6 +8,7 @@ import net.rcetech.meta.incidents.dto.IncidentFilter;
 import net.rcetech.meta.incidents.dto.IncidentResponse;
 import net.rcetech.meta.incidents.dto.UpdateIncidentRequest;
 import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.validation.SortableFields;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -30,7 +31,9 @@ public class IncidentController {
     }
 
     @GetMapping
-    public PagedModel<IncidentResponse> get(IncidentFilter incidentFilter, @PageableDefault(size = 20) Pageable pageable) {
+    public PagedModel<IncidentResponse> get(IncidentFilter incidentFilter,
+            @SortableFields({"id", "createdAt", "status", "errorTimestamp", "type", "resolvedById", "resolvedAt"})
+            @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(
                 incidentService.findAll(IncidentSpecifications.matches(incidentFilter), pageable, IncidentResponse.class)
         );

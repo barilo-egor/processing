@@ -1,5 +1,6 @@
 package net.rcetech.clients.controller;
 
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
@@ -22,10 +23,13 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -221,6 +225,41 @@ class SupportClientControllerTest {
                 () -> assertEquals(size, pageable.getPageSize()),
                 () -> assertEquals(page, pageable.getPageNumber())
         );
+    }
+
+    @ValueSource(strings = {"id", "username", "registeredAt", "commissionPercent"})
+    @ParameterizedTest
+    @DisplayName("Метод должен передать в сервис сортировку по разрешённому полю.")
+    void getClients_shouldPassSupportedSortField(String field) throws Exception {
+        when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
+                        .queryParam("sort", field + ",desc"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(clientService).findAll(any(), pageableCaptor.capture(), eq(SupportClientProjection.class));
+        assertEquals(Sort.by(Sort.Direction.DESC, field), pageableCaptor.getValue().getSort());
+    }
+
+    @ValueSource(strings = {"nope", "comment", "balance"})
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть 400 и не обращаться к сервису при сортировке по неразрешённому полю.")
+    void getClients_shouldReturnBadRequestOnUnsupportedSortField(String field) throws Exception {
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
+                        .queryParam("sort", field + ",asc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
+        verifyNoInteractions(clientService);
+    }
+
+    @ValueSource(strings = {"nope", "registered"})
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть 400, если сервис не нашёл поле сортировки в сущности.")
+    void getClients_shouldReturnBadRequestOnPropertyReferenceException(String field) throws Exception {
+        when(clientService.findAll(any(), any(), any())).thenThrow(
+                new PropertyReferenceException(field, TypeInformation.of(Client.class), List.of()));
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
     }
 
     @EnumSource(value = Role.class, names = {"CLIENT", "OPERATOR"})

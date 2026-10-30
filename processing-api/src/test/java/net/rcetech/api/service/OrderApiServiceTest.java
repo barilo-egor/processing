@@ -501,20 +501,6 @@ class OrderApiServiceTest {
         );
     }
 
-    @ValueSource(strings = {"foo", "merchant", "merchantOrderId", "expiresAt", "client"})
-    @ParameterizedTest
-    @DisplayName("Метод должен отклонить сортировку по полю, которого нет в ответе клиенту.")
-    void findAll_shouldRejectUnsupportedSortField(String field) {
-        Client client = getDummyClient();
-        getDummyOrder(client);
-
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> orderApiService.findAll(
-                client.getId(), new ClientOrderFilter(null, null), PageRequest.of(0, 10, Sort.by("createdAt", field))
-        ));
-
-        assertEquals("Сортировка по полю «" + field + "» не поддерживается.", exception.getMessage());
-    }
-
     @ValueSource(strings = {"id", "createdAt", "internalId", "status", "amount", "method", "details", "bank",
             "callbackUrl"})
     @ParameterizedTest

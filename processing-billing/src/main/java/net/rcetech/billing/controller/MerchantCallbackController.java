@@ -6,6 +6,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.MerchantCallbackFilter;
 import net.rcetech.meta.billing.dto.MerchantCallbackResponse;
 import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.validation.SortableFields;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,9 @@ public class MerchantCallbackController {
     }
 
     @GetMapping
-    public PagedModel<MerchantCallbackResponse> get(MerchantCallbackFilter filter, Pageable pageable) {
+    public PagedModel<MerchantCallbackResponse> get(MerchantCallbackFilter filter,
+            @SortableFields({"createdAt", "orderId", "merchant", "merchantOrderId", "status", "statusDescription",
+                    "processedAt"}) Pageable pageable) {
         return new PagedModel<>(merchantCallbackService.findAll(
                 MerchantCallbackSpecifications.matches(filter), pageable, MerchantCallbackResponse.class
         ));

@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -107,6 +108,14 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     public ProblemDetail handleBadRequest(Exception ex) {
         log.error("Bad request error: {}", ex.getMessage(), ex);
         return getBadRequestProblemDetail(ex);
+    }
+
+    @ExceptionHandler({ PropertyReferenceException.class })
+    public ProblemDetail handlePropertyReference(PropertyReferenceException ex) {
+        log.error("Property reference error: {}", ex.getMessage(), ex);
+        ProblemDetail problemDetail = getBadRequestProblemDetail(ex);
+        problemDetail.setProperty(DESCRIPTION, "Сортировка по полю «" + ex.getPropertyName() + "» не поддерживается.");
+        return problemDetail;
     }
 
     @ExceptionHandler({ DataIntegrityViolationException.class })

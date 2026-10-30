@@ -36,6 +36,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -913,5 +915,32 @@ class ApiOrderControllerTest {
         ClientOrderFilter filter = captor.getValue();
         assertTrue(Optional.ofNullable(filter.status()).map(Set::isEmpty).orElse(true));
         assertTrue(Optional.ofNullable(filter.method()).map(Set::isEmpty).orElse(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"foo", "merchant", "merchantOrderId", "expiresAt", "client"})
+    @DisplayName("Список ордеров должен вернуть 400 при сортировке по полю, которого нет в ответе клиенту.")
+    void getOrders_shouldRejectUnsupportedSortField(String field) throws Exception {
+        mockMvc.perform(get("/api/v1/order").param("sort", "createdAt").param("sort", field + ",desc")
+                        .with(apiKeyOf(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"id", "createdAt", "internalId", "status", "amount", "method", "details", "bank",
+            "callbackUrl"})
+    @DisplayName("Список ордеров должен передать в сервис сортировку по любому полю ответа клиенту.")
+    void getOrders_shouldPassSupportedSortField(String field) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(orderApiService.findAll(eq(clientId), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/v1/order").param("sort", field + ",desc").with(apiKeyOf(clientId)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderApiService).findAll(eq(clientId), any(), captor.capture());
+        assertEquals(Sort.by(Sort.Direction.DESC, field), captor.getValue().getSort());
     }
 }
