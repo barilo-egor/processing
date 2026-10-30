@@ -8,6 +8,7 @@ import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
+import net.rcetech.meta.config.MetaWebConfig;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
@@ -56,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SupportClientController.class)
-@Import(MetaSecurityConfig.class)
+@Import({MetaSecurityConfig.class, MetaWebConfig.class})
 class SupportClientControllerTest {
 
     @MockitoBean
@@ -337,6 +338,26 @@ class SupportClientControllerTest {
                         .content(json))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value(description));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "minWithdrawalAmount,1.5",
+            "minWithdrawalAmount,1000.0",
+            "orderTimeoutSeconds,120.5",
+            "orderTimeoutSeconds,900.0"
+    })
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента, если в целом поле передано дробное число.")
+    void update_shouldReturnBadRequestIfIntegerFieldIsFractional(String field, String value) throws Exception {
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"" + field + "\":" + value + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description")
+                        .value("Поле «" + field + "» содержит некорректное значение «" + value + "»."));
         verifyNoInteractions(clientService);
     }
 

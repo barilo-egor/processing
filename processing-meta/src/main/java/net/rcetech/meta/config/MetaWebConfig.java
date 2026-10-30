@@ -21,7 +21,8 @@ public class MetaWebConfig {
     }
 
     @Bean
-    public JsonMapperBuilderCustomizer missingOptionalAsNullCustomizer() {
-        return builder -> builder.enable(DeserializationFeature.USE_NULL_FOR_MISSING_REFERENCE_VALUES);
+    public JsonMapperBuilderCustomizer deserializationCustomizer() {
+        return builder -> builder.enable(DeserializationFeature.USE_NULL_FOR_MISSING_REFERENCE_VALUES)
+                .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
     }
 }
