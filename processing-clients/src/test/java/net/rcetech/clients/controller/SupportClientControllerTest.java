@@ -323,7 +323,10 @@ class SupportClientControllerTest {
             "{\"commissionPercent\":-0.1}|Поле «commissionPercent» должно быть больше или равно нулю.",
             "{\"minWithdrawalAmount\":-5}|Поле «minWithdrawalAmount» должно быть больше нуля.",
             "{\"minWithdrawalAmount\":0}|Поле «minWithdrawalAmount» должно быть больше нуля.",
-            "{\"orderTimeoutSeconds\":0}|Поле «orderTimeoutSeconds» должно быть больше нуля."
+            "{\"orderTimeoutSeconds\":0}|Поле «orderTimeoutSeconds» должно быть не меньше 120.",
+            "{\"orderTimeoutSeconds\":119}|Поле «orderTimeoutSeconds» должно быть не меньше 120.",
+            "{\"orderTimeoutSeconds\":3601}|Поле «orderTimeoutSeconds» должно быть не больше 3600.",
+            "{\"orderTimeoutSeconds\":86400}|Поле «orderTimeoutSeconds» должно быть не больше 3600."
     })
     @DisplayName("Метод должен вернуть 400 и не обновлять клиента при значениях вне допустимых границ.")
     void update_shouldReturnBadRequestIfValueOutOfRange(String json, String description) throws Exception {
@@ -335,6 +338,22 @@ class SupportClientControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value(description));
         verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {120, 900, 3600})
+    @DisplayName("Метод должен принять время активности ордеров от 2 минут до часа.")
+    void update_shouldAcceptOrderTimeoutWithinRange(int orderTimeoutSeconds) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"orderTimeoutSeconds\":" + orderTimeoutSeconds + "}"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(orderTimeoutSeconds, captor.getValue().orderTimeoutSeconds());
     }
 
     @ParameterizedTest
