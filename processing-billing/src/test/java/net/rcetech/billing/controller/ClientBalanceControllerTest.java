@@ -45,32 +45,34 @@ class ClientBalanceControllerTest {
     private MockMvc mockMvc;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7",
-            "20484949-7339-4e19-86c9-d1e2c492f75f"
+    @CsvSource({
+            "CLIENT,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7",
+            "CLIENT,20484949-7339-4e19-86c9-d1e2c492f75f",
+            "OPERATOR,5d0c1c2e-0b6a-4f43-9c1d-3f1f7c2a9e10",
+            "OPERATOR,8b3e2f14-6c7d-4a91-b0e5-2d9f1c4a7e63"
     })
-    @DisplayName("Клиент не должен иметь доступа к пересчёту баланса.")
-    void recalculate_shouldNotHaveAccessForClient(UUID id) throws Exception {
+    @DisplayName("Клиент и оператор не должны иметь доступа к пересчёту баланса.")
+    void recalculate_shouldNotHaveAccessForClientAndOperator(Role role, UUID id) throws Exception {
         mockMvc.perform(post(RECALCULATION_PATH, id)
                         .with(csrf())
-                        .with(user(id.toString()).roles(Role.CLIENT.name())))
+                        .with(user("cf1f0a52-3c1b-4a0e-9d7e-6a2b8f4e1c33").roles(role.name())))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(clientBalanceService);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "ADMIN,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,70664",
-            "OPERATOR,20484949-7339-4e19-86c9-d1e2c492f75f,0",
-            "ADMIN,5d0c1c2e-0b6a-4f43-9c1d-3f1f7c2a9e10,-2105"
+            "a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,70664",
+            "20484949-7339-4e19-86c9-d1e2c492f75f,0",
+            "5d0c1c2e-0b6a-4f43-9c1d-3f1f7c2a9e10,-2105"
     })
-    @DisplayName("Пользователь поддержки должен пересчитать баланс клиента и получить клиента после пересчёта.")
-    void recalculate_shouldReturnClientAfterRecalculation(String role, UUID id, Integer balance) throws Exception {
+    @DisplayName("Админ должен пересчитать баланс клиента и получить клиента после пересчёта.")
+    void recalculate_shouldReturnClientAfterRecalculation(UUID id, Integer balance) throws Exception {
         when(clientBalanceService.recalculate(id, SupportClientProjection.class)).thenReturn(client(id, balance));
 
         mockMvc.perform(post(RECALCULATION_PATH, id)
                         .with(csrf())
-                        .with(user("cf1f0a52-3c1b-4a0e-9d7e-6a2b8f4e1c33").roles(role)))
+                        .with(user("cf1f0a52-3c1b-4a0e-9d7e-6a2b8f4e1c33").roles(Role.ADMIN.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.username").value("user_" + id))
@@ -79,18 +81,18 @@ class ClientBalanceControllerTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "ADMIN,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7",
-            "OPERATOR,20484949-7339-4e19-86c9-d1e2c492f75f"
+    @ValueSource(strings = {
+            "a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7",
+            "20484949-7339-4e19-86c9-d1e2c492f75f"
     })
     @DisplayName("Если клиент не найден, должен вернуться статус 400.")
-    void recalculate_shouldReturnBadRequestIfClientNotFound(String role, UUID id) throws Exception {
+    void recalculate_shouldReturnBadRequestIfClientNotFound(UUID id) throws Exception {
         when(clientBalanceService.recalculate(id, SupportClientProjection.class))
                 .thenThrow(new BadRequestException("Клиент с идентификатором " + id + " не найден."));
 
         mockMvc.perform(post(RECALCULATION_PATH, id)
                         .with(csrf())
-                        .with(user("cf1f0a52-3c1b-4a0e-9d7e-6a2b8f4e1c33").roles(role)))
+                        .with(user("cf1f0a52-3c1b-4a0e-9d7e-6a2b8f4e1c33").roles(Role.ADMIN.name())))
                 .andExpect(status().isBadRequest());
     }
 
