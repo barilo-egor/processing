@@ -1469,11 +1469,15 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
     const errs = {};
     const body = {};
 
-    // Комиссия: число от 0 без верхней границы, точность до десятых.
+    // Комиссия: число от 0 до 99,9, точность до десятых.
+    // Пустое поле допустимо, только если комиссия ещё не задана.
     const rawCommission = String(form.commission).replace(',', '.').trim();
     const commission = Number(rawCommission);
-    if (rawCommission === '' || !Number.isFinite(commission) || commission < 0) {
-      errs.commission = 'Укажите число от 0';
+    const hadCommission = client.commissionPercent != null && client.commissionPercent !== '';
+    if (rawCommission === '') {
+      if (hadCommission) errs.commission = 'Укажите число от 0 до 99,9';
+    } else if (!Number.isFinite(commission) || commission < 0 || Math.round(commission * 10) / 10 >= 100) {
+      errs.commission = 'Укажите число от 0 до 99,9';
     } else {
       const rounded = Math.round(commission * 10) / 10;
       if (rounded !== Number(client.commissionPercent)) body.commissionPercent = rounded;
