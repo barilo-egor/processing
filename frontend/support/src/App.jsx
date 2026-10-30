@@ -384,6 +384,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const [sort, setSort] = useState(null); // null | { field, dir }
 
   const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
 
   const load = useCallback(async (f, p, srt) => {
     setLoading(true);
@@ -420,7 +421,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const setF = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
 
   const search = () => {
-    if (idInvalid) return;
+    if (idInvalid || rangeInvalid) return;
     setApplied(draft);
     setPage(0);
   };
@@ -511,6 +512,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                           id="f-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => setF('dateTo', v)} onTime={(v) => setF('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -519,7 +521,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={idInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" /> Поиск
             </button>
             <button type="button" className="btn btn-secondary" onClick={reset}>Сбросить</button>
@@ -828,7 +830,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
     }
   };
 
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.createdAtFrom, draft.createdAtFromTime,
+      draft.createdAtTo, draft.createdAtToTime);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
   // Новая сортировка — с первой страницы.
   const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
@@ -923,6 +927,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
                           id="o-to" label="По"
                           date={draft.createdAtTo} time={draft.createdAtToTime}
                           onDate={(v) => set('createdAtTo', v)} onTime={(v) => set('createdAtToTime', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -931,7 +936,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -2415,7 +2420,8 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
   const reload = () => setReloadKey((k) => k + 1);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_WD_FILTER); setApplied(EMPTY_WD_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -2521,6 +2527,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
                           id="w-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -2529,7 +2536,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -2696,9 +2703,10 @@ function CallbacksSection({ merchants, showToast }) {
   // orderId у бэка — UUID: неполный ID он не примет (ошибка конвертации),
   // поэтому проверяем формат до запроса, как в разделе «Клиенты».
   const orderIdInvalid = draft.orderId.trim() !== '' && !isUuid(draft.orderId);
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { if (orderIdInvalid) return; setPage(0); setApplied(draft); };
+  const search = () => { if (orderIdInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_CB_FILTER); setApplied(EMPTY_CB_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -2772,6 +2780,7 @@ function CallbacksSection({ merchants, showToast }) {
                           id="cb-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -2780,7 +2789,7 @@ function CallbacksSection({ merchants, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || orderIdInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || orderIdInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -2933,9 +2942,14 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
 
   // ID инцидента — число: буквы бэк не примет, проверяем до запроса.
   const idInvalid = draft.id.trim() !== '' && !/^\d+$/.test(draft.id.trim());
+  const rangeInvalidFor = (p) => {
+    const k = (name) => (p ? p + name.charAt(0).toUpperCase() + name.slice(1) : name);
+    return isRangeInverted(draft[k('dateMode')], draft[k('dateFrom')], draft[k('timeFrom')], draft[k('dateTo')], draft[k('timeTo')]);
+  };
+  const rangeInvalid = rangeInvalidFor('') || rangeInvalidFor('r');
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { if (idInvalid) return; setPage(0); setApplied(draft); };
+  const search = () => { if (idInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => {
     setPage(0); setSort(INC_DEFAULT_SORT); setDraft(EMPTY_INC_FILTER); setApplied(EMPTY_INC_FILTER);
   };
@@ -2994,6 +3008,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                       id={`${idp}-to`} label="По"
                       date={draft[k('dateTo')]} time={draft[k('timeTo')]}
                       onDate={(v) => set(k('dateTo'), v)} onTime={(v) => set(k('timeTo'), v)}
+                      error={rangeInvalidFor(p) ? RANGE_ERROR : ''}
                   />
                 </>
             )}
@@ -3039,7 +3054,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -3390,7 +3405,16 @@ function RefreshButton({ onClick, loading }) {
 /* ---- Дата и необязательное время двумя полями рядом ----
    Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Транзакции»,
    «Заявки на вывод», «КБ мерчантов», «Инциденты». */
-function DateTimeField({ id, label, date, time, onDate, onTime }) {
+const RANGE_ERROR = 'Дата «По» не может быть раньше даты «С»';
+
+function isRangeInverted(mode, dateFrom, timeFrom, dateTo, timeTo) {
+  if (mode !== 'range') return false;
+  const from = dateTimeToMs(dateFrom, timeFrom, 'start');
+  const to = dateTimeToMs(dateTo, timeTo, 'end');
+  return from !== '' && to !== '' && from >= to;
+}
+
+function DateTimeField({ id, label, date, time, onDate, onTime, error }) {
   return (
       <div className="field">
         <label htmlFor={id}>
@@ -3403,6 +3427,7 @@ function DateTimeField({ id, label, date, time, onDate, onTime }) {
               onChange={(e) => onTime(e.target.value)}
           />
         </div>
+        {error && <span className="field-error">{error}</span>}
       </div>
   );
 }
@@ -3548,7 +3573,8 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
   useEffect(() => { load(applied, page, sort); }, [applied, page, sort, reloadKey, load]);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_MH_FILTER); setApplied(EMPTY_MH_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
   const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
@@ -3646,6 +3672,7 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
                           id="mh-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -3654,7 +3681,7 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -3844,7 +3871,8 @@ function TransactionsSection({ operations, txTypes, showToast }) {
   useEffect(() => { load(applied, page); }, [applied, page, reloadKey, load]);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_TX_FILTER); setApplied(EMPTY_TX_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -3913,6 +3941,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
                           id="t-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -3921,7 +3950,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>

@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   api,
+  DATE_RANGE_ERROR,
   dateFilterParams,
   dictItems,
   dictLabel,
@@ -8,6 +9,7 @@ import {
   formatDateTime,
   formatNumber,
   formatRate,
+  isDateRangeInverted,
   isPositiveInt,
   isValidCallbackUrl,
   isValidWalletAddress,
@@ -1091,7 +1093,7 @@ function SelectField({ id, label, value, items, onChange }) {
 function DateFilter({ idPrefix, value, onChange }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
-  const pair = (label, dateKey, timeKey) => (
+  const pair = (label, dateKey, timeKey, error) => (
       <div className="field">
         <label htmlFor={`${idPrefix}-${dateKey}`}>
           {label} <span className="label-note">· время необязательно</span>
@@ -1111,6 +1113,7 @@ function DateFilter({ idPrefix, value, onChange }) {
               onChange={(e) => set({ [timeKey]: e.target.value })}
           />
         </div>
+        {error && <span className="field-error">{error}</span>}
       </div>
   );
 
@@ -1134,7 +1137,7 @@ function DateFilter({ idPrefix, value, onChange }) {
               : (
                   <>
                     {pair('С', 'fromDate', 'fromTime')}
-                    {pair('По', 'toDate', 'toTime')}
+                    {pair('По', 'toDate', 'toTime', isDateRangeInverted(value) ? DATE_RANGE_ERROR : '')}
                   </>
               )}
         </div>
@@ -1146,7 +1149,7 @@ function DateFilter({ idPrefix, value, onChange }) {
    «Обновить» перечитывает текущую страницу с уже применённым фильтром —
    стоит здесь, а не над таблицей, чтобы не занимать место.
    extra — кнопки справа (например, «Создать заявку»). */
-function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra }) {
+function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra, searchDisabled }) {
   // Enter в любом поле панели запускает поиск.
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') onSearch();
@@ -1156,7 +1159,7 @@ function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra
       <section className="filters" onKeyDown={onKeyDown}>
         <div className="filters-row">{children}</div>
         <div className="filters-actions">
-          <button type="button" className="btn btn-primary" onClick={onSearch}>
+          <button type="button" className="btn btn-primary" onClick={onSearch} disabled={searchDisabled}>
             <i className="fa-solid fa-magnifying-glass" />
             Поиск
           </button>
@@ -1503,12 +1506,14 @@ function TransactionsSection({ dict, showToast }) {
   const list = usePagedList(api.transactions, showToast, 'Не удалось загрузить транзакции');
   const [draft, setDraft] = useState(EMPTY_TX_FILTER);
 
-  const onSearch = () => list.search({ id: draft.id.trim(), ...dateFilterParams(draft) });
+  const rangeInvalid = isDateRangeInverted(draft);
+  const onSearch = () => { if (!rangeInvalid) list.search({ id: draft.id.trim(), ...dateFilterParams(draft) }); };
   const onReset = () => { setDraft(EMPTY_TX_FILTER); list.search({}); };
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}
+                     searchDisabled={rangeInvalid}>
           <div className="field field-wide">
             <label htmlFor="tx-id">ID транзакции</label>
             <input
@@ -1587,12 +1592,16 @@ function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
   const [toCancel, setToCancel] = useState(null);   // заявка в подтверждении
   const [canceling, setCanceling] = useState(false);
 
-  const onSearch = () => list.search({
-    id: draft.id.trim(),
-    status: draft.status,
-    address: draft.address.trim(),
-    ...dateFilterParams(draft),
-  });
+  const rangeInvalid = isDateRangeInverted(draft);
+  const onSearch = () => {
+    if (rangeInvalid) return;
+    list.search({
+      id: draft.id.trim(),
+      status: draft.status,
+      address: draft.address.trim(),
+      ...dateFilterParams(draft),
+    });
+  };
   const onReset = () => { setDraft(EMPTY_WITHDRAWALS_FILTER); list.search({}); };
 
   const onCreated = () => {
@@ -1638,6 +1647,7 @@ function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
             onReset={onReset}
             onRefresh={list.reload}
             refreshing={list.loading}
+            searchDisabled={rangeInvalid}
             extra={(
                 <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
                   <i className="fa-solid fa-plus" />
