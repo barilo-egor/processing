@@ -136,6 +136,54 @@ class ClientServiceTest {
         );
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "dev.client@btc24.zip,client",
+            "dev.client@btc24.zip,DEV.CLIENT",
+            "Superman,erma",
+            "Superman,SUPERMAN"
+    })
+    @DisplayName("Метод должен найти клиента по части username без учёта регистра.")
+    void findAll_shouldFindByUsernamePart(String username, String query) {
+        Client client = new Client();
+        client.setUsername(username);
+        fillRequiredFields(client);
+        clientRepository.save(client);
+        for (int i = 0; i < 5; i++) {
+            clientRepository.save(getDummyClient());
+        }
+        Page<SupportClientProjection> actual = clientService.findAll(
+                new ClientFilter(null, query, null, null), Pageable.ofSize(10), SupportClientProjection.class);
+        assertAll(
+                () -> assertEquals(1, actual.getTotalElements()),
+                () -> assertEquals(username, actual.getContent().getFirst().getUsername())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "dark_angel,darkXangel,k_a",
+            "100%off,100xoff,0%o",
+            "a!b,ab,a!b"
+    })
+    @DisplayName("Символы шаблона LIKE в username должны искаться буквально.")
+    void findAll_shouldSearchLikeWildcardsLiterally(String target, String other, String query) {
+        Client targetClient = new Client();
+        targetClient.setUsername(target);
+        fillRequiredFields(targetClient);
+        clientRepository.save(targetClient);
+        Client otherClient = new Client();
+        otherClient.setUsername(other);
+        fillRequiredFields(otherClient);
+        clientRepository.save(otherClient);
+        Page<SupportClientProjection> actual = clientService.findAll(
+                new ClientFilter(null, query, null, null), Pageable.ofSize(10), SupportClientProjection.class);
+        assertAll(
+                () -> assertEquals(1, actual.getTotalElements()),
+                () -> assertEquals(target, actual.getContent().getFirst().getUsername())
+        );
+    }
+
     @DisplayName("Если для поиска передан пустой username, то он не должен учитываться при поиске.")
     @Test
     void findAll_shouldFindAllClientsIfUsernameBlank() {

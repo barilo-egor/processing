@@ -322,6 +322,34 @@ class OrderServiceTest {
         assertEquals(order.getId(), actual.getContent().getFirst().getId());
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 4, 12})
+    @DisplayName("Метод должен вернуть ордера, отфильтрованные по части логина клиента без учёта регистра.")
+    void findAll_shouldReturnOrderByClientUsernamePart(int offset) {
+        Client client = getDummyClient();
+        Order order = new Order();
+        fillFields(order, client);
+        Client nonTargetClient = getDummyClient();
+        Order nonTargetOrder = new Order();
+        fillFields(nonTargetOrder, nonTargetClient);
+        orderRepository.save(order);
+        orderRepository.save(nonTargetOrder);
+
+        String query = client.getUsername().substring(offset, offset + 10).toUpperCase();
+        OrderFilter orderFilter = new OrderFilter(
+                null, null, null, query, null,
+                null, null, null
+        );
+        Page<OrderSummary> actual = orderService.findAll(
+                OrderSpecifications.matches(orderFilter),
+                PageRequest.of(0, 10),
+                OrderSummary.class
+        );
+
+        assertEquals(1, actual.getTotalElements());
+        assertEquals(order.getId(), actual.getContent().getFirst().getId());
+    }
+
     @RepeatedTest(value = 2)
     @DisplayName("Метод должен вернуть ордера, отфильтрованные по логину клиента.")
     void findAll_shouldReturnOrderByClientUsername() {

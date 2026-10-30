@@ -26,7 +26,7 @@ public class ClientSpecifications {
             }
             List<Predicate> predicates = new ArrayList<>();
             addSimpleEqual(predicates, builder, from.get(Client_.id), clientFilter.id());
-            addStringEqual(predicates, builder, from.get(Client_.username), clientFilter.username());
+            addStringContains(predicates, builder, from.get(Client_.username), clientFilter.username());
             addDateRange(predicates, builder, from.get(Client_.registeredAt), clientFilter.from(), clientFilter.to());
             return builder.and(predicates);
         };
@@ -42,10 +42,10 @@ public class ClientSpecifications {
         if (Objects.nonNull(clientId)) {
             return builder.or(
                     builder.equal(join.get(Client_.id), UUID.fromString(query)),
-                    builder.equal(join.get(Client_.username), query)
+                    contains(builder, join.get(Client_.username), query)
             );
         } else {
-            return builder.equal(join.get(Client_.username), query);
+            return contains(builder, join.get(Client_.username), query);
         }
     }
 }
