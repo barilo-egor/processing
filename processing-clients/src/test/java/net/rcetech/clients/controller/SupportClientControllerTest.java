@@ -277,6 +277,60 @@ class SupportClientControllerTest {
         assertEquals(expected, captor.getValue());
     }
 
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "{\"commissionPercent\":1000}|Поле «commissionPercent» должно быть меньше 100.",
+            "{\"commissionPercent\":100}|Поле «commissionPercent» должно быть меньше 100.",
+            "{\"commissionPercent\":-0.1}|Поле «commissionPercent» должно быть больше или равно нулю.",
+            "{\"minWithdrawalAmount\":-5}|Поле «minWithdrawalAmount» должно быть больше нуля.",
+            "{\"minWithdrawalAmount\":0}|Поле «minWithdrawalAmount» должно быть больше нуля.",
+            "{\"orderTimeoutSeconds\":0}|Поле «orderTimeoutSeconds» должно быть больше нуля."
+    })
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента при значениях вне допустимых границ.")
+    void update_shouldReturnBadRequestIfValueOutOfRange(String json, String description) throws Exception {
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(description));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1001, 1500})
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента, если комментарий длиннее 1000 символов.")
+    void update_shouldReturnBadRequestIfCommentTooLong(int length) throws Exception {
+        String json = objectMapper.writeValueAsString(new UpdateClientDTO(null, null, null, "к".repeat(length), null, null));
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Поле «comment» должно содержать не более 1000 символов."));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {999, 1000})
+    @DisplayName("Метод должен принять комментарий длиной до 1000 символов.")
+    void update_shouldAcceptCommentUpToLimit(int length) throws Exception {
+        String comment = "к".repeat(length);
+        UUID clientId = UUID.randomUUID();
+        String json = objectMapper.writeValueAsString(new UpdateClientDTO(null, null, null, comment, null, null));
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(comment, captor.getValue().comment());
+    }
+
     @Test
     @DisplayName("Метод должен обновить клиента, совершившего запрос.")
     void update_shouldUpdateClientForClientAccess() throws Exception {
