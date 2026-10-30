@@ -270,6 +270,13 @@ export default function App() {
             </div>
           </header>
           <main className="content">
+            {roles !== null && !canSee(section) && (
+                <div className="card placeholder">
+                  <i className="fa-solid fa-lock" />
+                  <h2>Нет доступа</h2>
+                  <p>Раздел доступен только администратору</p>
+                </div>
+            )}
             {section === 'clients' && canSee('clients') && (
                 <ClientsSection
                     methods={methods}
