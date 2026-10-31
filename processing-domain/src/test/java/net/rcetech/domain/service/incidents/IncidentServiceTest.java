@@ -36,8 +36,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,6 +76,9 @@ class IncidentServiceTest {
 
     @Autowired
     private ApplicationEvents applicationEvents;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @AfterEach
     void cleanUp() {
@@ -711,6 +717,61 @@ class IncidentServiceTest {
                 () -> assertEquals(IncidentStatus.RESOLVED, actual.getStatus()),
                 () -> assertNull(actual.getComment())
         );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "Баланс пересчитан вручную.,Создана корректировочная транзакция.",
+            "Ордер проведен вручную.,Повторное решение."
+    })
+    @DisplayName("Повторная обработка должна ждать коммита первой и получить BadRequestException, сохранив данные первой.")
+    void resolve_shouldWaitForConcurrentResolveAndThrow(String holderComment, String waiterComment) throws Exception {
+        SupportUser holderUser = saveDummySupportUser();
+        SupportUser waiterUser = saveDummySupportUser();
+        Long incidentId = saveDummyIncident(new Incident()).getId();
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            Future<?> holder = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                incidentService.resolve(incidentId, holderUser.getId(), holderComment);
+                locked.countDown();
+                awaitUninterruptibly(release);
+            }));
+            assertTrue(locked.await(10, TimeUnit.SECONDS));
+
+            Future<IncidentResponse> waiter = executor.submit(
+                    () -> incidentService.resolve(incidentId, waiterUser.getId(), waiterComment));
+            assertThrows(TimeoutException.class, () -> waiter.get(500, TimeUnit.MILLISECONDS),
+                    "Вторая обработка не должна получить блокировку, пока первая не закоммичена.");
+
+            release.countDown();
+            holder.get(10, TimeUnit.SECONDS);
+            ExecutionException exception = assertThrows(ExecutionException.class,
+                    () -> waiter.get(10, TimeUnit.SECONDS));
+
+            Incident actual = incidentRepository.findById(incidentId).orElseThrow();
+            assertAll(
+                    () -> assertInstanceOf(BadRequestException.class, exception.getCause()),
+                    () -> assertEquals("Инцидент уже обработан.", exception.getCause().getMessage()),
+                    () -> assertEquals(IncidentStatus.RESOLVED, actual.getStatus()),
+                    () -> assertEquals(holderUser.getId(), actual.getResolvedBy().getId()),
+                    () -> assertEquals(holderComment, actual.getComment())
+            );
+        } finally {
+            release.countDown();
+        }
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Не дождались сигнала на освобождение блокировки.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     @Test

@@ -139,7 +139,7 @@ public class IncidentService {
     public IncidentResponse resolve(Long id, UUID supportUserId, String comment) {
         SupportUser supportUser = supportUserService.findById(supportUserId, SupportUser.class)
                 .orElseThrow(() -> new BaseException("Пользователь поддержки " + supportUserId + " не найден."));
-        Incident incident = incidentRepository.findById(id)
+        Incident incident = incidentRepository.findForUpdateById(id)
                 .orElseThrow(() -> new BadRequestException("Инцидент с идентификатором " + id + " не найден."));
         if (!IncidentStatus.NEW.equals(incident.getStatus())) {
             throw new BadRequestException("Инцидент уже обработан.");
