@@ -96,7 +96,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({ AuthorizationDeniedException.class })
     public ProblemDetail handleAccessDenied(AuthorizationDeniedException ex) {
-        log.error("Authorization denied error: {}", ex.getMessage(), ex);
+        log.trace("Authorization denied error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
         problemDetail.setTitle("Access Denied");
         problemDetail.setType(URI.create("/docs/errors/access-denied"));
@@ -106,13 +106,13 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({ BadRequestException.class, ConstraintViolationException.class})
     public ProblemDetail handleBadRequest(Exception ex) {
-        log.error("Bad request error: {}", ex.getMessage(), ex);
+        log.trace("Bad request error: {}", ex.getMessage(), ex);
         return getBadRequestProblemDetail(ex);
     }
 
     @ExceptionHandler({ PropertyReferenceException.class })
     public ProblemDetail handlePropertyReference(PropertyReferenceException ex) {
-        log.error("Property reference error: {}", ex.getMessage(), ex);
+        log.trace("Property reference error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = getBadRequestProblemDetail(ex);
         problemDetail.setProperty(DESCRIPTION, "Сортировка по полю «" + ex.getPropertyName() + "» не поддерживается.");
         return problemDetail;
@@ -125,7 +125,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
                 .filter(constraint -> constraint.getKey().matcher(causeMessage).find())
                 .findFirst()
                 .map(constraint -> {
-                    log.error("Bad request constraint violation error: {}", ex.getMessage(), ex);
+                    log.trace("Bad request constraint violation error: {}", ex.getMessage(), ex);
                     ProblemDetail problemDetail = getBadRequestProblemDetail(ex);
                     problemDetail.setProperty(DESCRIPTION, constraint.getValue());
                     return problemDetail;
@@ -135,7 +135,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     @Override
     protected @Nullable ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.error("Method argument not valid error: {}", ex.getMessage(), ex);
+        log.trace("Method argument not valid error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle(BAD_REQUEST_TITLE);
         problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
@@ -149,7 +149,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     @Override
     protected @Nullable ResponseEntity<Object> handleHandlerMethodValidationException(
             HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.error("Handler method validation error: {}", ex.getMessage(), ex);
+        log.trace("Handler method validation error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle(BAD_REQUEST_TITLE);
         problemDetail.setType(URI.create(BAD_REQUEST_TYPE));
@@ -195,7 +195,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     protected @Nullable ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
                                                                             HttpHeaders headers, HttpStatusCode status,
                                                                             WebRequest request) {
-        log.error("Not readable body error: {}", ex.getMessage(), ex);
+        log.trace("Not readable body error: {}", ex.getMessage(), ex);
         ProblemDetail problemDetail = createProblemDetail(ex, status, "Failed to read request",
                 null, null, request);
         problemDetail.setDetail(null);
@@ -236,7 +236,11 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
                 ? errorResponse.getBody()
                 : body;
         if (resolvedBody instanceof ProblemDetail problemDetail && !hasDescription(problemDetail)) {
-            log.error("Request error: {}", ex.getMessage(), ex);
+            if (statusCode.is4xxClientError()) {
+                log.trace("Request error: {}", ex.getMessage(), ex);
+            } else {
+                log.error("Request error: {}", ex.getMessage(), ex);
+            }
             problemDetail.setDetail(null);
             problemDetail.setProperty(TIMESTAMP, Instant.now().toEpochMilli());
             problemDetail.setProperty(DESCRIPTION, describe(ex, statusCode));
