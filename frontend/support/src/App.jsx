@@ -2896,6 +2896,12 @@ const INCIDENT_LINKS = {
   CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET: { kind: 'client', key: 'clientId' },
   MERCHANT_CALLBACK_HANDLE_ERROR: { kind: 'merchantOrder', key: 'merchantOrderId' },
   ORDER_STATUS_TRANSITION_REJECTED: { kind: 'order', key: 'orderId' },
+  DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
+  ASYNC_DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
+  STUCK_SEARCH_ORDER_ERROR: { kind: 'order', key: 'orderId' },
+  ORDER_EXPIRATION_ERROR: { kind: 'order', key: 'orderId' },
+  CLIENT_CALLBACK_DELIVERY_UNKNOWN: { kind: 'order', key: 'orderId' },
+  CLIENT_CALLBACK_URL_FORBIDDEN: { kind: 'order', key: 'orderId' },
 };
 
 const incidentStatusMod = (name) => (name === 'NEW' ? 'info' : name === 'RESOLVED' ? 'ok' : 'neutral');
