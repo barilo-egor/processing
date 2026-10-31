@@ -112,7 +112,7 @@ public class WithdrawalRequestService {
     public void cancel(UUID clientId, UUID id) {
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty() || !clientId.equals(maybeRequest.get().getClient().getId())) {
-            throw new BadRequestException("Ордер не найден.");
+            throw new BadRequestException("Заявка не найдена.");
         }
         WithdrawalRequest request = maybeRequest.get();
         if (!WithdrawalRequestStatus.NEW.equals(request.getStatus())) {
@@ -133,7 +133,7 @@ public class WithdrawalRequestService {
     public void updateStatus(UUID id, WithdrawalRequestStatus status) {
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty()) {
-            throw new BadRequestException("Ордер не найден.");
+            throw new BadRequestException("Заявка не найдена.");
         }
         WithdrawalRequest request = maybeRequest.get();
         if (!WithdrawalRequestStatus.NEW.equals(request.getStatus())) {

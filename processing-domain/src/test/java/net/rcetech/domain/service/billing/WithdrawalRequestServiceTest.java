@@ -660,7 +660,9 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть бросить BadRequestException если заявка не найдена.")
     void cancel_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id) {
         UUID clientId = UUID.randomUUID();
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.cancel(clientId, id));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.cancel(clientId, id));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @ParameterizedTest
@@ -691,7 +693,9 @@ class WithdrawalRequestServiceTest {
 
         UUID clientId = targetClient.getId();
         UUID requestId = request.getId();
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.cancel(clientId, requestId));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.cancel(clientId, requestId));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @RepeatedTest(value = 2)
@@ -715,7 +719,9 @@ class WithdrawalRequestServiceTest {
     })
     @DisplayName("Метод должен бросить BadRequestException, если заявка не найдена")
     void updateStatus_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id, WithdrawalRequestStatus status) {
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.updateStatus(id, status));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.updateStatus(id, status));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @ParameterizedTest
