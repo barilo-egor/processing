@@ -683,9 +683,9 @@ class OrderApiServiceTest {
 
     @ParameterizedTest
     @CsvSource({
-            "CANCELED,Ордер уже в статусе «Отменен».",
-            "TIMEOUT,Переход ордера из статуса «Просрочен» в статус «Отменен» не выполняется.",
-            "DETAILS_NOT_FOUND,Переход ордера из статуса «Реквизиты не найдены» в статус «Отменен» не выполняется."
+            "CANCELED,Ордер уже в статусе «Отменён».",
+            "TIMEOUT,Переход ордера из статуса «Просрочен» в статус «Отменён» не выполняется.",
+            "DETAILS_NOT_FOUND,Переход ордера из статуса «Реквизиты не найдены» в статус «Отменён» не выполняется."
     })
     @DisplayName("Метод должен бросить OrderStatusUpdateException без события смены статуса, если переход в CANCELED пропускается.")
     void cancelOrder_shouldThrowIfTransitionSkipped(OrderStatus status, String expectedMessage) {

@@ -580,7 +580,7 @@ class OrderServiceTest {
     }
 
     @CsvSource({
-            "CANCELED,DECLINED,Переход ордера из статуса «Успешный» в статус «Отменен» запрещён.",
+            "CANCELED,DECLINED,Переход ордера из статуса «Успешный» в статус «Отменён» запрещён.",
             "DISPUTE,ARBITRATION,Переход ордера из статуса «Успешный» в статус «В споре» запрещён."
     })
     @ParameterizedTest

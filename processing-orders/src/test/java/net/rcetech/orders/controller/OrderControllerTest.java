@@ -254,9 +254,9 @@ class OrderControllerTest {
     @ParameterizedTest
     @CsvSource({
             "1f2e3d4c-5b6a-4798-8a7b-6c5d4e3f2a1b,SUCCESS,SUCCESS,Ордер уже в статусе «Успешный».",
-            "8e9f0a1b-2c3d-4e5f-9a6b-7c8d9e0f1a2b,CANCELED,CANCELED,Ордер уже в статусе «Отменен».",
+            "8e9f0a1b-2c3d-4e5f-9a6b-7c8d9e0f1a2b,CANCELED,CANCELED,Ордер уже в статусе «Отменён».",
             "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a,DISPUTE,DISPUTE,Ордер уже в статусе «В споре».",
-            "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d,TIMEOUT,CANCELED,Переход ордера из статуса «Просрочен» в статус «Отменен» не выполняется."
+            "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d,TIMEOUT,CANCELED,Переход ордера из статуса «Просрочен» в статус «Отменён» не выполняется."
     })
     @DisplayName("Метод должен вернуть статус 400, если переход ордера пропущен.")
     void update_shouldReturn400IfTransitionSkipped(UUID id, OrderStatus statusFrom, OrderStatus statusTo,
