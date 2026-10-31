@@ -596,6 +596,7 @@ function ApiKeysBlock({ showToast }) {
                   id="token-name"
                   type="text"
                   placeholder="Например, тестовый"
+                  maxLength={30}
                   value={name}
                   disabled={creating || limitReached}
                   className={nameError ? 'invalid' : ''}
