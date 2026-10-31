@@ -428,7 +428,12 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
       setValue(next);
       showToast('Callback URL сохранён', 'success');
     } catch (e) {
-      showToast(e.message || 'Не удалось сохранить', 'error');
+      if (e.status === 400 && e.message) {
+        const msg = e.message.replace(/^Поле «callbackUrl» /, '');
+        setError(msg.charAt(0).toUpperCase() + msg.slice(1));
+      } else {
+        showToast(e.message || 'Не удалось сохранить', 'error');
+      }
     } finally {
       setSaving(false);
     }
