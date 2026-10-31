@@ -7,8 +7,12 @@ import net.rcetech.grpc.generated.MerchantHistoryRequestGrpc;
 import net.rcetech.grpc.generated.MerchantHistoryResponseDTO;
 import net.rcetech.grpc.generated.MerchantHistoryResponseGrpc;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
+import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -16,6 +20,7 @@ import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,37 +170,43 @@ class MerchantHistoryMapperTest {
         assertThat(dto.merchant()).isNull();
     }
 
-    @Test
-    @DisplayName("Должен корректно преобразовать gRPC-ответ с total в Page")
-    void shouldMapGrpcResponseToPage() {
-        MerchantHistoryResponseDTO grpcDto = MerchantHistoryResponseDTO.newBuilder()
-                .setOperationId(StringValue.of("op-1"))
-                .build();
+    @ParameterizedTest
+    @CsvSource({
+            "1,10,3,42",
+            "0,20,20,20",
+            "4,5,2,22",
+            "2,50,0,100"
+    })
+    @DisplayName("Должен преобразовать gRPC-ответ в страницу с total из ответа и параметрами pageable.")
+    void grpcToPage_shouldMapResponseWithTotal(int pageNumber, int pageSize, int count, int total) {
+        MerchantHistoryResponseGrpc.Builder builder = MerchantHistoryResponseGrpc.newBuilder().setTotal(total);
+        for (int i = 0; i < count; i++) {
+            builder.addResponse(MerchantHistoryResponseDTO.newBuilder()
+                    .setOperationId(StringValue.of("op-" + pageNumber + "-" + i)));
+        }
 
-        MerchantHistoryResponseGrpc grpcResponse = MerchantHistoryResponseGrpc.newBuilder()
-                .addResponse(grpcDto)
-                .setTotal(42)
-                .build();
+        Page<MerchantHistoryResponse> page = mapper.grpcToPage(builder.build(), PageRequest.of(pageNumber, pageSize));
 
-        Pageable pageable = PageRequest.of(1, 10);
-        var page = mapper.grpcToPage(grpcResponse, pageable);
-
-        assertThat(page).isNotNull();
-        assertThat(page.getContent()).hasSize(1);
-        assertThat(page.getTotalElements()).isEqualTo(42);
-        assertThat(page.getNumber()).isEqualTo(1);
-        assertThat(page.getSize()).isEqualTo(10);
+        assertThat(page.getContent()).extracting(MerchantHistoryResponse::operationId)
+                .containsExactlyElementsOf(IntStream.range(0, count).mapToObj(i -> "op-" + pageNumber + "-" + i).toList());
+        assertThat(page.getTotalElements()).isEqualTo(total);
+        assertThat(page.getNumber()).isEqualTo(pageNumber);
+        assertThat(page.getSize()).isEqualTo(pageSize);
     }
 
-    @Test
-    @DisplayName("Должен вернуть пустую страницу, если ответ gRPC равен null")
-    void shouldReturnEmptyPageWhenGrpcResponseIsNull() {
-        Pageable pageable = PageRequest.of(0, 20);
-        var page = mapper.grpcToPage(null, pageable);
+    @ParameterizedTest
+    @CsvSource({
+            "0,20",
+            "3,5"
+    })
+    @DisplayName("Должен вернуть пустую страницу, если ответ gRPC равен null.")
+    void grpcToPage_shouldReturnEmptyPageIfResponseIsNull(int pageNumber, int pageSize) {
+        Page<MerchantHistoryResponse> page = mapper.grpcToPage(null, PageRequest.of(pageNumber, pageSize));
 
-        assertThat(page).isNotNull();
         assertThat(page.getContent()).isEmpty();
         assertThat(page.getTotalElements()).isZero();
+        assertThat(page.getNumber()).isEqualTo(pageNumber);
+        assertThat(page.getSize()).isEqualTo(pageSize);
     }
 
 }
