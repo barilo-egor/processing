@@ -840,6 +840,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
   const rangeInvalid = isRangeInverted(draft.dateMode, draft.createdAtFrom, draft.createdAtFromTime,
       draft.createdAtTo, draft.createdAtToTime);
   const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
   // Новая сортировка — с первой страницы.
   const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
@@ -859,19 +860,19 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <div className="field">
               <label htmlFor="o-id">ID ордера</label>
               <input id="o-id" value={draft.id} placeholder="UUID ордера"
-                     onChange={(e) => set('id', e.target.value)} />
+                     onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             <div className="field">
               <label htmlFor="o-client">Клиент</label>
               <input id="o-client" value={draft.client} placeholder="Логин или ID клиента"
-                     onChange={(e) => set('client', e.target.value)} />
+                     onChange={(e) => set('client', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             <div className="field">
               <label htmlFor="o-internal">ID в системе клиента</label>
               <input id="o-internal" value={draft.internalId}
-                     onChange={(e) => set('internalId', e.target.value)} />
+                     onChange={(e) => set('internalId', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             {/* В ТЗ здесь текстовое поле, но сервер фильтрует по коду
@@ -892,7 +893,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <div className="field">
               <label htmlFor="o-morder">ID у мерчанта</label>
               <input id="o-morder" value={draft.merchantOrderId}
-                     onChange={(e) => set('merchantOrderId', e.target.value)} />
+                     onChange={(e) => set('merchantOrderId', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             <div className="field">
