@@ -60,4 +60,9 @@ public class MerchantCallbackService {
                                 pageable.getSort()
                         )));
     }
+
+    @Transactional
+    public int deleteCreatedBefore(Instant createdBefore) {
+        return merchantCallbackRepository.deleteAllByCreatedAtBefore(createdBefore);
+    }
 }

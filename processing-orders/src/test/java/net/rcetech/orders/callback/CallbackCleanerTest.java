@@ -3,12 +3,15 @@ package net.rcetech.orders.callback;
 import net.rcetech.domain.config.IncidentConfig;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.ClientCallback;
+import net.rcetech.domain.model.orders.MerchantCallback;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.repository.orders.ClientCallbackRepository;
+import net.rcetech.domain.repository.orders.MerchantCallbackRepository;
 import net.rcetech.domain.repository.orders.OrderRepository;
 import net.rcetech.domain.service.incidents.IncidentService;
 import net.rcetech.domain.service.orders.ClientCallbackService;
+import net.rcetech.domain.service.orders.MerchantCallbackService;
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.orders.ClientCallbackStatus;
@@ -33,7 +36,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
-@Import({CallbackCleaner.class, ClientCallbackService.class, IncidentService.class, SupportUserService.class,
+@Import({CallbackCleaner.class, ClientCallbackService.class, MerchantCallbackService.class, IncidentService.class, SupportUserService.class,
         IncidentConfig.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CallbackCleanerTest {
@@ -54,6 +57,9 @@ class CallbackCleanerTest {
 
     @Autowired
     private ClientCallbackService clientCallbackService;
+
+    @Autowired
+    private MerchantCallbackRepository merchantCallbackRepository;
 
     @Autowired
     private CallbackCleaner callbackCleaner;
@@ -85,6 +91,34 @@ class CallbackCleanerTest {
         callbackCleaner.deleteOld();
 
         assertEquals(kept, clientCallbackRepository.existsById(callback.getId()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "8,false,false",
+            "30,true,false",
+            "8,true,true",
+            "6,false,false",
+            "1,true,true",
+            "0,false,true"
+    })
+    @DisplayName("Должны удаляться все КБ мерчантов старше 7 дней, обработанные и необработанные.")
+    void deleteOld_shouldDeleteMerchantCallbacksOlderThanSevenDays(long daysAgo, boolean processed,
+                                                                   boolean withOrder) {
+        Instant createdAt = Instant.now().minus(Duration.ofDays(daysAgo)).minusSeconds(60);
+        MerchantCallback callback = merchantCallbackRepository.save(MerchantCallback.builder()
+                .createdAt(createdAt)
+                .processedAt(processed ? createdAt.plusSeconds(5) : null)
+                .order(withOrder ? saveOrder() : null)
+                .merchant(Merchant.ALFA_TEAM)
+                .merchantOrderId(UUID.randomUUID().toString())
+                .status("SUCCESS")
+                .build());
+
+        callbackCleaner.deleteOld();
+        entityManager.clear();
+
+        assertEquals(daysAgo < 7, merchantCallbackRepository.existsById(callback.getId()));
     }
 
     private Order saveOrder() {
