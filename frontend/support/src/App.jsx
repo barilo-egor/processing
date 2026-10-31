@@ -4157,6 +4157,7 @@ function CreateTransactionDialog({ operations, showToast, onCancel, onCreated })
               <textarea
                   rows={3}
                   placeholder="Например: возврат после сбоя при подтверждении ордера"
+                  maxLength={500}
                   value={comment} disabled={saving}
                   className={errors.comment ? 'invalid' : ''}
                   onChange={(e) => { setComment(e.target.value); clearError('comment'); }}

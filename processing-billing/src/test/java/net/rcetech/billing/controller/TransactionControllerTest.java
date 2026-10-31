@@ -5,10 +5,12 @@ import net.rcetech.domain.service.billing.TransactionService;
 import net.rcetech.meta.billing.Operation;
 import net.rcetech.meta.billing.TransactionType;
 import net.rcetech.meta.billing.dto.TransactionFilter;
+import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
 import net.rcetech.meta.billing.dto.TransactionResponse;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -31,8 +33,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -220,5 +221,45 @@ class TransactionControllerTest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «comment» должно быть заполнено.")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CREDIT,501",
+            "DEBIT,800"
+    })
+    @DisplayName("Метод должен вернуть 400 и не создавать транзакцию, если причина длиннее 500 символов.")
+    void createManualCorrect_shouldReturn400IfCommentTooLong(Operation operation, int length) throws Exception {
+        String json = "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"" + operation
+                + "\",\"amount\":5135,\"comment\":\"" + "п".repeat(length) + "\"}";
+        mockMvc.perform(post("/api/support/transaction")
+                        .with(csrf())
+                        .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(Role.ADMIN.name()))
+                        .header("Content-Type", "application/json")
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Поле «comment» должно содержать не более 500 символов."));
+        verifyNoInteractions(transactionService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CREDIT,499",
+            "DEBIT,500"
+    })
+    @DisplayName("Метод должен принять причину длиной до 500 символов.")
+    void createManualCorrect_shouldAcceptCommentUpToLimit(Operation operation, int length) throws Exception {
+        String comment = "п".repeat(length);
+        String json = "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"" + operation
+                + "\",\"amount\":5135,\"comment\":\"" + comment + "\"}";
+        mockMvc.perform(post("/api/support/transaction")
+                        .with(csrf())
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .header("Content-Type", "application/json")
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<ManualCorrectTransaction> captor = ArgumentCaptor.forClass(ManualCorrectTransaction.class);
+        verify(transactionService).createManualCorrect(any(), captor.capture());
+        assertEquals(comment, captor.getValue().comment());
     }
 }
