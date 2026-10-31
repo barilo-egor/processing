@@ -296,6 +296,7 @@ export default function App() {
             {section === 'merchants' && canSee('merchants') && (
                 <MerchantsSection
                     client={configClient}
+                    merchants={merchants}
                     showToast={showToast}
                     onPickClient={setConfigClient}
                 />
@@ -1992,7 +1993,7 @@ function byMerchantOrder(list) {
       .map((x) => x.r);
 }
 
-function MerchantsSection({ client, showToast, onPickClient }) {
+function MerchantsSection({ client, merchants, showToast, onPickClient }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');   // что набрано в поле
@@ -2217,7 +2218,7 @@ function MerchantsSection({ client, showToast, onPickClient }) {
                             <span className="thumb" />
                           </label>
                         </td>
-                        <td>{r.merchant || '—'}</td>
+                        <td>{merchants.find((m) => m.name === r.merchant)?.displayName || r.merchant || '—'}</td>
                         <AmountCell row={r} field="minAmount" onSave={saveAmount} />
                         <AmountCell row={r} field="maxAmount" onSave={saveAmount} />
                         {/* Кнопки вверх/вниз — как в вебаппе «Управление мерчантами» */}
