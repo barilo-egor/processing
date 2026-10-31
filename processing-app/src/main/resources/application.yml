@@ -23,3 +23,6 @@ server:
 management:
   server:
     port: 8091
+logging:
+  charset:
+    console: UTF-8
