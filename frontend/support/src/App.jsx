@@ -3227,10 +3227,13 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
 
   const link = INCIDENT_LINKS[incident.type];
   const linkId = link ? incident.data?.[link.key] : null;
-  // «Карточка клиента» ведёт в раздел «Клиенты» — оператору её не показываем (как в карточке ордера).
-  const showLink = Boolean(link && linkId && (link.kind !== 'client' || canOpenClient));
+  const showLink = Boolean(link && linkId);
 
   const openLink = async () => {
+    if (link.kind === 'client' && !canOpenClient) {
+      showToast('Нет доступа к клиентам. Обратитесь к администратору.', 'error');
+      return;
+    }
     setOpening(true);
     try {
       if (link.kind === 'client') {
