@@ -2,6 +2,7 @@ package net.rcetech.billing.controller;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
@@ -36,7 +37,9 @@ public class ClientWithdrawalRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(Principal principal,
                        @RequestParam @Positive Integer amount,
-                       @RequestParam @NotBlank String address) {
+                       @RequestParam @NotBlank
+                       @Size(max = 100, message = "Адрес кошелька должен содержать не более 100 символов.")
+                       String address) {
         WithdrawalRequest withdrawalRequest = withdrawalRequestService.create(
                 UUID.fromString(principal.getName()), amount, address);
         log.info("Клиент {} создал заявку на вывод {} (сумма={}, адрес={}).",

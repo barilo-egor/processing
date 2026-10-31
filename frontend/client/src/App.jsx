@@ -1860,6 +1860,7 @@ function CreateWithdrawalDialog({ onCancel, onCreated, showToast }) {
                   id="wd-new-address"
                   type="text"
                   placeholder="Адрес, на который будет отправлен вывод"
+                  maxLength={100}
                   value={address}
                   disabled={saving}
                   className={errors.address ? 'invalid' : ''}
