@@ -839,7 +839,8 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
 
   const rangeInvalid = isRangeInverted(draft.dateMode, draft.createdAtFrom, draft.createdAtFromTime,
       draft.createdAtTo, draft.createdAtToTime);
-  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
+  const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
+  const search = () => { if (idInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
   // Новая сортировка — с первой страницы.
@@ -860,7 +861,9 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <div className="field">
               <label htmlFor="o-id">ID ордера</label>
               <input id="o-id" value={draft.id} placeholder="UUID ордера"
+                     className={idInvalid ? 'invalid' : ''}
                      onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
+              {idInvalid && <span className="field-error">ID должен соответствовать формату UUID</span>}
             </div>
 
             <div className="field">
@@ -944,7 +947,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
