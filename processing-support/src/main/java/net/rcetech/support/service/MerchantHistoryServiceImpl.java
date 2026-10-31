@@ -11,10 +11,9 @@ import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import net.rcetech.support.mapper.MerchantHistoryMapper;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Реализация сервиса истории мерчантов через gRPC.
@@ -36,11 +35,11 @@ public class MerchantHistoryServiceImpl implements MerchantHistoryService {
     }
 
     @Override
-    public List<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
+    public Page<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
         MerchantHistoryRequestGrpc request = merchantHistoryMapper.filterToGrpc(filter, pageable);
         try {
             MerchantHistoryResponseGrpc response = historyBlockingStub.getHistory(request);
-            return merchantHistoryMapper.grpcToDtoList(response);
+            return merchantHistoryMapper.grpcToPage(response, pageable);
         } catch (Exception ex) {
             throw mapGrpcException(ex);
         }

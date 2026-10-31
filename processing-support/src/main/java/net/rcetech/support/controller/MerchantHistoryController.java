@@ -5,7 +5,6 @@ import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import net.rcetech.meta.user.SupportAccess;
 import net.rcetech.support.service.MerchantHistoryService;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -28,7 +27,7 @@ public class MerchantHistoryController {
     public PagedModel<MerchantHistoryResponse> get(
             MerchantHistoryFilter filter,
             @PageableDefault(size = 20) Pageable pageable) {
-        return new PagedModel<>(new PageImpl<>(merchantHistoryService.getHistory(filter, pageable)));
+        return new PagedModel<>(merchantHistoryService.getHistory(filter, pageable));
     }
 
 }

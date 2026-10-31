@@ -165,4 +165,37 @@ class MerchantHistoryMapperTest {
         assertThat(dto.merchant()).isNull();
     }
 
+    @Test
+    @DisplayName("Должен корректно преобразовать gRPC-ответ с total в Page")
+    void shouldMapGrpcResponseToPage() {
+        MerchantHistoryResponseDTO grpcDto = MerchantHistoryResponseDTO.newBuilder()
+                .setOperationId(StringValue.of("op-1"))
+                .build();
+
+        MerchantHistoryResponseGrpc grpcResponse = MerchantHistoryResponseGrpc.newBuilder()
+                .addResponse(grpcDto)
+                .setTotal(42)
+                .build();
+
+        Pageable pageable = PageRequest.of(1, 10);
+        var page = mapper.grpcToPage(grpcResponse, pageable);
+
+        assertThat(page).isNotNull();
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getTotalElements()).isEqualTo(42);
+        assertThat(page.getNumber()).isEqualTo(1);
+        assertThat(page.getSize()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("Должен вернуть пустую страницу, если ответ gRPC равен null")
+    void shouldReturnEmptyPageWhenGrpcResponseIsNull() {
+        Pageable pageable = PageRequest.of(0, 20);
+        var page = mapper.grpcToPage(null, pageable);
+
+        assertThat(page).isNotNull();
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
+    }
+
 }

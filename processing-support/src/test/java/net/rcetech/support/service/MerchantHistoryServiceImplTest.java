@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import tgb.cryptoexchange.commons.enums.Merchant;
@@ -41,7 +43,7 @@ class MerchantHistoryServiceImplTest {
     private MerchantHistoryServiceImpl service;
 
     @Test
-    @DisplayName("Должен успешно возвращать список истории мерчантов")
+    @DisplayName("Должен успешно возвращать страницу истории мерчантов")
     void shouldReturnMerchantHistoryList_whenGetHistorySucceeds() {
         MerchantHistoryFilter filter = new MerchantHistoryFilter(
                 "order-1", null, null, null, null, null, null, null
@@ -57,17 +59,18 @@ class MerchantHistoryServiceImplTest {
                         "order-1", 1000, 1000, "CARD", "details"
                 )
         );
+        Page<MerchantHistoryResponse> expectedPage = new PageImpl<>(expectedDtoList, pageable, 1);
 
         when(merchantHistoryMapper.filterToGrpc(filter, pageable)).thenReturn(grpcRequest);
         when(historyBlockingStub.getHistory(grpcRequest)).thenReturn(grpcResponse);
-        when(merchantHistoryMapper.grpcToDtoList(grpcResponse)).thenReturn(expectedDtoList);
+        when(merchantHistoryMapper.grpcToPage(grpcResponse, pageable)).thenReturn(expectedPage);
 
         var result = service.getHistory(filter, pageable);
 
-        assertThat(result).isNotNull().isEqualTo(expectedDtoList);
+        assertThat(result).isNotNull().isEqualTo(expectedPage);
         verify(merchantHistoryMapper).filterToGrpc(filter, pageable);
         verify(historyBlockingStub).getHistory(grpcRequest);
-        verify(merchantHistoryMapper).grpcToDtoList(grpcResponse);
+        verify(merchantHistoryMapper).grpcToPage(grpcResponse, pageable);
     }
 
     @Test
