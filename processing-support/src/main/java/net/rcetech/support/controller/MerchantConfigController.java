@@ -1,5 +1,6 @@
 package net.rcetech.support.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.support.dto.MerchantConfigResponseDTO;
@@ -33,7 +34,7 @@ public class MerchantConfigController {
     @PatchMapping("/{id}")
     @AdminAccess
     public ResponseEntity<MerchantConfigResponseDTO> update(Principal principal, @PathVariable Long id,
-            @RequestBody MerchantConfigUpdateDTO updateDTO) {
+            @RequestBody @Valid MerchantConfigUpdateDTO updateDTO) {
         MerchantConfigResponseDTO merchantConfig = merchantConfigService.update(id, updateDTO);
         log.info("Сотрудник поддержки {} обновил настройку мерчанта {}: {}.", principal.getName(), id, updateDTO);
         return ResponseEntity.ok(merchantConfig);
