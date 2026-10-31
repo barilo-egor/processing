@@ -69,15 +69,15 @@ class CallbackCleanerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "SENT,8,false",
+            "SENT,15,false",
             "FAILED,30,false",
-            "SENT,6,true",
+            "SENT,13,true",
             "FAILED,1,true",
-            "PENDING,8,true",
+            "PENDING,15,true",
             "SENDING,30,true"
     })
-    @DisplayName("Должны удаляться только отправленные и недоставленные КБ старше 7 дней.")
-    void deleteOld_shouldDeleteOnlyFinishedOlderThanSevenDays(ClientCallbackStatus status, long daysAgo,
+    @DisplayName("Должны удаляться только отправленные и недоставленные КБ старше 14 дней.")
+    void deleteOld_shouldDeleteOnlyFinishedOlderThanFourteenDays(ClientCallbackStatus status, long daysAgo,
                                                               boolean kept) {
         ClientCallback callback = clientCallbackService.create(saveOrder().getId(), OrderStatus.SUCCESS,
                 "https://example.com/callback", "{}");
@@ -95,15 +95,15 @@ class CallbackCleanerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "8,false,false",
+            "15,false,false",
             "30,true,false",
-            "8,true,true",
-            "6,false,false",
+            "15,true,true",
+            "13,false,false",
             "1,true,true",
             "0,false,true"
     })
-    @DisplayName("Должны удаляться все КБ мерчантов старше 7 дней, обработанные и необработанные.")
-    void deleteOld_shouldDeleteMerchantCallbacksOlderThanSevenDays(long daysAgo, boolean processed,
+    @DisplayName("Должны удаляться все КБ мерчантов старше 14 дней, обработанные и необработанные.")
+    void deleteOld_shouldDeleteMerchantCallbacksOlderThanFourteenDays(long daysAgo, boolean processed,
                                                                    boolean withOrder) {
         Instant createdAt = Instant.now().minus(Duration.ofDays(daysAgo)).minusSeconds(60);
         MerchantCallback callback = merchantCallbackRepository.save(MerchantCallback.builder()
@@ -118,7 +118,7 @@ class CallbackCleanerTest {
         callbackCleaner.deleteOld();
         entityManager.clear();
 
-        assertEquals(daysAgo < 7, merchantCallbackRepository.existsById(callback.getId()));
+        assertEquals(daysAgo < 14, merchantCallbackRepository.existsById(callback.getId()));
     }
 
     private Order saveOrder() {
