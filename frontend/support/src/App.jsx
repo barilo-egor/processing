@@ -2641,6 +2641,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
                 row={confirm.row}
                 action={confirm.action}
                 busy={busy}
+                onCopy={copy}
                 onCancel={() => setConfirm(null)}
                 onApply={() => process(confirm)}
             />
@@ -3471,9 +3472,8 @@ function CopyValue({ value, head, tail, onCopy }) {
 }
 
 /* ---- Подтверждение действия над заявкой ----
-   Текст и вид — по макету ТЗ. Адрес в окне сокращён, как на макете;
-   полный адрес — во всплывающей подсказке. */
-function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
+   Текст и вид — по макету ТЗ. Адрес в окне целиком, с копированием. */
+function ConfirmWithdrawal({ row, action, busy, onCopy, onCancel, onApply }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
     window.addEventListener('keydown', onKey);
@@ -3498,7 +3498,9 @@ function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
                   Заявка {id} клиента {login} на сумму {sum} будет подтверждена.
                   <br />
                   К отправке: <b>{fmtAmount(row.targetAmount)} USDT</b> на адрес{' '}
-                  <span className="mono" title={row.address}>{shortValue(row.address, 6, 6)}</span>.
+                  <span className="copyable nowrap" onClick={() => onCopy(row.address)} title="Скопировать">
+                    <span className="mono">{row.address}</span> <i className="fa-regular fa-copy" />
+                  </span>.
                 </p>
             ) : (
                 <p className="confirm-text">
