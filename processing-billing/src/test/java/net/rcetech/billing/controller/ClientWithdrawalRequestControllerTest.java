@@ -122,6 +122,7 @@ class ClientWithdrawalRequestControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value(status.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").value(createdAt))
                 .andExpect(jsonPath("$.content[0].grossSourceAmount").value(grossSourceAmount))
+                .andExpect(jsonPath("$.content[0].commissionPercent").isNumber())
                 .andExpect(jsonPath("$.content[0].commissionPercent").value(commissionPercent.doubleValue()))
                 .andExpect(jsonPath("$.content[0].netSourceAmount").value(netSourceAmount))
                 .andExpect(jsonPath("$.content[0].rate").value(rate.doubleValue()))
