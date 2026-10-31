@@ -85,8 +85,8 @@ class ApiOrderControllerSecurityTest {
     }
 
     private static ClientOrderSummary summary() {
-        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(), OrderStatus.NEW,
-                1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
+        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(900),
+                UUID.randomUUID().toString(), OrderStatus.NEW, 1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
     }
 
     private Client createClient() {

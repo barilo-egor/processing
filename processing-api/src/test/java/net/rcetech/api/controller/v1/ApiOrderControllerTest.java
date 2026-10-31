@@ -94,8 +94,8 @@ class ApiOrderControllerTest {
     }
 
     private static ClientOrderSummary summary() {
-        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(), OrderStatus.NEW,
-                1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
+        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(900),
+                UUID.randomUUID().toString(), OrderStatus.NEW, 1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
     }
 
     private RequestPostProcessor apiKeyOf(UUID clientId) {
@@ -400,7 +400,7 @@ class ApiOrderControllerTest {
     @EnumSource(value = OrderStatus.class, names = {"SEARCHING", "CANCELED"})
     @DisplayName("Асинхронное создание ордера должно вызвать асинхронный метод сервиса и вернуть 202 с ордером от него.")
     void createOrder_shouldReturn202IfAsync(OrderStatus status) throws Exception {
-        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(),
+        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(1800),
                 UUID.randomUUID().toString(), status, 5000, null, null, null, "https://example.com/callback");
         when(orderApiService.createOrderAsync(any(), any())).thenReturn(expected);
         mockMvc.perform(
@@ -574,6 +574,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
@@ -585,11 +586,11 @@ class ApiOrderControllerTest {
 
     static Stream<Arguments> orderSummaryArguments() {
         return Stream.of(
-                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.NEW, 5129, RequestMethod.CARD,
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(900),
+                        UUID.randomUUID().toString(), OrderStatus.NEW, 5129, RequestMethod.CARD,
                         "1234 1234 1234 1234", "Альфа банк", "https://google.com/callback")),
-                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.SUCCESS, 1250, RequestMethod.SBP,
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(1800),
+                        UUID.randomUUID().toString(), OrderStatus.SUCCESS, 1250, RequestMethod.SBP,
                         "+78971233212", "T-BANK", "https://example.com/path/callback"))
         );
     }
@@ -728,6 +729,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
@@ -740,8 +742,8 @@ class ApiOrderControllerTest {
     @Test
     @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
     void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
-        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                OrderStatus.NEW, 5129, RequestMethod.CARD,
+        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(),
+                Instant.now().plusSeconds(900), UUID.randomUUID().toString(), OrderStatus.NEW, 5129, RequestMethod.CARD,
                 "1234 1234 1234 1234", "Сбербанк", "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
@@ -764,6 +766,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.content[0].createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.content[0].expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.content[0].internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))
                 .andExpect(jsonPath("$.content[0].amount").value(expected.amount()))

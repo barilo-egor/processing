@@ -616,7 +616,7 @@ class OrderApiServiceTest {
                 () -> assertEquals(apiDetailsResponse.details().details(), order.details()),
                 () -> assertEquals(apiDetailsResponse.details().bank(), order.bank()),
                 () -> assertEquals(apiDetailsResponse.details().requestMethod(), order.method()),
-                () -> assertNotNull(orderRepository.findById(order.id()).orElseThrow().getExpiresAt())
+                () -> assertNotNull(order.expiresAt())
         );
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.id(), OrderStatus.NEW,
                         OrderStatusChangeSource.SYSTEM, false)),

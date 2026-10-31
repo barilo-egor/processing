@@ -233,7 +233,7 @@ export default function App() {
                 </>
             )}
             {section === 'orders' && (
-                <OrdersSection dict={dict} showToast={showToast} timeoutSec={profile?.orderTimeoutSeconds} />
+                <OrdersSection dict={dict} showToast={showToast} />
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
             {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} onBalanceChange={refreshProfile} />}
@@ -1247,7 +1247,7 @@ function Pager({ page, total, onPage }) {
 
 const EMPTY_ORDERS_FILTER = { status: '', method: '' };
 
-function OrdersSection({ dict, showToast, timeoutSec }) {
+function OrdersSection({ dict, showToast }) {
   const list = usePagedList(api.orders, showToast, 'Не удалось загрузить ордера');
   const [draft, setDraft] = useState(EMPTY_ORDERS_FILTER);
   const [card, setCard] = useState(null); // открытый ордер
@@ -1323,7 +1323,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
         {card && (
             <OrderCard
-                order={card} dict={dict} timeoutSec={timeoutSec}
+                order={card} dict={dict}
                 showToast={showToast} onClose={() => setCard(null)}
                 onChanged={(fresh) => { setCard(fresh); list.reload(); }}
             />
@@ -1334,17 +1334,15 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
 /* ---- Карточка ордера ----
    Данные — из строки таблицы: список GET /api/client/order отдаёт все поля
-   карточки (id, amount, status, internalId, createdAt, method, bank,
-   details, callbackUrl). Статус и метод — подписи из словаря.
-   «Дата истечения» по ТЗ вычисляется: дата создания + время активности
-   ордеров клиента (orderTimeoutSeconds из профиля).
+   карточки (id, amount, status, internalId, createdAt, expiresAt, method,
+   bank, details, callbackUrl). Статус и метод — подписи из словаря.
    «Отменить ордер» — для NEW и DISPUTE (ТЗ «Управление статусом
    ордера») и SEARCHING — «Поиск реквизитов» (ТЗ «Статусы „Поиск
    реквизитов“ и „Реквизиты не найдены“»); у «Реквизиты не найдены»
    кнопки нет. PATCH /order/{id}, затем карточка перечитывает ордер. */
 const CANCELABLE_ORDER = ['NEW', 'DISPUTE', 'SEARCHING'];
 
-function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
+function OrderCard({ order, dict, showToast, onClose, onChanged }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [canceling, setCanceling] = useState(false);
 
@@ -1370,12 +1368,6 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
     setConfirmCancel(false);
     onChanged?.(fresh && typeof fresh === 'object' ? { ...order, ...fresh } : order);
   };
-
-  const created = Number(order.createdAt);
-  const timeout = Number(timeoutSec);
-  const expiresAt = Number.isFinite(created) && created > 0 && Number.isFinite(timeout) && timeout >= 0
-      ? created + timeout * 1000
-      : null;
 
   // Реквизиты ещё не выданы — в «Метод», «Банк», «Реквизиты» прочерк (ТЗ).
   // Метод в базе обязателен и у такого ордера всё равно заполнен, поэтому
@@ -1422,7 +1414,7 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Дата создания</span>
-              <span>{created ? formatDateTime(order.createdAt) : '—'}</span>
+              <span>{order.createdAt ? formatDateTime(order.createdAt) : '—'}</span>
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Метод</span>
@@ -1430,7 +1422,7 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Дата истечения</span>
-              <span>{expiresAt ? formatDateTime(expiresAt) : '—'}</span>
+              <span>{order.expiresAt ? formatDateTime(order.expiresAt) : '—'}</span>
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Банк</span>

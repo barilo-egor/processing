@@ -12,6 +12,7 @@ import java.util.UUID;
  * Представление ордера доступное пользователю
  * @param id идентификатор ордера
  * @param createdAt время создания ордера
+ * @param expiresAt время истечения ордера
  * @param internalId идентификатор ордера в системе клиента
  * @param status статус ордера
  * @param amount сумма ордера
@@ -23,6 +24,8 @@ public record ClientOrderSummary(
         UUID id,
         @JsonSerialize(using = InstantToMillisSerializer.class)
         Instant createdAt,
+        @JsonSerialize(using = InstantToMillisSerializer.class)
+        Instant expiresAt,
         String internalId,
         OrderStatus status,
         Integer amount,
