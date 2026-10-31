@@ -62,13 +62,22 @@ class TransactionControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void createManualCorrection_shouldNotHaveAccessForClient() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "CLIENT,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7",
+            "CLIENT,20484949-7339-4e19-86c9-d1e2c492f75f",
+            "OPERATOR,5d0c1c2e-0b6a-4f43-9c1d-3f1f7c2a9e10",
+            "OPERATOR,8b3e2f14-6c7d-4a91-b0e5-2d9f1c4a7e63"
+    })
+    void createManualCorrection_shouldNotHaveAccessForClientAndOperator(Role role, String userId) throws Exception {
         mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
-                        .with(user("a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7").roles(Role.CLIENT.name()))
+                        .with(user(userId).roles(role.name()))
+                        .header("Content-Type", "application/json")
+                        .content("{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"CREDIT\",\"amount\":100,\"comment\":\"test\"}")
                 )
                 .andExpect(status().isForbidden());
+        verifyNoInteractions(transactionService);
     }
 
     @ParameterizedTest

@@ -309,6 +309,7 @@ export default function App() {
                     operations={operations}
                     txTypes={txTypes}
                     showToast={showToast}
+                    canCreate={isAdmin}
                 />
             )}
             {section === 'withdrawals' && (
@@ -3856,7 +3857,7 @@ const TX_TYPE_MOD = {
   MANUAL_CORRECT: 'brown',
 };
 
-function TransactionsSection({ operations, txTypes, showToast }) {
+function TransactionsSection({ operations, txTypes, showToast, canCreate }) {
   const [draft, setDraft] = useState(EMPTY_TX_FILTER);
   const [applied, setApplied] = useState(EMPTY_TX_FILTER);
   const [rows, setRows] = useState([]);
@@ -3988,10 +3989,12 @@ function TransactionsSection({ operations, txTypes, showToast }) {
               Сбросить
             </button>
             <RefreshButton onClick={() => setReloadKey((k) => k + 1)} loading={loading} />
-            <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
-              <i className="fa-solid fa-plus" />
-              Создать транзакцию
-            </button>
+            {canCreate && (
+              <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
+                <i className="fa-solid fa-plus" />
+                Создать транзакцию
+              </button>
+            )}
           </div>
         </div>
 
