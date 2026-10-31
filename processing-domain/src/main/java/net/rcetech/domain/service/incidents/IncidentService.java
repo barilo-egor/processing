@@ -142,7 +142,7 @@ public class IncidentService {
         Incident incident = incidentRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Инцидент с идентификатором " + id + " не найден."));
         if (!IncidentStatus.NEW.equals(incident.getStatus())) {
-            throw new BaseException("Инцидент может быть обработан только в статусе NEW");
+            throw new BadRequestException("Инцидент уже обработан.");
         }
         incident.setResolvedBy(supportUser);
         incident.setResolvedAt(Instant.now());

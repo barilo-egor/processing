@@ -3350,14 +3350,7 @@ function ResolveIncidentDialog({ incident, typeLabel, showToast, onCancel, onRes
       await api.resolveIncident(incident.id, comment.trim());
       onResolved();
     } catch (e) {
-      // Уже обработанный инцидент бэк сейчас отдаёт 500 без пояснения («Contact support.»),
-      // поэтому подсказываем вероятную причину и перечитываем таблицу.
-      showToast(
-          e.status === 500
-              ? 'Не удалось обработать: возможно, инцидент уже обработан'
-              : (e.message || 'Не удалось обработать инцидент'),
-          'error',
-      );
+      showToast(e.message || 'Не удалось обработать инцидент', 'error');
       setBusy(false);
       onFailed();
     }

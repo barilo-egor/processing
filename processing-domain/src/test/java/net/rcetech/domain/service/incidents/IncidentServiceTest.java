@@ -736,7 +736,7 @@ class IncidentServiceTest {
             "1790262068,Баланс пересчитан вручную.",
             "1790362099,Создана корректировочная транзакция."
     })
-    @DisplayName("Метод должен бросить BaseException и не изменять инцидент, если инцидент не в статусе NEW.")
+    @DisplayName("Метод должен бросить BadRequestException и не изменять инцидент, если инцидент уже обработан.")
     void resolve_shouldThrowIfIncidentNotNew(long resolvedAtSeconds, String comment) {
         SupportUser resolvedBy = saveDummySupportUser();
         SupportUser supportUser = saveDummySupportUser();
@@ -750,11 +750,12 @@ class IncidentServiceTest {
         Long incidentId = incident.getId();
         UUID supportUserId = supportUser.getId();
 
-        assertThrows(BaseException.class,
+        BadRequestException exception = assertThrows(BadRequestException.class,
                 () -> incidentService.resolve(incidentId, supportUserId, "Повторное решение."));
 
         Incident actual = incidentRepository.findById(incident.getId()).orElseThrow();
         assertAll(
+                () -> assertEquals("Инцидент уже обработан.", exception.getMessage()),
                 () -> assertEquals(IncidentStatus.RESOLVED, actual.getStatus()),
                 () -> assertEquals(resolvedBy.getId(), actual.getResolvedBy().getId()),
                 () -> assertEquals(resolvedAt, actual.getResolvedAt()),
