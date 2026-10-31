@@ -575,7 +575,11 @@ function ApiKeysBlock({ showToast }) {
   return (
       <section className="block">
         <div className="block-aside">
-          <h2 className="block-title">API-токены</h2>
+          <h2 className="block-title">
+            API-токены
+            {/* Счётчик «N из 10» — как у «Белого списка IP»: лимит у обоих блоков одинаковый */}
+            {!loading && <span className="block-count">{keys.length} из {TOKENS_LIMIT}</span>}
+          </h2>
           <p className="block-note">
             Токен подставляется в запросы к API. Значение показывается один раз
             при создании — сохраните его в надёжном месте.
