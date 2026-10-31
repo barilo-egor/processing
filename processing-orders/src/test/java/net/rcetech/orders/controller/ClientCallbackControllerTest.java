@@ -2,7 +2,6 @@ package net.rcetech.orders.controller;
 
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.exception.BadRequestException;
-import net.rcetech.meta.exception.ServiceException;
 import net.rcetech.meta.user.Role;
 import net.rcetech.orders.callback.CallbackDispatcher;
 import org.junit.jupiter.api.DisplayName;
@@ -69,7 +68,9 @@ class ClientCallbackControllerTest {
     @ParameterizedTest
     @CsvSource({
             "6e299aaf-4d82-438a-85bc-e2f8bcbadbfb,Ордер не найден.",
-            "05aa6142-6d22-42f3-99ff-93c9240858b5,Повторно отправить можно только недоставленный КБ о текущем статусе ордера."
+            "05aa6142-6d22-42f3-99ff-93c9240858b5,Повторно отправить можно только недоставленный КБ о текущем статусе ордера.",
+            "a1c4e8d2-7b3f-4e95-8c06-2d9f5b1e7a43,КБ не доставлен: сервер клиента не принял запрос.",
+            "c7e2b9f4-1d6a-4f38-9b75-0e8a3c5d2f16,КБ не отправлен: отправку запретила система из-за адреса КБ (адрес во внутренней сети)."
     })
     @DisplayName("Метод должен вернуть статус 400 с описанием, если КБ нельзя отправить повторно.")
     void resend_shouldReturn400IfCannotResend(UUID orderId, String message) throws Exception {
@@ -80,21 +81,5 @@ class ClientCallbackControllerTest {
                         .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value(message));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "6e299aaf-4d82-438a-85bc-e2f8bcbadbfb,КБ не доставлен: сервер клиента не принял запрос.",
-            "05aa6142-6d22-42f3-99ff-93c9240858b5,Сервер клиента недоступен."
-    })
-    @DisplayName("Метод должен вернуть статус 500 с сообщением, если КБ не доставлен.")
-    void resend_shouldReturn500IfNotDelivered(UUID orderId, String message) throws Exception {
-        doThrow(new ServiceException(message)).when(callbackDispatcher).resend(orderId);
-
-        mockMvc.perform(post("/api/support/client-callback/" + orderId)
-                        .with(user("fe795642-3aba-45b2-84a0-c69c07673004").roles(Role.OPERATOR.name()))
-                        .with(csrf()))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.title").value(message));
     }
 }
