@@ -187,10 +187,12 @@ class TransactionControllerTest {
 
     @ValueSource(strings = {
             "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"CREDIT\",\"amount\":-5135}",
-            "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"DEBIT\",\"amount\":-236646}"
+            "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"DEBIT\",\"amount\":-236646}",
+            "{\"clientId\":\"a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7\",\"operation\":\"CREDIT\",\"amount\":0}",
+            "{\"clientId\":\"20484949-7339-4e19-86c9-d1e2c492f75f\",\"operation\":\"DEBIT\",\"amount\":0}"
     })
     @ParameterizedTest
-    void createManualCorrect_shouldReturn400IfAmountIsNegative(String json) throws Exception {
+    void createManualCorrect_shouldReturn400IfAmountIsNotPositive(String json) throws Exception {
         mockMvc.perform(post("/api/support/transaction")
                         .with(csrf())
                         .with(
@@ -200,7 +202,7 @@ class TransactionControllerTest {
                         .content(json)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «amount» должно быть больше или равно нулю.")));
+                .andExpect(jsonPath("$.description").value(Matchers.containsString("Поле «amount» должно быть больше нуля.")));
     }
 
     @ValueSource(strings = {
