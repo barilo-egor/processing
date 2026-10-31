@@ -3281,6 +3281,23 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
                 </>
             )}
 
+            {incident.status !== 'NEW' && (
+                <div className="two-col">
+                  <section className="col">
+                    <Field label="Обработал">
+                      <span className="copyable" onClick={() => onCopy(incident.resolvedById)} title="Скопировать">
+                        <span className="mono">{incident.resolvedById || '—'}</span> <i className="fa-regular fa-copy" />
+                      </span>
+                    </Field>
+                  </section>
+                  <section className="col">
+                    <Field label="Обработан">
+                      <span className="mono">{fmtDateTime(incident.resolvedAt)}</span>
+                    </Field>
+                  </section>
+                </div>
+            )}
+
             {incident.comment && (
                 <>
                   <h3 className="eyebrow inc-label">Комментарий</h3>
