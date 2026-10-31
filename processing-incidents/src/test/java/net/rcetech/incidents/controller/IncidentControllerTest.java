@@ -7,6 +7,7 @@ import net.rcetech.meta.incidents.IncidentStatus;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.incidents.dto.IncidentFilter;
 import net.rcetech.meta.incidents.dto.IncidentResponse;
+import net.rcetech.meta.incidents.dto.UpdateIncidentRequest;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -50,6 +52,9 @@ class IncidentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private IncidentService incidentService;
@@ -249,5 +254,43 @@ class IncidentControllerTest {
                 .andExpect(jsonPath("$.resolvedById").value(supportUserId.toString()))
                 .andExpect(jsonPath("$.resolvedAt").value(String.valueOf(resolvedAt)))
                 .andExpect(jsonPath("$.comment").value(comment));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1,1001",
+            "69643546,1500"
+    })
+    @DisplayName("Метод обновления должен вернуть 400 и не обращаться к сервису, если комментарий длиннее 1000 символов.")
+    void update_shouldReturnBadRequestIfCommentTooLong(long id, int length) throws Exception {
+        mockMvc.perform(patch("/api/support/incident/" + id)
+                        .with(csrf())
+                        .with(user("38c3db77-c4d7-4b21-818e-aa9731b26fe8").roles(Role.ADMIN.name()))
+                        .header("Content-type", "application/json")
+                        .content(objectMapper.writeValueAsString(new UpdateIncidentRequest("к".repeat(length)))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Поле «comment» должно содержать не более 1000 символов."));
+        verifyNoInteractions(incidentService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1,999",
+            "69643546,1000"
+    })
+    @DisplayName("Метод обновления должен принять комментарий длиной до 1000 символов.")
+    void update_shouldAcceptCommentUpToLimit(long id, int length) throws Exception {
+        String comment = "к".repeat(length);
+        UUID supportUserId = UUID.fromString("38c3db77-c4d7-4b21-818e-aa9731b26fe8");
+        when(incidentService.resolve(any(), any(), any())).thenReturn(mock(IncidentResponse.class));
+
+        mockMvc.perform(patch("/api/support/incident/" + id)
+                        .with(csrf())
+                        .with(user(supportUserId.toString()).roles(Role.OPERATOR.name()))
+                        .header("Content-type", "application/json")
+                        .content(objectMapper.writeValueAsString(new UpdateIncidentRequest(comment))))
+                .andExpect(status().isOk());
+
+        verify(incidentService).resolve(id, supportUserId, comment);
     }
 }

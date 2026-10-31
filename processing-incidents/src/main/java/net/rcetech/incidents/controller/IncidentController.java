@@ -1,5 +1,6 @@
 package net.rcetech.incidents.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.repository.incidents.IncidentSpecifications;
 import net.rcetech.domain.service.incidents.IncidentService;
@@ -41,7 +42,8 @@ public class IncidentController {
 
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public IncidentResponse update(Principal principal, @PathVariable Long id, @RequestBody UpdateIncidentRequest request) {
+    public IncidentResponse update(Principal principal, @PathVariable Long id,
+                                   @Valid @RequestBody UpdateIncidentRequest request) {
         IncidentResponse incident = incidentService.resolve(id, UUID.fromString(principal.getName()), request.comment());
         log.info("Сотрудник поддержки {} закрыл инцидент {} с комментарием: {}.",
                 principal.getName(), id, request.comment());
