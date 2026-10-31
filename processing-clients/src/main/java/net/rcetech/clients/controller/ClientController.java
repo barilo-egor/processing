@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
+import net.rcetech.meta.clients.projection.ClientProfileProjection;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.user.ClientAccess;
@@ -26,8 +27,8 @@ public class ClientController {
     }
 
     @GetMapping
-    public ClientProjection get(Principal principal) {
-        return clientService.findById(UUID.fromString(principal.getName()), ClientProjection.class)
+    public ClientProfileProjection get(Principal principal) {
+        return clientService.findById(UUID.fromString(principal.getName()), ClientProfileProjection.class)
                 .orElseThrow(() -> new BaseException(
                         "Клиент не найден в базе данных по своему principal.getName(): " + principal.getName())
                 );

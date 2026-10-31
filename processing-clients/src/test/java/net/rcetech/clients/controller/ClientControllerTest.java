@@ -2,10 +2,10 @@ package net.rcetech.clients.controller;
 
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientUpdateRequest;
+import net.rcetech.meta.clients.projection.ClientProfileProjection;
 import net.rcetech.meta.clients.projection.ClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.MetaWebConfig;
-import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,10 +22,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,15 +56,14 @@ class ClientControllerTest {
     @ParameterizedTest
     @CsvSource({
             "89b4e05b-c129-4ea3-a1d0-088d347b9cd2,smokilolik,1790181102840,http://example.com/callback," +
-                    "900,15.5,255695,12000",
+                    "255695,12000",
             "a2c47cba-7b49-4d9b-961c-31220f3636e4,test1,1790181102840,http://google.net/callback," +
-                    "800,10.0,387,0"
+                    "387,0"
     })
     @DisplayName("Метод должен вернуть JSON клиента.")
     void get_shouldReturnClientJson(UUID id, String username, Long registeredAt, String callbackUrl,
-                                    Integer orderTimeoutSeconds, BigDecimal commissionPercent, Integer balance,
-                                    Integer reservedAmount) throws Exception {
-        ClientProjection clientResponseDTO = new ClientProjection() {
+                                    Integer balance, Integer reservedAmount) throws Exception {
+        ClientProfileProjection clientResponseDTO = new ClientProfileProjection() {
             @Override
             public UUID getId() {
                 return id;
@@ -88,16 +85,6 @@ class ClientControllerTest {
             }
 
             @Override
-            public Integer getOrderTimeoutSeconds() {
-                return orderTimeoutSeconds;
-            }
-
-            @Override
-            public BigDecimal getCommissionPercent() {
-                return commissionPercent;
-            }
-
-            @Override
             public Integer getBalance() {
                 return balance;
             }
@@ -106,14 +93,9 @@ class ClientControllerTest {
             public Integer getReservedAmount() {
                 return reservedAmount;
             }
-
-            @Override
-            public Set<RequestMethod> getMethods() {
-                return Set.of(RequestMethod.CARD, RequestMethod.SBP);
-            }
         };
 
-        when(clientService.findById(id, ClientProjection.class)).thenReturn(Optional.of(clientResponseDTO));
+        when(clientService.findById(id, ClientProfileProjection.class)).thenReturn(Optional.of(clientResponseDTO));
 
         mockMvc.perform(get("/api/client/profile")
                         .with(csrf())
@@ -124,10 +106,11 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$.username").value(username))
                 .andExpect(jsonPath("$.registeredAt").value(registeredAt))
                 .andExpect(jsonPath("$.callbackUrl").value(callbackUrl))
-                .andExpect(jsonPath("$.orderTimeoutSeconds").value(orderTimeoutSeconds))
-                .andExpect(jsonPath("$.commissionPercent").value(commissionPercent.doubleValue()))
                 .andExpect(jsonPath("$.balance").value(balance))
                 .andExpect(jsonPath("$.reservedAmount").value(reservedAmount))
+                .andExpect(jsonPath("$.orderTimeoutSeconds").doesNotExist())
+                .andExpect(jsonPath("$.commissionPercent").doesNotExist())
+                .andExpect(jsonPath("$.methods").doesNotExist())
                 .andExpect(jsonPath("$.comment").doesNotExist())
                 .andExpect(jsonPath("$.minWithdrawalAmount").doesNotExist());
     }
@@ -160,30 +143,6 @@ class ClientControllerTest {
                 return "https://example.com/callback";
             }
 
-            @Override
-            public Integer getOrderTimeoutSeconds() {
-                return 900;
-            }
-
-            @Override
-            public BigDecimal getCommissionPercent() {
-                return new BigDecimal("20.5");
-            }
-
-            @Override
-            public Integer getBalance() {
-                return 154789;
-            }
-
-            @Override
-            public Integer getReservedAmount() {
-                return 25000;
-            }
-
-            @Override
-            public Set<RequestMethod> getMethods() {
-                return Set.of(RequestMethod.CARD, RequestMethod.SBP);
-            }
         };
         when(clientService.update(any(), any(ClientUpdateRequest.class))).thenReturn(client);
         ClientUpdateRequest expected = objectMapper.readValue(json, ClientUpdateRequest.class);
@@ -195,6 +154,8 @@ class ClientControllerTest {
                 .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.balance").doesNotExist())
+                .andExpect(jsonPath("$.reservedAmount").doesNotExist())
                 .andExpect(jsonPath("$.comment").doesNotExist())
                 .andExpect(jsonPath("$.minWithdrawalAmount").doesNotExist());
         ArgumentCaptor<ClientUpdateRequest> captor = ArgumentCaptor.forClass(ClientUpdateRequest.class);
