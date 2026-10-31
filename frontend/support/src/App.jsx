@@ -2650,7 +2650,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
 }
 
 /* ============================================================
-   КБ мерчантов — журнал коллбэков, полученных от мерчантов
+   КБ мерчантов — журнал колбэков, полученных от мерчантов
    ============================================================
    Только просмотр: фильтр, таблица, постраничная загрузка.
    Подробного просмотра и действий над записями нет (по ТЗ).
@@ -2702,7 +2702,7 @@ function CallbacksSection({ merchants, showToast }) {
     } catch (e) {
       setRows([]);
       setTotal(0);
-      showToast(e.message || 'Не удалось загрузить коллбэки', 'error');
+      showToast(e.message || 'Не удалось загрузить колбэки', 'error');
     } finally {
       setLoading(false);
     }
@@ -2844,7 +2844,7 @@ function CallbacksSection({ merchants, showToast }) {
           </table>
 
           {!loading && rows.length === 0 && (
-              <div className="table-empty">Коллбэков не найдено</div>
+              <div className="table-empty">Колбэков не найдено</div>
           )}
           {loading && (
               <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
@@ -2853,7 +2853,7 @@ function CallbacksSection({ merchants, showToast }) {
 
         <Pagination
             page={page} total={total} busy={loading}
-            onPage={setPage} label="Всего коллбэков"
+            onPage={setPage} label="Всего колбэков"
         />
       </>
   );
