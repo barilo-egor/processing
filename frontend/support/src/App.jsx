@@ -638,26 +638,20 @@ function Pagination({ page, total, onPage, busy, label }) {
    frontend/shared/docs.jsx. */
 
 /* ==================== Меню аккаунта ==================== */
-/* Логин администратора в правом углу верхней панели.
-   Клик раскрывает меню с выходом; повторный клик или клик вне меню закрывает.
-
-   ВНИМАНИЕ: эндпоинта «текущий пользователь» в коллекции нет, поэтому
-   логин пока не запрашивается — показывается общая подпись. Как только
-   бэк отдаст его (например, GET /api/support/support-user/current),
-   достаточно подставить значение в состояние name. */
+/* Логин сотрудника в правом углу верхней панели.
+   Клик раскрывает меню с выходом; повторный клик или клик вне меню закрывает. */
 function AccountMenu({ isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
-  // Логин вошедшего администратора — из GET /support-user.
-  // Пока ответа нет или запрос не удался — нейтральное «Администратор».
-  const [name, setName] = useState('Администратор');
+  // Логин вошедшего сотрудника — из GET /support-user. null — ещё загружается, '' — не получен.
+  const [name, setName] = useState(null);
   const ref = useRef(null);
 
   useEffect(() => {
     let alive = true;
     api.supportUser()
-        .then((u) => { if (alive && u?.username) setName(u.username); })
-        .catch(() => { /* оставляем «Администратор» */ });
+        .then((u) => { if (alive) setName(u?.username || ''); })
+        .catch(() => { if (alive) setName(''); });
     return () => { alive = false; };
   }, []);
 
@@ -684,7 +678,9 @@ function AccountMenu({ isAdmin }) {
             aria-haspopup="menu"
             aria-expanded={open}
         >
-          <span className="account-name">{name}</span>
+          <span className="account-name">{name === null
+              ? <i className="fa-solid fa-spinner fa-spin" />
+              : name || (isAdmin ? 'Администратор' : 'Оператор')}</span>
           <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} account-caret`} />
         </button>
 
