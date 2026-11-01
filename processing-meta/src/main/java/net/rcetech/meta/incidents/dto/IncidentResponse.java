@@ -18,6 +18,7 @@ public record IncidentResponse(
         IncidentType type,
         Map<String, Object> data,
         UUID resolvedById,
+        String resolvedByUsername,
         @JsonSerialize(using = InstantToMillisSerializer.class)
         Instant resolvedAt,
         String comment

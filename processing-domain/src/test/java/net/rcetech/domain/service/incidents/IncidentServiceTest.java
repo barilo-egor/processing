@@ -695,6 +695,7 @@ class IncidentServiceTest {
                 () -> assertEquals(errorTimestamp, response.errorTimestamp()),
                 () -> assertEquals(type, response.type()),
                 () -> assertEquals(supportUser.getId(), response.resolvedById()),
+                () -> assertEquals(supportUser.getUsername(), response.resolvedByUsername()),
                 () -> assertNotNull(response.resolvedAt()),
                 () -> assertFalse(response.resolvedAt().isBefore(before.minusSeconds(1))),
                 () -> assertEquals(actual.getResolvedAt(), response.resolvedAt()),
@@ -862,12 +863,14 @@ class IncidentServiceTest {
                 .collect(Collectors.toMap(IncidentResponse::id, Function.identity()));
         assertAll(
                 () -> assertEquals(supportUser.getId(), byId.get(resolvedIncident.getId()).resolvedById()),
+                () -> assertEquals(supportUser.getUsername(), byId.get(resolvedIncident.getId()).resolvedByUsername()),
                 () -> assertNotNull(resolvedAt),
                 () -> assertEquals(resolvedAt, byId.get(resolvedIncident.getId()).resolvedAt()),
                 () -> assertEquals(resolvedErrorTimestamp, byId.get(resolvedIncident.getId()).errorTimestamp()),
                 () -> assertEquals("comment", byId.get(resolvedIncident.getId()).comment()),
                 () -> assertTrue(byId.containsKey(newIncident.getId())),
                 () -> assertNull(byId.get(newIncident.getId()).resolvedById()),
+                () -> assertNull(byId.get(newIncident.getId()).resolvedByUsername()),
                 () -> assertNull(byId.get(newIncident.getId()).resolvedAt()),
                 () -> assertEquals(newErrorTimestamp, byId.get(newIncident.getId()).errorTimestamp())
         );

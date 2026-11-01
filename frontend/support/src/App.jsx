@@ -3096,7 +3096,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
               <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
               <SortTh field="errorTimestamp" sort={sort} onSort={onSort}>Время ошибки</SortTh>
               <SortTh field="type" sort={sort} onSort={onSort}>Тип</SortTh>
-              <SortTh field="resolvedById" sort={sort} onSort={onSort}>Обработал</SortTh>
+              <SortTh field="resolvedByUsername" sort={sort} onSort={onSort}>Обработал</SortTh>
               <SortTh field="resolvedAt" sort={sort} onSort={onSort}>Обработан</SortTh>
               <th className="c-act" aria-label="Действия" />
             </tr>
@@ -3111,7 +3111,13 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                   </td>
                   <td className="mono nowrap">{fmtDateTime(r.errorTimestamp)}</td>
                   <td className="inc-type">{typeLabel(r.type)}</td>
-                  <td className="c-id"><CopyValue value={r.resolvedById} onCopy={copy} /></td>
+                  <td>
+                    {r.resolvedByUsername ? (
+                        <span className="copyable" title={r.resolvedById} onClick={(e) => { e.stopPropagation(); copy(r.resolvedByUsername); }}>
+                          {r.resolvedByUsername} <i className="fa-regular fa-copy" />
+                        </span>
+                    ) : '—'}
+                  </td>
                   <td className="mono nowrap">{fmtDateTime(r.resolvedAt)}</td>
                   <td className="c-act">
                     {r.status === 'NEW' && (
@@ -3290,8 +3296,8 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
                 <div className="two-col">
                   <section className="col">
                     <Field label="Обработал">
-                      <span className="copyable" onClick={() => onCopy(incident.resolvedById)} title="Скопировать">
-                        <span className="mono">{incident.resolvedById || '—'}</span> <i className="fa-regular fa-copy" />
+                      <span className="copyable" onClick={() => onCopy(incident.resolvedByUsername)} title={incident.resolvedById}>
+                        {incident.resolvedByUsername || '—'} <i className="fa-regular fa-copy" />
                       </span>
                     </Field>
                   </section>

@@ -29,7 +29,7 @@
      GET   /api/support/merchant-callback?orderId&merchant&merchantOrderId&createdAtFrom&createdAtTo&page&size&sort
            -> { content: [{ id, createdAt, processedAt, orderId, merchant, merchantOrderId, status, statusDescription }], page }
      GET   /api/support/incident?id&status&type&createdAtFrom&createdAtTo&resolvedAtFrom&resolvedAtTo&page&size&sort
-           -> { content: [{ id, createdAt, status, errorTimestamp, type, data, resolvedById, resolvedAt, comment }], page }
+           -> { content: [{ id, createdAt, status, errorTimestamp, type, data, resolvedById, resolvedByUsername, resolvedAt, comment }], page }
      PATCH /api/support/incident/{id}  <- { comment } — обработка: NEW → RESOLVED
      POST  /api/support/client/{id}/balance/recalculation -> клиент после пересчёта баланса
      DELETE /api/support/client/{id}  -> 204; удаляет клиента и всё связанное (только ADMIN)
