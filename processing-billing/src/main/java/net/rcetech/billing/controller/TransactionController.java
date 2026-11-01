@@ -8,6 +8,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.ManualCorrectTransaction;
 import net.rcetech.meta.billing.dto.TransactionFilter;
 import net.rcetech.meta.billing.dto.TransactionResponse;
+import net.rcetech.meta.user.AdminAccess;
 import net.rcetech.meta.user.SupportAccess;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -39,6 +40,7 @@ public class TransactionController {
     }
 
     @PostMapping
+    @AdminAccess
     @ResponseStatus(HttpStatus.OK)
     public void createManualCorrect(Principal principal, @Valid @RequestBody ManualCorrectTransaction manualCorrectTransaction) {
         transactionService.createManualCorrect(UUID.fromString(principal.getName()), manualCorrectTransaction);

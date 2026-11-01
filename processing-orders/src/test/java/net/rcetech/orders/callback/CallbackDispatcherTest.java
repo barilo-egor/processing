@@ -18,7 +18,6 @@ import net.rcetech.domain.service.orders.ClientCallbackService;
 import net.rcetech.domain.service.support.SupportUserService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.exception.BadRequestException;
-import net.rcetech.meta.exception.ServiceException;
 import net.rcetech.meta.incidents.ClientCallbackUrlForbiddenEvent;
 import net.rcetech.meta.incidents.IncidentType;
 import net.rcetech.meta.orders.ClientCallbackStatus;
@@ -434,7 +433,7 @@ class CallbackDispatcherTest {
         ClientCallback callback = saveCallback(orderId, OrderStatus.SUCCESS, wireMockUrl + "/callback", "{}",
                 ClientCallbackStatus.FAILED, 4);
 
-        ServiceException exception = assertThrows(ServiceException.class, () -> callbackDispatcher.resend(orderId));
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> callbackDispatcher.resend(orderId));
         callbackDispatcher.dispatch();
 
         assertEquals("КБ не доставлен: сервер клиента не принял запрос.", exception.getMessage());
@@ -493,7 +492,7 @@ class CallbackDispatcherTest {
         ClientCallback callback = saveCallback(orderId, orderStatus, wireMockUrl + "/callback", "{}",
                 ClientCallbackStatus.FAILED, attempts);
 
-        ServiceException exception = assertThrows(ServiceException.class, () -> callbackDispatcher.resend(orderId));
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> callbackDispatcher.resend(orderId));
 
         assertEquals("КБ не отправлен: отправку запретила система из-за адреса КБ (" + reason + ").",
                 exception.getMessage());

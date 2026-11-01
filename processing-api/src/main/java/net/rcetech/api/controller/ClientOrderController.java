@@ -6,6 +6,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.meta.user.ClientAccess;
+import net.rcetech.meta.validation.SortableFields;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -45,6 +46,8 @@ public class ClientOrderController {
 
     @GetMapping
     public PagedModel<ClientOrderSummary> getOrders(ClientOrderFilter filter,
+                                                    @SortableFields({"id", "createdAt", "internalId", "status", "amount", "method", "details",
+                                                            "bank", "callbackUrl"})
                                                     @PageableDefault(size = 20) Pageable pageable,
                                                     Principal principal) {
         return new PagedModel<>(orderApiService.findAll(UUID.fromString(principal.getName()), filter, pageable));

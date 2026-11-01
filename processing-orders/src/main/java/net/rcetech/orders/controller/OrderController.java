@@ -15,6 +15,7 @@ import net.rcetech.meta.orders.dto.OrderResponse;
 import net.rcetech.meta.orders.dto.OrderSummary;
 import net.rcetech.meta.orders.dto.OrderUpdateRequest;
 import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.validation.SortableFields;
 import net.rcetech.orders.OrderFacade;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -40,7 +41,10 @@ public class OrderController {
     }
 
     @GetMapping
-    public PagedModel<OrderSummary> getOrders(OrderFilter filter, @PageableDefault(size = 20) Pageable pageable){
+    public PagedModel<OrderSummary> getOrders(OrderFilter filter,
+            @SortableFields({"id", "internalId", "clientUsername", "amount", "status", "createdAt", "merchant",
+                    "merchantOrderId"})
+            @PageableDefault(size = 20) Pageable pageable){
         return new PagedModel<>(orderService.findAll(OrderSpecifications.matches(filter), pageable, OrderSummary.class));
     }
 

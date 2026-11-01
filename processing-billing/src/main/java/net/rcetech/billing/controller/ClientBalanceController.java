@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.billing.service.ClientBalanceService;
 import net.rcetech.meta.WebPath;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
-import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.user.AdminAccess;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +16,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping(WebPath.SUPPORT_API_PATH + "/client")
-@SupportAccess
+@AdminAccess
 public class ClientBalanceController {
 
     private final ClientBalanceService clientBalanceService;

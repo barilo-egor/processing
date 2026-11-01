@@ -15,13 +15,10 @@ import ThemeToggle from '@shared/ThemeToggle.jsx';
 
 const PAGE_SIZE = 25;
 
-/* Границы «Времени активности ордеров».
-   ВНИМАНИЕ: в ТЗ указано «минимум 120, максимум 120» и текст ошибки
-   «Укажите целое число от 120до120» — это незаполненные заглушки.
-   API разрешает от 0, у существующих клиентов стоит 900.
-   Уточняется у автора ТЗ; поменять здесь — текст ошибки соберётся сам. */
+/* Границы «Времени активности ордеров»: от 2 минут до часа, API проверяет те же.
+   Поменять здесь — текст ошибки соберётся сам. */
 const TIMEOUT_MIN = 120;
-const TIMEOUT_MAX = 86400;
+const TIMEOUT_MAX = 3600;
 
 // Ключ в localStorage: свёрнуто ли боковое меню на широком экране.
 const SIDEBAR_KEY = 'support.sidebarCollapsed';
@@ -273,6 +270,13 @@ export default function App() {
             </div>
           </header>
           <main className="content">
+            {roles !== null && !canSee(section) && (
+                <div className="card placeholder">
+                  <i className="fa-solid fa-lock" />
+                  <h2>Нет доступа</h2>
+                  <p>Раздел доступен только администратору</p>
+                </div>
+            )}
             {section === 'clients' && canSee('clients') && (
                 <ClientsSection
                     methods={methods}
@@ -292,6 +296,7 @@ export default function App() {
             {section === 'merchants' && canSee('merchants') && (
                 <MerchantsSection
                     client={configClient}
+                    merchants={merchants}
                     showToast={showToast}
                     onPickClient={setConfigClient}
                 />
@@ -304,6 +309,7 @@ export default function App() {
                     operations={operations}
                     txTypes={txTypes}
                     showToast={showToast}
+                    canCreate={isAdmin}
                 />
             )}
             {section === 'withdrawals' && (
@@ -338,8 +344,7 @@ export default function App() {
 /* ==================== Сортировка по клику на заголовок ====================
    Сортирует бэк (параметр sort=поле,asc|desc), поэтому порядок общий для всей
    выборки с учётом фильтра, а не только для текущей страницы.
-   Клик по колонке: по возрастанию → по убыванию → исходный порядок.
-   Имена полей проверены живыми запросами: неизвестное поле бэк отдаёт 500. */
+   Клик по колонке: по возрастанию → по убыванию → исходный порядок. */
 
 function nextSort(sort, field) {
   if (!sort || sort.field !== field) return { field, dir: 'asc' };
@@ -388,6 +393,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const [sort, setSort] = useState(null); // null | { field, dir }
 
   const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
 
   const load = useCallback(async (f, p, srt) => {
     setLoading(true);
@@ -424,7 +430,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
   const setF = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
 
   const search = () => {
-    if (idInvalid) return;
+    if (idInvalid || rangeInvalid) return;
     setApplied(draft);
     setPage(0);
   };
@@ -515,6 +521,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                           id="f-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => setF('dateTo', v)} onTime={(v) => setF('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -523,7 +530,7 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={idInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" /> Поиск
             </button>
             <button type="button" className="btn btn-secondary" onClick={reset}>Сбросить</button>
@@ -832,7 +839,11 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
     }
   };
 
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.createdAtFrom, draft.createdAtFromTime,
+      draft.createdAtTo, draft.createdAtToTime);
+  const idInvalid = draft.id.trim() !== '' && !isUuid(draft.id);
+  const search = () => { if (idInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
+  const onEnter = (e) => { if (e.key === 'Enter') search(); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_ORDER_FILTER); setApplied(EMPTY_ORDER_FILTER); };
   // Новая сортировка — с первой страницы.
   const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
@@ -852,19 +863,21 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <div className="field">
               <label htmlFor="o-id">ID ордера</label>
               <input id="o-id" value={draft.id} placeholder="UUID ордера"
-                     onChange={(e) => set('id', e.target.value)} />
+                     className={idInvalid ? 'invalid' : ''}
+                     onChange={(e) => set('id', e.target.value)} onKeyDown={onEnter} />
+              {idInvalid && <span className="field-error">ID должен соответствовать формату UUID</span>}
             </div>
 
             <div className="field">
               <label htmlFor="o-client">Клиент</label>
               <input id="o-client" value={draft.client} placeholder="Логин или ID клиента"
-                     onChange={(e) => set('client', e.target.value)} />
+                     onChange={(e) => set('client', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             <div className="field">
               <label htmlFor="o-internal">ID в системе клиента</label>
               <input id="o-internal" value={draft.internalId}
-                     onChange={(e) => set('internalId', e.target.value)} />
+                     onChange={(e) => set('internalId', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             {/* В ТЗ здесь текстовое поле, но сервер фильтрует по коду
@@ -885,7 +898,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
             <div className="field">
               <label htmlFor="o-morder">ID у мерчанта</label>
               <input id="o-morder" value={draft.merchantOrderId}
-                     onChange={(e) => set('merchantOrderId', e.target.value)} />
+                     onChange={(e) => set('merchantOrderId', e.target.value)} onKeyDown={onEnter} />
             </div>
 
             <div className="field">
@@ -927,6 +940,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
                           id="o-to" label="По"
                           date={draft.createdAtTo} time={draft.createdAtToTime}
                           onDate={(v) => set('createdAtTo', v)} onTime={(v) => set('createdAtToTime', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -935,7 +949,7 @@ function OrdersSection({ orderStatuses, merchants, methods, showToast, canOpenCl
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -1389,8 +1403,8 @@ function shortId(id) {
 // Предел длины комментария к клиенту (ТЗ).
 const COMMENT_MAX = 1000;
 
-/* Баланс клиента: рубли без копеек, «125000₽». Если есть резерв заявок
-   на вывод в статусе «Новая», он выводится в скобках: «125000(60000)₽».
+/* Баланс клиента: рубли без копеек, «125000 ₽». Если есть резерв заявок
+   на вывод в статусе «Новая», он выводится в скобках: «125000(60000) ₽».
    Читаем client.balance и client.reservedAmount. */
 function BalanceValue({ value, reserved }) {
   const n = Number(value);
@@ -1400,7 +1414,7 @@ function BalanceValue({ value, reserved }) {
       <span className="mono">
         {Math.trunc(n)}
         {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
-        ₽
+        {'\u00A0'}₽
       </span>
   );
 }
@@ -1473,11 +1487,15 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
     const errs = {};
     const body = {};
 
-    // Комиссия: число от 0 без верхней границы, точность до десятых.
+    // Комиссия: число от 0 до 99,9, точность до десятых.
+    // Пустое поле допустимо, только если комиссия ещё не задана.
     const rawCommission = String(form.commission).replace(',', '.').trim();
     const commission = Number(rawCommission);
-    if (rawCommission === '' || !Number.isFinite(commission) || commission < 0) {
-      errs.commission = 'Укажите число от 0';
+    const hadCommission = client.commissionPercent != null && client.commissionPercent !== '';
+    if (rawCommission === '') {
+      if (hadCommission) errs.commission = 'Укажите число от 0 до 99,9';
+    } else if (!Number.isFinite(commission) || commission < 0 || Math.round(commission * 10) / 10 >= 100) {
+      errs.commission = 'Укажите число от 0 до 99,9';
     } else {
       const rounded = Math.round(commission * 10) / 10;
       if (rounded !== Number(client.commissionPercent)) body.commissionPercent = rounded;
@@ -1976,7 +1994,7 @@ function byMerchantOrder(list) {
       .map((x) => x.r);
 }
 
-function MerchantsSection({ client, showToast, onPickClient }) {
+function MerchantsSection({ client, merchants, showToast, onPickClient }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');   // что набрано в поле
@@ -2201,7 +2219,7 @@ function MerchantsSection({ client, showToast, onPickClient }) {
                             <span className="thumb" />
                           </label>
                         </td>
-                        <td>{r.merchant || '—'}</td>
+                        <td>{merchants.find((m) => m.name === r.merchant)?.displayName || r.merchant || '—'}</td>
                         <AmountCell row={r} field="minAmount" onSave={saveAmount} />
                         <AmountCell row={r} field="maxAmount" onSave={saveAmount} />
                         {/* Кнопки вверх/вниз — как в вебаппе «Управление мерчантами» */}
@@ -2415,7 +2433,8 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
   const reload = () => setReloadKey((k) => k + 1);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_WD_FILTER); setApplied(EMPTY_WD_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -2521,6 +2540,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
                           id="w-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -2529,7 +2549,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -2622,6 +2642,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
                 row={confirm.row}
                 action={confirm.action}
                 busy={busy}
+                onCopy={copy}
                 onCancel={() => setConfirm(null)}
                 onApply={() => process(confirm)}
             />
@@ -2631,7 +2652,7 @@ function WithdrawalsSection({ withdrawalStatuses, showToast }) {
 }
 
 /* ============================================================
-   КБ мерчантов — журнал коллбэков, полученных от мерчантов
+   КБ мерчантов — журнал колбэков, полученных от мерчантов
    ============================================================
    Только просмотр: фильтр, таблица, постраничная загрузка.
    Подробного просмотра и действий над записями нет (по ТЗ).
@@ -2683,7 +2704,7 @@ function CallbacksSection({ merchants, showToast }) {
     } catch (e) {
       setRows([]);
       setTotal(0);
-      showToast(e.message || 'Не удалось загрузить коллбэки', 'error');
+      showToast(e.message || 'Не удалось загрузить колбэки', 'error');
     } finally {
       setLoading(false);
     }
@@ -2696,9 +2717,10 @@ function CallbacksSection({ merchants, showToast }) {
   // orderId у бэка — UUID: неполный ID он не примет (ошибка конвертации),
   // поэтому проверяем формат до запроса, как в разделе «Клиенты».
   const orderIdInvalid = draft.orderId.trim() !== '' && !isUuid(draft.orderId);
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { if (orderIdInvalid) return; setPage(0); setApplied(draft); };
+  const search = () => { if (orderIdInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_CB_FILTER); setApplied(EMPTY_CB_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -2772,6 +2794,7 @@ function CallbacksSection({ merchants, showToast }) {
                           id="cb-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -2780,7 +2803,7 @@ function CallbacksSection({ merchants, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || orderIdInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || orderIdInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -2823,7 +2846,7 @@ function CallbacksSection({ merchants, showToast }) {
           </table>
 
           {!loading && rows.length === 0 && (
-              <div className="table-empty">Коллбэков не найдено</div>
+              <div className="table-empty">Колбэков не найдено</div>
           )}
           {loading && (
               <div className="table-empty"><i className="fa-solid fa-spinner fa-spin" /> Загрузка…</div>
@@ -2832,7 +2855,7 @@ function CallbacksSection({ merchants, showToast }) {
 
         <Pagination
             page={page} total={total} busy={loading}
-            onPage={setPage} label="Всего коллбэков"
+            onPage={setPage} label="Всего колбэков"
         />
       </>
   );
@@ -2875,6 +2898,12 @@ const INCIDENT_LINKS = {
   CLIENT_MIN_WITHDRAWAL_AMOUNT_NOT_SET: { kind: 'client', key: 'clientId' },
   MERCHANT_CALLBACK_HANDLE_ERROR: { kind: 'merchantOrder', key: 'merchantOrderId' },
   ORDER_STATUS_TRANSITION_REJECTED: { kind: 'order', key: 'orderId' },
+  DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
+  ASYNC_DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
+  STUCK_SEARCH_ORDER_ERROR: { kind: 'order', key: 'orderId' },
+  ORDER_EXPIRATION_ERROR: { kind: 'order', key: 'orderId' },
+  CLIENT_CALLBACK_DELIVERY_UNKNOWN: { kind: 'order', key: 'orderId' },
+  CLIENT_CALLBACK_URL_FORBIDDEN: { kind: 'order', key: 'orderId' },
 };
 
 const incidentStatusMod = (name) => (name === 'NEW' ? 'info' : name === 'RESOLVED' ? 'ok' : 'neutral');
@@ -2933,9 +2962,14 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
 
   // ID инцидента — число: буквы бэк не примет, проверяем до запроса.
   const idInvalid = draft.id.trim() !== '' && !/^\d+$/.test(draft.id.trim());
+  const rangeInvalidFor = (p) => {
+    const k = (name) => (p ? p + name.charAt(0).toUpperCase() + name.slice(1) : name);
+    return isRangeInverted(draft[k('dateMode')], draft[k('dateFrom')], draft[k('timeFrom')], draft[k('dateTo')], draft[k('timeTo')]);
+  };
+  const rangeInvalid = rangeInvalidFor('') || rangeInvalidFor('r');
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { if (idInvalid) return; setPage(0); setApplied(draft); };
+  const search = () => { if (idInvalid || rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => {
     setPage(0); setSort(INC_DEFAULT_SORT); setDraft(EMPTY_INC_FILTER); setApplied(EMPTY_INC_FILTER);
   };
@@ -2994,6 +3028,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                       id={`${idp}-to`} label="По"
                       date={draft[k('dateTo')]} time={draft[k('timeTo')]}
                       onDate={(v) => set(k('dateTo'), v)} onTime={(v) => set(k('timeTo'), v)}
+                      error={rangeInvalidFor(p) ? RANGE_ERROR : ''}
                   />
                 </>
             )}
@@ -3039,7 +3074,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || idInvalid || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -3192,10 +3227,13 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
 
   const link = INCIDENT_LINKS[incident.type];
   const linkId = link ? incident.data?.[link.key] : null;
-  // «Карточка клиента» ведёт в раздел «Клиенты» — оператору её не показываем (как в карточке ордера).
-  const showLink = Boolean(link && linkId && (link.kind !== 'client' || canOpenClient));
+  const showLink = Boolean(link && linkId);
 
   const openLink = async () => {
+    if (link.kind === 'client' && !canOpenClient) {
+      showToast('Нет доступа к клиентам. Обратитесь к администратору.', 'error');
+      return;
+    }
     setOpening(true);
     try {
       if (link.kind === 'client') {
@@ -3246,6 +3284,23 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
                     <IncidentText template={type.guide} data={incident.data} onCopy={onCopy} />
                   </div>
                 </>
+            )}
+
+            {incident.status !== 'NEW' && (
+                <div className="two-col">
+                  <section className="col">
+                    <Field label="Обработал">
+                      <span className="copyable" onClick={() => onCopy(incident.resolvedById)} title="Скопировать">
+                        <span className="mono">{incident.resolvedById || '—'}</span> <i className="fa-regular fa-copy" />
+                      </span>
+                    </Field>
+                  </section>
+                  <section className="col">
+                    <Field label="Обработан">
+                      <span className="mono">{fmtDateTime(incident.resolvedAt)}</span>
+                    </Field>
+                  </section>
+                </div>
             )}
 
             {incident.comment && (
@@ -3323,14 +3378,7 @@ function ResolveIncidentDialog({ incident, typeLabel, showToast, onCancel, onRes
       await api.resolveIncident(incident.id, comment.trim());
       onResolved();
     } catch (e) {
-      // Уже обработанный инцидент бэк сейчас отдаёт 500 без пояснения («Contact support.»),
-      // поэтому подсказываем вероятную причину и перечитываем таблицу.
-      showToast(
-          e.status === 500
-              ? 'Не удалось обработать: возможно, инцидент уже обработан'
-              : (e.message || 'Не удалось обработать инцидент'),
-          'error',
-      );
+      showToast(e.message || 'Не удалось обработать инцидент', 'error');
       setBusy(false);
       onFailed();
     }
@@ -3390,7 +3438,16 @@ function RefreshButton({ onClick, loading }) {
 /* ---- Дата и необязательное время двумя полями рядом ----
    Общий для всех фильтров кабинета: «Клиенты», «Ордера», «Транзакции»,
    «Заявки на вывод», «КБ мерчантов», «Инциденты». */
-function DateTimeField({ id, label, date, time, onDate, onTime }) {
+const RANGE_ERROR = 'Дата «По» не может быть раньше даты «С»';
+
+function isRangeInverted(mode, dateFrom, timeFrom, dateTo, timeTo) {
+  if (mode !== 'range') return false;
+  const from = dateTimeToMs(dateFrom, timeFrom, 'start');
+  const to = dateTimeToMs(dateTo, timeTo, 'end');
+  return from !== '' && to !== '' && from >= to;
+}
+
+function DateTimeField({ id, label, date, time, onDate, onTime, error }) {
   return (
       <div className="field">
         <label htmlFor={id}>
@@ -3403,6 +3460,7 @@ function DateTimeField({ id, label, date, time, onDate, onTime }) {
               onChange={(e) => onTime(e.target.value)}
           />
         </div>
+        {error && <span className="field-error">{error}</span>}
       </div>
   );
 }
@@ -3418,9 +3476,8 @@ function CopyValue({ value, head, tail, onCopy }) {
 }
 
 /* ---- Подтверждение действия над заявкой ----
-   Текст и вид — по макету ТЗ. Адрес в окне сокращён, как на макете;
-   полный адрес — во всплывающей подсказке. */
-function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
+   Текст и вид — по макету ТЗ. Адрес в окне целиком, с копированием. */
+function ConfirmWithdrawal({ row, action, busy, onCopy, onCancel, onApply }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
     window.addEventListener('keydown', onKey);
@@ -3445,7 +3502,9 @@ function ConfirmWithdrawal({ row, action, busy, onCancel, onApply }) {
                   Заявка {id} клиента {login} на сумму {sum} будет подтверждена.
                   <br />
                   К отправке: <b>{fmtAmount(row.targetAmount)} USDT</b> на адрес{' '}
-                  <span className="mono" title={row.address}>{shortValue(row.address, 6, 6)}</span>.
+                  <span className="copyable nowrap" onClick={() => onCopy(row.address)} title="Скопировать">
+                    <span className="mono">{row.address}</span> <i className="fa-regular fa-copy" />
+                  </span>.
                 </p>
             ) : (
                 <p className="confirm-text">
@@ -3548,7 +3607,8 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
   useEffect(() => { load(applied, page, sort); }, [applied, page, sort, reloadKey, load]);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setSort(null); setDraft(EMPTY_MH_FILTER); setApplied(EMPTY_MH_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
   const onSort = (field) => { setSort((s) => nextSort(s, field)); setPage(0); };
@@ -3646,6 +3706,7 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
                           id="mh-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -3654,7 +3715,7 @@ function MerchantHistorySection({ merchants, methods, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -3799,7 +3860,7 @@ const TX_TYPE_MOD = {
   MANUAL_CORRECT: 'brown',
 };
 
-function TransactionsSection({ operations, txTypes, showToast }) {
+function TransactionsSection({ operations, txTypes, showToast, canCreate }) {
   const [draft, setDraft] = useState(EMPTY_TX_FILTER);
   const [applied, setApplied] = useState(EMPTY_TX_FILTER);
   const [rows, setRows] = useState([]);
@@ -3844,7 +3905,8 @@ function TransactionsSection({ operations, txTypes, showToast }) {
   useEffect(() => { load(applied, page); }, [applied, page, reloadKey, load]);
 
   const set = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }));
-  const search = () => { setPage(0); setApplied(draft); };
+  const rangeInvalid = isRangeInverted(draft.dateMode, draft.dateFrom, draft.timeFrom, draft.dateTo, draft.timeTo);
+  const search = () => { if (rangeInvalid) return; setPage(0); setApplied(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY_TX_FILTER); setApplied(EMPTY_TX_FILTER); };
   const onEnter = (e) => { if (e.key === 'Enter') search(); };
 
@@ -3913,6 +3975,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
                           id="t-to" label="По"
                           date={draft.dateTo} time={draft.timeTo}
                           onDate={(v) => set('dateTo', v)} onTime={(v) => set('timeTo', v)}
+                          error={rangeInvalid ? RANGE_ERROR : ''}
                       />
                     </>
                 )}
@@ -3921,7 +3984,7 @@ function TransactionsSection({ operations, txTypes, showToast }) {
           </div>
 
           <div className="filter-actions">
-            <button type="button" className="btn btn-primary" onClick={search} disabled={loading}>
+            <button type="button" className="btn btn-primary" onClick={search} disabled={loading || rangeInvalid}>
               <i className="fa-solid fa-magnifying-glass" />
               Поиск
             </button>
@@ -3929,10 +3992,12 @@ function TransactionsSection({ operations, txTypes, showToast }) {
               Сбросить
             </button>
             <RefreshButton onClick={() => setReloadKey((k) => k + 1)} loading={loading} />
-            <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
-              <i className="fa-solid fa-plus" />
-              Создать транзакцию
-            </button>
+            {canCreate && (
+              <button type="button" className="btn btn-primary filter-actions-right" onClick={() => setCreating(true)}>
+                <i className="fa-solid fa-plus" />
+                Создать транзакцию
+              </button>
+            )}
           </div>
         </div>
 
@@ -4098,6 +4163,7 @@ function CreateTransactionDialog({ operations, showToast, onCancel, onCreated })
               <textarea
                   rows={3}
                   placeholder="Например: возврат после сбоя при подтверждении ордера"
+                  maxLength={500}
                   value={comment} disabled={saving}
                   className={errors.comment ? 'invalid' : ''}
                   onChange={(e) => { setComment(e.target.value); clearError('comment'); }}

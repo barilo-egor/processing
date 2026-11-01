@@ -12,6 +12,8 @@ import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -122,6 +124,23 @@ public class MerchantHistoryMapper {
                 builder.addMerchants(StringValue.of(merchant.name()));
             }
         }
+    }
+
+    /**
+     * Преобразует ответ GetHistory в страницу DTO.
+     *
+     * @param response gRPC-ответ со списком записей истории и total
+     * @param pageable параметры пагинации
+     * @return страница DTO истории мерчанта
+     */
+    public Page<MerchantHistoryResponse> grpcToPage(
+            MerchantHistoryResponseGrpc response, Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : Pageable.unpaged();
+        if (response == null) {
+            return new PageImpl<>(Collections.emptyList(), effectivePageable, 0);
+        }
+        List<MerchantHistoryResponse> content = grpcToDtoList(response);
+        return new PageImpl<>(content, effectivePageable, response.getTotal());
     }
 
     /**

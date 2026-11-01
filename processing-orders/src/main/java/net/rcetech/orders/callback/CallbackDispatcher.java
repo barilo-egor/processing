@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.rcetech.domain.model.orders.ClientCallback;
 import net.rcetech.domain.service.orders.ClientCallbackService;
-import net.rcetech.meta.exception.ServiceException;
+import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.incidents.ClientCallbackUrlForbiddenEvent;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -81,13 +81,13 @@ public class CallbackDispatcher {
             callbackHttpSender.send(sending);
         } catch (ForbiddenCallbackUrlException e) {
             markUrlForbidden(sending, e);
-            throw new ServiceException("КБ не отправлен: отправку запретила система из-за адреса КБ ("
+            throw new BadRequestException("КБ не отправлен: отправку запретила система из-за адреса КБ ("
                     + e.getMessage() + ").");
         } catch (CallbackSendException e) {
             log.warn("КБ {} по ордеру {} не доставлен при повторной отправке поддержкой: {}", sending.getId(),
                     orderId, e.getMessage());
             clientCallbackService.markFailed(sending.getId());
-            throw new ServiceException("КБ не доставлен: сервер клиента не принял запрос.");
+            throw new BadRequestException("КБ не доставлен: сервер клиента не принял запрос.");
         }
         clientCallbackService.markSent(sending.getId());
     }

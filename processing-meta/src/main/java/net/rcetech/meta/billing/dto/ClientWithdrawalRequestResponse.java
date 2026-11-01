@@ -1,7 +1,6 @@
 package net.rcetech.meta.billing.dto;
 
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
-import net.rcetech.meta.serialize.BigDecimalPlaintStringSerializer;
 import net.rcetech.meta.serialize.InstantToMillisSerializer;
 import tools.jackson.databind.annotation.JsonSerialize;
 
@@ -15,7 +14,6 @@ public record ClientWithdrawalRequestResponse(
         @JsonSerialize(using = InstantToMillisSerializer.class)
         Instant createdAt,
         Integer grossSourceAmount,
-        @JsonSerialize(using = BigDecimalPlaintStringSerializer.class)
         BigDecimal commissionPercent,
         Integer netSourceAmount,
         BigDecimal rate,

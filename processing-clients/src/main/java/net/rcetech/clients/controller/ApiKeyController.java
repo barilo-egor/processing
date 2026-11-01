@@ -1,6 +1,7 @@
 package net.rcetech.clients.controller;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ApiKeyService;
@@ -34,7 +35,10 @@ public class ApiKeyController {
 
     @PostMapping
     @ClientAccess
-    public ResponseEntity<String> createApiKey(@RequestParam @NotBlank String name, Principal principal) {
+    public ResponseEntity<String> createApiKey(@RequestParam @NotBlank
+                                               @Size(max = 30, message = "Имя токена должно содержать не более 30 символов.")
+                                               String name,
+                                               Principal principal) {
         String apiKey = apiKeyService.create(name, getClient(principal));
         log.info("Клиент {} создал API-ключ «{}».", principal.getName(), name);
         return new ResponseEntity<>(apiKey, HttpStatus.CREATED);

@@ -5,6 +5,8 @@ import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.support.dto.MerchantHistoryFilter;
 import net.rcetech.meta.support.dto.MerchantHistoryResponse;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.commons.enums.Merchant;
@@ -38,8 +40,16 @@ public class MerchantHistoryServiceStub implements MerchantHistoryService {
     }
 
     @Override
-    public List<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
-        return stubHistories;
+    public Page<MerchantHistoryResponse> getHistory(MerchantHistoryFilter filter, Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return new PageImpl<>(stubHistories);
+        }
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = pageable.getPageSize();
+        int fromIndex = Math.min(page * size, stubHistories.size());
+        int toIndex = Math.min(fromIndex + size, stubHistories.size());
+        List<MerchantHistoryResponse> subList = stubHistories.subList(fromIndex, toIndex);
+        return new PageImpl<>(subList, pageable, stubHistories.size());
     }
 
 }

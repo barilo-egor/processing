@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   api,
+  DATE_RANGE_ERROR,
   dateFilterParams,
   dictItems,
   dictLabel,
@@ -8,6 +9,7 @@ import {
   formatDateTime,
   formatNumber,
   formatRate,
+  isDateRangeInverted,
   isPositiveInt,
   isValidCallbackUrl,
   isValidWalletAddress,
@@ -231,7 +233,7 @@ export default function App() {
                 </>
             )}
             {section === 'orders' && (
-                <OrdersSection dict={dict} showToast={showToast} timeoutSec={profile?.orderTimeoutSeconds} />
+                <OrdersSection dict={dict} showToast={showToast} />
             )}
             {section === 'transactions' && <TransactionsSection dict={dict} showToast={showToast} />}
             {section === 'withdrawals' && <WithdrawalsSection dict={dict} showToast={showToast} onBalanceChange={refreshProfile} />}
@@ -254,9 +256,9 @@ export default function App() {
    с выходом; повторный клик, клик вне меню и Escape закрывают. */
 /* ---- Баланс клиента в шапке ----
    Тот же баланс, что в карточке клиента у администратора (поле balance
-   профиля GET /api/client/profile). Формат: «125000₽», ноль — «0₽».
+   профиля GET /api/client/profile). Формат: «125000 ₽», ноль — «0 ₽».
    Если есть резерв заявок на вывод в статусе «Новая» (поле reservedAmount),
-   он выводится в скобках: «125000(60000)₽». */
+   он выводится в скобках: «125000(60000) ₽». */
 function BalanceBadge({ value, reserved, loading }) {
   const n = Number(value ?? 0);
   const balance = Math.trunc(Number.isFinite(n) ? n : 0);
@@ -269,7 +271,7 @@ function BalanceBadge({ value, reserved, loading }) {
               <>
                 {balance}
                 {r > 0 && <span className="balance-reserve" title="Зарезервировано заявками на вывод">({r})</span>}
-                ₽
+                {'\u00A0'}₽
               </>
           )}
         </span>
@@ -426,7 +428,12 @@ function CallbackUrlBlock({ profile, loading, showToast }) {
       setValue(next);
       showToast('Callback URL сохранён', 'success');
     } catch (e) {
-      showToast(e.message || 'Не удалось сохранить', 'error');
+      if (e.status === 400 && e.message) {
+        const msg = e.message.replace(/^Поле «callbackUrl» /, '');
+        setError(msg.charAt(0).toUpperCase() + msg.slice(1));
+      } else {
+        showToast(e.message || 'Не удалось сохранить', 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -575,7 +582,11 @@ function ApiKeysBlock({ showToast }) {
   return (
       <section className="block">
         <div className="block-aside">
-          <h2 className="block-title">API-токены</h2>
+          <h2 className="block-title">
+            API-токены
+            {/* Счётчик «N из 10» — как у «Белого списка IP»: лимит у обоих блоков одинаковый */}
+            {!loading && <span className="block-count">{keys.length} из {TOKENS_LIMIT}</span>}
+          </h2>
           <p className="block-note">
             Токен подставляется в запросы к API. Значение показывается один раз
             при создании — сохраните его в надёжном месте.
@@ -590,6 +601,7 @@ function ApiKeysBlock({ showToast }) {
                   id="token-name"
                   type="text"
                   placeholder="Например, тестовый"
+                  maxLength={30}
                   value={name}
                   disabled={creating || limitReached}
                   className={nameError ? 'invalid' : ''}
@@ -1091,7 +1103,7 @@ function SelectField({ id, label, value, items, onChange }) {
 function DateFilter({ idPrefix, value, onChange }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
-  const pair = (label, dateKey, timeKey) => (
+  const pair = (label, dateKey, timeKey, error) => (
       <div className="field">
         <label htmlFor={`${idPrefix}-${dateKey}`}>
           {label} <span className="label-note">· время необязательно</span>
@@ -1111,6 +1123,7 @@ function DateFilter({ idPrefix, value, onChange }) {
               onChange={(e) => set({ [timeKey]: e.target.value })}
           />
         </div>
+        {error && <span className="field-error">{error}</span>}
       </div>
   );
 
@@ -1134,7 +1147,7 @@ function DateFilter({ idPrefix, value, onChange }) {
               : (
                   <>
                     {pair('С', 'fromDate', 'fromTime')}
-                    {pair('По', 'toDate', 'toTime')}
+                    {pair('По', 'toDate', 'toTime', isDateRangeInverted(value) ? DATE_RANGE_ERROR : '')}
                   </>
               )}
         </div>
@@ -1146,7 +1159,7 @@ function DateFilter({ idPrefix, value, onChange }) {
    «Обновить» перечитывает текущую страницу с уже применённым фильтром —
    стоит здесь, а не над таблицей, чтобы не занимать место.
    extra — кнопки справа (например, «Создать заявку»). */
-function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra }) {
+function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra, searchDisabled }) {
   // Enter в любом поле панели запускает поиск.
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') onSearch();
@@ -1156,7 +1169,7 @@ function FilterPanel({ children, onSearch, onReset, onRefresh, refreshing, extra
       <section className="filters" onKeyDown={onKeyDown}>
         <div className="filters-row">{children}</div>
         <div className="filters-actions">
-          <button type="button" className="btn btn-primary" onClick={onSearch}>
+          <button type="button" className="btn btn-primary" onClick={onSearch} disabled={searchDisabled}>
             <i className="fa-solid fa-magnifying-glass" />
             Поиск
           </button>
@@ -1239,7 +1252,7 @@ function Pager({ page, total, onPage }) {
 
 const EMPTY_ORDERS_FILTER = { status: '', method: '' };
 
-function OrdersSection({ dict, showToast, timeoutSec }) {
+function OrdersSection({ dict, showToast }) {
   const list = usePagedList(api.orders, showToast, 'Не удалось загрузить ордера');
   const [draft, setDraft] = useState(EMPTY_ORDERS_FILTER);
   const [card, setCard] = useState(null); // открытый ордер
@@ -1315,7 +1328,7 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
         {card && (
             <OrderCard
-                order={card} dict={dict} timeoutSec={timeoutSec}
+                order={card} dict={dict}
                 showToast={showToast} onClose={() => setCard(null)}
                 onChanged={(fresh) => { setCard(fresh); list.reload(); }}
             />
@@ -1326,17 +1339,15 @@ function OrdersSection({ dict, showToast, timeoutSec }) {
 
 /* ---- Карточка ордера ----
    Данные — из строки таблицы: список GET /api/client/order отдаёт все поля
-   карточки (id, amount, status, internalId, createdAt, method, bank,
-   details, callbackUrl). Статус и метод — подписи из словаря.
-   «Дата истечения» по ТЗ вычисляется: дата создания + время активности
-   ордеров клиента (orderTimeoutSeconds из профиля).
+   карточки (id, amount, status, internalId, createdAt, expiresAt, method,
+   bank, details, callbackUrl). Статус и метод — подписи из словаря.
    «Отменить ордер» — для NEW и DISPUTE (ТЗ «Управление статусом
    ордера») и SEARCHING — «Поиск реквизитов» (ТЗ «Статусы „Поиск
    реквизитов“ и „Реквизиты не найдены“»); у «Реквизиты не найдены»
    кнопки нет. PATCH /order/{id}, затем карточка перечитывает ордер. */
 const CANCELABLE_ORDER = ['NEW', 'DISPUTE', 'SEARCHING'];
 
-function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
+function OrderCard({ order, dict, showToast, onClose, onChanged }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [canceling, setCanceling] = useState(false);
 
@@ -1362,12 +1373,6 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
     setConfirmCancel(false);
     onChanged?.(fresh && typeof fresh === 'object' ? { ...order, ...fresh } : order);
   };
-
-  const created = Number(order.createdAt);
-  const timeout = Number(timeoutSec);
-  const expiresAt = Number.isFinite(created) && created > 0 && Number.isFinite(timeout) && timeout >= 0
-      ? created + timeout * 1000
-      : null;
 
   // Реквизиты ещё не выданы — в «Метод», «Банк», «Реквизиты» прочерк (ТЗ).
   // Метод в базе обязателен и у такого ордера всё равно заполнен, поэтому
@@ -1414,7 +1419,7 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Дата создания</span>
-              <span>{created ? formatDateTime(order.createdAt) : '—'}</span>
+              <span>{order.createdAt ? formatDateTime(order.createdAt) : '—'}</span>
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Метод</span>
@@ -1422,7 +1427,7 @@ function OrderCard({ order, dict, timeoutSec, showToast, onClose, onChanged }) {
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Дата истечения</span>
-              <span>{expiresAt ? formatDateTime(expiresAt) : '—'}</span>
+              <span>{order.expiresAt ? formatDateTime(order.expiresAt) : '—'}</span>
             </div>
             <div className="ocard-field">
               <span className="ocard-eyebrow">Банк</span>
@@ -1503,12 +1508,14 @@ function TransactionsSection({ dict, showToast }) {
   const list = usePagedList(api.transactions, showToast, 'Не удалось загрузить транзакции');
   const [draft, setDraft] = useState(EMPTY_TX_FILTER);
 
-  const onSearch = () => list.search({ id: draft.id.trim(), ...dateFilterParams(draft) });
+  const rangeInvalid = isDateRangeInverted(draft);
+  const onSearch = () => { if (!rangeInvalid) list.search({ id: draft.id.trim(), ...dateFilterParams(draft) }); };
   const onReset = () => { setDraft(EMPTY_TX_FILTER); list.search({}); };
 
   return (
       <>
-        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}>
+        <FilterPanel onSearch={onSearch} onReset={onReset} onRefresh={list.reload} refreshing={list.loading}
+                     searchDisabled={rangeInvalid}>
           <div className="field field-wide">
             <label htmlFor="tx-id">ID транзакции</label>
             <input
@@ -1536,7 +1543,6 @@ function TransactionsSection({ dict, showToast }) {
               <th>Операция</th>
               <th className="num">Сумма, ₽</th>
               <th>Тип</th>
-              <th>Комментарий</th>
             </tr>
             </thead>
             <tbody>
@@ -1565,7 +1571,6 @@ function TransactionsSection({ dict, showToast }) {
                         {dictLabel(dict, 'TransactionType', t.type)}
                       </Badge>
                     </td>
-                    <td className="dim">{t.comment || '-'}</td>
                   </tr>
               );
             })}
@@ -1587,12 +1592,16 @@ function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
   const [toCancel, setToCancel] = useState(null);   // заявка в подтверждении
   const [canceling, setCanceling] = useState(false);
 
-  const onSearch = () => list.search({
-    id: draft.id.trim(),
-    status: draft.status,
-    address: draft.address.trim(),
-    ...dateFilterParams(draft),
-  });
+  const rangeInvalid = isDateRangeInverted(draft);
+  const onSearch = () => {
+    if (rangeInvalid) return;
+    list.search({
+      id: draft.id.trim(),
+      status: draft.status,
+      address: draft.address.trim(),
+      ...dateFilterParams(draft),
+    });
+  };
   const onReset = () => { setDraft(EMPTY_WITHDRAWALS_FILTER); list.search({}); };
 
   const onCreated = () => {
@@ -1638,6 +1647,7 @@ function WithdrawalsSection({ dict, showToast, onBalanceChange }) {
             onReset={onReset}
             onRefresh={list.reload}
             refreshing={list.loading}
+            searchDisabled={rangeInvalid}
             extra={(
                 <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
                   <i className="fa-solid fa-plus" />
@@ -1846,6 +1856,7 @@ function CreateWithdrawalDialog({ onCancel, onCreated, showToast }) {
                   id="wd-new-address"
                   type="text"
                   placeholder="Адрес, на который будет отправлен вывод"
+                  maxLength={100}
                   value={address}
                   disabled={saving}
                   className={errors.address ? 'invalid' : ''}

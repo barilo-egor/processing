@@ -115,6 +115,24 @@ class TransactionServiceTest {
 
     @ParameterizedTest
     @CsvSource({
+            "5396,499",
+            "26222,500"
+    })
+    @DisplayName("Метод должен сохранить причину корректировки длиной до 500 символов вместе со служебным префиксом.")
+    void createManualCorrect_shouldSaveLongComment(Integer amount, int length) {
+        UUID creatorId = UUID.randomUUID();
+        Client client = getDummyClient();
+        String comment = "п".repeat(length);
+        transactionService.createManualCorrect(creatorId,
+                new ManualCorrectTransaction(client.getId(), Operation.CREDIT, amount, comment));
+        List<Transaction> transactions = transactionRepository.findAll();
+        assertEquals(1, transactions.size());
+        assertEquals("Создано пользователем " + creatorId + ". Комментарий: " + comment,
+                transactions.getFirst().getComment());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
             "5396,Технический сбой.",
             "26222,двойное списание"
     })

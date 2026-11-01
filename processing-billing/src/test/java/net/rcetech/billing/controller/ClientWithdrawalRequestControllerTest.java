@@ -122,6 +122,7 @@ class ClientWithdrawalRequestControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value(status.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").value(createdAt))
                 .andExpect(jsonPath("$.content[0].grossSourceAmount").value(grossSourceAmount))
+                .andExpect(jsonPath("$.content[0].commissionPercent").isNumber())
                 .andExpect(jsonPath("$.content[0].commissionPercent").value(commissionPercent.doubleValue()))
                 .andExpect(jsonPath("$.content[0].netSourceAmount").value(netSourceAmount))
                 .andExpect(jsonPath("$.content[0].rate").value(rate.doubleValue()))
@@ -148,6 +149,42 @@ class ClientWithdrawalRequestControllerTest {
                         .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.description").value("Не передан обязательный параметр «address»."));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "100,101",
+            "25167,150"
+    })
+    @DisplayName("Метод должен вернуть 400 и не создавать заявку, если адрес длиннее 100 символов.")
+    void create_shouldReturn400IfAddressTooLong(Integer amount, int length) throws Exception {
+        mockMvc.perform(post("/api/client/withdrawal-request")
+                        .queryParam("amount", amount.toString())
+                        .queryParam("address", "T".repeat(length))
+                        .with(csrf())
+                        .with(user("6aec494b-62be-4eee-be50-41c6e1164052").roles(Role.CLIENT.name())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Адрес кошелька должен содержать не более 100 символов."));
+        verifyNoInteractions(withdrawalRequestService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "100,99",
+            "25167,100"
+    })
+    @DisplayName("Метод должен принять адрес длиной до 100 символов.")
+    void create_shouldAcceptAddressUpToLimit(Integer amount, int length) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        String address = "T".repeat(length);
+        when(withdrawalRequestService.create(clientId, amount, address)).thenReturn(new WithdrawalRequest());
+        mockMvc.perform(post("/api/client/withdrawal-request")
+                        .queryParam("amount", amount.toString())
+                        .queryParam("address", address)
+                        .with(csrf())
+                        .with(user(clientId.toString()).roles(Role.CLIENT.name())))
+                .andExpect(status().isCreated());
+        verify(withdrawalRequestService).create(clientId, amount, address);
     }
 
     @ParameterizedTest

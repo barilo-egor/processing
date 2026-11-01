@@ -16,6 +16,8 @@ import java.util.Objects;
 @UtilityClass
 public class SpecificationsUtil {
 
+    private static final char LIKE_ESCAPE = '!';
+
     public static <T> void addSimpleEqual(List<Predicate> predicates, CriteriaBuilder builder,
                                           Expression<T> expression, T value) {
         if (Objects.nonNull(value)) {
@@ -34,6 +36,21 @@ public class SpecificationsUtil {
         if (Objects.nonNull(value) && !value.isBlank()) {
             predicates.add(builder.equal(expression, value));
         }
+    }
+
+    public static void addStringContains(List<Predicate> predicates, CriteriaBuilder builder,
+                                         Expression<String> expression, String value) {
+        if (Objects.nonNull(value) && !value.isBlank()) {
+            predicates.add(contains(builder, expression, value));
+        }
+    }
+
+    public static Predicate contains(CriteriaBuilder builder, Expression<String> expression, String value) {
+        String escaped = value
+                .replace(String.valueOf(LIKE_ESCAPE), String.valueOf(LIKE_ESCAPE) + LIKE_ESCAPE)
+                .replace("%", LIKE_ESCAPE + "%")
+                .replace("_", LIKE_ESCAPE + "_");
+        return builder.like(expression, "%" + escaped + "%", LIKE_ESCAPE);
     }
 
     public static void addDateRange(List<Predicate> predicates, CriteriaBuilder builder,

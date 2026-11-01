@@ -660,7 +660,9 @@ class WithdrawalRequestServiceTest {
     @DisplayName("Метод должен вернуть бросить BadRequestException если заявка не найдена.")
     void cancel_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id) {
         UUID clientId = UUID.randomUUID();
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.cancel(clientId, id));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.cancel(clientId, id));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @ParameterizedTest
@@ -691,7 +693,9 @@ class WithdrawalRequestServiceTest {
 
         UUID clientId = targetClient.getId();
         UUID requestId = request.getId();
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.cancel(clientId, requestId));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.cancel(clientId, requestId));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @RepeatedTest(value = 2)
@@ -709,13 +713,36 @@ class WithdrawalRequestServiceTest {
     }
 
     @ParameterizedTest
+    @ValueSource(ints = {1000, 25167})
+    @DisplayName("Метод должен бросить BadRequestException и не менять заявку, если новый статус NEW.")
+    void updateStatus_shouldThrowBadRequestExceptionIfNewStatusIsNew(Integer amount) {
+        WithdrawalRequest request = new WithdrawalRequest();
+        request.setGrossSourceAmount(amount);
+        fillFields(request);
+        withdrawalRequestRepository.save(request);
+        UUID requestId = request.getId();
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.updateStatus(requestId, WithdrawalRequestStatus.NEW));
+
+        WithdrawalRequest actual = withdrawalRequestRepository.findById(requestId).orElseThrow();
+        assertAll(
+                () -> assertEquals("Заявка уже обработана.", exception.getMessage()),
+                () -> assertEquals(WithdrawalRequestStatus.NEW, actual.getStatus())
+        );
+        verify(transactionService, never()).createAfterWithdrawalApproval(any());
+    }
+
+    @ParameterizedTest
     @CsvSource({
             "0fae41bc-c171-4ad7-b4bc-1132a8149407,APPROVED",
             "186f758e-53ab-4973-98af-a924d1b94a10,CANCELED"
     })
     @DisplayName("Метод должен бросить BadRequestException, если заявка не найдена")
     void updateStatus_shouldThrowBadRequestExceptionIfOrderNotFound(UUID id, WithdrawalRequestStatus status) {
-        assertThrows(BadRequestException.class, () -> withdrawalRequestService.updateStatus(id, status));
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> withdrawalRequestService.updateStatus(id, status));
+        assertEquals("Заявка не найдена.", exception.getMessage());
     }
 
     @ParameterizedTest

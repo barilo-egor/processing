@@ -2,6 +2,7 @@ package net.rcetech.billing.controller;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
@@ -10,6 +11,7 @@ import net.rcetech.meta.WebPath;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.user.ClientAccess;
+import net.rcetech.meta.validation.SortableFields;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -35,7 +37,9 @@ public class ClientWithdrawalRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(Principal principal,
                        @RequestParam @Positive Integer amount,
-                       @RequestParam @NotBlank String address) {
+                       @RequestParam @NotBlank
+                       @Size(max = 100, message = "Адрес кошелька должен содержать не более 100 символов.")
+                       String address) {
         WithdrawalRequest withdrawalRequest = withdrawalRequestService.create(
                 UUID.fromString(principal.getName()), amount, address);
         log.info("Клиент {} создал заявку на вывод {} (сумма={}, адрес={}).",
@@ -44,6 +48,9 @@ public class ClientWithdrawalRequestController {
 
     @GetMapping
     public PagedModel<ClientWithdrawalRequestResponse> get(Principal principal, WithdrawalRequestFilter filter,
+                                                           @SortableFields({"id", "status", "createdAt", "grossSourceAmount",
+                                                                   "commissionPercent", "netSourceAmount", "rate",
+                                                                   "targetAmount", "address"})
                                                            @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(withdrawalRequestService.findAll(
                 WithdrawalRequestSpecifications.matches(UUID.fromString(principal.getName()), filter),

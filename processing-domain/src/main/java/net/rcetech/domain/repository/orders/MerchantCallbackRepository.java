@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -20,4 +21,8 @@ public interface MerchantCallbackRepository extends JpaRepository<MerchantCallba
     @Modifying
     @Query("update MerchantCallback c set c.order = null where c.order.id in (select o.id from Order o where o.client.id = :clientId)")
     int detachOrdersByClientId(UUID clientId);
+
+    @Modifying
+    @Query("delete from MerchantCallback c where c.createdAt < :createdBefore")
+    int deleteAllByCreatedAtBefore(Instant createdBefore);
 }

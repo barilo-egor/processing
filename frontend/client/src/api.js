@@ -396,6 +396,15 @@ function toMs(date, time, end = false) {
   return end ? t + 1000 : t;
 }
 
+export const DATE_RANGE_ERROR = 'Дата «По» не может быть раньше даты «С»';
+
+export function isDateRangeInverted(f) {
+  if (!f || f.mode !== 'range' || !f.fromDate || !f.toDate) return false;
+  const from = toMs(f.fromDate, f.fromTime);
+  const to = toMs(f.toDate, f.toTime, true);
+  return from !== undefined && to !== undefined && from >= to;
+}
+
 /* Параметры createdAtFrom / createdAtTo — unix epoch millis, как в
    фильтре клиентов кабинета администратора.
    Время необязательно: без него поиск идёт по целым суткам.

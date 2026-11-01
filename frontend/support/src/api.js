@@ -283,7 +283,7 @@ export const api = {
     return Array.isArray(d) ? d.map(String) : [];
   },
 
-  /* Журнал коллбэков от мерчантов. Возвращает { items, total, totalPages }.
+  /* Журнал колбэков от мерчантов. Возвращает { items, total, totalPages }.
      Сортировка по умолчанию — новые сверху (по ТЗ); params.sort её заменяет. */
   async merchantCallbacks(params) {
     const d = await request(`${SUPPORT_API}/merchant-callback`, {

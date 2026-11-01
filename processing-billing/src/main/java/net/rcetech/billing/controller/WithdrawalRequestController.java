@@ -8,6 +8,7 @@ import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
 import net.rcetech.meta.billing.dto.WithdrawalRequestResponse;
 import net.rcetech.meta.user.SupportAccess;
+import net.rcetech.meta.validation.SortableFields;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,10 @@ public class WithdrawalRequestController {
     }
 
     @GetMapping
-    public PagedModel<WithdrawalRequestResponse> get(Pageable pageable, WithdrawalRequestFilter filter) {
+    public PagedModel<WithdrawalRequestResponse> get(
+            @SortableFields({"clientUsername", "id", "status", "createdAt", "grossSourceAmount", "commissionPercent",
+                    "netSourceAmount", "rate", "targetAmount", "address"}) Pageable pageable,
+            WithdrawalRequestFilter filter) {
         return new PagedModel<>(withdrawalRequestService.findAll(
                 WithdrawalRequestSpecifications.matches(null, filter),
                 pageable,

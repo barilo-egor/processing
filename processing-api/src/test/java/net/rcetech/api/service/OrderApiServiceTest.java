@@ -501,20 +501,6 @@ class OrderApiServiceTest {
         );
     }
 
-    @ValueSource(strings = {"foo", "merchant", "merchantOrderId", "expiresAt", "client"})
-    @ParameterizedTest
-    @DisplayName("Метод должен отклонить сортировку по полю, которого нет в ответе клиенту.")
-    void findAll_shouldRejectUnsupportedSortField(String field) {
-        Client client = getDummyClient();
-        getDummyOrder(client);
-
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> orderApiService.findAll(
-                client.getId(), new ClientOrderFilter(null, null), PageRequest.of(0, 10, Sort.by("createdAt", field))
-        ));
-
-        assertEquals("Сортировка по полю «" + field + "» не поддерживается.", exception.getMessage());
-    }
-
     @ValueSource(strings = {"id", "createdAt", "internalId", "status", "amount", "method", "details", "bank",
             "callbackUrl"})
     @ParameterizedTest
@@ -630,7 +616,7 @@ class OrderApiServiceTest {
                 () -> assertEquals(apiDetailsResponse.details().details(), order.details()),
                 () -> assertEquals(apiDetailsResponse.details().bank(), order.bank()),
                 () -> assertEquals(apiDetailsResponse.details().requestMethod(), order.method()),
-                () -> assertNotNull(orderRepository.findById(order.id()).orElseThrow().getExpiresAt())
+                () -> assertNotNull(order.expiresAt())
         );
         assertEquals(List.of(new OrderStatusUpdatedEvent(order.id(), OrderStatus.NEW,
                         OrderStatusChangeSource.SYSTEM, false)),
@@ -697,9 +683,9 @@ class OrderApiServiceTest {
 
     @ParameterizedTest
     @CsvSource({
-            "CANCELED,Ордер уже в статусе «Отменен».",
-            "TIMEOUT,Переход ордера из статуса «Просрочен» в статус «Отменен» не выполняется.",
-            "DETAILS_NOT_FOUND,Переход ордера из статуса «Реквизиты не найдены» в статус «Отменен» не выполняется."
+            "CANCELED,Ордер уже в статусе «Отменён».",
+            "TIMEOUT,Переход ордера из статуса «Просрочен» в статус «Отменён» не выполняется.",
+            "DETAILS_NOT_FOUND,Переход ордера из статуса «Реквизиты не найдены» в статус «Отменён» не выполняется."
     })
     @DisplayName("Метод должен бросить OrderStatusUpdateException без события смены статуса, если переход в CANCELED пропускается.")
     void cancelOrder_shouldThrowIfTransitionSkipped(OrderStatus status, String expectedMessage) {

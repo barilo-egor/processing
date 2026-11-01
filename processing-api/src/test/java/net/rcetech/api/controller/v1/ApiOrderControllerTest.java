@@ -36,6 +36,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -92,8 +94,8 @@ class ApiOrderControllerTest {
     }
 
     private static ClientOrderSummary summary() {
-        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(), OrderStatus.NEW,
-                1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
+        return new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(900),
+                UUID.randomUUID().toString(), OrderStatus.NEW, 1000, RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк", null);
     }
 
     private RequestPostProcessor apiKeyOf(UUID clientId) {
@@ -398,7 +400,7 @@ class ApiOrderControllerTest {
     @EnumSource(value = OrderStatus.class, names = {"SEARCHING", "CANCELED"})
     @DisplayName("Асинхронное создание ордера должно вызвать асинхронный метод сервиса и вернуть 202 с ордером от него.")
     void createOrder_shouldReturn202IfAsync(OrderStatus status) throws Exception {
-        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(),
+        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(1800),
                 UUID.randomUUID().toString(), status, 5000, null, null, null, "https://example.com/callback");
         when(orderApiService.createOrderAsync(any(), any())).thenReturn(expected);
         mockMvc.perform(
@@ -572,6 +574,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
@@ -583,11 +586,11 @@ class ApiOrderControllerTest {
 
     static Stream<Arguments> orderSummaryArguments() {
         return Stream.of(
-                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.NEW, 5129, RequestMethod.CARD,
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(900),
+                        UUID.randomUUID().toString(), OrderStatus.NEW, 5129, RequestMethod.CARD,
                         "1234 1234 1234 1234", "Альфа банк", "https://google.com/callback")),
-                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                        OrderStatus.SUCCESS, 1250, RequestMethod.SBP,
+                Arguments.of(new ClientOrderSummary(UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(1800),
+                        UUID.randomUUID().toString(), OrderStatus.SUCCESS, 1250, RequestMethod.SBP,
                         "+78971233212", "T-BANK", "https://example.com/path/callback"))
         );
     }
@@ -726,6 +729,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.status").value(expected.status().name()))
                 .andExpect(jsonPath("$.amount").value(expected.amount()))
@@ -738,8 +742,8 @@ class ApiOrderControllerTest {
     @Test
     @DisplayName("Должен быть вызван метод сервиса и возвращена страница списка ордеров.")
     void getOrders_shouldCallServiceMethodAndReturnContentWithPagination() throws Exception {
-        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(), UUID.randomUUID().toString(),
-                OrderStatus.NEW, 5129, RequestMethod.CARD,
+        ClientOrderSummary expected = new ClientOrderSummary(UUID.randomUUID(), Instant.now(),
+                Instant.now().plusSeconds(900), UUID.randomUUID().toString(), OrderStatus.NEW, 5129, RequestMethod.CARD,
                 "1234 1234 1234 1234", "Сбербанк", "https://google.com/callback");
         when(orderApiService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(expected)));
         mockMvc.perform(get("/api/v1/order")
@@ -762,6 +766,7 @@ class ApiOrderControllerTest {
                 .andExpect(jsonPath("$.content[0].createdAt").value(
                         expected.createdAt().toEpochMilli()
                 ))
+                .andExpect(jsonPath("$.content[0].expiresAt").value(expected.expiresAt().toEpochMilli()))
                 .andExpect(jsonPath("$.content[0].internalId").value(expected.internalId()))
                 .andExpect(jsonPath("$.content[0].status").value(expected.status().name()))
                 .andExpect(jsonPath("$.content[0].amount").value(expected.amount()))
@@ -913,5 +918,32 @@ class ApiOrderControllerTest {
         ClientOrderFilter filter = captor.getValue();
         assertTrue(Optional.ofNullable(filter.status()).map(Set::isEmpty).orElse(true));
         assertTrue(Optional.ofNullable(filter.method()).map(Set::isEmpty).orElse(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"foo", "merchant", "merchantOrderId", "expiresAt", "client"})
+    @DisplayName("Список ордеров должен вернуть 400 при сортировке по полю, которого нет в ответе клиенту.")
+    void getOrders_shouldRejectUnsupportedSortField(String field) throws Exception {
+        mockMvc.perform(get("/api/v1/order").param("sort", "createdAt").param("sort", field + ",desc")
+                        .with(apiKeyOf(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
+        verifyNoInteractions(orderApiService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"id", "createdAt", "internalId", "status", "amount", "method", "details", "bank",
+            "callbackUrl"})
+    @DisplayName("Список ордеров должен передать в сервис сортировку по любому полю ответа клиенту.")
+    void getOrders_shouldPassSupportedSortField(String field) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(orderApiService.findAll(eq(clientId), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/v1/order").param("sort", field + ",desc").with(apiKeyOf(clientId)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderApiService).findAll(eq(clientId), any(), captor.capture());
+        assertEquals(Sort.by(Sort.Direction.DESC, field), captor.getValue().getSort());
     }
 }

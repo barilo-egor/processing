@@ -1,5 +1,6 @@
 package net.rcetech.clients.controller;
 
+import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ApiKeyService;
 import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
@@ -7,6 +8,7 @@ import net.rcetech.meta.clients.dto.ClientFilter;
 import net.rcetech.meta.clients.dto.UpdateClientDTO;
 import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
+import net.rcetech.meta.config.MetaWebConfig;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
@@ -22,10 +24,13 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -52,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SupportClientController.class)
-@Import(MetaSecurityConfig.class)
+@Import({MetaSecurityConfig.class, MetaWebConfig.class})
 class SupportClientControllerTest {
 
     @MockitoBean
@@ -223,6 +228,41 @@ class SupportClientControllerTest {
         );
     }
 
+    @ValueSource(strings = {"id", "username", "registeredAt", "commissionPercent"})
+    @ParameterizedTest
+    @DisplayName("Метод должен передать в сервис сортировку по разрешённому полю.")
+    void getClients_shouldPassSupportedSortField(String field) throws Exception {
+        when(clientService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
+                        .queryParam("sort", field + ",desc"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(clientService).findAll(any(), pageableCaptor.capture(), eq(SupportClientProjection.class));
+        assertEquals(Sort.by(Sort.Direction.DESC, field), pageableCaptor.getValue().getSort());
+    }
+
+    @ValueSource(strings = {"nope", "comment", "balance"})
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть 400 и не обращаться к сервису при сортировке по неразрешённому полю.")
+    void getClients_shouldReturnBadRequestOnUnsupportedSortField(String field) throws Exception {
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name()))
+                        .queryParam("sort", field + ",asc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
+        verifyNoInteractions(clientService);
+    }
+
+    @ValueSource(strings = {"nope", "registered"})
+    @ParameterizedTest
+    @DisplayName("Метод должен вернуть 400, если сервис не нашёл поле сортировки в сущности.")
+    void getClients_shouldReturnBadRequestOnPropertyReferenceException(String field) throws Exception {
+        when(clientService.findAll(any(), any(), any())).thenThrow(
+                new PropertyReferenceException(field, TypeInformation.of(Client.class), List.of()));
+        mockMvc.perform(get("/api/support/client").with(user("user").roles(Role.ADMIN.name())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Сортировка по полю «" + field + "» не поддерживается."));
+    }
+
     @EnumSource(value = Role.class, names = {"CLIENT", "OPERATOR"})
     @ParameterizedTest
     @DisplayName("Доступ должен быть запрещен для ролей отличных от ADMIN.")
@@ -275,6 +315,118 @@ class SupportClientControllerTest {
         ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
         verify(clientService).update(eq(clientId), captor.capture());
         assertEquals(expected, captor.getValue());
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "{\"commissionPercent\":1000}|Поле «commissionPercent» должно быть меньше 100.",
+            "{\"commissionPercent\":100}|Поле «commissionPercent» должно быть меньше 100.",
+            "{\"commissionPercent\":-0.1}|Поле «commissionPercent» должно быть больше или равно нулю.",
+            "{\"commissionPercent\":1.23}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
+            "{\"commissionPercent\":1.23456}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
+            "{\"commissionPercent\":99.95}|Поле «commissionPercent» должно содержать не более одного знака после запятой.",
+            "{\"minWithdrawalAmount\":-5}|Поле «minWithdrawalAmount» должно быть больше нуля.",
+            "{\"minWithdrawalAmount\":0}|Поле «minWithdrawalAmount» должно быть больше нуля.",
+            "{\"orderTimeoutSeconds\":0}|Поле «orderTimeoutSeconds» должно быть не меньше 120.",
+            "{\"orderTimeoutSeconds\":119}|Поле «orderTimeoutSeconds» должно быть не меньше 120.",
+            "{\"orderTimeoutSeconds\":3601}|Поле «orderTimeoutSeconds» должно быть не больше 3600.",
+            "{\"orderTimeoutSeconds\":86400}|Поле «orderTimeoutSeconds» должно быть не больше 3600."
+    })
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента при значениях вне допустимых границ.")
+    void update_shouldReturnBadRequestIfValueOutOfRange(String json, String description) throws Exception {
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value(description));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "minWithdrawalAmount,1.5",
+            "minWithdrawalAmount,1000.0",
+            "orderTimeoutSeconds,120.5",
+            "orderTimeoutSeconds,900.0"
+    })
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента, если в целом поле передано дробное число.")
+    void update_shouldReturnBadRequestIfIntegerFieldIsFractional(String field, String value) throws Exception {
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"" + field + "\":" + value + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description")
+                        .value("Поле «" + field + "» содержит некорректное значение «" + value + "»."));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "1.2", "20", "99.9"})
+    @DisplayName("Метод должен принять комиссию с одним знаком после запятой.")
+    void update_shouldAcceptCommissionWithOneFractionDigit(String commissionPercent) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"commissionPercent\":" + commissionPercent + "}"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(new BigDecimal(commissionPercent), captor.getValue().commissionPercent());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {120, 900, 3600})
+    @DisplayName("Метод должен принять время активности ордеров от 2 минут до часа.")
+    void update_shouldAcceptOrderTimeoutWithinRange(int orderTimeoutSeconds) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content("{\"orderTimeoutSeconds\":" + orderTimeoutSeconds + "}"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(orderTimeoutSeconds, captor.getValue().orderTimeoutSeconds());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1001, 1500})
+    @DisplayName("Метод должен вернуть 400 и не обновлять клиента, если комментарий длиннее 1000 символов.")
+    void update_shouldReturnBadRequestIfCommentTooLong(int length) throws Exception {
+        String json = objectMapper.writeValueAsString(new UpdateClientDTO(null, null, null, "к".repeat(length), null, null));
+        mockMvc.perform(patch("/api/support/client/" + UUID.randomUUID())
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Поле «comment» должно содержать не более 1000 символов."));
+        verifyNoInteractions(clientService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {999, 1000})
+    @DisplayName("Метод должен принять комментарий длиной до 1000 символов.")
+    void update_shouldAcceptCommentUpToLimit(int length) throws Exception {
+        String comment = "к".repeat(length);
+        UUID clientId = UUID.randomUUID();
+        String json = objectMapper.writeValueAsString(new UpdateClientDTO(null, null, null, comment, null, null));
+        mockMvc.perform(patch("/api/support/client/" + clientId)
+                        .header("Content-Type", "application/json")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf())
+                        .content(json))
+                .andExpect(status().isOk());
+        ArgumentCaptor<UpdateClientDTO> captor = ArgumentCaptor.forClass(UpdateClientDTO.class);
+        verify(clientService).update(eq(clientId), captor.capture());
+        assertEquals(comment, captor.getValue().comment());
     }
 
     @Test
