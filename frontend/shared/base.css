@@ -76,15 +76,29 @@
 /* Правая часть шапки: кнопка темы, меню аккаунта (у клиента ещё баланс) */
 .topbar-right { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
-/* ---- Кнопка смены темы в шапке ---- */
-.theme-btn {
-  display: inline-grid; place-items: center; flex: none;
-  width: 36px; height: 36px; padding: 0;
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: none; color: var(--text-dim); cursor: pointer; font-size: 15px;
-  transition: background .15s, color .15s;
+/* ---- Переключатель темы в шапке: «Как в системе» / «Светлая» / «Тёмная» ----
+   Три кнопки в общей рамке, выбранная — на светлой подложке. */
+.theme-switch {
+  display: inline-flex; flex: none; gap: 2px; padding: 3px;
+  border: 1px solid var(--border); border-radius: calc(var(--radius-sm) + 2px);
+  background: var(--surface-2);
 }
-.theme-btn:hover { background: var(--row-hover); color: var(--text); }
+.theme-opt {
+  display: inline-grid; place-items: center;
+  width: 30px; height: 28px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: none; color: var(--text-dim); cursor: pointer; font-size: 14px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.theme-opt:hover { color: var(--text); }
+.theme-opt.active {
+  background: var(--surface); color: var(--text);
+  border-color: var(--border); box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+.theme-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 560px) {
+  .theme-opt { width: 26px; height: 26px; font-size: 13px; }
+}
 
 @media (max-width: 720px) {
   :root { --topbar-h: 65px; }

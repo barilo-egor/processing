@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 
 /* ============================================================
-   Светлая / тёмная тема — общая для обоих кабинетов.
+   Тема оформления — общая для обоих кабинетов.
 
-   Тема ставится атрибутом data-theme на <html>, цвета — в base.css.
-   Пока пользователь сам не выбрал тему, она следует настройкам
-   системы (и меняется вместе с ними). Выбор кнопкой запоминается
-   в localStorage; ключ общий, поэтому кабинеты на одном адресе
-   открываются в одной теме.
+   Три варианта, как переключатель в шапке:
+     «Как в системе» (монитор) — светлая или тёмная по настройке ОС
+                                  и меняется вместе с ней;
+     «Светлая» (солнце), «Тёмная» (луна) — всегда эта тема.
+   Тема ставится атрибутом data-theme на <html> (всегда 'light' или
+   'dark'), цвета — в base.css. Выбор «Светлая» / «Тёмная» запоминается
+   в localStorage (ключ общий, поэтому кабинеты на одном адресе
+   открываются в одной теме); «Как в системе» — это отсутствие записи,
+   он же вариант по умолчанию.
    ============================================================ */
 
 const THEME_KEY = 'theme';
@@ -16,14 +20,16 @@ const media = typeof window !== 'undefined' && window.matchMedia
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
 
-function storedTheme() {
+// Сохранённый выбор: 'light' | 'dark' | 'system' (записи нет).
+function storedMode() {
   try {
     const v = localStorage.getItem(THEME_KEY);
-    return v === 'light' || v === 'dark' ? v : null;
-  } catch { return null; }
+    return v === 'light' || v === 'dark' ? v : 'system';
+  } catch { return 'system'; }
 }
 
 const systemTheme = () => (media?.matches ? 'dark' : 'light');
+const resolve = (mode) => (mode === 'system' ? systemTheme() : mode);
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -32,27 +38,28 @@ function applyTheme(theme) {
 /* Вызывается в main.jsx до первого рендера, чтобы страница
    не мигала светлой темой при сохранённой тёмной. */
 export function initTheme() {
-  applyTheme(storedTheme() || systemTheme());
+  applyTheme(resolve(storedMode()));
 }
 
-/* Кнопка в шапке: луна — включить тёмную, солнце — включить светлую. */
+const MODES = [
+  { mode: 'system', icon: 'fa-solid fa-desktop', label: 'Как в системе' },
+  { mode: 'light', icon: 'fa-regular fa-sun', label: 'Светлая тема' },
+  { mode: 'dark', icon: 'fa-regular fa-moon', label: 'Тёмная тема' },
+];
+
+/* Переключатель в шапке: три кнопки, выбранная подсвечена. */
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || storedTheme() || systemTheme());
+  const [mode, setMode] = useState(storedMode);
 
   useEffect(() => {
-    // Сменилась системная тема — подхватываем, если пользователь свою не выбирал.
-    const onSystem = () => {
-      if (storedTheme()) return;
-      const t = systemTheme();
-      applyTheme(t);
-      setTheme(t);
-    };
+    // Сменилась системная тема — подхватываем, если выбрано «Как в системе».
+    const onSystem = () => { if (storedMode() === 'system') applyTheme(systemTheme()); };
     // Тему переключили в другой вкладке — переключаемся и здесь.
     const onStorage = (e) => {
       if (e.key !== THEME_KEY) return;
-      const t = storedTheme() || systemTheme();
-      applyTheme(t);
-      setTheme(t);
+      const m = storedMode();
+      setMode(m);
+      applyTheme(resolve(m));
     };
     media?.addEventListener?.('change', onSystem);
     window.addEventListener('storage', onStorage);
@@ -62,17 +69,31 @@ export default function ThemeToggle() {
     };
   }, []);
 
-  const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem(THEME_KEY, next); } catch { /* без запоминания */ }
-    applyTheme(next);
-    setTheme(next);
+  const choose = (next) => {
+    try {
+      if (next === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, next);
+    } catch { /* без запоминания */ }
+    setMode(next);
+    applyTheme(resolve(next));
   };
 
-  const label = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
   return (
-      <button type="button" className="theme-btn" onClick={toggle} title={label} aria-label={label}>
-        <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
-      </button>
+      <div className="theme-switch" role="radiogroup" aria-label="Тема оформления">
+        {MODES.map((m) => (
+            <button
+                key={m.mode}
+                type="button"
+                role="radio"
+                aria-checked={mode === m.mode}
+                className={`theme-opt${mode === m.mode ? ' active' : ''}`}
+                onClick={() => choose(m.mode)}
+                title={m.label}
+                aria-label={m.label}
+            >
+              <i className={m.icon} />
+            </button>
+        ))}
+      </div>
   );
 }
