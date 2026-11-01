@@ -8,6 +8,7 @@ import net.rcetech.domain.repository.billing.WithdrawalRequestSpecifications;
 import net.rcetech.domain.repository.clients.ClientRepository;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.domain.test.SharedMySQLContainer;
+import net.rcetech.meta.billing.WithdrawalRequestCreatedEvent;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.billing.dto.ClientWithdrawalRequestResponse;
 import net.rcetech.meta.billing.dto.WithdrawalRequestFilter;
@@ -346,7 +347,10 @@ class WithdrawalRequestServiceTest {
                 () -> assertEquals(expectedNetAmount, actual.getNetSourceAmount()),
                 () -> assertEquals(rate, actual.getRate()),
                 () -> assertEquals(expectedTargetAmount, actual.getTargetAmount()),
-                () -> assertEquals(address, actual.getAddress())
+                () -> assertEquals(address, actual.getAddress()),
+                () -> assertEquals(
+                        List.of(new WithdrawalRequestCreatedEvent(actual.getId(), client.getUsername(), amount)),
+                        applicationEvents.stream(WithdrawalRequestCreatedEvent.class).toList())
         );
     }
 
