@@ -727,7 +727,7 @@ class WithdrawalRequestServiceTest {
 
         WithdrawalRequest actual = withdrawalRequestRepository.findById(requestId).orElseThrow();
         assertAll(
-                () -> assertEquals("Заявка уже обработана.", exception.getMessage()),
+                () -> assertEquals("Недопустимый статус заявки.", exception.getMessage()),
                 () -> assertEquals(WithdrawalRequestStatus.NEW, actual.getStatus())
         );
         verify(transactionService, never()).createAfterWithdrawalApproval(any());
