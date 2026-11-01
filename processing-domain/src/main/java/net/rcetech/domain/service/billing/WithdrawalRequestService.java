@@ -5,6 +5,7 @@ import net.rcetech.domain.model.billing.WithdrawalRequest;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.repository.billing.WithdrawalRequestRepository;
 import net.rcetech.domain.service.clients.ClientService;
+import net.rcetech.meta.billing.WithdrawalRequestCreatedEvent;
 import net.rcetech.meta.billing.WithdrawalRequestStatus;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
@@ -87,7 +88,9 @@ public class WithdrawalRequestService {
         withdrawalRequest.setRate(rate);
         withdrawalRequest.setTargetAmount(CalculateUtil.convert(withdrawalRequest.getNetSourceAmount(), rate));
         withdrawalRequest.setAddress(address);
-        return withdrawalRequestRepository.save(withdrawalRequest);
+        WithdrawalRequest saved = withdrawalRequestRepository.save(withdrawalRequest);
+        eventPublisher.publishEvent(new WithdrawalRequestCreatedEvent(saved.getId(), client.getUsername(), amount));
+        return saved;
     }
 
     @Transactional(readOnly = true)
