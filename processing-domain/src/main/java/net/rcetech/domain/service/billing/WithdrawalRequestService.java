@@ -132,7 +132,7 @@ public class WithdrawalRequestService {
     @Transactional
     public void updateStatus(UUID id, WithdrawalRequestStatus status) {
         if (WithdrawalRequestStatus.NEW.equals(status)) {
-            throw new BadRequestException("Заявка уже обработана.");
+            throw new BadRequestException("Недопустимый статус заявки.");
         }
         Optional<WithdrawalRequest> maybeRequest = withdrawalRequestRepository.findForUpdateById(id);
         if (maybeRequest.isEmpty()) {

@@ -149,16 +149,16 @@ class IncidentControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1,1790262068808,NEW,,BALANCE_UPDATE_ERROR,,,",
-            "69643546,1790262068808,RESOLVED,1790262068500,TRANSACTION_CREATION_ERROR,c2cbb845-7313-4106-a1a3-e9e4b328bbd9,1790262968000,Решено"
+            "1,1790262068808,NEW,,BALANCE_UPDATE_ERROR,,,,",
+            "69643546,1790262068808,RESOLVED,1790262068500,TRANSACTION_CREATION_ERROR,c2cbb845-7313-4106-a1a3-e9e4b328bbd9,dev.admin@btc24.zip,1790262968000,Решено"
     })
     @DisplayName("Метод должен вернуть JSON представление инцидентов.")
     void get_shouldReturnJsonOfIncidentResponse(long id, long createdAt, IncidentStatus status, Long errorTimestamp,
-                                                IncidentType type, UUID resolvedById, Long resolvedAt,
+                                                IncidentType type, UUID resolvedById, String resolvedByUsername, Long resolvedAt,
                                                 String comment) throws Exception {
         IncidentResponse response = new IncidentResponse(
                 id, Instant.ofEpochMilli(createdAt), status, errorTimestamp, type, Map.of("clientId", "123"),
-                resolvedById, resolvedAt == null ? null : Instant.ofEpochMilli(resolvedAt), comment
+                resolvedById, resolvedByUsername, resolvedAt == null ? null : Instant.ofEpochMilli(resolvedAt), comment
         );
         when(incidentService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(response)));
 
@@ -173,6 +173,7 @@ class IncidentControllerTest {
                 .andExpect(jsonPath("$.content[0].type").value(type.name()))
                 .andExpect(jsonPath("$.content[0].data.clientId").value("123"))
                 .andExpect(jsonPath("$.content[0].resolvedById").value(resolvedById == null ? null : resolvedById.toString()))
+                .andExpect(jsonPath("$.content[0].resolvedByUsername").value(resolvedByUsername))
                 .andExpect(jsonPath("$.content[0].resolvedAt").value(resolvedAt == null ? null : String.valueOf(resolvedAt)))
                 .andExpect(jsonPath("$.content[0].comment").value(comment))
                 .andExpect(jsonPath("$.page").exists());
@@ -226,16 +227,16 @@ class IncidentControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "15,1790262068808,1790262068500,BALANCE_UPDATE_ERROR,clientId,123,c2cbb845-7313-4106-a1a3-e9e4b328bbd9,1790262968000,ADMIN,Решено",
-            "69643546,1790262058000,1790262057999,MERCHANT_CALLBACK_HANDLE_ERROR,merchantOrderId,abc-1,fe4a4710-9c2e-4f04-b274-06802fbf2012,1790363000000,OPERATOR,Баланс пересчитан вручную."
+            "15,1790262068808,1790262068500,BALANCE_UPDATE_ERROR,clientId,123,c2cbb845-7313-4106-a1a3-e9e4b328bbd9,dev.admin@btc24.zip,1790262968000,ADMIN,Решено",
+            "69643546,1790262058000,1790262057999,MERCHANT_CALLBACK_HANDLE_ERROR,merchantOrderId,abc-1,fe4a4710-9c2e-4f04-b274-06802fbf2012,dev.operator@btc24.zip,1790363000000,OPERATOR,Баланс пересчитан вручную."
     })
     @DisplayName("Метод обновления должен вернуть JSON представление обновленного инцидента.")
     void update_shouldReturnJsonOfIncidentResponse(long id, long createdAt, long errorTimestamp, IncidentType type,
                                                    String dataKey, String dataValue, UUID supportUserId,
-                                                   long resolvedAt, String role, String comment) throws Exception {
+                                                   String username, long resolvedAt, String role, String comment) throws Exception {
         IncidentResponse response = new IncidentResponse(
                 id, Instant.ofEpochMilli(createdAt), IncidentStatus.RESOLVED, errorTimestamp,
-                type, Map.of(dataKey, dataValue), supportUserId, Instant.ofEpochMilli(resolvedAt), comment
+                type, Map.of(dataKey, dataValue), supportUserId, username, Instant.ofEpochMilli(resolvedAt), comment
         );
         when(incidentService.resolve(id, supportUserId, comment)).thenReturn(response);
 
@@ -252,6 +253,7 @@ class IncidentControllerTest {
                 .andExpect(jsonPath("$.type").value(type.name()))
                 .andExpect(jsonPath("$.data." + dataKey).value(dataValue))
                 .andExpect(jsonPath("$.resolvedById").value(supportUserId.toString()))
+                .andExpect(jsonPath("$.resolvedByUsername").value(username))
                 .andExpect(jsonPath("$.resolvedAt").value(String.valueOf(resolvedAt)))
                 .andExpect(jsonPath("$.comment").value(comment));
     }

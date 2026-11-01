@@ -638,26 +638,20 @@ function Pagination({ page, total, onPage, busy, label }) {
    frontend/shared/docs.jsx. */
 
 /* ==================== Меню аккаунта ==================== */
-/* Логин администратора в правом углу верхней панели.
-   Клик раскрывает меню с выходом; повторный клик или клик вне меню закрывает.
-
-   ВНИМАНИЕ: эндпоинта «текущий пользователь» в коллекции нет, поэтому
-   логин пока не запрашивается — показывается общая подпись. Как только
-   бэк отдаст его (например, GET /api/support/support-user/current),
-   достаточно подставить значение в состояние name. */
+/* Логин сотрудника в правом углу верхней панели.
+   Клик раскрывает меню с выходом; повторный клик или клик вне меню закрывает. */
 function AccountMenu({ isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [open, setOpen] = useState(false);
-  // Логин вошедшего администратора — из GET /support-user.
-  // Пока ответа нет или запрос не удался — нейтральное «Администратор».
-  const [name, setName] = useState('Администратор');
+  // Логин вошедшего сотрудника — из GET /support-user. null — ещё загружается, '' — не получен.
+  const [name, setName] = useState(null);
   const ref = useRef(null);
 
   useEffect(() => {
     let alive = true;
     api.supportUser()
-        .then((u) => { if (alive && u?.username) setName(u.username); })
-        .catch(() => { /* оставляем «Администратор» */ });
+        .then((u) => { if (alive) setName(u?.username || ''); })
+        .catch(() => { if (alive) setName(''); });
     return () => { alive = false; };
   }, []);
 
@@ -684,7 +678,9 @@ function AccountMenu({ isAdmin }) {
             aria-haspopup="menu"
             aria-expanded={open}
         >
-          <span className="account-name">{name}</span>
+          <span className="account-name">{name === null
+              ? <i className="fa-solid fa-spinner fa-spin" />
+              : name || (isAdmin ? 'Администратор' : 'Оператор')}</span>
           <i className={`fa-solid fa-chevron-${open ? 'up' : 'down'} account-caret`} />
         </button>
 
@@ -3096,7 +3092,7 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
               <SortTh field="status" sort={sort} onSort={onSort}>Статус</SortTh>
               <SortTh field="errorTimestamp" sort={sort} onSort={onSort}>Время ошибки</SortTh>
               <SortTh field="type" sort={sort} onSort={onSort}>Тип</SortTh>
-              <SortTh field="resolvedById" sort={sort} onSort={onSort}>Обработал</SortTh>
+              <SortTh field="resolvedByUsername" sort={sort} onSort={onSort}>Обработал</SortTh>
               <SortTh field="resolvedAt" sort={sort} onSort={onSort}>Обработан</SortTh>
               <th className="c-act" aria-label="Действия" />
             </tr>
@@ -3111,7 +3107,13 @@ function IncidentsSection({ incidentStatuses, incidentTypes, orderStatuses, merc
                   </td>
                   <td className="mono nowrap">{fmtDateTime(r.errorTimestamp)}</td>
                   <td className="inc-type">{typeLabel(r.type)}</td>
-                  <td className="c-id"><CopyValue value={r.resolvedById} onCopy={copy} /></td>
+                  <td>
+                    {r.resolvedByUsername ? (
+                        <span className="copyable" title={r.resolvedById} onClick={(e) => { e.stopPropagation(); copy(r.resolvedByUsername); }}>
+                          {r.resolvedByUsername} <i className="fa-regular fa-copy" />
+                        </span>
+                    ) : '—'}
+                  </td>
                   <td className="mono nowrap">{fmtDateTime(r.resolvedAt)}</td>
                   <td className="c-act">
                     {r.status === 'NEW' && (
@@ -3290,8 +3292,8 @@ function IncidentCard({ incident, type, orderStatuses, merchants, methods, showT
                 <div className="two-col">
                   <section className="col">
                     <Field label="Обработал">
-                      <span className="copyable" onClick={() => onCopy(incident.resolvedById)} title="Скопировать">
-                        <span className="mono">{incident.resolvedById || '—'}</span> <i className="fa-regular fa-copy" />
+                      <span className="copyable" onClick={() => onCopy(incident.resolvedByUsername)} title={incident.resolvedById}>
+                        {incident.resolvedByUsername || '—'} <i className="fa-regular fa-copy" />
                       </span>
                     </Field>
                   </section>

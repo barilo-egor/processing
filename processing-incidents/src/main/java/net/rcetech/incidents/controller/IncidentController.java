@@ -33,7 +33,7 @@ public class IncidentController {
 
     @GetMapping
     public PagedModel<IncidentResponse> get(IncidentFilter incidentFilter,
-            @SortableFields({"id", "createdAt", "status", "errorTimestamp", "type", "resolvedById", "resolvedAt"})
+            @SortableFields({"id", "createdAt", "status", "errorTimestamp", "type", "resolvedByUsername", "resolvedAt"})
             @PageableDefault(size = 20) Pageable pageable) {
         return new PagedModel<>(
                 incidentService.findAll(IncidentSpecifications.matches(incidentFilter), pageable, IncidentResponse.class)
