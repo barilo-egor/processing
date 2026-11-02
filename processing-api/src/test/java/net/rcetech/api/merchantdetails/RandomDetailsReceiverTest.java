@@ -54,7 +54,6 @@ class RandomDetailsReceiverTest {
         ApiDetailsResponse first = details(Set.of(method));
         ApiDetailsResponse second = details(Set.of(method));
         assertAll(
-                () -> assertNotNull(first.requestId()),
                 () -> assertNotNull(first.merchant()),
                 () -> assertNotNull(first.orderStatus()),
                 () -> assertNotNull(first.details().bank()),

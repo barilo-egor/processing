@@ -206,11 +206,22 @@ class OrderApiServiceTest {
         }
     }
 
-    ApiDetailsResponse getDummyApiDetailsResponse() {
-        return new ApiDetailsResponse(
-                UUID.randomUUID().toString(), Merchant.ALFA_TEAM,
-                UUID.randomUUID().toString(), "SUCCESS",
-                null, new ApiDetailsResponse.Details(RequestMethod.CARD, "1234 1234 1234 1234", "T-BANK")
+    static Stream<Arguments> detailsResponseArguments() {
+        return Stream.of(
+                Arguments.of(
+                        new ApiDetailsResponse(
+                                Merchant.ALFA_TEAM,
+                                UUID.randomUUID().toString(), "SUCCESS",
+                                500, new ApiDetailsResponse.Details(RequestMethod.CARD, "1234 1234 1234 1234", "T-BANK")
+                        )
+                ),
+                Arguments.of(
+                        new ApiDetailsResponse(
+                                Merchant.STORM_TRADE,
+                                UUID.randomUUID().toString(), "PROCESS",
+                                500, new ApiDetailsResponse.Details(RequestMethod.SBP, "+79825672341", "Альфа-банк")
+                        )
+                )
         );
     }
 
@@ -317,22 +328,11 @@ class OrderApiServiceTest {
         );
     }
 
-    static Stream<Arguments> detailsResponseArguments() {
-        return Stream.of(
-                Arguments.of(
-                        new ApiDetailsResponse(
-                                UUID.randomUUID().toString(), Merchant.ALFA_TEAM,
-                                UUID.randomUUID().toString(), "SUCCESS",
-                                500, new ApiDetailsResponse.Details(RequestMethod.CARD, "1234 1234 1234 1234", "T-BANK")
-                        )
-                ),
-                Arguments.of(
-                        new ApiDetailsResponse(
-                                UUID.randomUUID().toString(), Merchant.STORM_TRADE,
-                                UUID.randomUUID().toString(), "PROCESS",
-                                500, new ApiDetailsResponse.Details(RequestMethod.SBP, "+79825672341", "Альфа-банк")
-                        )
-                )
+    ApiDetailsResponse getDummyApiDetailsResponse() {
+        return new ApiDetailsResponse(
+                Merchant.ALFA_TEAM,
+                UUID.randomUUID().toString(), "SUCCESS",
+                null, new ApiDetailsResponse.Details(RequestMethod.CARD, "1234 1234 1234 1234", "T-BANK")
         );
     }
 
