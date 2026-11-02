@@ -2895,6 +2895,7 @@ const INCIDENT_LINKS = {
   MERCHANT_CALLBACK_HANDLE_ERROR: { kind: 'merchantOrder', key: 'merchantOrderId' },
   ORDER_STATUS_TRANSITION_REJECTED: { kind: 'order', key: 'orderId' },
   DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
+  INVALID_MERCHANT_DETAILS: { kind: 'order', key: 'orderId' },
   ASYNC_DETAILS_SEARCH_ERROR: { kind: 'order', key: 'orderId' },
   STUCK_SEARCH_ORDER_ERROR: { kind: 'order', key: 'orderId' },
   ORDER_EXPIRATION_ERROR: { kind: 'order', key: 'orderId' },

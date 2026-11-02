@@ -8,12 +8,14 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.domain.test.SharedMySQLContainer;
 import net.rcetech.meta.config.MetaExecutorSpringConfig;
 import net.rcetech.meta.exception.BaseException;
+import net.rcetech.meta.orders.InvalidDetailsReceivedEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -241,5 +243,50 @@ class MerchantDetailsEventListenerTest {
     void cancelDetailsSearch_shouldNotCancelSearchIfStatusNotCanceled(OrderStatus status) {
         publishAndCommit(UUID.randomUUID(), status, OrderStatusChangeSource.SYSTEM);
         verify(apiMerchantDetailsGrpcService, never()).cancelSearch(any());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "PAYSCROW_TRANSGRAN,a8f1c2d4-5e6b-4c7a-9d8e-1f2a3b4c5d6e,CARD",
+            "PAYSCROW,58213,SBP"
+    })
+    @DisplayName("Ордер мерчанта с отклонёнными реквизитами должен отменяться в merchant-details в отдельном потоке.")
+    void cancelRejectedOrder_shouldCancelOrderInMerchantDetailsAsync(Merchant merchant, String merchantOrderId,
+                                                                     RequestMethod method) {
+        AtomicReference<Thread> cancelThread = new AtomicReference<>();
+        doAnswer(invocation -> {
+            cancelThread.set(Thread.currentThread());
+            return null;
+        }).when(apiMerchantDetailsGrpcService).cancelOrder(any());
+        eventPublisher.publishEvent(new InvalidDetailsReceivedEvent(UUID.randomUUID(), UUID.randomUUID(), merchant,
+                merchantOrderId, method, "не указан банк", System.currentTimeMillis()));
+        verify(apiMerchantDetailsGrpcService, timeout(5000)).cancelOrder(new CancelOrderDTO(merchant, merchantOrderId, method));
+        assertNotEquals(Thread.currentThread(), cancelThread.get());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "null,58213,SBP",
+            "PAYSCROW,null,SBP",
+            "PAYSCROW,' ',SBP",
+            "PAYSCROW,58213,null",
+            "PAYSCROW,TEST_58213,SBP"
+    }, nullValues = "null")
+    @DisplayName("Ордер мерчанта с отклонёнными реквизитами не должен отменяться без мерчанта, идентификатора, метода и для тестового ордера.")
+    void cancelRejectedOrder_shouldNotCancelIfDataMissingOrTestOrder(Merchant merchant, String merchantOrderId,
+                                                                     RequestMethod method) {
+        eventPublisher.publishEvent(new InvalidDetailsReceivedEvent(UUID.randomUUID(), UUID.randomUUID(), merchant,
+                merchantOrderId, method, "не указан банк", System.currentTimeMillis()));
+        verify(apiMerchantDetailsGrpcService, after(500).never()).cancelOrder(any());
+    }
+
+    @Test
+    @DisplayName("Ошибка отмены ордера мерчанта с отклонёнными реквизитами не должна пробрасываться.")
+    void cancelRejectedOrder_shouldNotThrowIfCancelFailed() {
+        doThrow(new BaseException("UNAVAILABLE")).when(apiMerchantDetailsGrpcService).cancelOrder(any());
+        assertDoesNotThrow(() -> eventPublisher.publishEvent(new InvalidDetailsReceivedEvent(UUID.randomUUID(),
+                UUID.randomUUID(), Merchant.PAYSCROW, "58213", RequestMethod.SBP, "не указан банк",
+                System.currentTimeMillis())));
+        verify(apiMerchantDetailsGrpcService, timeout(5000)).cancelOrder(any());
     }
 }
