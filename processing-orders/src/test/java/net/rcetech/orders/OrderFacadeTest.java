@@ -274,4 +274,20 @@ class OrderFacadeTest {
                 .orElseThrow().getId());
         assertTrue(orderFacade.getOrderByIdOrMerchantOrderId(otherMerchant, order.getId().toString()).isEmpty());
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "EXTASY_PAY_RECEIPT_3,EXTASY_PAY",
+            "EXTASY_PAY_QR,EXTASY_PAY",
+            "EXTASY_PAY,EXTASY_PAY_RECEIPT"
+    })
+    @DisplayName("Метод должен найти ордер мерчанта по КБ под именем другого мерчанта его семейства.")
+    void getOrderByIdOrMerchantOrderId_shouldFindOrderOfMerchantFamily(Merchant merchant, Merchant callbackMerchant) {
+        Order order = createNewOrder(merchant, UUID.randomUUID().toString());
+
+        assertEquals(order.getId(), orderFacade.getOrderByIdOrMerchantOrderId(callbackMerchant,
+                order.getMerchantOrderId()).orElseThrow().getId());
+        assertEquals(order.getId(), orderFacade.getOrderByIdOrMerchantOrderId(callbackMerchant,
+                order.getId().toString()).orElseThrow().getId());
+    }
 }

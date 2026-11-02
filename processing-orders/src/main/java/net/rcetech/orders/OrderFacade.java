@@ -10,9 +10,10 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.commons.enums.Merchant;
+import tgb.cryptoexchange.commons.enums.MerchantFamily;
 
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -26,11 +27,12 @@ public class OrderFacade {
     }
 
     public Optional<Order> getOrderByIdOrMerchantOrderId(Merchant merchant, String id) {
-        Optional<Order> maybeOrder = orderService.findByMerchantAndMerchantOrderId(merchant, id);
+        Set<Merchant> merchants = MerchantFamily.of(merchant).getMerchants();
+        Optional<Order> maybeOrder = orderService.findByMerchantInAndMerchantOrderId(merchants, id);
         if (maybeOrder.isEmpty()) {
             try {
                 maybeOrder = orderService.findById(UUID.fromString(id))
-                        .filter(order -> Objects.equals(merchant, order.getMerchant()));
+                        .filter(order -> merchants.contains(order.getMerchant()));
             } catch (IllegalArgumentException e) {
                 maybeOrder = Optional.empty();
             }

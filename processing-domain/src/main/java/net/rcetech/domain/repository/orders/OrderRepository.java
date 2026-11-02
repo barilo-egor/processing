@@ -3,15 +3,12 @@ package net.rcetech.domain.repository.orders;
 import jakarta.persistence.LockModeType;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.meta.orders.OrderStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.transaction.annotation.Transactional;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +19,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Order> findForUpdateById(UUID id);
 
-    Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId);
+    Optional<Order> findByMerchantInAndMerchantOrderId(Collection<Merchant> merchants, String merchantOrderId);
 
     List<Order> findAllByStatusAndExpiresAtBefore(OrderStatus status, Instant now);
 

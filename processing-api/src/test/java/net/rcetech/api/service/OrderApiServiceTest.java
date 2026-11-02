@@ -18,10 +18,12 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
+import net.rcetech.meta.orders.InvalidDetailsReceivedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
@@ -227,7 +229,7 @@ class OrderApiServiceTest {
 
     CreateOrderRequest getDummyCreateOrderRequest() {
         return new CreateOrderRequest(
-                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD),
+                UUID.randomUUID().toString(), 1000, Set.of(RequestMethod.CARD, RequestMethod.SBP),
                 null, "1235153208"
         );
     }
@@ -790,8 +792,8 @@ class OrderApiServiceTest {
     }
 
     private CreateOrderRequest asyncRequest(String callbackUrl) {
-        return new CreateOrderRequest(UUID.randomUUID().toString(), 5000, Set.of(RequestMethod.CARD), callbackUrl,
-                "1235153208");
+        return new CreateOrderRequest(UUID.randomUUID().toString(), 5000, Set.of(RequestMethod.CARD, RequestMethod.SBP),
+                callbackUrl, "1235153208");
     }
 
     @ParameterizedTest
@@ -973,5 +975,73 @@ class OrderApiServiceTest {
                         onSearchCompleted));
 
         verifyNoInteractions(virtualTaskExecutor, onSearchCompleted);
+    }
+
+    static Stream<Arguments> invalidDetailsArguments() {
+        return Stream.of(
+                Arguments.of(new ApiDetailsResponse(Merchant.PAYSCROW_TRANSGRAN, "58213", "UNPAID", 1000,
+                        new ApiDetailsResponse.Details(RequestMethod.CARD, "https://pay.example.com/form/58213", null)),
+                        "реквизиты переданы ссылкой, не указан банк"),
+                Arguments.of(new ApiDetailsResponse(Merchant.ONLY_PAYS, "m-order-1", "PENDING", null,
+                        new ApiDetailsResponse.Details(RequestMethod.SBP, "+79825672341", null)),
+                        "не указан банк")
+        );
+    }
+
+    @MethodSource("invalidDetailsArguments")
+    @ParameterizedTest
+    @DisplayName("Если реквизиты не прошли проверку, синхронное создание должно перевести ордер в DETAILS_NOT_FOUND, опубликовать событие и бросить ServiceUnavailableException.")
+    void createOrder_shouldThrowServiceUnavailableIfDetailsInvalid(ApiDetailsResponse apiDetailsResponse,
+                                                                   String reason) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
+                .thenReturn(Optional.of(apiDetailsResponse));
+
+        assertThrows(ServiceUnavailableException.class, () -> orderApiService.createOrder(
+                command(client.getId(), getDummyCreateOrderRequest(), 30, false)));
+
+        Order order = orderRepository.findAll().getFirst();
+        assertAll(
+                () -> assertEquals(OrderStatus.DETAILS_NOT_FOUND, order.getStatus()),
+                () -> assertNull(order.getDetails()),
+                () -> assertNull(order.getMerchant())
+        );
+        assertEquals(List.of(new OrderStatusUpdatedEvent(order.getId(), OrderStatus.DETAILS_NOT_FOUND,
+                        OrderStatusChangeSource.SYSTEM, false)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        List<InvalidDetailsReceivedEvent> events = applicationEvents.stream(InvalidDetailsReceivedEvent.class).toList();
+        assertEquals(1, events.size());
+        assertAll(
+                () -> assertEquals(order.getId(), events.getFirst().orderId()),
+                () -> assertEquals(client.getId(), events.getFirst().clientId()),
+                () -> assertEquals(apiDetailsResponse.merchant(), events.getFirst().merchant()),
+                () -> assertEquals(apiDetailsResponse.orderId(), events.getFirst().merchantOrderId()),
+                () -> assertEquals(apiDetailsResponse.details().requestMethod(), events.getFirst().method()),
+                () -> assertEquals(reason, events.getFirst().reason())
+        );
+        verify(merchantCallbackProcessor, never()).process(any());
+    }
+
+    @MethodSource("invalidDetailsArguments")
+    @ParameterizedTest
+    @DisplayName("Если реквизиты асинхронного поиска не прошли проверку, ордер должен перейти в DETAILS_NOT_FOUND с КБ клиенту без ошибки задачи.")
+    void createOrder_shouldMoveOrderToDetailsNotFoundIfAsyncDetailsInvalid(ApiDetailsResponse apiDetailsResponse,
+                                                                           String reason) {
+        Client client = getDummyClient();
+        when(merchantDetailsReceiver.getDetails(any(), any(), any(), eq(30)))
+                .thenReturn(Optional.of(apiDetailsResponse));
+        ClientOrderSummary created = orderApiService.createOrderAsync(
+                command(client.getId(), asyncRequest("https://example.com/callback"), 30, false), onSearchCompleted);
+
+        assertDoesNotThrow(captureSearchTask()::run);
+
+        assertEquals(OrderStatus.DETAILS_NOT_FOUND, orderRepository.findById(created.id()).orElseThrow().getStatus());
+        assertEquals(List.of(new OrderStatusUpdatedEvent(created.id(), OrderStatus.DETAILS_NOT_FOUND,
+                        OrderStatusChangeSource.SYSTEM, true)),
+                applicationEvents.stream(OrderStatusUpdatedEvent.class).toList());
+        assertEquals(reason, applicationEvents.stream(InvalidDetailsReceivedEvent.class).findFirst().orElseThrow()
+                .reason());
+        assertEquals(0, applicationEvents.stream(AsyncDetailsSearchErrorEvent.class).count());
+        verify(merchantCallbackProcessor, never()).process(any());
     }
 }

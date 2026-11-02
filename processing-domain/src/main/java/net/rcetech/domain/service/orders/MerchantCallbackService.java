@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.PredicateSpecification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tgb.cryptoexchange.commons.enums.MerchantFamily;
 
 import java.time.Instant;
 import java.util.List;
@@ -46,8 +47,8 @@ public class MerchantCallbackService {
         List<String> merchantOrderIds = Stream.of(order.getId().toString(), order.getMerchantOrderId())
                 .filter(Objects::nonNull)
                 .toList();
-        return merchantCallbackRepository.findAllByMerchantAndMerchantOrderIdInAndProcessedAtIsNullOrderByCreatedAtAscIdAsc(
-                order.getMerchant(), merchantOrderIds);
+        return merchantCallbackRepository.findAllByMerchantInAndMerchantOrderIdInAndProcessedAtIsNullOrderByCreatedAtAscIdAsc(
+                MerchantFamily.of(order.getMerchant()).getMerchants(), merchantOrderIds);
     }
 
     @Transactional(readOnly = true)

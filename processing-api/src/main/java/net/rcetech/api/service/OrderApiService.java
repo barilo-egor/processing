@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.rcetech.api.dto.CreateOrderCommand;
 import net.rcetech.api.dto.CreateOrderRequest;
 import net.rcetech.api.merchantdetails.ApiDetailsResponse;
+import net.rcetech.api.merchantdetails.DetailsValidator;
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.model.orders.Order;
 import net.rcetech.domain.repository.orders.OrderSpecifications;
@@ -12,11 +13,14 @@ import net.rcetech.domain.service.orders.OrderService;
 import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
+import net.rcetech.meta.exception.ServiceUnavailableException;
 import net.rcetech.meta.incidents.AsyncDetailsSearchErrorEvent;
+import net.rcetech.meta.orders.InvalidDetailsReceivedEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChange;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusTransition;
+import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.orders.dto.ClientOrderFilter;
 import net.rcetech.meta.orders.dto.ClientOrderSummary;
 import net.rcetech.orders.OrderFacade;
@@ -29,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -67,7 +72,7 @@ public class OrderApiService {
                 .orElseThrow(() -> new BaseException("Клиент не найден по идентификатору " + command.clientId()));
         CreateOrderRequest request = command.request();
         Order order = orderService.createOrder(client, request.internalId(), request.amount(), request.callbackUrl());
-        completeSearch(order, detailsSearchService.search(order, command), false);
+        completeSearch(order, request.methods(), detailsSearchService.search(order, command), false);
         return findSummary(order.getId());
     }
 
@@ -82,7 +87,7 @@ public class OrderApiService {
             log.warn("Асинхронное создание ордера {} клиента {} без адреса КБ.", order.getId(), client.getId());
         }
         detailsSearchService.searchAsync(order, command)
-                .thenAccept(details -> completeSearch(order, details, true))
+                .thenAccept(details -> completeSearch(order, request.methods(), details, true))
                 .exceptionally(e -> {
                     Throwable cause = e.getCause();
                     long timestamp = System.currentTimeMillis();
@@ -101,13 +106,19 @@ public class OrderApiService {
                 .orElseThrow(() -> new BaseException("Ордер не найден по идентификатору " + orderId));
     }
 
-    private void completeSearch(Order order, Optional<ApiDetailsResponse> details, boolean notifyClient) {
+    private void completeSearch(Order order, Set<RequestMethod> requestedMethods,
+                                Optional<ApiDetailsResponse> details, boolean notifyClient) {
         if (details.isEmpty()) {
             orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, order.getId(), OrderStatusChangeSource.SYSTEM,
                     notifyClient, routed -> { });
             return;
         }
         ApiDetailsResponse detailsResponse = details.get();
+        Optional<String> violation = DetailsValidator.validate(detailsResponse, requestedMethods);
+        if (violation.isPresent()) {
+            rejectDetails(order, detailsResponse, violation.get(), notifyClient);
+            return;
+        }
         OrderStatusChange change = orderFacade.routeOrder(OrderStatus.NEW, order.getId(),
                 OrderStatusChangeSource.SYSTEM, notifyClient,
                 routed -> fillDetails(routed, detailsResponse, order.getClient().getOrderTimeoutSeconds()));
@@ -116,6 +127,22 @@ public class OrderApiService {
             return;
         }
         processMerchantCallbacks(order.getId());
+    }
+
+    private void rejectDetails(Order order, ApiDetailsResponse detailsResponse, String reason, boolean notifyClient) {
+        long timestamp = System.currentTimeMillis();
+        log.error("{} Мерчант {} выдал некорректные реквизиты по ордеру {} (идентификатор ордера мерчанта {}): {}.",
+                timestamp, detailsResponse.merchant(), order.getId(), detailsResponse.orderId(), reason);
+        RequestMethod method = Objects.isNull(detailsResponse.details()) ? null
+                : detailsResponse.details().requestMethod();
+        eventPublisher.publishEvent(new InvalidDetailsReceivedEvent(order.getId(), order.getClient().getId(),
+                detailsResponse.merchant(), detailsResponse.orderId(), method, reason, timestamp));
+        orderFacade.routeOrder(OrderStatus.DETAILS_NOT_FOUND, order.getId(), OrderStatusChangeSource.SYSTEM,
+                notifyClient, routed -> { });
+        if (!notifyClient) {
+            throw new ServiceUnavailableException("Мерчант " + detailsResponse.merchant()
+                    + " выдал некорректные реквизиты по ордеру " + order.getId() + ": " + reason + ".");
+        }
     }
 
     private void processMerchantCallbacks(UUID orderId) {

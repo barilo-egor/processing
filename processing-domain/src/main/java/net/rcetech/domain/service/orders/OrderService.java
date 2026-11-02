@@ -8,11 +8,7 @@ import net.rcetech.meta.exception.BadRequestException;
 import net.rcetech.meta.exception.BaseException;
 import net.rcetech.meta.exception.ExceptionMessage;
 import net.rcetech.meta.exception.OrderStatusUpdateException;
-import net.rcetech.meta.orders.OrderStatus;
-import net.rcetech.meta.orders.OrderStatusChange;
-import net.rcetech.meta.orders.OrderStatusChangeSource;
-import net.rcetech.meta.orders.OrderStatusTransition;
-import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
+import net.rcetech.meta.orders.*;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -23,10 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tgb.cryptoexchange.commons.enums.Merchant;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 
 @Service
@@ -86,8 +79,8 @@ public class OrderService {
         return orderRepository.findByIdAndClientId(id, clientId, projectionType);
     }
 
-    public Optional<Order> findByMerchantAndMerchantOrderId(Merchant merchant, String merchantOrderId) {
-        return orderRepository.findByMerchantAndMerchantOrderId(merchant, merchantOrderId);
+    public Optional<Order> findByMerchantInAndMerchantOrderId(Collection<Merchant> merchants, String merchantOrderId) {
+        return orderRepository.findByMerchantInAndMerchantOrderId(merchants, merchantOrderId);
     }
 
     public <T> Page<T> findAll(PredicateSpecification<Order> filter, Pageable pageable, Class<T> projectionType) {

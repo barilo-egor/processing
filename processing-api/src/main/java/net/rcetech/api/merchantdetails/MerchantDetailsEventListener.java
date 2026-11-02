@@ -2,9 +2,11 @@ package net.rcetech.api.merchantdetails;
 
 import lombok.extern.slf4j.Slf4j;
 import net.rcetech.domain.service.orders.OrderService;
+import net.rcetech.meta.orders.InvalidDetailsReceivedEvent;
 import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusChangeSource;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -53,6 +55,27 @@ public class MerchantDetailsEventListener {
         } catch (Exception e) {
             log.info("Не удалось отменить ордер {} мерчанта {} в merchant-details: {}",
                     cancelOrder.merchantOrderId(), cancelOrder.merchant(), e.getMessage());
+        }
+    }
+
+    @EventListener
+    @Async
+    public void cancelRejectedOrder(InvalidDetailsReceivedEvent event) {
+        if (event.merchant() == null || event.merchantOrderId() == null || event.merchantOrderId().isBlank()
+                || event.method() == null) {
+            log.debug("Отмена ордера мерчанта по отклонённым реквизитам ордера {} не требуется: мерчант, " +
+                    "идентификатор ордера мерчанта или метод не заданы.", event.orderId());
+            return;
+        }
+        if (event.merchantOrderId().startsWith(RandomDetailsReceiver.TEST_ORDER_ID_PREFIX)) {
+            return;
+        }
+        try {
+            apiMerchantDetailsGrpcService.cancelOrder(new CancelOrderDTO(event.merchant(), event.merchantOrderId(),
+                    event.method()));
+        } catch (Exception e) {
+            log.info("Не удалось отменить ордер {} мерчанта {} с отклонёнными реквизитами: {}",
+                    event.merchantOrderId(), event.merchant(), e.getMessage());
         }
     }
 }
