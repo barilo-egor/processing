@@ -13,6 +13,7 @@ import net.rcetech.meta.incidents.DetailsSearchErrorEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -104,6 +105,27 @@ class ApiMerchantDetailsGrpcServiceTest {
                 () -> assertEquals(bank, actual.details().bank())
 
         );
+    }
+
+    @Test
+    @DisplayName("Метод должен вернуть пустую сумму, если merchant-details её не передал.")
+    void getDetails_shouldReturnNullAmountIfNotSet() {
+        DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
+                .setMerchant(Merchant.ONLY_PAYS.name())
+                .setOrderId(UUID.randomUUID().toString())
+                .setOrderStatus("PENDING")
+                .setDetails(DetailsGrpc.newBuilder()
+                        .setRequestMethod(RequestMethod.CARD.name())
+                        .setDetails("1234 1234 1234 1234")
+                        .build())
+                .build();
+        when(detailsBlockingStub.detailsRequest(any())).thenReturn(detailsResponseGrpc);
+        ApiDetailsResponse actual = apiMerchantDetailsGrpcService.getDetails(UUID.randomUUID(), UUID.randomUUID(),
+                new CreateOrderRequest(
+                        UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), null, null
+                ), 60
+        ).orElseThrow();
+        assertNull(actual.amount());
     }
 
     @ParameterizedTest
