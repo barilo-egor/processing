@@ -16,6 +16,7 @@ import net.rcetech.meta.orders.OrderStatus;
 import net.rcetech.meta.orders.OrderStatusUpdatedEvent;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.orders.status.BridgePayOrderStatusResolver;
+import net.rcetech.orders.status.PayBoxOrderStatusResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,11 +64,17 @@ class MerchantCallbackProcessorTest {
         }
 
         @Bean
+        public PayBoxOrderStatusResolver payBoxOrderStatusResolver() {
+            return new PayBoxOrderStatusResolver();
+        }
+
+        @Bean
         public MerchantCallbackProcessor merchantCallbackProcessor(
-                BridgePayOrderStatusResolver bridgePayOrderStatusResolver, OrderService orderService,
+                BridgePayOrderStatusResolver bridgePayOrderStatusResolver,
+                PayBoxOrderStatusResolver payBoxOrderStatusResolver, OrderService orderService,
                 MerchantCallbackService merchantCallbackService, ApplicationEventPublisher eventPublisher,
                 PlatformTransactionManager transactionManager) {
-            return new MerchantCallbackProcessor(List.of(bridgePayOrderStatusResolver), orderService,
+            return new MerchantCallbackProcessor(List.of(bridgePayOrderStatusResolver, payBoxOrderStatusResolver), orderService,
                     merchantCallbackService, eventPublisher, transactionManager);
         }
     }
@@ -352,6 +359,29 @@ class MerchantCallbackProcessorTest {
                 () -> assertEquals("OLD", actualOrder.getMerchantOrderStatus()),
                 () -> assertNotNull(reload(callback).getProcessedAt()),
                 () -> assertEquals(0, applicationEvents.stream(OrderStatusUpdatedEvent.class).count())
+        );
+        assertNoIncidentEvents();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "EXTASY_PAY_RECEIPT_3,EXTASY_PAY,PAID,SUCCESS",
+            "EXTASY_PAY_QR,EXTASY_PAY,CANCEL,CANCELED"
+    })
+    @DisplayName("Метод должен обработать КБ, пришедший под именем другого мерчанта семейства ордера.")
+    void process_shouldProcessCallbackOfMerchantFamily(Merchant merchant, Merchant callbackMerchant,
+                                                       String callbackStatus, OrderStatus expectedStatus) {
+        String merchantOrderId = UUID.randomUUID().toString();
+        Order order = saveOrder(OrderStatus.NEW, merchant, merchantOrderId);
+        MerchantCallback callback = saveCallback(callbackMerchant, merchantOrderId, callbackStatus);
+
+        merchantCallbackProcessor.process(order.getId());
+
+        MerchantCallback actual = reload(callback);
+        assertAll(
+                () -> assertEquals(expectedStatus, statusOf(order)),
+                () -> assertEquals(order.getId(), orderIdOf(actual)),
+                () -> assertNotNull(actual.getProcessedAt())
         );
         assertNoIncidentEvents();
     }

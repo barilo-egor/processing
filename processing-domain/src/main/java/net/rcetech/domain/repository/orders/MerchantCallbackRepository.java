@@ -15,8 +15,8 @@ import java.util.UUID;
 public interface MerchantCallbackRepository extends JpaRepository<MerchantCallback, Long>,
         JpaSpecificationExecutor<MerchantCallback> {
 
-    List<MerchantCallback> findAllByMerchantAndMerchantOrderIdInAndProcessedAtIsNullOrderByCreatedAtAscIdAsc(
-            Merchant merchant, Collection<String> merchantOrderIds);
+    List<MerchantCallback> findAllByMerchantInAndMerchantOrderIdInAndProcessedAtIsNullOrderByCreatedAtAscIdAsc(
+            Collection<Merchant> merchants, Collection<String> merchantOrderIds);
 
     @Modifying
     @Query("update MerchantCallback c set c.order = null where c.order.id in (select o.id from Order o where o.client.id = :clientId)")
