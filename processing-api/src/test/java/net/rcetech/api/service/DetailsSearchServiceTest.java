@@ -114,7 +114,7 @@ class DetailsSearchServiceTest {
     }
 
     private ApiDetailsResponse detailsResponse() {
-        return new ApiDetailsResponse(UUID.randomUUID().toString(), Merchant.ALFA_TEAM, UUID.randomUUID().toString(),
+        return new ApiDetailsResponse(Merchant.ALFA_TEAM, UUID.randomUUID().toString(),
                 "NEW", null, new ApiDetailsResponse.Details(RequestMethod.CARD, "1234 1234 1234 1234", "Т-Банк"));
     }
 }

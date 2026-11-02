@@ -59,10 +59,8 @@ public class ApiMerchantDetailsGrpcService {
         Context.CancellableContext context = Context.current().withCancellation();
         searches.put(orderId, context);
         try {
-            UUID requestId = UUID.randomUUID();
-            log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
+            log.debug("Отправка запроса на реквизиты orderId={}: {}", orderId, clientOrderRequest);
             var detailsRequestGrpcBuilder = DetailsRequestGrpc.newBuilder()
-                    .setRequestId(requestId.toString())
                     .setInternalId(orderId.toString())
                     .setAmount(clientOrderRequest.amount())
                     .setWaitTimeout(timeoutSeconds - 1)

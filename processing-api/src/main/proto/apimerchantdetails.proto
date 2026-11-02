@@ -18,23 +18,21 @@ service ApiDetailsRequestService {
 }
 
 message DetailsRequestGrpc {
-  string request_id = 1;
-  string internal_id = 2;
-  optional string user_id = 3;
-  int32 amount = 4;
-  int32 wait_timeout = 5;
-  repeated string request_method = 6;
-  string owner_id = 7;
-  string initiator_app = 8;
+  string internal_id = 1;
+  optional string user_id = 2;
+  int32 amount = 3;
+  int32 wait_timeout = 4;
+  repeated string request_method = 5;
+  string owner_id = 6;
+  string initiator_app = 7;
 }
 
 message DetailsResponseGrpc {
-  string request_id = 1;
-  string merchant = 2;
-  string order_id = 3;
-  string  order_status = 4;
-  DetailsGrpc details = 5;
-  int32 amount = 6;
+  string merchant = 1;
+  string order_id = 2;
+  string order_status = 3;
+  DetailsGrpc details = 4;
+  int32 amount = 5;
 }
 
 message DetailsGrpc {

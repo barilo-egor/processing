@@ -29,7 +29,6 @@ public class RandomDetailsReceiver implements MerchantDetailsReceiver {
         RequestMethod method = methods.get(random.nextInt(methods.size()));
         Merchant[] merchants = Merchant.values();
         return Optional.of(new ApiDetailsResponse(
-                UUID.randomUUID().toString(),
                 merchants[random.nextInt(merchants.length)],
                 TEST_ORDER_ID_PREFIX + UUID.randomUUID(),
                 TEST_ORDER_STATUS,

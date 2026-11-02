@@ -1,10 +1,6 @@
 package net.rcetech.api.merchantdetails;
 
-import io.grpc.Context;
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -40,7 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,10 +72,8 @@ class ApiMerchantDetailsGrpcServiceTest {
     @DisplayName("Метод должен вернуть валидный ответ.")
     void getDetails_shouldReturnResponse(Merchant merchant, String merchantOrderStatus, Integer amount,
                                          RequestMethod requestMethod, String details, String bank) {
-        UUID requestId = UUID.randomUUID();
         UUID merchantOrderId = UUID.randomUUID();
         DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
-                .setRequestId(requestId.toString())
                 .setMerchant(merchant.name())
                 .setOrderId(merchantOrderId.toString())
                 .setOrderStatus(merchantOrderStatus)
@@ -100,7 +95,6 @@ class ApiMerchantDetailsGrpcServiceTest {
                 ), 60
         ).orElseThrow();
         assertAll(
-                () -> assertEquals(requestId.toString(), actual.requestId()),
                 () -> assertEquals(merchant, actual.merchant()),
                 () -> assertEquals(merchantOrderId.toString(), actual.orderId()),
                 () -> assertEquals(merchantOrderStatus, actual.orderStatus()),
@@ -262,7 +256,7 @@ class ApiMerchantDetailsGrpcServiceTest {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                responseObserver.onNext(detailsResponse(request, merchant, details));
+                responseObserver.onNext(detailsResponse(merchant, details));
                 responseObserver.onCompleted();
             });
         })) {
@@ -290,7 +284,7 @@ class ApiMerchantDetailsGrpcServiceTest {
     @DisplayName("Отмена поиска по ордеру после завершения поиска не должна бросать исключение.")
     void cancelSearch_shouldDoNothingAfterSearchCompleted(String bank) {
         when(detailsBlockingStub.detailsRequest(any())).thenAnswer(invocation ->
-                detailsResponse(invocation.getArgument(0), Merchant.ALFA_TEAM, bank));
+                detailsResponse(Merchant.ALFA_TEAM, bank));
         UUID orderId = UUID.randomUUID();
         assertTrue(apiMerchantDetailsGrpcService.getDetails(UUID.randomUUID(), orderId, createOrderRequest(), 30)
                 .isPresent());
@@ -302,9 +296,8 @@ class ApiMerchantDetailsGrpcServiceTest {
                 "https://example.com/callback", "534690");
     }
 
-    private DetailsResponseGrpc detailsResponse(DetailsRequestGrpc request, Merchant merchant, String details) {
+    private DetailsResponseGrpc detailsResponse(Merchant merchant, String details) {
         return DetailsResponseGrpc.newBuilder()
-                .setRequestId(request.getRequestId())
                 .setMerchant(merchant.name())
                 .setOrderId(UUID.randomUUID().toString())
                 .setOrderStatus("NEW")
