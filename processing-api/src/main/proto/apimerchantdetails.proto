@@ -38,7 +38,7 @@ message DetailsResponseGrpc {
 message DetailsGrpc {
   string request_method = 1;
   string details = 2;
-  string bank = 3;
+  optional string bank = 3;
 }
 
 message MerchantCallbackGrpc {

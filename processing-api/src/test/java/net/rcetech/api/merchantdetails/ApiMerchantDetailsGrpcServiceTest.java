@@ -108,8 +108,8 @@ class ApiMerchantDetailsGrpcServiceTest {
     }
 
     @Test
-    @DisplayName("Метод должен вернуть пустую сумму, если merchant-details её не передал.")
-    void getDetails_shouldReturnNullAmountIfNotSet() {
+    @DisplayName("Метод должен вернуть пустые сумму и банк, если merchant-details их не передал.")
+    void getDetails_shouldReturnNullAmountAndBankIfNotSet() {
         DetailsResponseGrpc detailsResponseGrpc = DetailsResponseGrpc.newBuilder()
                 .setMerchant(Merchant.ONLY_PAYS.name())
                 .setOrderId(UUID.randomUUID().toString())
@@ -125,7 +125,10 @@ class ApiMerchantDetailsGrpcServiceTest {
                         UUID.randomUUID().toString(), 5042, Set.of(RequestMethod.CARD), null, null
                 ), 60
         ).orElseThrow();
-        assertNull(actual.amount());
+        assertAll(
+                () -> assertNull(actual.amount()),
+                () -> assertNull(actual.details().bank())
+        );
     }
 
     @ParameterizedTest
