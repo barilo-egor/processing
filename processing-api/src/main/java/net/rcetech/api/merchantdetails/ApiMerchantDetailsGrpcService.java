@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,19 +61,20 @@ public class ApiMerchantDetailsGrpcService {
         try {
             UUID requestId = UUID.randomUUID();
             log.debug("Отправка запроса на реквизиты requestId={}, orderId={}: {}", requestId, orderId, clientOrderRequest);
-            DetailsRequestGrpc detailsRequestGrpc = DetailsRequestGrpc.newBuilder()
+            var detailsRequestGrpcBuilder = DetailsRequestGrpc.newBuilder()
                     .setRequestId(requestId.toString())
                     .setInternalId(orderId.toString())
-                    .setUserId(clientOrderRequest.userId())
                     .setAmount(clientOrderRequest.amount())
                     .setWaitTimeout(timeoutSeconds - 1)
                     .addAllRequestMethod(clientOrderRequest.methods().stream().map(Enum::name).toList())
                     .setOwnerId(clientId.toString())
-                    .setInitiatorApp(applicationName)
-                    .build();
+                    .setInitiatorApp(applicationName);
+            if (Objects.nonNull(clientOrderRequest.userId())) {
+                detailsRequestGrpcBuilder.setUserId(clientOrderRequest.userId());
+            }
             DetailsResponseGrpc grpcResponse = context.call(() -> detailsBlockingStub
                     .withDeadlineAfter(timeoutSeconds - 2, TimeUnit.SECONDS)
-                    .detailsRequest(detailsRequestGrpc));
+                    .detailsRequest(detailsRequestGrpcBuilder.build()));
             return Optional.of(detailsMapper.grpcResponseToDTO(grpcResponse));
         } catch (StatusRuntimeException statusException) {
             Status status = StatusProto.fromThrowable(statusException);
