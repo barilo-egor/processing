@@ -1543,6 +1543,7 @@ function TransactionsSection({ dict, showToast }) {
               <th>Операция</th>
               <th className="num">Сумма, ₽</th>
               <th>Тип</th>
+              <th>Комментарий</th>
             </tr>
             </thead>
             <tbody>
@@ -1571,6 +1572,7 @@ function TransactionsSection({ dict, showToast }) {
                         {dictLabel(dict, 'TransactionType', t.type)}
                       </Badge>
                     </td>
+                    <td className="dim">{t.comment || '-'}</td>
                   </tr>
               );
             })}

@@ -62,17 +62,20 @@ class ClientTransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0c4f8a2e-6b1d-4e7a-9c3f-5d2b8e1a7f60,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,1789813263222,CREDIT,3252,ORDER_CONFIRMATION",
-            "e83b5d17-2a9c-4f6e-b1d4-7c0a3e9f5b28,20484949-7339-4e19-86c9-d1e2c492f75f,1789813269144,DEBIT,50664,MANUAL_CORRECT"
+            "0c4f8a2e-6b1d-4e7a-9c3f-5d2b8e1a7f60,a7ff6a91-dfb2-4bcd-b687-2dee1acad5f7,1789813263222,CREDIT,3252,ORDER_CONFIRMATION," +
+                    "Подтверждение ордера 123. Транзакция создана системой.",
+            "e83b5d17-2a9c-4f6e-b1d4-7c0a3e9f5b28,20484949-7339-4e19-86c9-d1e2c492f75f,1789813269144,DEBIT,50664,MANUAL_CORRECT," +
+                    "Двойное зачисление по ордеру 89723452."
     })
     void get_shouldReturnAllTransactions(UUID id, UUID clientId, long millis, Operation operation,
-                                         Integer amount, TransactionType type) throws Exception {
+                                         Integer amount, TransactionType type, String comment) throws Exception {
         ClientTransactionResponse transactionResponse = mock(ClientTransactionResponse.class);
         when(transactionResponse.id()).thenReturn(id);
         when(transactionResponse.createdAt()).thenReturn(Instant.ofEpochMilli(millis));
         when(transactionResponse.operation()).thenReturn(operation);
         when(transactionResponse.amount()).thenReturn(amount);
         when(transactionResponse.type()).thenReturn(type);
+        when(transactionResponse.comment()).thenReturn(comment);
         when(transactionService.findAll(any(), any(), any())).thenReturn(new PageImpl<>(List.of(transactionResponse, transactionResponse)));
         mockMvc.perform(get("/api/client/transaction")
                         .with(user(clientId.toString()).roles(Role.CLIENT.name())))
@@ -85,7 +88,7 @@ class ClientTransactionControllerTest {
                 .andExpect(jsonPath("$.content[0].operation").value(operation.name()))
                 .andExpect(jsonPath("$.content[0].amount").value(amount))
                 .andExpect(jsonPath("$.content[0].type").value(type.name()))
-                .andExpect(jsonPath("$.content[0].comment").doesNotExist())
+                .andExpect(jsonPath("$.content[0].comment").value(comment))
                 .andExpect(jsonPath("$.content[1].amount").value(amount));
     }
 
