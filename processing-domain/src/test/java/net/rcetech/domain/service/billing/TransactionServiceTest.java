@@ -118,17 +118,15 @@ class TransactionServiceTest {
             "5396,499",
             "26222,500"
     })
-    @DisplayName("Метод должен сохранить причину корректировки длиной до 500 символов вместе со служебным префиксом.")
+    @DisplayName("Метод должен сохранить причину корректировки длиной до 500 символов.")
     void createManualCorrect_shouldSaveLongComment(Integer amount, int length) {
-        UUID creatorId = UUID.randomUUID();
         Client client = getDummyClient();
         String comment = "п".repeat(length);
-        transactionService.createManualCorrect(creatorId,
+        transactionService.createManualCorrect(
                 new ManualCorrectTransaction(client.getId(), Operation.CREDIT, amount, comment));
         List<Transaction> transactions = transactionRepository.findAll();
         assertEquals(1, transactions.size());
-        assertEquals("Создано пользователем " + creatorId + ". Комментарий: " + comment,
-                transactions.getFirst().getComment());
+        assertEquals(comment, transactions.getFirst().getComment());
     }
 
     @ParameterizedTest
@@ -139,12 +137,11 @@ class TransactionServiceTest {
     @DisplayName("Метод должен создать транзакцию ручной корректировки.")
     void createManualCorrect_shouldCreateTransaction(Integer amount, String comment) {
         Operation operation = Operation.CREDIT;
-        UUID creatorId = UUID.randomUUID();
         Client client = getDummyClient();
         ManualCorrectTransaction manualCorrectTransaction = new ManualCorrectTransaction(
                 client.getId(), operation, amount, comment
         );
-        transactionService.createManualCorrect(creatorId, manualCorrectTransaction);
+        transactionService.createManualCorrect(manualCorrectTransaction);
         List<Transaction> transactions = transactionRepository.findAll();
         assertEquals(1, transactions.size());
         Transaction transaction = transactions.getFirst();
@@ -154,10 +151,7 @@ class TransactionServiceTest {
                 () -> assertEquals(operation, transaction.getOperation()),
                 () -> assertEquals(amount, transaction.getAmount()),
                 () -> assertEquals(TransactionType.MANUAL_CORRECT, transaction.getType()),
-                () -> assertEquals(
-                        "Создано пользователем " + creatorId + ". Комментарий: " + manualCorrectTransaction.comment(),
-                        transaction.getComment()
-                )
+                () -> assertEquals(comment, transaction.getComment())
         );
         Optional<TransactionCreatedEvent> maybeEvent = applicationEvents.stream(TransactionCreatedEvent.class).findFirst();
         assertTrue(maybeEvent.isPresent());
@@ -217,7 +211,7 @@ class TransactionServiceTest {
         saveWithdrawalRequest(client, WithdrawalRequestStatus.NEW, firstReserved);
         saveWithdrawalRequest(client, WithdrawalRequestStatus.NEW, secondReserved);
 
-        transactionService.createManualCorrect(UUID.randomUUID(),
+        transactionService.createManualCorrect(
                 new ManualCorrectTransaction(client.getId(), Operation.DEBIT, amount, "двойное начисление"));
 
         assertEquals(balance - amount, transactionService.calculateBalance(client.getId()));
@@ -241,10 +235,8 @@ class TransactionServiceTest {
         ManualCorrectTransaction manualCorrectTransaction = new ManualCorrectTransaction(
                 client.getId(), Operation.DEBIT, amount, "двойное начисление"
         );
-        UUID creatorId = UUID.randomUUID();
-
         BadRequestException exception = assertThrows(BadRequestException.class,
-                () -> transactionService.createManualCorrect(creatorId, manualCorrectTransaction));
+                () -> transactionService.createManualCorrect(manualCorrectTransaction));
 
         assertEquals("На балансе клиента недостаточно средств с учётом заявок на вывод в статусе \"Новая\".",
                 exception.getMessage());
@@ -266,7 +258,7 @@ class TransactionServiceTest {
         saveWithdrawalRequest(client, status, amount);
         saveWithdrawalRequest(otherClient, WithdrawalRequestStatus.NEW, amount);
 
-        transactionService.createManualCorrect(UUID.randomUUID(),
+        transactionService.createManualCorrect(
                 new ManualCorrectTransaction(client.getId(), Operation.DEBIT, amount, "двойное начисление"));
 
         assertEquals(0, transactionService.calculateBalance(client.getId()));
@@ -283,7 +275,7 @@ class TransactionServiceTest {
         saveTransaction(client, Operation.CREDIT, balance);
         saveWithdrawalRequest(client, WithdrawalRequestStatus.NEW, amount);
 
-        transactionService.createManualCorrect(UUID.randomUUID(),
+        transactionService.createManualCorrect(
                 new ManualCorrectTransaction(client.getId(), Operation.CREDIT, amount, "Технический сбой."));
 
         assertEquals(balance + amount, transactionService.calculateBalance(client.getId()));
@@ -296,8 +288,7 @@ class TransactionServiceTest {
         Client client = getDummyClient();
         assertNotEquals(id, client.getId());
         ManualCorrectTransaction manualCorrectTransaction = new ManualCorrectTransaction(id, null, null, null);
-        UUID clientId = client.getId();
-        assertThrows(BadRequestException.class, () -> transactionService.createManualCorrect(clientId, manualCorrectTransaction));
+        assertThrows(BadRequestException.class, () -> transactionService.createManualCorrect(manualCorrectTransaction));
     }
 
     @Test

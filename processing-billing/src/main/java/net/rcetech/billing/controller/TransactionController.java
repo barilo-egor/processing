@@ -17,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -43,7 +42,7 @@ public class TransactionController {
     @AdminAccess
     @ResponseStatus(HttpStatus.OK)
     public void createManualCorrect(Principal principal, @Valid @RequestBody ManualCorrectTransaction manualCorrectTransaction) {
-        transactionService.createManualCorrect(UUID.fromString(principal.getName()), manualCorrectTransaction);
+        transactionService.createManualCorrect(manualCorrectTransaction);
         log.info("Сотрудник поддержки {} создал ручную корректировку баланса: {}.",
                 principal.getName(), manualCorrectTransaction);
     }

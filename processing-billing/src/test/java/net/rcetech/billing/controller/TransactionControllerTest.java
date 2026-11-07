@@ -270,7 +270,7 @@ class TransactionControllerTest {
                         .content(json))
                 .andExpect(status().isOk());
         ArgumentCaptor<ManualCorrectTransaction> captor = ArgumentCaptor.forClass(ManualCorrectTransaction.class);
-        verify(transactionService).createManualCorrect(any(), captor.capture());
+        verify(transactionService).createManualCorrect(captor.capture());
         assertEquals(comment, captor.getValue().comment());
     }
 }

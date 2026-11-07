@@ -114,7 +114,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public void createManualCorrect(UUID creatorId, ManualCorrectTransaction manualCorrectTransaction) {
+    public void createManualCorrect(ManualCorrectTransaction manualCorrectTransaction) {
         UUID clientId = manualCorrectTransaction.clientId();
         Client client = clientService.findForUpdate(clientId);
         if (Operation.DEBIT.equals(manualCorrectTransaction.operation())) {
@@ -130,7 +130,7 @@ public class TransactionService {
         transaction.setOperation(manualCorrectTransaction.operation());
         transaction.setAmount(manualCorrectTransaction.amount());
         transaction.setType(TransactionType.MANUAL_CORRECT);
-        transaction.setComment("Создано пользователем " + creatorId + ". Комментарий: " + manualCorrectTransaction.comment());
+        transaction.setComment(manualCorrectTransaction.comment());
         save(transaction);
     }
 }

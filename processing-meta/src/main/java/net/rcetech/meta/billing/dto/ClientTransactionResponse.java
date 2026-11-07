@@ -14,5 +14,6 @@ public record ClientTransactionResponse(
         Instant createdAt,
         Operation operation,
         Integer amount,
-        TransactionType type
+        TransactionType type,
+        String comment
 ) {}
