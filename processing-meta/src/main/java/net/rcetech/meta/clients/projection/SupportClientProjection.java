@@ -23,4 +23,6 @@ public interface SupportClientProjection {
     String getComment();
     Integer getMinWithdrawalAmount();
     Boolean getIpRestrictionEnabled();
+    @JsonSerialize(using = InstantToMillisSerializer.class)
+    Instant getBlockedAt();
 }

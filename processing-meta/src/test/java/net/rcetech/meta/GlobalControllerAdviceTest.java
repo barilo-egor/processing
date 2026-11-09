@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.InternalServerErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -20,9 +22,11 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GlobalControllerAdviceTest {
@@ -64,6 +68,20 @@ class GlobalControllerAdviceTest {
     void handleGenericException_shouldLogError(String message) {
         advice.handleGenericException(new IllegalStateException(message));
 
+        assertLevels(List.of(Level.ERROR));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Клиент заблокирован только в приложении.", "Повторите попытку позже."})
+    @DisplayName("InternalServerErrorException должен вернуть 500 с сообщением в description и логироваться уровнем ERROR.")
+    void handleInternalServerError_shouldReturnMessageInDescription(String message) {
+        ProblemDetail problemDetail = advice.handle(new InternalServerErrorException(message, new IllegalStateException()));
+
+        assertAll(
+                () -> assertEquals(500, problemDetail.getStatus()),
+                () -> assertEquals(URI.create("/errors/internal-server-error"), problemDetail.getType()),
+                () -> assertEquals(message, problemDetail.getProperties().get("description"))
+        );
         assertLevels(List.of(Level.ERROR));
     }
 

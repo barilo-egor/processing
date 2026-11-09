@@ -695,6 +695,31 @@ class ApiOrderControllerTest {
                 clientId.equals(command.clientId()) && command.timeoutSeconds() == 30));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"2026-11-01T10:15:30Z", "2020-01-01T00:00:00Z"})
+    @DisplayName("Метод должен вернуть 401 и не создавать ордер, если клиент заблокирован.")
+    void createOrder_shouldReturn401IfClientBlocked(String blockedAt) throws Exception {
+        String headerApiKey = "key-blocked";
+        Client client = new Client();
+        client.setId(UUID.randomUUID());
+        client.setBlockedAt(Instant.parse(blockedAt));
+        ApiKey apiKey = new ApiKey();
+        apiKey.setClient(client);
+        when(apiKeyService.findByKey(headerApiKey)).thenReturn(Optional.of(apiKey));
+        mockMvc.perform(post("/api/v1/order")
+                        .header("Content-Type", "application/json")
+                        .header("Api-Key", headerApiKey)
+                        .content("""
+                                {
+                                    "internalId": "cfcdf9db-58d0-4268-b2b3-aeb493bda45b",
+                                    "amount": 5000,
+                                    "methods": ["CARD"]
+                                }"""))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(orderApiService);
+        verify(ipAddressService, never()).isAllowed(any(), any());
+    }
+
     @RepeatedTest(value = 2)
     @DisplayName("Должен быть вызван метод сервиса.")
     void cancelOrder_shouldCallServiceMethod() throws Exception {
