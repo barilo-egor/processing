@@ -2,7 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
 // Общие для обоих кабинетов компоненты — frontend/shared.
 import ConfirmDialog from '@shared/ConfirmDialog.jsx';
-import {DocPage, DocsNav, docIdOf, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
+import {docIdOf, DocPage, DocsNav, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
 import ThemeToggle from '@shared/ThemeToggle.jsx';
 
 /* ============================================================
@@ -2118,7 +2118,8 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
   const list = applied
       ? rows.filter((r) => String(r.merchant || '').toLowerCase().includes(applied.toLowerCase()))
       : rows;
-  const canReorder = !applied && rows.length > 1;
+  const canReorder = list.length > 1;
+  const rowIndex = (r) => rows.findIndex((x) => x.id === r.id);
 
   return (
       <>
@@ -2163,9 +2164,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
         ) : (
             <>
               <p className="table-hint">
-                {applied
-                    ? 'Очерёдность можно менять только без поиска — нажмите «Сбросить».'
-                    : 'Порядок строк — очерёдность запроса реквизитов. Перетащите строку за значок слева или используйте стрелки справа.'}
+                Порядок строк — очерёдность запроса реквизитов. Перетащите строку за значок слева или используйте стрелки справа.
               </p>
               <div className="table-wrap">
                 <table className="grid grid-merchants">
@@ -2225,7 +2224,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                                 type="button" className="icon-btn order-btn"
                                 title="Выше" aria-label="Выше"
                                 disabled={!canReorder || moving || i === 0}
-                                onClick={() => move(i, i - 1)}
+                                onClick={() => move(rowIndex(r), rowIndex(list[i - 1]))}
                             >
                               <i className="fa-solid fa-chevron-up" />
                             </button>
@@ -2233,7 +2232,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                                 type="button" className="icon-btn order-btn"
                                 title="Ниже" aria-label="Ниже"
                                 disabled={!canReorder || moving || i === list.length - 1}
-                                onClick={() => move(i, i + 1)}
+                                onClick={() => move(rowIndex(r), rowIndex(list[i + 1]))}
                             >
                               <i className="fa-solid fa-chevron-down" />
                             </button>
