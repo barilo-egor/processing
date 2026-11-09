@@ -100,7 +100,7 @@ export default function App() {
 
   useEffect(() => {
     if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), 2600);
+    const t = setTimeout(() => setToast(null), Math.max(2600, String(toast.message || '').length * 60));
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -563,7 +563,10 @@ function ClientsSection({ methods, showToast, onOpenMerchantConfig }) {
                         <span className="mono">{c.id}</span> <i className="fa-regular fa-copy" />
                       </span>
                         </td>
-                        <td>{c.username || '—'}</td>
+                        <td>
+                          {c.username || '—'}
+                          {c.blockedAt && <> <span className="badge badge-bad">Заблокирован</span></>}
+                        </td>
                         <td className="mono">{fmtDateTime(c.registeredAt)}</td>
                         <td className="mono">{fmtPercent(c.commissionPercent)}</td>
                         <td className="c-act">
@@ -1384,8 +1387,7 @@ function shortId(id) {
    Изменения применяются одной кнопкой «Сохранить» — сразу по всем
    изменённым полям, одним запросом.
 
-   Статуса у клиента больше нет: эти данные ведутся на сервере
-   авторизации. После «Времени активности ордеров» — поле «Методы»:
+   После «Времени активности ордеров» — поле «Методы»:
    весь список берётся из словаря RequestMethod, привязаны те,
    что пришли в client.methods.
 
@@ -1435,6 +1437,25 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
   const [confirmRecalc, setConfirmRecalc] = useState(false);
   // Открыто окно удаления клиента.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const blocked = Boolean(client.blockedAt);
+
+  const onToggleBlock = async () => {
+    setBlocking(true);
+    try {
+      const updated = blocked ? await api.unblockClient(client.id) : await api.blockClient(client.id);
+      if (updated && typeof updated === 'object') onUpdated({ ...client, ...updated });
+      showToast(blocked ? 'Клиент разблокирован' : 'Клиент заблокирован', 'success');
+    } catch (e) {
+      const actual = await api.client(client.id).catch(() => null);
+      if (actual) onUpdated({ ...client, ...actual });
+      showToast(e.message || (blocked ? 'Не удалось разблокировать клиента' : 'Не удалось заблокировать клиента'), 'error');
+    } finally {
+      setBlocking(false);
+      setConfirmBlock(false);
+    }
+  };
 
   // Перерасчёт баланса по сумме транзакций клиента (ТЗ «Инциденты»).
   // Бэк возвращает клиента после пересчёта — обновляем карточку и таблицу;
@@ -1465,10 +1486,10 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
   const [methodsOpen, setMethodsOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen && !confirmRecalc && !confirmDelete) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !methodsOpen && !confirmRecalc && !confirmDelete && !confirmBlock) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, methodsOpen, confirmRecalc, confirmDelete]);
+  }, [onClose, methodsOpen, confirmRecalc, confirmDelete, confirmBlock]);
 
   const setField = (key, v) => {
     setForm((prev) => ({ ...prev, [key]: v }));
@@ -1607,6 +1628,12 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
                 <Field label="Баланс">
                   <BalanceValue value={client.balance} reserved={client.reservedAmount} />
                 </Field>
+
+                <Field label="Доступ">
+                  {blocked
+                      ? <span><span className="badge badge-bad">Заблокирован</span> <span className="mono">{fmtDateTime(client.blockedAt)}</span></span>
+                      : <span className="badge badge-ok">Активен</span>}
+                </Field>
               </section>
 
               {/* ---------- Настройки: поля правятся сразу ---------- */}
@@ -1719,6 +1746,15 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
                 </button>
             )}
             <div className="foot-right">
+              <button
+                  type="button"
+                  className={`btn ${blocked ? 'btn-secondary' : 'btn-danger-soft'}`}
+                  disabled={saving || recalculating || blocking}
+                  onClick={() => setConfirmBlock(true)}
+              >
+                <i className={`fa-solid ${blocked ? 'fa-lock-open' : 'fa-lock'}`} />
+                {blocked ? 'Разблокировать' : 'Заблокировать'}
+              </button>
               <button type="button" className="btn btn-secondary" disabled={saving || recalculating} onClick={() => setConfirmRecalc(true)}>
                 <i className={`fa-solid fa-rotate${recalculating ? ' fa-spin' : ''}`} />
                 Перерасчёт баланса
@@ -1742,6 +1778,20 @@ function ClientCard({ client, methods, onClose, onUpdated, onDeleted, onCopy, sh
                 onCancel={() => setConfirmRecalc(false)}
             >
               Пересчитать баланс клиента <b>{client.username || client.id}</b> по сумме его транзакций?
+            </ConfirmDialog>
+        )}
+        {confirmBlock && (
+            <ConfirmDialog
+                title={blocked ? 'Разблокировка клиента' : 'Блокировка клиента'}
+                busy={blocking}
+                confirmLabel={blocked ? 'Разблокировать' : 'Заблокировать'}
+                confirmClass={blocked ? 'btn-primary' : 'btn-danger'}
+                onConfirm={onToggleBlock}
+                onCancel={() => setConfirmBlock(false)}
+            >
+              {blocked
+                  ? <>Разблокировать клиента <b>{client.username || client.id}</b>? Он снова сможет входить в кабинет и отправлять запросы к API.</>
+                  : <>Заблокировать клиента <b>{client.username || client.id}</b>? Все его сессии завершатся, вход в кабинет и запросы к API будут отклоняться.</>}
             </ConfirmDialog>
         )}
         {confirmDelete && (
@@ -2914,6 +2964,7 @@ const INCIDENT_LINKS = {
   ORDER_EXPIRATION_ERROR: { kind: 'order', key: 'orderId' },
   CLIENT_CALLBACK_DELIVERY_UNKNOWN: { kind: 'order', key: 'orderId' },
   CLIENT_CALLBACK_URL_FORBIDDEN: { kind: 'order', key: 'orderId' },
+  CLIENT_KEYCLOAK_BLOCK_ERROR: { kind: 'client', key: 'clientId' },
 };
 
 const incidentStatusMod = (name) => (name === 'NEW' ? 'info' : name === 'RESOLVED' ? 'ok' : 'neutral');

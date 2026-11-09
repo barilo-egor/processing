@@ -39,8 +39,6 @@ dependencies {
     implementation 'build.buf:protovalidate:1.2.2'
     protobuf files('build.buf:protovalidate:1.2.2')
 
-    implementation 'tgb.cryptoexchange:common-api:1.1.0'
-
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
 }
 

@@ -2,6 +2,7 @@ package net.rcetech.clients.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import net.rcetech.domain.service.clients.ClientBlockingService;
 import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.WebPath;
@@ -29,9 +30,13 @@ public class SupportClientController {
 
     private final ClientDeletionService clientDeletionService;
 
-    public SupportClientController(ClientService clientService, ClientDeletionService clientDeletionService) {
+    private final ClientBlockingService clientBlockingService;
+
+    public SupportClientController(ClientService clientService, ClientDeletionService clientDeletionService,
+                                   ClientBlockingService clientBlockingService) {
         this.clientService = clientService;
         this.clientDeletionService = clientDeletionService;
+        this.clientBlockingService = clientBlockingService;
     }
 
     @GetMapping
@@ -49,6 +54,22 @@ public class SupportClientController {
         SupportClientProjection client = clientService.update(id, updateClientDTO);
         log.info("Сотрудник поддержки {} обновил настройки клиента {}: {}.", principal.getName(), id, updateClientDTO);
         return new ResponseEntity<>(client, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}/block")
+    @AdminAccess
+    public SupportClientProjection block(Principal principal, @PathVariable UUID id) {
+        SupportClientProjection client = clientBlockingService.block(id);
+        log.info("Сотрудник поддержки {} заблокировал клиента {}.", principal.getName(), id);
+        return client;
+    }
+
+    @DeleteMapping("/{id}/block")
+    @AdminAccess
+    public SupportClientProjection unblock(Principal principal, @PathVariable UUID id) {
+        SupportClientProjection client = clientBlockingService.unblock(id);
+        log.info("Сотрудник поддержки {} разблокировал клиента {}.", principal.getName(), id);
+        return client;
     }
 
     @DeleteMapping("/{id}")

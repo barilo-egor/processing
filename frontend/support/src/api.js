@@ -339,6 +339,18 @@ export const api = {
   deleteClient: (id) =>
       request(`${SUPPORT_API}/client/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
+  // Один клиент по ID из списка клиентов; нет — null.
+  async client(id) {
+    const { items } = await this.clients({ id, page: 0, size: 1 });
+    return items[0] || null;
+  },
+
+  blockClient: (id) =>
+      request(`${SUPPORT_API}/client/${encodeURIComponent(id)}/block`, { method: 'PUT' }),
+
+  unblockClient: (id) =>
+      request(`${SUPPORT_API}/client/${encodeURIComponent(id)}/block`, { method: 'DELETE' }),
+
   /* Повторная отправка клиенту КБ по ордеру. 400 — по ордеру нет КБ,
      КБ уже доставлен или статус ордера с тех пор менялся (текст в description). */
   resendClientCallback: (orderId) =>

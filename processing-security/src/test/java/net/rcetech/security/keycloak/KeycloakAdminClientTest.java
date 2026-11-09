@@ -81,6 +81,37 @@ class KeycloakAdminClientTest {
         verify(0, postRequestedFor(urlPathMatching("/admin/.*")));
     }
 
+    @CsvSource({
+            "6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c,false,token-1",
+            "0a9b8c7d-6e5f-4a3b-9c1d-2e3f4a5b6c7d,true,eyJhbGciOi"
+    })
+    @ParameterizedTest
+    @DisplayName("Метод должен изменить признак enabled пользователя в Keycloak с токеном сервисного аккаунта.")
+    void setEnabled_shouldUpdateUserWithServiceAccountToken(UUID userId, boolean enabled, String accessToken) {
+        mockRegistration("keycloak-bff", "secret");
+        stubToken(accessToken);
+        stubFor(put("/admin" + REALM_PATH + "/users/" + userId).willReturn(noContent()));
+
+        keycloakAdminClient.setEnabled(userId, enabled);
+
+        verify(putRequestedFor(urlEqualTo("/admin" + REALM_PATH + "/users/" + userId))
+                .withHeader("Authorization", equalTo("Bearer " + accessToken))
+                .withHeader("Content-Type", containing("application/json"))
+                .withRequestBody(equalToJson("{\"enabled\":" + enabled + "}")));
+    }
+
+    @ValueSource(ints = {403, 404, 500})
+    @ParameterizedTest
+    @DisplayName("Метод должен выбросить исключение, если Keycloak не изменил пользователя.")
+    void setEnabled_shouldThrowIfUpdateFailed(int status) {
+        UUID userId = UUID.randomUUID();
+        mockRegistration("keycloak-bff", "secret");
+        stubToken("token");
+        stubFor(put("/admin" + REALM_PATH + "/users/" + userId).willReturn(status(status)));
+
+        assertThrows(RestClientException.class, () -> keycloakAdminClient.setEnabled(userId, false));
+    }
+
     private void mockRegistration(String clientId, String clientSecret) {
         ClientRegistration registration = ClientRegistration.withRegistrationId(KeycloakAdminClient.REGISTRATION_ID)
                 .clientId(clientId)

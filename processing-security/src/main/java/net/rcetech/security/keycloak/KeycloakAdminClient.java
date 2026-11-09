@@ -38,14 +38,38 @@ public class KeycloakAdminClient {
     }
 
     public void logout(UUID userId) {
-        ClientRegistration registration = Objects.requireNonNull(
-                clientRegistrationRepository.findByRegistrationId(REGISTRATION_ID));
-        String issuer = Objects.requireNonNull(registration.getProviderDetails().getIssuerUri());
+        ClientRegistration registration = registration();
         restClient.post()
-                .uri(issuer.replaceFirst("/realms/", "/admin/realms/") + "/users/{id}/logout", userId)
+                .uri(usersUri(registration) + "/{id}/logout", userId)
                 .headers(headers -> headers.setBearerAuth(accessToken(registration)))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    /**
+     * Включает или выключает пользователя в Keycloak. Выключенный пользователь не может войти.
+     *
+     * @param userId  идентификатор пользователя
+     * @param enabled {@code true}, чтобы включить пользователя
+     */
+    public void setEnabled(UUID userId, boolean enabled) {
+        ClientRegistration registration = registration();
+        restClient.put()
+                .uri(usersUri(registration) + "/{id}", userId)
+                .headers(headers -> headers.setBearerAuth(accessToken(registration)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("enabled", enabled))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private ClientRegistration registration() {
+        return Objects.requireNonNull(clientRegistrationRepository.findByRegistrationId(REGISTRATION_ID));
+    }
+
+    private String usersUri(ClientRegistration registration) {
+        String issuer = Objects.requireNonNull(registration.getProviderDetails().getIssuerUri());
+        return issuer.replaceFirst("/realms/", "/admin/realms/") + "/users";
     }
 
     private String accessToken(ClientRegistration registration) {

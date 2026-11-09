@@ -54,6 +54,11 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         Client client = apiKeyOpt.get().getClient();
+        if (Objects.nonNull(client.getBlockedAt())) {
+            log.warn("Запрос заблокированного клиента {} отклонён.", client.getId());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
         String remoteAddress = request.getRemoteAddr();
         if (!ipAddressService.isAllowed(client, remoteAddress)) {
             log.warn("Запрос клиента {} с IP-адреса {} отклонён: адреса нет в белом списке.",

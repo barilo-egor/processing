@@ -157,6 +157,11 @@ class ClientBalanceControllerTest {
             public Boolean getIpRestrictionEnabled() {
                 return true;
             }
+
+            @Override
+            public Instant getBlockedAt() {
+                return null;
+            }
         };
     }
 }

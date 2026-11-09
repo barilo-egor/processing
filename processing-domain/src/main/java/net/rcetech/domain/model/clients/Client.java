@@ -123,6 +123,11 @@ public class Client implements Persistable<UUID> {
     @Column(nullable = false)
     private boolean ipRestrictionEnabled = true;
 
+    /**
+     * Момент блокировки клиента поддержкой. Пока значение заполнено, запросы к API отклоняются.
+     */
+    private Instant blockedAt;
+
     @Transient
     private boolean isNew = true;
 

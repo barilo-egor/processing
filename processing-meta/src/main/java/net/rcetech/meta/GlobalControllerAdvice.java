@@ -71,6 +71,18 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler({ InternalServerErrorException.class })
+    public ProblemDetail handle(InternalServerErrorException ex) {
+        long epochMilli = Instant.now().toEpochMilli();
+        log.error("{} Server error with user message: {}", epochMilli, ex.getMessage(), ex);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problemDetail.setTitle(INTERNAL_SERVER_ERROR_TITLE);
+        problemDetail.setType(URI.create(INTERNAL_SERVER_ERROR_TYPE));
+        problemDetail.setProperty(TIMESTAMP, epochMilli);
+        problemDetail.setProperty(DESCRIPTION, ex.getMessage());
+        return problemDetail;
+    }
+
     @ExceptionHandler({ BaseException.class })
     public ProblemDetail handleGenericException(BaseException ex) {
         log.error(NOT_HANDLED_ERROR_LOG, ex.getTimestamp(), ex.getMessage(), ex);

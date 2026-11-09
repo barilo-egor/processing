@@ -2,6 +2,7 @@ package net.rcetech.clients.controller;
 
 import net.rcetech.domain.model.clients.Client;
 import net.rcetech.domain.service.clients.ApiKeyService;
+import net.rcetech.domain.service.clients.ClientBlockingService;
 import net.rcetech.domain.service.clients.ClientDeletionService;
 import net.rcetech.domain.service.clients.ClientService;
 import net.rcetech.meta.clients.dto.ClientFilter;
@@ -10,6 +11,7 @@ import net.rcetech.meta.clients.projection.SupportClientProjection;
 import net.rcetech.meta.config.MetaSecurityConfig;
 import net.rcetech.meta.config.MetaWebConfig;
 import net.rcetech.meta.exception.BadRequestException;
+import net.rcetech.meta.exception.InternalServerErrorException;
 import net.rcetech.meta.orders.RequestMethod;
 import net.rcetech.meta.user.Role;
 import org.hamcrest.Matchers;
@@ -31,6 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,6 +56,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,6 +76,9 @@ class SupportClientControllerTest {
 
     @MockitoBean
     private ClientDeletionService clientDeletionService;
+
+    @MockitoBean
+    private ClientBlockingService clientBlockingService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -191,6 +199,11 @@ class SupportClientControllerTest {
             @Override
             public Boolean getIpRestrictionEnabled() {
                 return false;
+            }
+
+            @Override
+            public Instant getBlockedAt() {
+                return null;
             }
         };
     }
@@ -492,5 +505,158 @@ class SupportClientControllerTest {
                         .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name())))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(clientDeletionService);
+    }
+
+    @CsvSource({
+            "6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c,PUT,1793631327000",
+            "0a9b8c7d-6e5f-4a3b-9c1d-2e3f4a5b6c7d,DELETE,"
+    })
+    @ParameterizedTest
+    @DisplayName("Методы блокировки должны вызвать сервис и вернуть клиента с моментом блокировки.")
+    void blockAndUnblock_shouldReturnClient(UUID clientId, HttpMethod method, Long blockedAt) throws Exception {
+        SupportClientProjection projection = blockedClient(clientId,
+                blockedAt == null ? null : Instant.ofEpochMilli(blockedAt));
+        if (HttpMethod.PUT.equals(method)) {
+            when(clientBlockingService.block(clientId)).thenReturn(projection);
+        } else {
+            when(clientBlockingService.unblock(clientId)).thenReturn(projection);
+        }
+        ResultActions result = mockMvc.perform(request(method, "/api/support/client/" + clientId + "/block")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(clientId.toString()));
+        if (blockedAt == null) {
+            result.andExpect(jsonPath("$.blockedAt").doesNotExist());
+            verify(clientBlockingService).unblock(clientId);
+        } else {
+            result.andExpect(jsonPath("$.blockedAt").value(blockedAt));
+            verify(clientBlockingService).block(clientId);
+        }
+    }
+
+    @ValueSource(strings = {"PUT", "DELETE"})
+    @ParameterizedTest
+    @DisplayName("Методы блокировки должны вернуть 400, если клиент не найден.")
+    void blockAndUnblock_shouldReturnBadRequestIfClientNotFound(HttpMethod method) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(clientBlockingService.block(clientId)).thenThrow(new BadRequestException("Клиент не найден."));
+        when(clientBlockingService.unblock(clientId)).thenThrow(new BadRequestException("Клиент не найден."));
+        mockMvc.perform(request(method, "/api/support/client/" + clientId + "/block")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description").value("Клиент не найден."));
+    }
+
+    @ValueSource(strings = {
+            "Клиент заблокирован только в приложении.",
+            "Создан инцидент, который необходимо обработать."
+    })
+    @ParameterizedTest
+    @DisplayName("Метод блокировки должен вернуть 500 с сообщением об инциденте, если Keycloak не заблокировал клиента.")
+    void block_shouldReturnIncidentMessageIfKeycloakFailed(String message) throws Exception {
+        UUID clientId = UUID.randomUUID();
+        when(clientBlockingService.block(clientId))
+                .thenThrow(new InternalServerErrorException(message, new IllegalStateException()));
+        mockMvc.perform(put("/api/support/client/" + clientId + "/block")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name()))
+                        .with(csrf()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.type").value("/errors/internal-server-error"))
+                .andExpect(jsonPath("$.description").value(message));
+    }
+
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = {"ADMIN"})
+    @ParameterizedTest
+    @DisplayName("Блокировка и разблокировка клиента должны быть запрещены для всех кроме администратора.")
+    void blockAndUnblock_shouldReturnForbiddenIfNotAdmin(Role role) throws Exception {
+        for (HttpMethod method : List.of(HttpMethod.PUT, HttpMethod.DELETE)) {
+            mockMvc.perform(request(method, "/api/support/client/21c28723-95ab-4349-a918-ec3b0ce26ad4/block")
+                            .with(user("21c28723-95ab-4349-a918-ec3b0ce26ad4").roles(role.name()))
+                            .with(csrf()))
+                    .andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(clientBlockingService);
+    }
+
+    @ValueSource(strings = {"PUT", "DELETE"})
+    @ParameterizedTest
+    @DisplayName("Блокировка и разблокировка клиента без CSRF-токена должны быть запрещены.")
+    void blockAndUnblock_shouldReturnForbiddenWithoutCsrf(HttpMethod method) throws Exception {
+        mockMvc.perform(request(method, "/api/support/client/21c28723-95ab-4349-a918-ec3b0ce26ad4/block")
+                        .with(user("e6230b60-8b5b-4dd7-8c59-e29a827e12f6").roles(Role.ADMIN.name())))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(clientBlockingService);
+    }
+
+    private static SupportClientProjection blockedClient(UUID id, Instant blockedAt) {
+        SupportClientProjection client = getClient(0);
+        return new SupportClientProjection() {
+            @Override
+            public UUID getId() {
+                return id;
+            }
+
+            @Override
+            public String getUsername() {
+                return client.getUsername();
+            }
+
+            @Override
+            public Instant getRegisteredAt() {
+                return client.getRegisteredAt();
+            }
+
+            @Override
+            public String getCallbackUrl() {
+                return client.getCallbackUrl();
+            }
+
+            @Override
+            public Integer getOrderTimeoutSeconds() {
+                return client.getOrderTimeoutSeconds();
+            }
+
+            @Override
+            public BigDecimal getCommissionPercent() {
+                return client.getCommissionPercent();
+            }
+
+            @Override
+            public Integer getBalance() {
+                return client.getBalance();
+            }
+
+            @Override
+            public Integer getReservedAmount() {
+                return client.getReservedAmount();
+            }
+
+            @Override
+            public Set<RequestMethod> getMethods() {
+                return client.getMethods();
+            }
+
+            @Override
+            public String getComment() {
+                return client.getComment();
+            }
+
+            @Override
+            public Integer getMinWithdrawalAmount() {
+                return client.getMinWithdrawalAmount();
+            }
+
+            @Override
+            public Boolean getIpRestrictionEnabled() {
+                return client.getIpRestrictionEnabled();
+            }
+
+            @Override
+            public Instant getBlockedAt() {
+                return blockedAt;
+            }
+        };
     }
 }
