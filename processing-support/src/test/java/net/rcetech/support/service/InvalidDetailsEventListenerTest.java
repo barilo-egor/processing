@@ -60,7 +60,7 @@ class InvalidDetailsEventListenerTest {
 
         listener.invalidDetailsReceived(event(Merchant.PAYSCROW_TRANSGRAN));
 
-        verify(merchantConfigService).update(2L, new MerchantConfigUpdateDTO(false, null, null, null));
+        verify(merchantConfigService).update(2L, new MerchantConfigUpdateDTO(false, null, null, null, null));
         verify(eventPublisher).publishEvent(incident(Merchant.PAYSCROW_TRANSGRAN, "мерчант отключён"));
     }
 

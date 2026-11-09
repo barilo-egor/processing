@@ -70,6 +70,9 @@ public class MerchantConfigMapper {
         if (updateDTO.merchantOrder() != null) {
             builder.setNewOrder(Int32Value.of(updateDTO.merchantOrder()));
         }
+        if (updateDTO.swap() != null) {
+            builder.setSwap(BoolValue.of(updateDTO.swap()));
+        }
 
         return builder.build();
     }

@@ -4561,7 +4561,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isOn\": true,\n  \"maxAmount\": 10000,\n  \"minAmount\": 100,\n  \"merchantOrder\": 2\n}",
+                  "raw": "{\n  \"isOn\": true,\n  \"maxAmount\": 10000,\n  \"minAmount\": 100,\n  \"merchantOrder\": 2,\n  \"swap\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4585,7 +4585,7 @@
                     }
                   ]
                 },
-                "description": "Пример тела во вкладке body.\n\nОтсутствующее поле, либо поле со значением null обновлено не будет."
+                "description": "Пример тела во вкладке body.\n\nОтсутствующее поле, либо поле со значением null обновлено не будет.\n\nswap влияет только на merchantOrder: true — конфигурация меняется местами с той, что стоит на позиции merchantOrder; false или не передан — конфигурация встаёт на позицию merchantOrder, промежуточные сдвигаются."
               },
               "response": [
                 {
