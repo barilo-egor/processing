@@ -2,7 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {api, dateTimeToMs, fmtDateTime, fmtPercent, fmtRate, isUuid, logout, shortValue,} from './api.js';
 // Общие для обоих кабинетов компоненты — frontend/shared.
 import ConfirmDialog from '@shared/ConfirmDialog.jsx';
-import {DocPage, DocsNav, docIdOf, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
+import {docIdOf, DocPage, DocsNav, NavGroup, sectionFromUrl, syncDocUrl} from '@shared/docs.jsx';
 import ThemeToggle from '@shared/ThemeToggle.jsx';
 
 /* ============================================================
@@ -1998,7 +1998,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
   const [moving, setMoving] = useState(false);  // идёт сохранение очерёдности
   const [armedId, setArmedId] = useState(null); // строка, взятая за «ручку»
   const [dragId, setDragId] = useState(null);   // строка, которую тащим
-  const [drop, setDrop] = useState(null);       // { id, after } — куда вставим
+  const [drop, setDrop] = useState(null);
 
   // silent — перечитать без спиннера (после перестановки).
   const load = useCallback(async (clientId, silent = false) => {
@@ -2054,22 +2054,23 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
     }
   };
 
-  // Перестановка строки с позиции from на позицию to (индексы в rows).
-  // Новый merchantOrder — номер, который сейчас занимает позиция to:
-  // так работает и при номерах не подряд. Строку двигаем сразу, при
-  // ошибке возвращаем как было.
-  const move = async (from, to) => {
+  const move = async (from, to, swap) => {
     if (moving || from === to || to < 0 || to >= rows.length) return;
     const prev = rows;
     const row = rows[from];
     const merchantOrder = rows[to].merchantOrder ?? to + 1;
     const next = [...rows];
-    next.splice(from, 1);
-    next.splice(to, 0, row);
+    if (swap) {
+      next[from] = { ...rows[to], merchantOrder: row.merchantOrder };
+      next[to] = { ...row, merchantOrder };
+    } else {
+      next.splice(from, 1);
+      next.splice(to, 0, row);
+    }
     setRows(next);
     setMoving(true);
     try {
-      await api.updateMerchantConfig(row.id, { merchantOrder });
+      await api.updateMerchantConfig(row.id, { merchantOrder, swap });
       await load(client.id, true);
     } catch (e) {
       setRows(prev);
@@ -2086,21 +2087,29 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
 
   const onDragOver = (e, r) => {
     if (dragId == null) return;
+    if (r.id === dragId) { setDrop(null); return; }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const box = e.currentTarget.getBoundingClientRect();
-    const after = e.clientY > box.top + box.height / 2;
-    if (!drop || drop.id !== r.id || drop.after !== after) setDrop({ id: r.id, after });
+    const y = (e.clientY - box.top) / box.height;
+    const mode = y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'swap';
+    setDrop({ id: r.id, mode, x: e.clientX, y: e.clientY });
   };
 
   const onDrop = (e) => {
     e.preventDefault();
     if (dragId == null || !drop) { endDrag(); return; }
     const from = rows.findIndex((x) => x.id === dragId);
-    let to = rows.findIndex((x) => x.id === drop.id) + (drop.after ? 1 : 0);
-    if (from < to) to -= 1; // строка ушла со своего места — индексы сдвинулись
+    const target = rows.findIndex((x) => x.id === drop.id);
+    const { mode } = drop;
     endDrag();
-    move(from, to);
+    if (mode === 'swap') {
+      move(from, target, true);
+      return;
+    }
+    let to = target + (mode === 'after' ? 1 : 0);
+    if (from < to) to -= 1;
+    move(from, to, false);
   };
 
   if (!client) {
@@ -2118,7 +2127,8 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
   const list = applied
       ? rows.filter((r) => String(r.merchant || '').toLowerCase().includes(applied.toLowerCase()))
       : rows;
-  const canReorder = !applied && rows.length > 1;
+  const canReorder = list.length > 1;
+  const rowIndex = (r) => rows.findIndex((x) => x.id === r.id);
 
   return (
       <>
@@ -2163,9 +2173,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
         ) : (
             <>
               <p className="table-hint">
-                {applied
-                    ? 'Очерёдность можно менять только без поиска — нажмите «Сбросить».'
-                    : 'Порядок строк — очерёдность запроса реквизитов. Перетащите строку за значок слева или используйте стрелки справа.'}
+                Порядок строк — очерёдность запроса реквизитов. Перетащите строку за значок слева: на середину другой строки, чтобы поменять их местами, или на её край, чтобы расположить между строками. Стрелки справа меняют строку местами с соседней.
               </p>
               <div className="table-wrap">
                 <table className="grid grid-merchants">
@@ -2186,7 +2194,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                           className={[
                             'no-hover',
                             dragId === r.id ? 'is-dragging' : '',
-                            drop?.id === r.id && dragId !== r.id ? (drop.after ? 'drop-after' : 'drop-before') : '',
+                            drop?.id === r.id ? `drop-${drop.mode}` : '',
                           ].filter(Boolean).join(' ')}
                           draggable={canReorder && !moving && armedId === r.id}
                           onDragStart={(e) => {
@@ -2225,7 +2233,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                                 type="button" className="icon-btn order-btn"
                                 title="Выше" aria-label="Выше"
                                 disabled={!canReorder || moving || i === 0}
-                                onClick={() => move(i, i - 1)}
+                                onClick={() => move(rowIndex(r), rowIndex(list[i - 1]), true)}
                             >
                               <i className="fa-solid fa-chevron-up" />
                             </button>
@@ -2233,7 +2241,7 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                                 type="button" className="icon-btn order-btn"
                                 title="Ниже" aria-label="Ниже"
                                 disabled={!canReorder || moving || i === list.length - 1}
-                                onClick={() => move(i, i + 1)}
+                                onClick={() => move(rowIndex(r), rowIndex(list[i + 1]), true)}
                             >
                               <i className="fa-solid fa-chevron-down" />
                             </button>
@@ -2244,6 +2252,11 @@ function MerchantsSection({ client, merchants, showToast, onPickClient }) {
                   </tbody>
                 </table>
               </div>
+              {drop && (
+                  <div className="drop-hint" style={{ left: drop.x + 14, top: drop.y + 14 }}>
+                    {drop.mode === 'swap' ? 'Поменять местами' : 'Расположить между'}
+                  </div>
+              )}
             </>
         )}
       </>

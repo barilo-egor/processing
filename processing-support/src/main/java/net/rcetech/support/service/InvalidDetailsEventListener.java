@@ -49,7 +49,7 @@ public class InvalidDetailsEventListener {
             if (config.isEmpty()) {
                 return "настройка мерчанта у клиента не найдена";
             }
-            merchantConfigService.update(config.get().id(), new MerchantConfigUpdateDTO(false, null, null, null));
+            merchantConfigService.update(config.get().id(), new MerchantConfigUpdateDTO(false, null, null, null, null));
             log.info("Мерчант {} отключён клиенту {} из-за некорректных реквизитов.", merchant, clientId);
             return "мерчант отключён";
         } catch (Exception e) {

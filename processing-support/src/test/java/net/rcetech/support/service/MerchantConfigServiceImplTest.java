@@ -110,7 +110,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldReturnUpdatedConfig_whenUpdateSucceeds() {
-        var updateDTO = new MerchantConfigUpdateDTO(true, 5_000, 200, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 5_000, 200, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -153,7 +153,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldCorrectlyBuildGrpcRequestThroughMapper_whenUpdateCalled() {
-        var updateDTO = new MerchantConfigUpdateDTO(false, 3_000, null, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(false, 3_000, null, 1, null);
 
         var expectedGrpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -197,7 +197,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcInternalError_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, null, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, null, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -234,7 +234,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGrpcPermissionDeniedError_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -273,7 +273,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forNetworkErrors_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(null, 1_000, null, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(null, 1_000, null, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -311,7 +311,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldThrowBaseException_forGenericException_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(null, null, 50, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(null, null, 50, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -345,7 +345,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleMapperReturningNull_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(true, null, null, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)
@@ -367,7 +367,7 @@ class MerchantConfigServiceImplTest {
 
     @Test
     void shouldHandleFullFlowFromRequestToResponse_whenUpdate() {
-        var updateDTO = new MerchantConfigUpdateDTO(true, 8_000, 150, 1);
+        var updateDTO = new MerchantConfigUpdateDTO(true, 8_000, 150, 1, null);
 
         var grpcRequest = UpdateApiMerchantConfigItemGrpc.newBuilder()
                 .setId(configId)

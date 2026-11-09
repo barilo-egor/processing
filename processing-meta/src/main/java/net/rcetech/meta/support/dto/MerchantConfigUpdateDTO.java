@@ -9,5 +9,6 @@ public record MerchantConfigUpdateDTO(
         @Positive(message = "должно быть больше нуля")
         Integer minAmount,
         @Positive(message = "должно быть больше нуля")
-        Integer merchantOrder
+        Integer merchantOrder,
+        Boolean swap
 ) {}
