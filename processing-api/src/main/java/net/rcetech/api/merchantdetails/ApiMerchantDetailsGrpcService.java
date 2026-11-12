@@ -116,17 +116,6 @@ public class ApiMerchantDetailsGrpcService {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void getCallback(MerchantCallbackDTO merchantCallbackDTO) {
-        try {
-            detailsBlockingStub.merchantCallbackRequest(
-                    detailsMapper.merchantCallbackDTOToGrpc(merchantCallbackDTO)
-            );
-        } catch (Exception ex) {
-            throw new BaseException("Непредвиденная ошибка: " + ex.getMessage(), ex);
-        }
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void cancelOrder(CancelOrderDTO cancelOrderDTO) {
         try {
             detailsBlockingStub.cancelOrderRequest(detailsMapper.cancelOrderDTOToGrpc(cancelOrderDTO));

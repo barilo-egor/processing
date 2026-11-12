@@ -12,7 +12,6 @@ import "buf/validate/validate.proto";
 service ApiDetailsRequestService {
 
   rpc DetailsRequest (DetailsRequestGrpc) returns (DetailsResponseGrpc);
-  rpc MerchantCallbackRequest (MerchantCallbackGrpc) returns (google.protobuf.Empty);
   rpc CancelOrderRequest (CancelOrderRequestGrpc) returns (google.protobuf.Empty);
 
 }
@@ -39,13 +38,6 @@ message DetailsGrpc {
   string request_method = 1;
   string details = 2;
   optional string bank = 3;
-}
-
-message MerchantCallbackGrpc {
-  string merchant_order_id = 1;
-  string status = 2;
-  string status_description = 3;
-  string merchant = 4;
 }
 
 message CancelOrderRequestGrpc {

@@ -35,7 +35,7 @@
 - Spring-профили (см. README и `net.rcetech.meta.Profiles`):
   - `dev`: допускает значения `ddl-auto`, отличные от `validate`, и запуск без отдельного порта actuator (`management.server.port`).
   - `disable-security`: всё открыто без авторизации, заголовок `Test-User: <keycloakId>;ROLE_X` подставляет principal.
-  - `md-test-callback`, `mh-test`: заглушки внешних микросервисов merchant-details и merchant-history.
+  - `mh-test`: заглушка микросервиса merchant-history.
 - Изменения схемы БД — только Flyway-миграциями в `processing-domain/src/main/resources/database/migration` (`ddl-auto: validate`).
 
 ## Архитектура

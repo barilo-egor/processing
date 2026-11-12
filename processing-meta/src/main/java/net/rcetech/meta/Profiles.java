@@ -9,7 +9,6 @@ public class Profiles {
     /**
      * Профили взаимодействия с merchant-details
      */
-    public static final String TEST_MERCHANT_CALLBACK = "md-test-callback";
 
     /**
      * Профили взаимодействия с merchant-history
